@@ -40,7 +40,7 @@ async function mount(store) {
 }
 
 describe('useAutosaveSetting', () => {
-  it('reads the stored tcb-autosave preference on mount', async () => {
+  it('reads the stored fcb-autosave preference on mount', async () => {
     const store = createAutosaveSettingStore({
       storage: fakeStorage({ [AUTOSAVE_STORAGE_KEY]: '0' }),
       characters: { setAutosaveEnabled: vi.fn() },
@@ -52,7 +52,7 @@ describe('useAutosaveSetting', () => {
     await probe.unmount();
   });
 
-  it('follows a cross-tab storage event for the tcb-autosave key', async () => {
+  it('follows a cross-tab storage event for the fcb-autosave key', async () => {
     const storage = fakeStorage();
     const store = createAutosaveSettingStore({
       storage,

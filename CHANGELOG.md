@@ -6,6 +6,16 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Browser persistence names are the builder's own by default — the IndexedDB
+  database `fcb-local`, the localStorage keys `fcb-autosave`,
+  `fcb-active-character` and `fcb-split-view`, and the package token
+  `fcb-character-package` — and a host shell may supply the names its users
+  already hold through `shell.storage` (see `docs/host-shell.md`).
+- Snapshot identities are `fcb-fast-start-library` and `fcb-character-load`
+  at parser version 9; cached snapshots rebuild once.
+
 ## [1.1.2] - 2026-08-27
 
 ### Fixed

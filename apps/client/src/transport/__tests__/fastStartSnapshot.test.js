@@ -16,7 +16,7 @@ const options = {
   publicContentProfile: 'public-base',
 };
 const engineMetadata = {
-  libraryKind: 'tcb-fast-start-library',
+  libraryKind: 'fcb-fast-start-library',
   bodyCodec: FAST_START_BODY_CODEC,
   elementCount: 100,
   elementTypeCount: 10,
@@ -55,7 +55,7 @@ describe('Local Fast Start snapshot identity', () => {
     });
 
     expect(FAST_START_SCHEMA_VERSION).toBe(2);
-    expect(FAST_START_PARSER_REVISION).toBe('finalized-library-v8');
+    expect(FAST_START_PARSER_REVISION).toBe('finalized-library-v9');
     expect(currentIdentity.key).not.toBe(legacyIdentity.key);
     await expect(
       validateFastStartRecord(legacyRecord, currentIdentity),

@@ -29,7 +29,7 @@ export function resolveFastStartEngineVersion({ dev = false, fingerprint, overri
   return engineVersion;
 }
 export const MAX_FAST_START_BODY_BYTES = 64 * 1024 * 1024;
-export const FAST_START_LIBRARY_KIND = 'tcb-fast-start-library';
+export const FAST_START_LIBRARY_KIND = 'fcb-fast-start-library';
 export const FAST_START_BODY_CODEC = 'gzip-json';
 
 const IDENTITY_FIELDS = [

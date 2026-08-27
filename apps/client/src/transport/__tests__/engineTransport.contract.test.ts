@@ -2,6 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import type { EngineClient } from "@forge-cb/api";
 import { createEngineApi, type EngineTransportOptions } from "../engineTransport.js";
 
+// A host's users may hold packages written under its earlier format token;
+// the shell lists those, and the importer accepts them. This file runs with
+// one such legacy token configured.
+vi.mock("../../storageNames.js", async (importOriginal) => {
+  const original = (await importOriginal()) as {
+    resolveStorageNames: (storage: unknown) => { acceptedPackageTokens: readonly string[] };
+  };
+  const names = original.resolveStorageNames({ legacyPackageTokens: ["legacy-character-package"] });
+  return { ...original, ACCEPTED_CHARACTER_PACKAGE_TOKENS: names.acceptedPackageTokens };
+});
+
 type TestStore = NonNullable<EngineTransportOptions["store"]>;
 
 function fakeStore() {
@@ -892,7 +903,7 @@ describe("typed FCB nested adapter", () => {
     const { filename, blob } = await api.characters.exportPackage("Ada");
     expect(filename).toBe("Ada.dnd5e-pkg");
     const parsed = JSON.parse(await blob.text());
-    expect(parsed.format).toBe("tcb-character-package");
+    expect(parsed.format).toBe("fcb-character-package");
     expect(parsed.version).toBe(1);
     expect(parsed.character).toEqual({ id: "Ada", xml: "<character></character>" });
     expect(parsed.content).toEqual([
@@ -905,7 +916,7 @@ describe("typed FCB nested adapter", () => {
     const api = createEngineApi({ client, store });
     const xml = "<character><display-properties><name>Donyo</name></display-properties></character>";
     const pkg = JSON.stringify({
-      format: "tcb-character-package",
+      format: "fcb-character-package",
       version: 1,
       character: { id: "Donyo", xml },
       content: [{ path: "custom/homebrew.xml", base64: "PGVsZW1lbnRzIC8+" }],
@@ -924,14 +935,14 @@ describe("typed FCB nested adapter", () => {
     expect([...liveFiles.keys()].some((path) => path.endsWith("custom/homebrew.xml"))).toBe(true);
   });
 
-  it("imports a package written under the previous format name", async () => {
-    // Packages exported before the format was renamed are already on users'
-    // disks and in shared folders; the reader accepts both spellings.
+  it("imports a package written under a host's legacy format token", async () => {
+    // Packages exported under a host's earlier token are already on users'
+    // disks and in shared folders; the reader accepts every token the shell lists.
     const { client, store, liveFiles } = statefulContentHarness();
     const api = createEngineApi({ client, store });
     const xml = "<character><display-properties><name>Legacy</name></display-properties></character>";
     const pkg = JSON.stringify({
-      format: "aurora-character-package",
+      format: "legacy-character-package",
       version: 1,
       character: { id: "Legacy", xml },
       content: [{ path: "custom/homebrew.xml", base64: "PGVsZW1lbnRzIC8+" }],

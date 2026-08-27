@@ -88,7 +88,7 @@ describe('local content transaction safety', () => {
 
     await expect(localStore.listCharacters()).resolves.toEqual(characters);
     // Pinned: the database name is a persisted identifier, not a brand string.
-    expect(open).toHaveBeenNthCalledWith(1, 'aurora-local', 5);
+    expect(open).toHaveBeenNthCalledWith(1, 'fcb-local', 5);
     expect(open).toHaveBeenCalledTimes(1);
   });
 });

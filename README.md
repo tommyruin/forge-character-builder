@@ -71,13 +71,16 @@ sheets in a second worker so PDF work never blocks the editor.
 These identifiers are persisted in users' browsers and cloud storage and must
 never be renamed:
 
-- the IndexedDB database `aurora-local` (schema version and store names
-  included) — see `apps/client/src/transport/localStore.js`;
+- the IndexedDB database's schema version and store names — see
+  `apps/client/src/transport/localStore.js`;
 - exported `.dnd5e` element identifiers and document byte-fidelity;
 - the Google Drive folder `DM Forge`, the library file `dm-forge-library.json`,
   and their `appProperties` tags — see `apps/client/src/cloud/`;
-- localStorage keys (`theme`, `tcb-autosave`, `tcb-active-character`,
-  `aurora-split-view`, `fcb-sheet-template`, `fcb-sheet-colours`, `fcb-sheet-fonts`);
+- browser persistence names — the IndexedDB database `fcb-local` and the
+  localStorage keys `theme`, `fcb-autosave`, `fcb-active-character`,
+  `fcb-split-view`, `fcb-sheet-template`, `fcb-sheet-colours`, `fcb-sheet-fonts`
+  — which a host may replace through `shell.storage` (see
+  [docs/host-shell.md](docs/host-shell.md)) but must then never change;
 - the snapshot manifest identities in
   `packages/engine/src/snapshot/identities.ts`, whose parser/schema pins move
   in lockstep with `apps/client/src/transport/fastStartSnapshot.js` and

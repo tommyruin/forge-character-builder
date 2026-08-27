@@ -2,7 +2,8 @@ import { api } from './api.js';
 
 // A persisted localStorage key: renaming it silently resets the preference for
 // everyone who already set it. Missing means autosave is on.
-export const AUTOSAVE_STORAGE_KEY = 'tcb-autosave';
+export { AUTOSAVE_STORAGE_KEY } from './storageNames.js';
+import { AUTOSAVE_STORAGE_KEY } from './storageNames.js';
 
 export function readStoredAutosave(storage = globalThis.localStorage) {
   try {

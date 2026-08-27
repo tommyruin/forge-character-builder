@@ -2,7 +2,7 @@
  * Fast Start controller: prepares and serves a compressed snapshot of the
  * content library, and boots an existing library object from one.
  *
- * The payload is kind tcb-fast-start-library (schema 1): the canonical-JSON
+ * The payload is kind fcb-fast-start-library (schema 1): the canonical-JSON
  * content graph (serializeContentLibrary) plus a reserved diagnostics area
  * (null today), gzip-compressed. Buffers are one-shot: prepare replaces any
  * older pending buffer, takeBuffer consumes it. boot() validates everything

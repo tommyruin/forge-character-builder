@@ -1,3 +1,5 @@
+import { ACTIVE_CHARACTER_STORAGE_KEY } from './storageNames.js';
+
 export const GLOBAL_SECTIONS = [
   ['characters', 'Characters', 'Characters'],
   ['content', 'Content', 'Content'],
@@ -41,7 +43,7 @@ export function getGlobalNavigationTabs(openCharacterId) {
 export function createNavigationState() {
   let savedCharacterId = null;
   try {
-    savedCharacterId = globalThis.localStorage?.getItem('tcb-active-character') || null;
+    savedCharacterId = globalThis.localStorage?.getItem(ACTIVE_CHARACTER_STORAGE_KEY) || null;
   } catch {
     // Storage can be unavailable in privacy mode and in non-browser tests.
   }
@@ -82,7 +84,7 @@ export function navigationReducer(state, action) {
       };
     case 'show-collection':
       try {
-        globalThis.localStorage?.removeItem('tcb-active-character');
+        globalThis.localStorage?.removeItem(ACTIVE_CHARACTER_STORAGE_KEY);
       } catch {
         // Best effort only; navigation state remains authoritative for this tab.
       }

@@ -50,7 +50,7 @@ export interface ContentLibraryPayload {
 }
 
 /** Canonical JSON cannot carry `undefined`; this marker preserves own-key shape. */
-const UNDEFINED_OPTIONAL = { $tcbUndefined: true } as const;
+const UNDEFINED_OPTIONAL = { $fcbUndefined: true } as const;
 
 function hasOwn(record: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(record, key);
@@ -59,7 +59,7 @@ function hasOwn(record: object, key: string): boolean {
 function isUndefinedOptional(value: unknown): boolean {
   if (value === undefined || value === null || typeof value !== "object" || Array.isArray(value)) return value === undefined;
   const record = value as Record<string, unknown>;
-  return Object.keys(record).length === 1 && record.$tcbUndefined === true;
+  return Object.keys(record).length === 1 && record.$fcbUndefined === true;
 }
 
 function setEncodedOptional(

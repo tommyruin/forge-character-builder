@@ -21,8 +21,8 @@ export const CHARACTER_LOAD_MANIFEST: ManifestIdentityDto = {
 };
 
 /** Payload kinds stamped into snapshot payloads. */
-export const FAST_START_LIBRARY_KIND = "tcb-fast-start-library" as const;
-export const CHARACTER_LOAD_KIND = "tcb-character-load" as const;
+export const FAST_START_LIBRARY_KIND = "fcb-fast-start-library" as const;
+export const CHARACTER_LOAD_KIND = "fcb-character-load" as const;
 
 /**
  * Payload schema versions (bump on any breaking payload change). Fast Start
@@ -39,4 +39,4 @@ export const CHARACTER_LOAD_SCHEMA_VERSION = 1;
  * instead of resurrecting the previous finalization's output. The engine's
  * finalization-revision test pins the library digest to this value.
  */
-export const SNAPSHOT_PARSER_VERSION = "8";
+export const SNAPSHOT_PARSER_VERSION = "9";

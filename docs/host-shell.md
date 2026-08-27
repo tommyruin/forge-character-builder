@@ -42,3 +42,21 @@ rules its own `Logo` and `VersionStamp` rely on.
 
 Tests always resolve `@shell` to the default shell, so they describe the
 repository's own behaviour regardless of the host.
+
+## Storage names
+
+The client persists data in the browser under names the shell may set:
+
+| `shell.storage` field | Default | Holds |
+| --- | --- | --- |
+| `database` | `fcb-local` | The IndexedDB database: characters, uploaded content, homebrew, settings, snapshots. |
+| `keys.autosave` | `fcb-autosave` | The autosave switch. |
+| `keys.activeCharacter` | `fcb-active-character` | The last active character. |
+| `keys.splitView` | `fcb-split-view` | The split-view preference. |
+| `packageToken` | `fcb-character-package` | The `format` token written into exported character packages. |
+| `legacyPackageTokens` | none | Further package tokens the importer accepts. |
+
+Browsers look these up by exact name, so a host that already has users under
+other names keeps them here; a fresh deployment leaves `storage` out. Once
+chosen for a deployment they must never change, or its users' stored
+characters become unreachable.

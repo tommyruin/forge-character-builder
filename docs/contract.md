@@ -93,8 +93,8 @@ origin-root candidate is never attempted. Missing browser assets return a
 `conflict` diagnostic naming the base and files. A rejected template load is
 retryable, while a successful bundle remains cached. Node/no-location rendering
 retains the generated fallback path.
-The typed module-worker adapter preserves the persisted `aurora-local` IndexedDB
-database name (schema/version 5; the name is a frozen storage contract), localStore/orchestration, homebrew
+The typed module-worker adapter preserves the persisted IndexedDB database
+(schema/version 5; its name comes from the host shell and is a frozen storage contract), localStore/orchestration, homebrew
 upload/patch/remove, ruleset/source controls, migration, and sheet journeys.
 Character restore waits for both bundled and persisted content. Uploaded-content
 mutations reconcile the live worker to the exact persisted path-and-byte set:
@@ -392,7 +392,7 @@ schema: 1, codec: "gzip-json"}` (exported from `@forge-cb/engine` as
 ### Fast Start
 
 - `prepareFastStartSnapshot: [] -> FastStartSnapshotPreparedDto`
-  `{client, schema, codec, libraryKind: "tcb-fast-start-library", schemaVersion: 1,
+  `{client, schema, codec, libraryKind: "fcb-fast-start-library", schemaVersion: 1,
   elementCount, sourceCount, fileCount, typeCounts, orderedLibraryDigest,
   diagnosticsDigest, serializedBytes, compressedBytes, serializationMs,
   compressionMs}` — payload is the canonical-JSON content graph plus a reserved
@@ -417,7 +417,7 @@ schema: 1, codec: "gzip-json"}` (exported from `@forge-cb/engine` as
 ### Character load
 
 - `prepareCharacterLoadSnapshot: [id: string, identity: ManifestIdentityDto] -> CharacterSnapshotPreparedDto`
-  `{client, schema, codec, libraryKind: "tcb-character-load", schemaVersion: 1,
+  `{client, schema, codec, libraryKind: "fcb-character-load", schemaVersion: 1,
   characterId, xmlHash, libraryDigest, engineVersion, parserVersion, selectionCount,
   elementCount, inventoryCount, attackCount, finalStateDigest, serializedBytes,
   compressedBytes, serializationMs, compressionMs}` — `conflict` when the character

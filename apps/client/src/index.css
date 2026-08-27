@@ -596,7 +596,7 @@ button:disabled {
 
 /* Autosave utility: green dot while edits save themselves, amber (with the
    icon tinted to match) while the user is saving by hand. */
-.tcb-autosave-utility-dot {
+.fcb-autosave-utility-dot {
   position: absolute;
   right: 4px;
   bottom: 4px;
@@ -607,11 +607,11 @@ button:disabled {
   background: var(--dmf-success);
 }
 
-.tcb-autosave-utility.is-off {
+.fcb-autosave-utility.is-off {
   color: var(--fcb-amber);
 }
 
-.tcb-autosave-utility.is-off .tcb-autosave-utility-dot {
+.fcb-autosave-utility.is-off .fcb-autosave-utility-dot {
   background: var(--fcb-amber);
 }
 

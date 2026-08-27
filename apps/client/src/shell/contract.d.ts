@@ -41,6 +41,28 @@ export interface ShellLinks {
   readonly support?: ShellLink;
 }
 
+/**
+ * Where the client persists data in the browser. A host that already has
+ * users under other names supplies them here so nothing they stored is
+ * stranded; the defaults are the builder's own.
+ */
+export interface ShellStorage {
+  /** The IndexedDB database holding characters, uploads, homebrew and settings. Default `fcb-local`. */
+  readonly database?: string;
+  readonly keys?: {
+    /** localStorage key of the autosave switch. Default `fcb-autosave`. */
+    readonly autosave?: string;
+    /** localStorage key of the last active character id. Default `fcb-active-character`. */
+    readonly activeCharacter?: string;
+    /** localStorage key of the split-view preference. Default `fcb-split-view`. */
+    readonly splitView?: string;
+  };
+  /** The `format` token written into exported character packages. Default `fcb-character-package`. */
+  readonly packageToken?: string;
+  /** Further `format` tokens the importer accepts, for packages the host's users already hold. */
+  readonly legacyPackageTokens?: readonly string[];
+}
+
 export interface LogoProps {
   size?: number;
   title?: string;
@@ -52,6 +74,8 @@ export interface LogoProps {
 export interface HostShell {
   /** Product name used in headings and accessible labels. */
   readonly appName: string;
+  /** Browser persistence names; omitted for the builder's defaults. */
+  readonly storage?: ShellStorage;
   readonly Logo: ComponentType<LogoProps>;
   /** Ambient page background; may render nothing. */
   readonly Background: ComponentType;

@@ -132,12 +132,12 @@ export interface ManifestIdentityDto {
   codec: string;
 }
 
-/** Report for a prepared Fast Start library snapshot (kind tcb-fast-start-library, schema 1). */
+/** Report for a prepared Fast Start library snapshot (kind fcb-fast-start-library, schema 1). */
 export interface FastStartSnapshotPreparedDto {
   client: string;
   schema: number;
   codec: string;
-  libraryKind: "tcb-fast-start-library";
+  libraryKind: "fcb-fast-start-library";
   schemaVersion: number;
   elementCount: number;
   sourceCount: number;
@@ -169,12 +169,12 @@ export interface BootFromSnapshotResultDto {
   totalMs: number;
 }
 
-/** Report for a prepared character load snapshot (kind tcb-character-load, schema 1). */
+/** Report for a prepared character load snapshot (kind fcb-character-load, schema 1). */
 export interface CharacterSnapshotPreparedDto {
   client: string;
   schema: number;
   codec: string;
-  libraryKind: "tcb-character-load";
+  libraryKind: "fcb-character-load";
   schemaVersion: number;
   characterId: string;
   xmlHash: string;

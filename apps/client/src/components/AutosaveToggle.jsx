@@ -7,7 +7,7 @@ export default function AutosaveToggle({ enabled, onToggle }) {
     <button
       aria-label={enabled ? 'Turn autosave off' : 'Turn autosave on'}
       aria-pressed={enabled}
-      className={`fcb-topbar-utility tcb-autosave-utility ${
+      className={`fcb-topbar-utility fcb-autosave-utility ${
         enabled ? 'is-on' : 'is-off'
       }`}
       onClick={onToggle}
@@ -15,7 +15,7 @@ export default function AutosaveToggle({ enabled, onToggle }) {
       type="button"
     >
       <Icon name="autosave" />
-      <span className="tcb-autosave-utility-dot" aria-hidden="true" />
+      <span className="fcb-autosave-utility-dot" aria-hidden="true" />
     </button>
   );
 }

@@ -21,7 +21,7 @@ describe('autosave setting', () => {
     expect(readStoredAutosave(undefined)).toBe(true);
   });
 
-  it('round-trips the preference under the tcb-autosave key', () => {
+  it('round-trips the preference under the fcb-autosave key', () => {
     const storage = fakeStorage();
     storeAutosave(false, storage);
     expect(storage.values.get(AUTOSAVE_STORAGE_KEY)).toBe('0');

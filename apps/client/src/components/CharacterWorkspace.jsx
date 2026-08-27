@@ -35,6 +35,7 @@ import useAutosaveSetting from "../hooks/useAutosaveSetting";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import useUndoAvailable from "../hooks/useUndoAvailable";
 import { isMobileViewport } from "../layoutBreakpoints";
+import { SPLIT_VIEW_STORAGE_KEY } from "../storageNames.js";
 
 const MagicTab = lazy(() => import("./tabs/MagicTab"));
 const EquipmentTab = lazy(() => import("./tabs/EquipmentTab"));
@@ -55,7 +56,7 @@ const DEFAULT_CHARACTER_LOAD_STATE = {
 
 // A persisted localStorage key: renaming it silently resets the preference for
 // everyone who already set it.
-const SPLIT_VIEW_KEY = "aurora-split-view";
+const SPLIT_VIEW_KEY = SPLIT_VIEW_STORAGE_KEY;
 
 // Below this viewport width the split layout would have to stack the sheet under the
 // editor — scrolling to it is no quicker than opening the SHEET tab, so the preview

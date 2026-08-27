@@ -1,3 +1,4 @@
+import { STORAGE_DATABASE } from '../storageNames.js';
 // Browser-local persistence for the fully-frontend (no-backend) mode.
 //
 // Characters and uploaded custom content live in IndexedDB ON THE DEVICE (not per-account),
@@ -33,7 +34,7 @@
 // The database name is a persisted identifier: every character, content pack
 // and snapshot already on a user's device lives under it. Renaming it opens a
 // different, empty database and orphans their data.
-const DB_NAME = 'aurora-local';
+const DB_NAME = STORAGE_DATABASE;
 const DB_VERSION = 5;
 const CHARACTERS = 'characters';
 const CONTENT = 'content';

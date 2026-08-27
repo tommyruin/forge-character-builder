@@ -19,6 +19,7 @@ import {
   normalizeRestrictedSourceIds,
   readDefaultRestrictedSourceIds,
 } from "../sourcePreferences.js";
+import { ACCEPTED_CHARACTER_PACKAGE_TOKENS, CHARACTER_PACKAGE_TOKEN } from "../storageNames.js";
 
 type AnyRecord = Record<string, unknown>;
 type ApiFunction = (...args: unknown[]) => unknown;
@@ -152,14 +153,14 @@ function decodeXmlText(value: string): string {
     .replace(/&amp;/gi, "&");
 }
 
-// Packages are files users keep and share, so the reader accepts the format
-// name this app wrote before it was renamed as well as the current one; only
-// the writer moved.
-const CHARACTER_PACKAGE_FORMATS = new Set(["tcb-character-package", "aurora-character-package"]);
+// Packages are files users keep and share, so the reader accepts every format
+// token the host lists as legacy as well as the current one; only the writer
+// uses the current token.
+const CHARACTER_PACKAGE_FORMATS = new Set<string>(ACCEPTED_CHARACTER_PACKAGE_TOKENS);
 
 /**
  * The `.dnd5e-pkg` package format: a JSON envelope
- * `{format:"tcb-character-package",version:1,character:{id,xml},content:[{path,base64}]}`
+ * `{format:"fcb-character-package",version:1,character:{id,xml},content:[{path,base64}]}`
  * bundling the character document with the custom-content files it depends on.
  * Returns null for anything that is not such an envelope so plain `.dnd5e`
  * XML (and misnamed files) fall through to the XML importer unchanged.
@@ -1373,7 +1374,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       // device that has none of this library, so over-including is the safe side.
       const records = typeof store.listContent === "function" ? ((await store.listContent()) as AnyRecord[] | null) ?? [] : [];
       const envelope = {
-        format: "tcb-character-package",
+        format: CHARACTER_PACKAGE_TOKEN,
         version: 1,
         character: { id, xml },
         content: records

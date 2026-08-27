@@ -25,6 +25,7 @@ import { prepareOpenCharacterForLibraryChange } from './libraryLifecycle.js';
 import Icon from './components/Icon';
 import ExportMenu from './components/ExportMenu';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
+import { ACTIVE_CHARACTER_STORAGE_KEY } from './storageNames.js';
 
 const loadCharacterWorkspace = () => import('./components/CharacterWorkspace');
 const loadContentManager = () => import('./components/ContentManager');
@@ -157,7 +158,7 @@ export default function App() {
       deactivateTransientSurfaces();
       setNotice(null);
       try {
-        globalThis.localStorage?.setItem('tcb-active-character', id);
+        globalThis.localStorage?.setItem(ACTIVE_CHARACTER_STORAGE_KEY, id);
       } catch {
         // Best effort only; the current tab still opens the character.
       }
@@ -216,8 +217,8 @@ export default function App() {
 
   const characterDeleted = (id) => {
     try {
-      if (globalThis.localStorage?.getItem('tcb-active-character') === id) {
-        globalThis.localStorage.removeItem('tcb-active-character');
+      if (globalThis.localStorage?.getItem(ACTIVE_CHARACTER_STORAGE_KEY) === id) {
+        globalThis.localStorage.removeItem(ACTIVE_CHARACTER_STORAGE_KEY);
       }
     } catch {
       // Best effort only.

@@ -77,7 +77,7 @@ describe("fast start controller", () => {
     expect(prepared.client).toBe("dm-forge-fast-start");
     expect(prepared.schema).toBe(2);
     expect(prepared.codec).toBe("gzip-json");
-    expect(prepared.libraryKind).toBe("tcb-fast-start-library");
+    expect(prepared.libraryKind).toBe("fcb-fast-start-library");
     expect(prepared.schemaVersion).toBe(2);
     expect(prepared.elementCount).toBe(25960);
     expect(prepared.sourceCount).toBe(136);
@@ -94,7 +94,7 @@ describe("fast start controller", () => {
     expect(payload.client).toBe("dm-forge-fast-start");
     expect(payload.schema).toBe(2);
     expect(payload.codec).toBe("gzip-json");
-    expect(payload.libraryKind).toBe("tcb-fast-start-library");
+    expect(payload.libraryKind).toBe("fcb-fast-start-library");
     expect(payload.schemaVersion).toBe(2);
     expect(payload.diagnostics).toBeNull();
     expect(payload.graph).toBeDefined();

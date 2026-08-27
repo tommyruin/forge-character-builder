@@ -180,7 +180,7 @@ describe("character snapshot controller", () => {
       client: "dm-forge-character-load",
       schema: 1,
       codec: "gzip-json",
-      libraryKind: "tcb-character-load",
+      libraryKind: "fcb-character-load",
       schemaVersion: 1,
       characterId: id,
       engineVersion: ENGINE_VERSION,
