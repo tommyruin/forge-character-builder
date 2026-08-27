@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-27
+
 ### Added
 
 - Original character sheet templates for the 2014 and 2024 rules, generated
@@ -41,3 +43,4 @@ project uses [Semantic Versioning](https://semver.org/).
 
 - The vendored sheet PDFs, help documents and third-party core data files
   the client previously shipped.
+
