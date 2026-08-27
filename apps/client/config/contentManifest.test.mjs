@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -5,6 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { collectBundledFiles, collectCorpusXml, corpusContentManifestPlugin, createContentManifest } from "./contentManifest.mjs";
+
+// The reviewed-test profile lists files of the content corpus, which a fresh
+// clone fetches separately (npm run corpus:fetch); without it the check skips.
+const CORPUS_ROOT = fileURLToPath(new URL("../../../third-party/elements/", import.meta.url));
+const corpusPresent = existsSync(join(CORPUS_ROOT, "testdata"));
 
 function registerDevMiddleware(options) {
   let middleware;
@@ -321,9 +327,8 @@ describe("browser corpus manifest", () => {
     expect(paths.some((path) => /(^|\/)(one-grung|xanathars|dungeon-masters-guide|monster-manual|players-handbook-2024|supplements|ua|unearthed-arcana)(\/|\.|$)/i.test(path))).toBe(false);
   });
 
-  it("keeps the broad fixture compatibility set under the explicit reviewed-test profile", async () => {
-    const root = fileURLToPath(new URL("../../../third-party/elements/", import.meta.url));
-    const files = await collectCorpusXml(root, "reviewed-test");
+  it.skipIf(!corpusPresent)("keeps the broad fixture compatibility set under the explicit reviewed-test profile", async () => {
+    const files = await collectCorpusXml(CORPUS_ROOT, "reviewed-test");
     const paths = files.map(({ path }) => path);
     expect(paths).toHaveLength(55);
     expect(paths).toEqual(expect.arrayContaining([

@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,12 +12,16 @@ import {
   synchronizeDriveLibrary,
 } from '../driveSyncCoordinator.js';
 
+// The content corpus is fetched separately (npm run corpus:fetch); the sync
+// test over the whole folder skips without it.
+const CORPUS_DIR = fileURLToPath(
+  new URL('../../../../../third-party/elements/testdata/', import.meta.url)
+);
+const corpusPresent = existsSync(CORPUS_DIR);
+
 function readTestDataContent(sourceId, uploadedAt) {
-  const root = fileURLToPath(
-    new URL('../../../../../third-party/elements/testdata/', import.meta.url)
-  );
   const files = [];
-  const pending = [root];
+  const pending = [CORPUS_DIR];
 
   while (pending.length > 0) {
     const directory = pending.pop();
@@ -31,7 +35,7 @@ function readTestDataContent(sourceId, uploadedAt) {
         continue;
       }
       if (!/\.(?:index|xml)$/i.test(entry.name)) continue;
-      const relativePath = relative(root, absolutePath).replaceAll('\\', '/');
+      const relativePath = relative(CORPUS_DIR, absolutePath).replaceAll('\\', '/');
       files.push({
         path: `imports/${sourceId}/${relativePath}`,
         relativePath,
@@ -307,7 +311,7 @@ describe('synchronizeDriveLibrary', () => {
     expect(library.applySnapshot).not.toHaveBeenCalled();
   });
 
-  it(
+  it.skipIf(!corpusPresent)(
     'syncs the complete corpus folder from two devices and reports one exact duplicate group',
     { timeout: 60_000 },
     async () => {
