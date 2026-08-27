@@ -10,8 +10,9 @@
 *.mjs text eol=lf
 *.xml text eol=lf
 
-# Vendored sheet fonts.
+# Vendored sheet fonts and README screenshots.
 *.ttf binary
+*.png binary
 
 # The vendored corpus stays byte-exact to its source (testdata.manifest.sha256
 # hashes the files as distributed). This rule comes last so it overrides the

@@ -75,6 +75,11 @@
       "path": "packages/engine/src/content/core-baseline.test.ts",
       "pattern": "Builder\\\\.Presentation\\|aurora",
       "reason": "the test that keeps those names out of the core baseline"
+    },
+    {
+      "path": "README.md",
+      "pattern": "buymeacoffee\\.com/tommyruin3w",
+      "reason": "the project's own support link, shown in the app, the README and the GitHub funding file"
     }
   ]
 }

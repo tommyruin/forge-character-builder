@@ -19,6 +19,25 @@ baseline and the System Reference Document 5.1 and 5.2.1 subsets), the sheet
 templates under `apps/client/public/sheets`, and the credits page under
 `apps/client/public/legal`. See [Content](#content) for how each is produced.
 
+## Screenshots
+
+Building a character: selections and levels on the left, the chosen option's
+rules on the right.
+
+![The Build tab, with the Class section open and the druid's rules shown in the description panel](docs/screenshots/build.png)
+
+The sheet tab renders the character sheet as a PDF, in the browser.
+
+![The Sheet tab showing a rendered character sheet page](docs/screenshots/sheet.png)
+
+Sheet settings choose the layout, the colours and the typefaces.
+
+![Manage, Sheet: the 2014 or 2024 layout, colour themes and per-role typefaces](docs/screenshots/sheet-settings.png)
+
+Characters are saved on the device.
+
+![The character list with one saved character](docs/screenshots/characters.png)
+
 ## Getting started
 
 ```bash
@@ -118,8 +137,19 @@ every third-party component.
 See [CONTRIBUTING.md](CONTRIBUTING.md). Changes are recorded in
 [CHANGELOG.md](CHANGELOG.md).
 
+## Support
+
+Forge Character Builder is free and always will be. If it saves you time at the
+table, you can [buy me a coffee](https://www.buymeacoffee.com/tommyruin3w).
+
 ## Licence
 
-Forge Character Builder is free software under the GNU Affero General Public
-License, version 3 — see [LICENSE](LICENSE). Third-party content and
-components remain under their own licences, listed in [NOTICE.md](NOTICE.md).
+The code is under the MIT licence — see [LICENSE](LICENSE). Use it, change it,
+ship it, sell it; keep the copyright notice.
+
+The **bundled content is not MIT**. The System Reference Document material and
+the third-party fonts, ornaments and libraries keep their own licences —
+SRD 5.1 under the Open Game License v 1.0a, SRD 5.2.1 under CC BY 4.0, the
+typefaces under the SIL Open Font License and CC BY-SA 4.0. Redistributing the
+content means carrying those notices with it. Everything is listed in
+[NOTICE.md](NOTICE.md) and shipped with the client at `/legal/`.
