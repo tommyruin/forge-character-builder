@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-27
+
 ### Changed
 
 - Browser persistence names are the builder's own by default — the IndexedDB

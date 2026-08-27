@@ -1,2 +1,2 @@
 /** The engine version, kept in step with the package manifests by the release script. */
-export const ENGINE_VERSION = "1.1.2";
+export const ENGINE_VERSION = "1.2.0";
