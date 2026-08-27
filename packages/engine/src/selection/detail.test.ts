@@ -5,11 +5,12 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { CharacterService } from "../character/service.js";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { REVIEWED_PROFILE_PATHS } from "../content/equipment/reviewed-profile.test-support.js";
-import { CORPUS_ROOT, ID, buildCharacter, select } from "../testing/character-factory.js";
+import { ID, buildCharacter, select } from "../testing/character-factory.js";
 import { buildCharacterDetail } from "./detail.js";
 import { pendingSelectionRules, selectionOptions, type SelectionRule } from "./selection.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
 let library: ElementLibrary;
 let reviewedLibrary: ElementLibrary;
@@ -40,8 +41,8 @@ function buildSpike(service: CharacterService): void {
 
 beforeAll(async () => {
   [library, reviewedLibrary] = await Promise.all([
-    buildLibrary(CORPUS_ROOT),
-    buildLibrary(CORPUS_ROOT, (path) => REVIEWED_PROFILE_PATHS.has(path)),
+    buildCorpusLibrary(),
+    buildCorpusLibrary((path) => REVIEWED_PROFILE_PATHS.has(path)),
   ]);
 }, 120_000);
 

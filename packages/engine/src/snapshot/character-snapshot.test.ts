@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, vi } from "vitest";
 import { CharacterService, type CharacterImportEvent } from "../character/service.js";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { buildLoadIssues } from "../character/options.js";
 import { pendingSelectionRules } from "../selection/selection.js";
 import { computeStatistics } from "../statistics/calculator.js";
@@ -19,8 +19,8 @@ import { createCharacterSnapshotController, type CharacterSnapshotController } f
 import { createFastStartController } from "./fast-start.js";
 import { FAST_START_MANIFEST } from "./identities.js";
 import { ENGINE_VERSION } from "../index.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 import {
-  CORPUS_ROOT,
   ID,
   buildCharacter,
   buildFighter3,
@@ -92,7 +92,7 @@ const decoder = new TextDecoder();
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function emptyLibrary(): ElementLibrary {

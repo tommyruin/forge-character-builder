@@ -7,14 +7,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { CharacterService } from "../character/service.js";
 import { encodeBase64 } from "../platform.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const RACE_XML = `<elements>
   <element name="Attuned Folk" type="Race" source="Homebrew" id="ID_TEST_RACE_ATTUNED_FOLK">
@@ -31,7 +29,7 @@ const RING = "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_SPELL_STORING";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
   await ingestContentFiles(library, [
     { path: "imports/attunement-max-test.xml", base64: encodeBase64(new TextEncoder().encode(RACE_XML)) },
   ]);

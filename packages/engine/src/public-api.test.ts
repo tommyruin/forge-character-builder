@@ -8,29 +8,23 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { buildCorpusLibrary } from "./testing/corpus.js";
 import {
   CharacterService,
   ENGINE_VERSION,
   buildCharacterDetail,
   buildCharacterSheetModel,
-  buildLibrary,
   computeStatistics,
   parseDnd5e,
   pendingSelectionRules,
   type ElementLibrary,
 } from "@forge-cb/engine";
 
-const CORPUS_ROOT = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "..", "..", "..", "third-party", "elements",
-);
 
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 describe("public engine API", () => {

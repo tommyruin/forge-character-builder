@@ -1,18 +1,16 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { parseDnd5e } from "../dnd5e/document.js";
 import { CharacterService } from "../character/service.js";
 import { type RegisteredElement } from "../character/state.js";
 import { getCharacterAdjustments } from "../character/options.js";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { computeStatistics } from "../statistics/calculator.js";
 import { pendingSelectionRules, selectionOptions, setSelection, selectionRuleFor } from "./selection.js";
 import { buildCharacterDetail } from "./detail.js";
 import { buildRogue5, select } from "../testing/character-factory.js";
 import type { SelectionRule } from "./selection.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 const REVIEWED_PROFILE_PATHS = new Set([
   "system/system-elements.xml",
   "system/system-proxies.xml",
@@ -74,8 +72,8 @@ function ruleOfType(rules: SelectionRule[], type: string): SelectionRule {
 
 beforeAll(async () => {
   [library, reviewedLibrary] = await Promise.all([
-    buildLibrary(CORPUS_ROOT),
-    buildLibrary(CORPUS_ROOT, (path) => REVIEWED_PROFILE_PATHS.has(path)),
+    buildCorpusLibrary(),
+    buildCorpusLibrary((path) => REVIEWED_PROFILE_PATHS.has(path)),
   ]);
 }, 120_000);
 

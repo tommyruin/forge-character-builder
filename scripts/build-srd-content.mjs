@@ -21,8 +21,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CORPUS_PROVENANCE = join(ROOT, "third-party", "elements", "testdata.provenance.json");
-const SYSTEM_DIR = join(ROOT, "third-party", "elements", "system");
 const CONTENT_DIR = join(ROOT, "apps", "client", "public", "content");
+const SYSTEM_DIR = join(CONTENT_DIR, "system");
 const CORPUS_ROOT = join(ROOT, "third-party", "elements", "testdata", "core");
 
 /** Element types the SRD names directly; everything else is kept by ownership. */

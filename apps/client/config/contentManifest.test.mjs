@@ -72,7 +72,6 @@ describe("browser corpus manifest", () => {
       const middleware = registerDevMiddleware({
         basePath: "/tools/character-builder/",
         corpusRoot: root,
-        systemRoot: root,
         profile: "full",
       });
 
@@ -135,8 +134,9 @@ describe("browser corpus manifest", () => {
         "<elements />",
       );
       await writeFile(join(root, "testdata", "supplements", "extra.xml"), "<elements />");
-      await writeFile(join(root, "system-proxies.xml"), "<elements />");
-      const middleware = registerDevMiddleware({ corpusRoot: root, systemRoot: root, basePath: "/" });
+      await mkdir(join(root, "system"), { recursive: true });
+      await writeFile(join(root, "system", "system-proxies.xml"), "<elements />");
+      const middleware = registerDevMiddleware({ corpusRoot: root, basePath: "/" });
       const response = await request(
         middleware,
         "/content/manifest.json",
@@ -156,8 +156,7 @@ describe("browser corpus manifest", () => {
 
   it("pins the public-base path set and digest", async () => {
     const root = fileURLToPath(new URL("../../../apps/client/public/content/", import.meta.url));
-    const systemRoot = fileURLToPath(new URL("../../../third-party/elements/system/", import.meta.url));
-    const files = await collectBundledFiles(root, systemRoot);
+    const files = await collectBundledFiles(root);
     const paths = files.map(({ path }) => path);
     expect(paths).toEqual([
       "core/ability-score-increase.xml",
@@ -328,9 +327,12 @@ describe("browser corpus manifest", () => {
   });
 
   it.skipIf(!corpusPresent)("keeps the broad fixture compatibility set under the explicit reviewed-test profile", async () => {
+    // The corpus root holds testdata only; the system elements ship under
+    // apps/client/public/content/system and are collected from there.
     const files = await collectCorpusXml(CORPUS_ROOT, "reviewed-test");
     const paths = files.map(({ path }) => path);
-    expect(paths).toHaveLength(55);
+    expect(paths).toHaveLength(52);
+    expect(paths.some((path) => path.startsWith("system/"))).toBe(false);
     expect(paths).toEqual(expect.arrayContaining([
       "testdata/supplements/extra-life/one-grung-above.xml",
       "testdata/supplements/xanathars-guide-to-everything/source.xml",

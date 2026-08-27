@@ -8,18 +8,16 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { parseDnd5e } from "../dnd5e/document.js";
 import { buildCharacter, buildRangerRogue8 } from "../testing/character-factory.js";
 import { mapToState } from "../character/mapping.js";
 import { CharacterService } from "../character/service.js";
 import { type CharacterState, type RegisteredElement } from "../character/state.js";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { pendingSelectionRules, selectionOptions, type SelectionRule } from "../selection/selection.js";
 import { extractHitDie, rollHitPoints } from "./leveling.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 
 const ID_ROGUE = "ID_WOTC_PHB_CLASS_ROGUE";
@@ -140,7 +138,7 @@ function buildMainClass(service: CharacterService, id: string, classId: string):
 }
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 describe("hit point rolls (2024 classes)", () => {

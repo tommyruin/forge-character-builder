@@ -9,24 +9,20 @@
  * the reviewed profile), so both are memoised per process.
  */
 
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules, type SelectionRule } from "../selection/selection.js";
 import type { AbilityScores, CharacterState } from "../character/state.js";
+import { buildCorpusLibrary } from "./corpus.js";
 
 /** The vendored content corpus root (`third-party/elements`). */
-export const CORPUS_ROOT = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "..", "..", "..", "..", "third-party", "elements",
-);
+export { CORPUS_ROOT } from "./corpus.js";
 
 let fullLibrary: Promise<ElementLibrary> | undefined;
 
 /** The complete corpus library, built once per process. */
 export function sharedLibrary(): Promise<ElementLibrary> {
-  fullLibrary ??= buildLibrary(CORPUS_ROOT);
+  fullLibrary ??= buildCorpusLibrary();
   return fullLibrary;
 }
 

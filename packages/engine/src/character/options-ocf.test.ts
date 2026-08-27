@@ -12,13 +12,11 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
+import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "./service.js";
 import { pendingSelectionRules } from "../selection/selection.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ID_BARBARIAN = "ID_WOTC_PHB_CLASS_BARBARIAN";
 const ID_OCF_PRIMAL_KNOWLEDGE = "ID_WOTC_TCOE_ITEM_OCF_BARBARIAN_PRIMAL_KNOWLEDGE";
@@ -55,7 +53,7 @@ const SCRATCH_FILE = `<?xml version="1.0" encoding="utf-8" ?>
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
   const files = new Map(library.fileContents);
   files.set("testdata/scratch/ocf-ruleset-marker.xml", SCRATCH_FILE);
   replaceLibraryFiles(library, files);

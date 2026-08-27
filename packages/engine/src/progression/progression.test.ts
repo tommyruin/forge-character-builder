@@ -3,14 +3,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules, type SelectionRule } from "../selection/selection.js";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { buildProgression, type Progression } from "./progression.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ID_ROGUE = "ID_WOTC_PHB_CLASS_ROGUE";
 const ID_MULTICLASS_WIZARD = "ID_WOTC_PHB_MULTICLASS_WIZARD";
@@ -56,7 +54,7 @@ function buildBillyGate(service: CharacterService): void {
 }
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 describe("buildProgression", () => {

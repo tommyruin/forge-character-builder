@@ -1,20 +1,17 @@
 import { describe, expect, it, beforeAll } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { createFastStartController, type FastStartController } from "./fast-start.js";
 import { FAST_START_MANIFEST } from "./identities.js";
 import { canonicalParse, gunzipBounded, gzipToBuffer, CONTENT_DECOMPRESSED_LIMIT } from "./codec.js";
 import type { BootFromSnapshotRequestDto } from "@forge-cb/api";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const CORPUS_ROOT = join(ROOT, "third-party", "elements");
 
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function emptyLibrary(): ElementLibrary {

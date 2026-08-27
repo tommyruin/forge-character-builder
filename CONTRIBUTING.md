@@ -10,14 +10,15 @@ VTT export). The wire contract — RPC methods, envelopes, DTOs — is defined i
 
 ## Data sources
 
-- `third-party/elements/` — the vendored public content corpus (fetched at a
-  pinned commit and byte-verified; see `provenance.md`) plus `system/`
-  elements authored from public reference text. Data, not code — do not edit
-  the corpus.
-- `apps/client/public/content/` — the shipped baseline. The SRD subsets are
-  generated (`npm run content:build-srd`); change the reviewed maps under
+- `apps/client/public/content/` — the shipped baseline: `core` and `system`
+  are authored; the SRD subsets are generated (`npm run content:build-srd`).
+  To change an SRD subset, change the reviewed maps under
   `third-party/srd-5.1` and `third-party/srd-5.2` and regenerate rather than
   editing the output.
+- `third-party/elements/` — the optional development corpus the generator and
+  the corpus-backed engine tests read (fetched at a pinned commit and
+  byte-verified; see its `provenance.md`). Data, not code — never committed
+  and never edited.
 - `apps/client/public/sheets/` — generated sheet templates
   (`npm run sheets:build`); change `scripts/build-sheet-templates.mjs` or the
   contract in `packages/engine/src/sheet/template-contract.ts` and regenerate.

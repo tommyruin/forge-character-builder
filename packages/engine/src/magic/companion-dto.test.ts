@@ -8,14 +8,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { CharacterService } from "../character/service.js";
 import { encodeBase64 } from "../platform.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ID_RACE_STATS = "ID_TEST_RACE_COMPANION_STATS";
 const ID_COMPANION_STATS = "ID_TEST_COMPANION_STATS_BEAST";
@@ -90,7 +88,7 @@ const CONTENT_XML = `<elements>
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
   await ingestContentFiles(library, [
     { path: "imports/companion-dto-test.xml", base64: encodeBase64(new TextEncoder().encode(CONTENT_XML)) },
   ]);

@@ -7,14 +7,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { computeStatistics } from "../statistics/calculator.js";
 import { buildInventoryDto, itemBenefitsActive } from "./inventory.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 // Requires attunement; grants ac:misc +2 and saving-throw bonuses while held.
 const STAFF_OF_POWER = "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_POWER";
@@ -26,7 +24,7 @@ const CLOAK_OF_PROTECTION = "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_PROTECTION";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function withItem(itemId: string): { service: CharacterService; id: string; identifier: string } {

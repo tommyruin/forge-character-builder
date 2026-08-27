@@ -8,8 +8,6 @@ import {
   type EquipmentCategoryDto,
 } from "./categories.js";
 import { buildReviewedLibrary } from "./reviewed-profile.test-support.js";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 function element(
   id: string,
@@ -91,8 +89,7 @@ describe("equipment category DTOs", () => {
   });
 
   it("excludes adjustment proxies from the reviewed equipment surface", async () => {
-    const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "..");
-    const library = await buildReviewedLibrary(join(root, "third-party", "elements"));
+    const library = await buildReviewedLibrary();
     const categories = buildEquipmentCategories(library.byId.values());
 
     expect(categories.some((category) => category.label === "Additional Feature")).toBe(false);
@@ -105,8 +102,7 @@ describe("equipment category DTOs", () => {
   });
 
   it("exposes public item descriptions and metadata from content setters", async () => {
-    const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "..");
-    const library = await buildReviewedLibrary(join(root, "third-party", "elements"));
+    const library = await buildReviewedLibrary();
     const longsword = library.byId.get("ID_WOTC_PHB_WEAPON_LONGSWORD")!;
     const staff = library.byId.get("ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_POWER")!;
 
@@ -124,8 +120,7 @@ describe("equipment category DTOs", () => {
 });
 
 describe("equipment stat blocks", () => {
-  const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "..");
-  const libraryPromise = buildReviewedLibrary(join(root, "third-party", "elements"));
+  const libraryPromise = buildReviewedLibrary();
   const resolverFor = (library: Awaited<typeof libraryPromise>) =>
     (id: string) => library.byId.get(id);
 

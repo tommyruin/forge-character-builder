@@ -7,21 +7,19 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { selectionOptions, selectionRuleFor } from "./selection.js";
 import { parseDnd5e } from "../dnd5e/document.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ARTIFICER = "ID_WOTC_TCOE_CLASS_ARTIFICER";
 
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 /** A fresh level-1 Tasha's Artificer with the cantrip rule resolved. */

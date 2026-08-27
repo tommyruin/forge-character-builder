@@ -17,9 +17,9 @@ import { createEmptyLibrary, replaceLibraryFiles, type ElementLibrary } from "..
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules, selectionOptions } from "./selection.js";
 import { seededRng } from "../testing/character-factory.js";
+import { SYSTEM_ROOT } from "../testing/corpus.js";
 
 const PUBLIC_ROOT = fileURLToPath(new URL("../../../../apps/client/public/content/", import.meta.url));
-const SYSTEM_ROOT = fileURLToPath(new URL("../../../../third-party/elements/system/", import.meta.url));
 
 async function shippedLibrary(): Promise<ElementLibrary> {
   const { PUBLIC_BASE_PATHS } = (await import(

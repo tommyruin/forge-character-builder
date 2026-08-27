@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import type { SpellResourceDto } from "@forge-cb/api";
 import { PDFDocument, PDFName } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
-import { buildLibrary } from "../content/library.js";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { encodeBase64 } from "../platform.js";
 import { CharacterService } from "../character/service.js";
@@ -20,10 +19,11 @@ import {
 } from "./pdf.js";
 import { DEFAULT_SHEET_FONTS, SHEET_TEMPLATE_CONTRACT, type SheetFonts } from "./template-contract.js";
 import { sheetFaces } from "./templates.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "../../../..");
 const PUBLIC = join(ROOT, "apps", "client", "public", "sheets", "2014");
-const libraryPromise = buildLibrary(join(ROOT, "third-party", "elements"));
+const libraryPromise = buildCorpusLibrary();
 
 function template(name: string): Uint8Array {
   return new Uint8Array(readFileSync(join(PUBLIC, name)));

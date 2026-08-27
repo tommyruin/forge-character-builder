@@ -6,18 +6,16 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules, selectionOptions } from "../selection/selection.js";
 import { buildCharacterSheetModel } from "./model.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
 let libraryPromise: Promise<ElementLibrary> | null = null;
 const library = (): Promise<ElementLibrary> => {
-  libraryPromise ??= buildLibrary(join(ROOT, "third-party", "elements"));
+  libraryPromise ??= buildCorpusLibrary();
   return libraryPromise;
 };
 

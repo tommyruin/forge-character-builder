@@ -12,9 +12,9 @@ import { join } from "node:path";
 import { createEmptyLibrary, replaceLibraryFiles, type ElementLibrary } from "./library.js";
 import { ingestContentFiles } from "./ingestion.js";
 import { encodeBase64 } from "../platform.js";
+import { SYSTEM_ROOT } from "../testing/corpus.js";
 
 const PUBLIC_ROOT = fileURLToPath(new URL("../../../../apps/client/public/content/", import.meta.url));
-const SYSTEM_ROOT = fileURLToPath(new URL("../../../../third-party/elements/system/", import.meta.url));
 const PHB_2014 = fileURLToPath(new URL("../../../../third-party/elements/testdata/core/players-handbook/", import.meta.url));
 const PHB_2024 = fileURLToPath(new URL("../../../../third-party/elements/testdata/core/players-handbook-2024/", import.meta.url));
 

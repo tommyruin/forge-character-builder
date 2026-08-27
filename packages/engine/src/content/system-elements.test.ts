@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildLibrary } from "./library.js";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 /**
  * Content gate — per-type element counts of the built library.
@@ -58,7 +55,7 @@ const PINNED_TYPE_COUNTS: Record<string, number> = {
 
 describe("content gate — library type counts", () => {
   it("matches the pinned per-type counts", async () => {
-    const lib = await buildLibrary(CORPUS_ROOT);
+    const lib = await buildCorpusLibrary();
     for (const [type, expected] of Object.entries(PINNED_TYPE_COUNTS)) {
       expect(lib.typeCounts[type], type).toBe(expected);
     }
@@ -69,7 +66,7 @@ describe("content gate — library type counts", () => {
   });
 
   it("resolves the authored system elements", async () => {
-    const lib = await buildLibrary(CORPUS_ROOT);
+    const lib = await buildCorpusLibrary();
     for (const id of [
       "ID_LEVEL_9",
       "ID_LEVEL_20",
@@ -85,7 +82,7 @@ describe("content gate — library type counts", () => {
   });
 
   it("includes the synthesized multiclass variants with flip-marker requirements", async () => {
-    const lib = await buildLibrary(CORPUS_ROOT);
+    const lib = await buildCorpusLibrary();
     const rogue = lib.byId.get("ID_WOTC_PHB_MULTICLASS_ROGUE");
     expect(rogue).toBeDefined();
     expect(rogue!.identity.type).toBe("Multiclass");
@@ -96,7 +93,7 @@ describe("content gate — library type counts", () => {
   });
 
   it("includes the generated ASI class features", async () => {
-    const lib = await buildLibrary(CORPUS_ROOT);
+    const lib = await buildCorpusLibrary();
     const asi = lib.byId.get("ID_INTERNAL_CLASS_FEATURE_ASI_10_ARTIFICER");
     expect(asi).toBeDefined();
     expect(asi!.identity.name).toBe("Ability Score Improvement (10)");

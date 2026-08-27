@@ -355,6 +355,7 @@ function normalizeAdjustmentProxyMetadata(byId: Map<string, ParsedElement>, file
 export async function buildLibrary(
   corpusRoot: string,
   includePath: (relativePath: string) => boolean = () => true,
+  systemRoot: string = `${corpusRoot}/system`,
 ): Promise<ElementLibrary> {
   // Node 22 exposes built-in modules through process.getBuiltinModule. The
   // browser entry never evaluates this function, and bundlers therefore do
@@ -367,8 +368,8 @@ export async function buildLibrary(
   const pathModule = processObject?.getBuiltinModule?.("path") as { join(...parts: string[]): string } | undefined;
   if (fs === undefined || pathModule === undefined) throw new Error("buildLibrary is only available in a Node host");
   const files = new Map<string, string>();
-  for (const sub of ["system", "testdata"]) {
-    const root = pathModule.join(corpusRoot, sub);
+  // The engine's own system elements come first, then the corpus.
+  for (const [sub, root] of [["system", systemRoot], ["testdata", pathModule.join(corpusRoot, "testdata")]] as const) {
     for (const file of await collectXmlFilesNode(root, fs.readdir)) {
       const relative = `${sub}/${file.slice(root.length + 1).replaceAll("\\", "/")}`;
       if (includePath(relative)) files.set(relative, await fs.readFile(file, "utf8"));

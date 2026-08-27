@@ -5,19 +5,17 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, rulesetOf, type ElementLibrary } from "../content/library.js";
+import { rulesetOf, type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const WARLOCK = "ID_WOTC_PHB_CLASS_WARLOCK";
 
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 /** A fresh level-1 Warlock locked to the 2014 ruleset. */

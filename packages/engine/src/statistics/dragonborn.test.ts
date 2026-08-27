@@ -9,14 +9,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { computeInlineValues, computeStatistics } from "./calculator.js";
 import { substitute } from "../sheet/model.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const DRAGONBORN = "ID_RACE_DRAGONBORN";
 const ANCESTRY_BLACK = "ID_RACIAL_TRAIT_DRACONIC_ANCESTRY_BLACK";
@@ -27,7 +25,7 @@ const BREATH_SHEET_TEXT =
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function blackDragonborn(): { service: CharacterService; id: string } {

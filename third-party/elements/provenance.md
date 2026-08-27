@@ -28,22 +28,23 @@ XML grammar.
   under `third-party/srd-5.2/` and `third-party/srd-5.1/` (see their
   `provenance.md`). Nothing else from `testdata/` is ever bundled.
 
-## system/
+## The engine's system elements
 
-- **What**: system elements (levels, internal grants, multiclassing, optional rules)
-  that the engine supplies itself and that are NOT defined in any public elements
-  corpus.
-- **Files**:
-  - `system-elements.xml` — AUTHORED from the `.dnd5e` file format itself
-    (`<elements>`/`<sum>` nodes carry `type="..." name="..." id="..."` for every
-    registered element) + public `internal.xml` convention (`source="Internal"`).
-  - `system-elements-extended.xml` — committed artifact with the identities of every
-    element the library lacked (levels 9-20, damage types, conditions, armor/weapon
-    groups, supports, grants, generated ASI class features, synthesized multiclass
-    variants).
-- **Excluded**: proxy elements (`ID_*_INTERNAL_ITEM_*`) are GENERATED at ingest per
-  character (naming rule: `Additional {Grant}, {Name}`); our engine generates them in
-  the equipment phase (13,550 Item + 535 Magic Item proxies beyond the static corpus).
+The system elements the engine supplies itself (element identities, proxies,
+unarmed-strike riders, extended identities) are **not** part of this corpus:
+they are authored and ship with the client under
+`apps/client/public/content/system/`. They are listed here only because the
+Node-side library builder combines them with the corpus (see
+`packages/engine/src/testing/corpus.ts`).
+
+- `system-elements.xml` — authored from the `.dnd5e` file format itself
+  (`<elements>`/`<sum>` nodes carry `type="..." name="..." id="..."` for every
+  registered element) and the public `internal.xml` convention (`source="Internal"`).
+- `system-elements-extended.xml` — the identities of every element the library
+  lacked (levels 9-20, damage types, conditions, armor/weapon groups, supports,
+  grants, generated ASI class features, synthesized multiclass variants).
+- Proxy elements (`ID_*_INTERNAL_ITEM_*`) are generated at ingest per character
+  (naming rule: `Additional {Grant}, {Name}`), never stored.
 
 ## ../srd-5.2/
 
@@ -62,6 +63,6 @@ XML grammar.
 
 ## Why testdata + system?
 
-The element library is built from the public corpus + our authored system files.
+The Node-side element library is built from the public corpus + the shipped system files.
 Consistency of the resulting library (counts per element type, element identities,
 and behavior) is enforced by the corpus gates and the pinned unit tests.

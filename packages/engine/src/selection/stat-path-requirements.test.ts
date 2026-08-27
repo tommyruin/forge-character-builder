@@ -6,16 +6,14 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { encodeBase64 } from "../platform.js";
 import { CharacterService } from "../character/service.js";
 import { createRegistrationContext, pendingSelectionRules } from "./selection.js";
 import { evaluateRequirements } from "./expr.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const APPENDS = `<elements>
   <append id="ID_WOTC_PHB_CLASS_BARBARIAN">
@@ -28,7 +26,7 @@ const APPENDS = `<elements>
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
   await ingestContentFiles(library, [
     { path: "imports/stat-path-test.xml", base64: encodeBase64(new TextEncoder().encode(APPENDS)) },
   ]);

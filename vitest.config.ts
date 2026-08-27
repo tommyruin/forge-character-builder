@@ -13,7 +13,7 @@ const src = (pkg: string) => join(root, "packages", pkg, "src", "index.ts");
  * of the suite. A corpus-backed file is recognised by what it imports.
  */
 const CORPUS_DIR = join(root, "third-party", "elements", "testdata");
-const CORPUS_MARKERS = /sharedLibrary\(|buildLibrary\(|libraryPromise|third-party\/elements\/testdata|["']testdata["']|corpus-coverage|fixtures\/coverage/;
+const CORPUS_MARKERS = /sharedLibrary\(|buildLibrary\(|buildCorpusLibrary\(|buildReviewedLibrary\(|testing\/corpus\.js|libraryPromise|third-party\/elements\/testdata|["']testdata["']|corpus-coverage|fixtures\/coverage/;
 
 function testFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

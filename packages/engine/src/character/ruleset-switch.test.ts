@@ -5,15 +5,13 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { encodeBase64 } from "../platform.js";
 import { CharacterService } from "./service.js";
 import { pendingSelectionRules } from "../selection/selection.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ID_WIZARD_2024 = "ID_WOTC_PHB24_CLASS_WIZARD";
 const ID_WIZARD_2014 = "ID_WOTC_PHB_CLASS_WIZARD";
@@ -21,7 +19,7 @@ const ID_WIZARD_2014 = "ID_WOTC_PHB_CLASS_WIZARD";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function build2024Wizard(levels: number): CharacterService {
@@ -82,7 +80,7 @@ describe("setRulesetMode 2024 -> 2014", () => {
   });
 
   it("repairs uploaded homebrew picks across editions", async () => {
-    const uploaded = await buildLibrary(CORPUS_ROOT);
+    const uploaded = await buildCorpusLibrary();
     const pack = `<elements>
       <element name="Wardenkin" type="Race" source="Homebrew" id="ID_HB_RACE_WARDENKIN_2024">
         <setters><set name="ruleset">2024</set></setters>

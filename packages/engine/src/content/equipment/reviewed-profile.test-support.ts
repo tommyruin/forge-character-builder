@@ -1,4 +1,5 @@
-import { buildLibrary, type ElementLibrary } from "../library.js";
+import { type ElementLibrary } from "../library.js";
+import { buildCorpusLibrary } from "../../testing/corpus.js";
 
 /** The 54 corpus files used by the reviewed-test profile (fixture compatibility set). */
 export const REVIEWED_PROFILE_PATHS = new Set([
@@ -30,6 +31,6 @@ export const REVIEWED_PROFILE_PATHS = new Set([
   ...["armor", "poison", "potions", "rings", "rods", "staffs", "wands", "weapons", "wondrous"].map((name) => `testdata/core/dungeon-masters-guide/items/items-${name}.xml`),
 ]);
 
-export async function buildReviewedLibrary(corpusRoot: string): Promise<ElementLibrary> {
-  return buildLibrary(corpusRoot, (path) => REVIEWED_PROFILE_PATHS.has(path));
+export async function buildReviewedLibrary(): Promise<ElementLibrary> {
+  return buildCorpusLibrary((path) => REVIEWED_PROFILE_PATHS.has(path));
 }

@@ -6,6 +6,14 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The engine's system elements ship from `content/system` alongside the rest
+  of the bundled content; `third-party/` now holds only the reviewed SRD maps,
+  their provenance and the optional development corpus.
+- The client's corpus-backed tests skip without the corpus, and CI fetches the
+  corpus only when its cache misses.
+
 ## [1.1.0] - 2026-08-27
 
 ### Added

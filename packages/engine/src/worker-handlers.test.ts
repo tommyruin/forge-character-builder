@@ -1,7 +1,5 @@
 import { ENGINE_VERSION } from "@forge-cb/api";
 import { describe, expect, it, beforeAll, vi } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import {
   ENGINE_METHOD_NAMES,
   METHOD_SUPPORT,
@@ -10,10 +8,11 @@ import {
   type WorkerScope,
 } from "@forge-cb/api";
 import { CharacterService } from "./character/service.js";
-import { buildLibrary, type ElementLibrary } from "./content/library.js";
+import { type ElementLibrary } from "./content/library.js";
 import { createEngineMethodHandlers, startCharacterEngineWorker } from "./worker-handlers.js";
 import { resolveCharacterSheetTemplateUrl } from "./sheet/templates.js";
 import { CHARACTER_LOAD_MANIFEST, FAST_START_MANIFEST } from "./snapshot/identities.js";
+import { buildCorpusLibrary } from "./testing/corpus.js";
 import {
   buildFighter3,
   buildPaladin3,
@@ -22,8 +21,6 @@ import {
   type BuiltCharacter,
 } from "./testing/character-factory.js";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CORPUS_ROOT = join(ROOT, "third-party", "elements");
 /** Installs a factory-built character into `service` under `id`. */
 const importBuilt = (service: CharacterService, id: string, built: BuiltCharacter): void => {
   service.importCharacterXml(id, built.service.exportCharacterXml(built.id));
@@ -34,7 +31,7 @@ const SHEET_BASE = "https://example.test/tools/character-builder/";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function emptyLibrary(): ElementLibrary {

@@ -62,31 +62,13 @@ export function createContentManifest(files, basePath = "/", profile = "public-b
   };
 }
 
-/** Collect the profile-selected files: the content root plus the authored system proxy file. */
-export async function collectBundledFiles(corpusRoot, systemRoot, profile = "public-base") {
-  const files = await collectCorpusXml(corpusRoot, profile);
-  // The authored system files live outside the corpus root, so they are
-  // collected separately. Every one the profile includes ships, in sorted
-  // order, so adding an authored file only takes a profile entry.
-  const selectedProfile = resolveContentProfile(profile);
-  const systemNames = await readdir(systemRoot).catch(() => []);
-  for (const name of [...systemNames].sort()) {
-    if (!XML.test(name)) continue;
-    const path = `system/${name}`;
-    if (!selectedProfile.includes(path)) continue;
-    const bytes = await readFile(join(systemRoot, name)).catch(() => null);
-    if (bytes === null) continue;
-    files.push({
-      path,
-      bytes,
-      sha256: createHash("sha256").update(bytes).digest("hex"),
-    });
-  }
-  return files;
+/** Collect the profile-selected files of the content root (the system elements live there too). */
+export async function collectBundledFiles(corpusRoot, profile = "public-base") {
+  return collectCorpusXml(corpusRoot, profile);
 }
 
-async function collectContentAssets(corpusRoot, basePath, profile, systemRoot) {
-  const files = await collectBundledFiles(corpusRoot, systemRoot, profile);
+async function collectContentAssets(corpusRoot, basePath, profile) {
+  const files = await collectBundledFiles(corpusRoot, profile);
   return {
     files,
     manifest: createContentManifest(files, basePath, profile),
@@ -134,10 +116,10 @@ function sendNotFound(response) {
   response.end("Not found\n");
 }
 
-function devContentMiddleware({ corpusRoot, basePath, profile, systemRoot }) {
+function devContentMiddleware({ corpusRoot, basePath, profile }) {
   let contentPromise;
   const loadContent = () => {
-    contentPromise ??= collectContentAssets(corpusRoot, basePath, profile, systemRoot).then(({ files, manifest }) => ({
+    contentPromise ??= collectContentAssets(corpusRoot, basePath, profile).then(({ files, manifest }) => ({
       filesByPath: new Map(files.map((file) => [file.path, file.bytes])),
       manifestBytes: manifestBytes(manifest),
     }));
@@ -189,7 +171,6 @@ function devContentMiddleware({ corpusRoot, basePath, profile, systemRoot }) {
 
 export function corpusContentManifestPlugin({
   corpusRoot = resolve(process.cwd(), "public", "content"),
-  systemRoot = resolve(process.cwd(), "../../third-party/elements/system"),
   basePath = process.env.PUBLIC_BASE_PATH || "/",
   profile = process.env.VITE_FCB_CONTENT_PROFILE ?? "public-base",
 } = {}) {
@@ -200,9 +181,9 @@ export function corpusContentManifestPlugin({
       publicDir = config.publicDir || null;
     },
     async generateBundle() {
-      const { files, manifest } = await collectContentAssets(corpusRoot, basePath, profile, systemRoot);
+      const { files, manifest } = await collectContentAssets(corpusRoot, basePath, profile);
       // Files that already live under public/content are copied by Vite; only
-      // the rest (the authored system files, a corpus profile) are emitted.
+      // the rest (a corpus profile served from elsewhere) are emitted.
       const copiedByVite = publicDir !== null && resolve(corpusRoot) === resolve(publicDir, "content");
       for (const file of files) {
         if (copiedByVite && existsSync(join(corpusRoot, file.path))) continue;
@@ -215,7 +196,7 @@ export function corpusContentManifestPlugin({
       });
     },
     configureServer(server) {
-      const middleware = devContentMiddleware({ corpusRoot, basePath, profile, systemRoot });
+      const middleware = devContentMiddleware({ corpusRoot, basePath, profile });
       middleware.warm();
       server.middlewares.use(middleware);
     },

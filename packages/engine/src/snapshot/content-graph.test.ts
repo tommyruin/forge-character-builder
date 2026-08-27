@@ -1,7 +1,5 @@
 import { describe, expect, it, beforeAll } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, classifyRuleset, rulesetSourcesByName, type ElementLibrary } from "../content/library.js";
+import { classifyRuleset, rulesetSourcesByName, type ElementLibrary } from "../content/library.js";
 import { parseElementsFile } from "../content/parser.js";
 import {
   serializeContentLibrary,
@@ -11,14 +9,13 @@ import {
   type ContentLibraryPayload,
 } from "./content-graph.js";
 import { canonicalStringify, canonicalParse, sha256Hex, SnapshotCodecError } from "./codec.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const CORPUS_ROOT = join(ROOT, "third-party", "elements");
 
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function roundTripped(payload: ContentLibraryPayload): ElementLibrary {

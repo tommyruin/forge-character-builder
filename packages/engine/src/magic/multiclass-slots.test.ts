@@ -9,14 +9,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules } from "../selection/selection.js";
 import { computeStatistics } from "../statistics/calculator.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ID_WIZARD = "ID_WOTC_PHB_CLASS_WIZARD";
 const ID_FIGHTER = "ID_WOTC_PHB_CLASS_FIGHTER";
@@ -30,7 +28,7 @@ const ID_OPTION_MULTICLASS = "ID_INTERNAL_OPTION_ALLOW_MULTICLASSING";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function seededRng(seed: number): () => number {

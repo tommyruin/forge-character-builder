@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it, beforeAll } from "vitest";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import {
   planGrantedFeatEdits,
@@ -14,12 +14,13 @@ import {
   type DmGrantsDto,
 } from "./grants.js";
 import { planAddAdditionalSpell, planRemoveAdditionalSpell } from "../magic/planners.js";
-import { CORPUS_ROOT, ID, buildCharacter, ruleOfName } from "../testing/character-factory.js";
+import { ID, buildCharacter, ruleOfName } from "../testing/character-factory.js";
 import { pendingSelectionRules } from "../selection/selection.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
 let lib: ElementLibrary;
 beforeAll(async () => {
-  lib = await buildLibrary(CORPUS_ROOT);
+  lib = await buildCorpusLibrary();
 }, 120_000);
 
 async function freshService(): Promise<CharacterService> {

@@ -5,15 +5,13 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { CharacterService } from "../character/service.js";
 import { encodeBase64 } from "../platform.js";
 import { computeStatistics } from "./calculator.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const RACE_XML = `<elements>
   <element name="Sturdy Folk" type="Race" source="Homebrew" id="ID_TEST_RACE_STURDY_FOLK">
@@ -29,7 +27,7 @@ const RACE_XML = `<elements>
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
   await ingestContentFiles(library, [
     { path: "imports/hp-starting-test.xml", base64: encodeBase64(new TextEncoder().encode(RACE_XML)) },
   ]);

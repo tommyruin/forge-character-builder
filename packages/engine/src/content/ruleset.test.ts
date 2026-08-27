@@ -8,13 +8,11 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, createEmptyLibrary, type ElementLibrary } from "./library.js";
+import { createEmptyLibrary, type ElementLibrary } from "./library.js";
 import { ingestContentFiles } from "./ingestion.js";
 import { encodeBase64 } from "../platform.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ingest = async (xml: string): Promise<ElementLibrary> => {
   const library = createEmptyLibrary();
@@ -105,7 +103,7 @@ describe("ruleset classification of imported content", () => {
 describe("ruleset classification of the bundled corpus (regression)", () => {
   let library: ElementLibrary;
   beforeAll(async () => {
-    library = await buildLibrary(CORPUS_ROOT);
+    library = await buildCorpusLibrary();
   }, 120_000);
 
   it("keeps the classification for core books and the UA abbreviation quirk", () => {

@@ -6,13 +6,11 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules } from "../selection/selection.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ID_WIZARD = "ID_WOTC_PHB_CLASS_WIZARD";
 const ID_PALADIN = "ID_WOTC_PHB_CLASS_PALADIN";
@@ -21,7 +19,7 @@ const ID_OPTION_SPELL_POINTS = "ID_INTERNAL_OPTION_ALLOW_SPELL_POINTS";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function buildCaster(classId: string, levels: number): CharacterService {

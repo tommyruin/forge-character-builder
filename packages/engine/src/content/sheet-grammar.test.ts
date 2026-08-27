@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildLibrary } from "./library.js";
 import { parseElement } from "./parser.js";
 import { parseXml } from "./xml.js";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { createFastStartController } from "../snapshot/fast-start.js";
 import { FAST_START_MANIFEST, FAST_START_SCHEMA_VERSION } from "../snapshot/identities.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 function parseFirstElement(xml: string) {
   const node = parseXml(xml);
@@ -124,7 +121,7 @@ describe("content sheet grammar", () => {
   });
 
   it("round-trips sheets through the fast-start snapshot payload", async () => {
-    const lib = await buildLibrary(CORPUS_ROOT);
+    const lib = await buildCorpusLibrary();
     const controller = createFastStartController(lib);
     await controller.prepare();
     const body = controller.takeBuffer();
@@ -154,7 +151,7 @@ describe("content sheet grammar", () => {
 
 describe("corpus sheet grammar pins", () => {
   it("pins the corpus sheet inventory", async () => {
-    const lib = await buildLibrary(CORPUS_ROOT);
+    const lib = await buildCorpusLibrary();
     let elementsWithSheets = 0;
     let sheets = 0;
     let displayFalse = 0;

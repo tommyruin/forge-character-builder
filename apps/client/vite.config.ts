@@ -117,7 +117,6 @@ export default defineConfig({
     pdfStandardFontsPlugin(),
     corpusContentManifestPlugin({
       corpusRoot: contentRoot,
-      systemRoot: resolve(process.cwd(), "../../third-party/elements/system"),
       profile: contentProfile,
       basePath,
     }),

@@ -8,14 +8,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules, selectionOptions, type SelectionRule } from "../selection/selection.js";
 import type { CharacterState } from "../character/state.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const ID_FIGHTER = "ID_WOTC_PHB_CLASS_FIGHTER";
 const ID_BONUS_FEATS = "ID_WOTC_DSDQ_ITEM_BONUS_FEATS";
@@ -27,7 +25,7 @@ const ID_FEAT_KNIGHT_OF_THE_CROWN = "ID_WOTC_DSDQ_FEAT_KNIGHT_OF_THE_CROWN";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 function ruleOfType(rules: SelectionRule[], type: string): SelectionRule {

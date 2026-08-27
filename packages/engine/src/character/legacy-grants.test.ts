@@ -8,14 +8,12 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { buildWizard4 } from "../testing/character-factory.js";
 import { computeStatistics } from "../statistics/calculator.js";
+import { buildCorpusLibrary } from "../testing/corpus.js";
 
-const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
 
 const FEAT = "ID_PHB_FEAT_RESILIENT";
 const FEAT_CHOICE = "ID_PHB_FEAT_RESILIENT_CONSTITUTION";
@@ -24,7 +22,7 @@ const SPELL = "ID_PHB_SPELL_INVISIBILITY";
 let library: ElementLibrary;
 
 beforeAll(async () => {
-  library = await buildLibrary(CORPUS_ROOT);
+  library = await buildCorpusLibrary();
 }, 120_000);
 
 /** A wizard export rewritten into the legacy granted shape. */
