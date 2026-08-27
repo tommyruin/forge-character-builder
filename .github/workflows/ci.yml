@@ -50,10 +50,14 @@ jobs:
           cache: npm
       - run: npm ci
       - uses: actions/cache@v4
+        id: corpus
         with:
           path: third-party/elements/testdata
           key: corpus-${{ hashFiles('third-party/elements/testdata.manifest.sha256') }}
-      - run: npm run corpus:fetch
+      # A restored corpus is the pinned one (the key is its manifest digest);
+      # the fetch refuses to overwrite an existing corpus, so it runs on a miss only.
+      - if: steps.corpus.outputs.cache-hit != 'true'
+        run: npm run corpus:fetch
       - run: npm run build
       - run: npm run test:coverage
       - run: npm run coverage:gate
