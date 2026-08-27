@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Arcane Focus" type="Spellcasting Focus Group" source="Core" id="ID_INTERNAL_SPELLFOCUS_GROUP_ARCANE_FOCUS" />
+	<element name="Druidic Focus" type="Spellcasting Focus Group" source="Core" id="ID_INTERNAL_SPELLFOCUS_GROUP_DRUIDIC_FOCUS" />
+	<element name="Holy Symbol" type="Spellcasting Focus Group" source="Core" id="ID_INTERNAL_SPELLFOCUS_GROUP_HOLY_SYMBOL" />
+	<element name="Musical Instrument" type="Spellcasting Focus Group" source="Core" id="ID_INTERNAL_SPELLFOCUS_GROUP_MUSICAL_INSTRUMENT" />
+	<element name="Spellcasting Focus Group (Arcane Focus)" type="Proficiency" source="Core" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_ARCANE_FOCUS" />
+	<element name="Spellcasting Focus Group (Druidic Focus)" type="Proficiency" source="Core" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_DRUIDIC_FOCUS" />
+	<element name="Spellcasting Focus Group (Holy Symbol)" type="Proficiency" source="Core" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_HOLY_SYMBOL" />
+	<element name="Spellcasting Focus Group (Musical Instrument)" type="Proficiency" source="Core" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_MUSICAL_INSTRUMENT" />
+</elements>

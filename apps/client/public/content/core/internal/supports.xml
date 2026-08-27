@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Action" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_ACTION" />
+	<element name="Bonus Action" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_BONUS_ACTION" />
+	<element name="Reaction" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_REACTION" />
+	<element name="Verbal" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_VERBAL" />
+	<element name="Somatic" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_SOMATIC" />
+	<element name="Material" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_MATERIAL" />
+	<element name="Concentration" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_CONCENTRATION" />
+	<element name="Ritual" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_RITUAL" />
+	<element name="Expertise" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_EXPERTISE" />
+	<element name="Strength" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_ABILITY_STRENGTH" />
+	<element name="Dexterity" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_ABILITY_DEXTERITY" />
+	<element name="Constitution" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_ABILITY_CONSTITUTION" />
+	<element name="Intelligence" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_ABILITY_INTELLIGENCE" />
+	<element name="Wisdom" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_ABILITY_WISDOM" />
+	<element name="Charisma" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_ABILITY_CHARISMA" />
+	<element name="Artisan" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_PROFICIENCY_ARTISAN" />
+	<element name="Tool" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_PROFICIENCY_TOOL" />
+	<element name="Musical Instrument" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_PROFICIENCY_INSTRUMENT" />
+	<element name="Kit" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_PROFICIENCY_KIT" />
+	<element name="Vehicle" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_PROFICIENCY_VEHICLE" />
+	<element name="Gaming Set" type="Support" source="Internal" id="ID_INTERNAL_SUPPORT_PROFICIENCY_GAMING_SET" />
+</elements>

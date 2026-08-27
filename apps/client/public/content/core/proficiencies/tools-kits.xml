@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Tool Proficiency (Disguise kit)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_DISGUISE_KIT">
+		<supports>Tool, Kit</supports>
+		<description>
+			<p>This pouch of cosmetics, hair dye, and small props lets you create disguises that change your physical appearance. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to create a visual disguise.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Forgery kit)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_FORGERY_KIT">
+		<supports>Tool, Kit</supports>
+		<description>
+			<p>This small box contains a variety of papers and parchments, pens and inks, seals and sealing wax, gold and silver leaf, and other supplies necessary to create convincing forgeries of physical documents. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to create a physical forgery of a document.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Herbalism kit)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_HERBALISM_KIT">
+		<supports>Tool, Kit</supports>
+		<description>
+			<p>This kit contains a variety of instruments such as clippers, mortar and pestle, and pouches and vials used by herbalists to create remedies and potions. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to identify or apply herbs. Also, proficiency with this kit is required to create antitoxin and potions of healing.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Poisoner’s kit)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_POISONERS_KIT">
+		<supports>Tool, Kit</supports>
+		<description>
+			<p>A poisoner’s kit includes the vials, chemicals, and other equipment necessary for the creation of poisons. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to craft or use poisons.</p>
+		</description>
+	</element>
+</elements>

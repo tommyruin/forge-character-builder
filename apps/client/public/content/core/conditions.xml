@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Resistance (Bludgeoning)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_BLUDGEONING">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Piercing)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_PIERCING">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Slashing)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_SLASHING">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Acid)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_ACID">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Cold)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_COLD">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Fire)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_FIRE">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Force)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_FORCE">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Lightning)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_LIGHTNING">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Necrotic)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_NECROTIC">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Poison)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_POISON">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Psychic)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_PSYCHIC">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Radiant)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_RADIANT">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Resistance (Thunder)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_THUNDER">
+		<supports>Resistance</supports>
+	</element>
+	<element name="Immunity (Bludgeoning)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_BLUDGEONING">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Piercing)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_PIERCING">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Slashing)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_SLASHING">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Acid)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_ACID">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Cold)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_COLD">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Fire)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_FIRE">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Force)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_FORCE">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Lightning)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_LIGHTNING">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Necrotic)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_NECROTIC">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Poison)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_POISON">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Psychic)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_PSYCHIC">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Radiant)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_RADIANT">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Immunity (Thunder)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_THUNDER">
+		<supports>Immunity</supports>
+	</element>
+	<element name="Vulnerability (Bludgeoning)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_BLUDGEONING">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Piercing)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_PIERCING">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Slashing)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_SLASHING">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Acid)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_ACID">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Cold)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_COLD">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Fire)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_FIRE">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Force)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_FORCE">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Lightning)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_LIGHTNING">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Necrotic)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_NECROTIC">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Poison)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_POISON">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Psychic)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_PSYCHIC">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Radiant)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_RADIANT">
+		<supports>Vulnerability</supports>
+	</element>
+	<element name="Vulnerability (Thunder)" type="Condition" source="Internal" id="ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_THUNDER">
+		<supports>Vulnerability</supports>
+	</element>
+</elements>

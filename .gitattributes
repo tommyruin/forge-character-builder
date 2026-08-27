@@ -1,0 +1,19 @@
+# Byte-exact character files: .dnd5e line endings are part of the format (CRLF)
+# and round-trip identity depends on them.
+*.dnd5e binary
+
+# Sources: normalize to LF.
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.mjs text eol=lf
+*.xml text eol=lf
+
+# Vendored sheet fonts.
+*.ttf binary
+
+# The vendored corpus stays byte-exact to its source (testdata.manifest.sha256
+# hashes the files as distributed). This rule comes last so it overrides the
+# generic text rules above.
+third-party/elements/** -text

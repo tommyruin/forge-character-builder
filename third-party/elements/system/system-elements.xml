@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<elements>
+	<info>
+		<name>System Elements (tcb)</name>
+		<description>System elements authored for the tcb engine: identity (id, type, name)
+			as referenced by .dnd5e character files; source and grammar follow the public
+			AuroraLegacy/elements core/internal.xml convention. Descriptions and the remaining
+			internal elements are authored from public SRD text.
+			See third-party/elements/provenance.md.</description>
+	</info>
+
+	<!-- Level elements (level-count nodes on the sheet) -->
+	<element name="1" type="Level" source="Internal" id="ID_LEVEL_1" />
+	<element name="2" type="Level" source="Internal" id="ID_LEVEL_2" />
+	<element name="3" type="Level" source="Internal" id="ID_LEVEL_3" />
+	<element name="4" type="Level" source="Internal" id="ID_LEVEL_4" />
+	<element name="5" type="Level" source="Internal" id="ID_LEVEL_5" />
+	<element name="6" type="Level" source="Internal" id="ID_LEVEL_6" />
+	<element name="7" type="Level" source="Internal" id="ID_LEVEL_7" />
+	<element name="8" type="Level" source="Internal" id="ID_LEVEL_8" />
+
+	<!-- Multiclassing grants (PHB ch.6, SRD-OGL) -->
+	<element name="Multiclassing Prerequisite" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE" />
+	<element name="Multiclass Spellcasting" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_MULTICLASS_SPELLCASTING" />
+
+	<!-- Base grants -->
+	<element name="Base Armor Class" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE" />
+	<element name="Dexterity Modifier" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER" />
+	<element name="Constitution Modifier" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER" />
+	<element name="Spellcasting Base" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_SPELLCASTING_BASE" />
+
+	<!-- Multiclass level grants (PHB multiclassing: level benefits per class level) -->
+	<element name="Multiclassing (Level 2)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_2" />
+	<element name="Multiclassing (Level 3)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_3" />
+	<element name="Multiclassing (Level 6)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_6" />
+	<element name="Multiclassing (Level 7)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_7" />
+
+	<!-- Optional rules (DMG/PHB: Feats, Multiclassing, Average Hit Points) -->
+	<element name="Average Hit Points" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_AVERAGE_HP" />
+	<element name="Feats" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_FEATS" />
+	<element name="Multiclassing" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_MULTICLASSING" />
+</elements>

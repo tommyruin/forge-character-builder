@@ -1,0 +1,2281 @@
+{
+  "schemaVersion": 1,
+  "inventoryDigest": "f1f6ab7647d16a2779d99af2f1239451ff2333dfbc7fe2db89cdfa9dad5c3883",
+  "corpusCommit": "4fc7b24e762599f45d2836f3fc7814658d407315",
+  "excludedFiles": {
+    "source.xml": "the corpus Source element carries the publisher's product description, which is not SRD text; an authored Source element ships instead",
+    "backgrounds/optional-background-feature.xml": "the optional background feature rule is not part of SRD 5.2.1",
+    "races/race-aasimar.xml": "Aasimar is not an SRD 5.2.1 species"
+  },
+  "renames": {
+    "Bigby’s Hand": "Arcane Hand",
+    "Melf’s Acid Arrow": "Acid Arrow",
+    "Evard’s Black Tentacles": "Black Tentacles",
+    "Mordenkainen’s Faithful Hound": "Faithful Hound",
+    "Mordenkainen’s Magnificent Mansion": "Magnificent Mansion",
+    "Mordenkainen’s Private Sanctum": "Private Sanctum",
+    "Mordenkainen’s Sword": "Arcane Sword",
+    "Otto’s Irresistible Dance": "Irresistible Dance",
+    "Tenser’s Floating Disk": "Floating Disk",
+    "Otiluke’s Freezing Sphere": "Freezing Sphere",
+    "Otiluke’s Resilient Sphere": "Resilient Sphere",
+    "Tasha’s Hideous Laughter": "Hideous Laughter",
+    "Drawmij’s Instant Summons": "Instant Summons",
+    "Leomund’s Secret Chest": "Secret Chest",
+    "Leomund’s Tiny Hut": "Tiny Hut",
+    "Nystul’s Magic Aura": "Arcanist’s Magic Aura",
+    "Rary’s Telepathic Bond": "Telepathic Bond"
+  },
+  "edits": {
+    "elf-lineage-drow-setting-flavor": {
+      "file": "races/race-elf.xml",
+      "from": "\t\t\t<p>Drow typically dwell in the Underdark and have been shaped by it. Some drow individuals and societies avoid the Underdark altogether yet carry its magic. In the Eberron setting, for example, drow dwell in rainforests and cyclopean ruins on the continent of Xen’drik.</p>\n",
+      "to": "",
+      "why": "the SRD 5.2.1 Elven Lineages entry carries only the mechanical table; this paragraph is the handbook's setting flavor"
+    },
+    "elf-lineage-high-elf-setting-flavor": {
+      "file": "races/race-elf.xml",
+      "from": "\t\t\t<p>High elves have been infused with the magic of crossings between the Feywild and the Material Plane. On some worlds, high elves refer to themselves by other names. For example, they call themselves sun or moon elves in the Forgotten Realms setting, Silvanesti and Qualinesti in the Dragonlance setting, and Aereni in the Eberron setting.</p>\n",
+      "to": "",
+      "why": "the SRD 5.2.1 Elven Lineages entry carries only the mechanical table; this paragraph is the handbook's setting flavor"
+    },
+    "elf-lineage-wood-elf-setting-flavor": {
+      "file": "races/race-elf.xml",
+      "from": "\t\t\t<p>Wood elves carry the magic of primeval forests within themselves. They are known by many other names, including wild elves, green elves, and forest elves. Grugach are reclusive wood elves of the Greyhawk setting, while the Kagonesti and the Tairnadal are wood elves of the Dragonlance and Eberron settings, respectively.</p>\n",
+      "to": "",
+      "why": "the SRD 5.2.1 Elven Lineages entry carries only the mechanical table; this paragraph is the handbook's setting flavor"
+    },
+    "pact-of-the-chain-forms": {
+      "file": "classes/eldritch-invocations.xml",
+      "from": "<b>Skeleton</b>, <b>Slaad Tadpole</b>, <b>Sphinx of Wonder</b>",
+      "to": "<b>Skeleton</b>, <b>Sphinx of Wonder</b>",
+      "why": "SRD 5.2.1 Pact of the Chain lists Imp, Pseudodragon, Quasit, Skeleton, Sphinx of Wonder, Sprite and Venomous Snake; the Slaad Tadpole is not SRD content"
+    },
+    "reincarnate-row-1": {
+      "file": "spells.xml",
+      "from": "<tr><td> 1</td><td>Aasimar</td></tr>",
+      "to": "<tr><td> 1</td><td>Roll again.</td></tr>",
+      "why": "SRD 5.2.1 Reincarnate rolls again on a 1; Aasimar is not an SRD species"
+    }
+  },
+  "toleratedEmptySelects": {
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME": "selects spells by a 'Ritual' supports tag that no corpus spell carries (the engine derives ritual casting from the spell's setter instead); empty with the full corpus too"
+  },
+  "unmappedChapters": {
+    "magicItems": "SRD 5.2.1 magic items have no 2024 corpus source (the vendored corpus carries no 2024 Dungeon Master's Guide)",
+    "weaponProperties": "the general weapon properties ship with the 2014 core content and are shared by both editions",
+    "animals": "SRD 5.2.1 animals without a corpus companion stat block are not published; companions.xml carries only the Find Familiar and Pact of the Chain forms",
+    "languages": "the standard languages ship with the 2014 core content and are shared by both editions; the corpus adds only Common Sign Language and Draconic"
+  },
+  "unmatchedInventory": {
+    "equipment/gaming set": "category entry; the corpus instantiates it per game (see curated Dice Set and Playing Cards Set)",
+    "equipment/musical instrument": "category entry; the corpus instantiates it per instrument (see the curated instruments)",
+    "equipment/stabling per day": "the corpus defines this only as a commented-out element, so it is not published",
+    "equipment/staff (also a quarterstaff)": "the corpus defines the arcane-focus staff only as a commented-out element; the Quarterstaff weapon is published",
+    "equipment/wooden staff (also a quarterstaff)": "the corpus defines the druidic-focus staff only as a commented-out element; the Quarterstaff weapon is published"
+  },
+  "entries": {
+    "classes/barbarian": [
+      "ID_WOTC_PHB24_CLASS_BARBARIAN"
+    ],
+    "classes/bard": [
+      "ID_WOTC_PHB24_CLASS_BARD"
+    ],
+    "classes/cleric": [
+      "ID_WOTC_PHB24_CLASS_CLERIC"
+    ],
+    "classes/druid": [
+      "ID_WOTC_PHB24_CLASS_DRUID"
+    ],
+    "classes/fighter": [
+      "ID_WOTC_PHB24_CLASS_FIGHTER"
+    ],
+    "classes/monk": [
+      "ID_WOTC_PHB24_CLASS_MONK"
+    ],
+    "classes/paladin": [
+      "ID_WOTC_PHB24_CLASS_PALADIN"
+    ],
+    "classes/ranger": [
+      "ID_WOTC_PHB24_CLASS_RANGER"
+    ],
+    "classes/rogue": [
+      "ID_WOTC_PHB24_CLASS_ROGUE"
+    ],
+    "classes/sorcerer": [
+      "ID_WOTC_PHB24_CLASS_SORCERER"
+    ],
+    "classes/warlock": [
+      "ID_WOTC_PHB24_CLASS_WARLOCK"
+    ],
+    "classes/wizard": [
+      "ID_WOTC_PHB24_CLASS_WIZARD"
+    ],
+    "subclasses/champion": [
+      "ID_WOTC_PHB24_ARCHETYPE_FIGHTER_CHAMPION"
+    ],
+    "subclasses/circle of the land": [
+      "ID_WOTC_PHB24_ARCHETYPE_DRUID_CIRCLE_OF_THE_LAND"
+    ],
+    "subclasses/college of lore": [
+      "ID_WOTC_PHB24_ARCHETYPE_BARD_COLLEGE_OF_LORE"
+    ],
+    "subclasses/draconic sorcery": [
+      "ID_WOTC_PHB24_ARCHETYPE_SORCERER_DRACONIC_SORCERY"
+    ],
+    "subclasses/evoker": [
+      "ID_WOTC_PHB24_ARCHETYPE_WIZARD_EVOKER"
+    ],
+    "subclasses/fiend patron": [
+      "ID_WOTC_PHB24_ARCHETYPE_WARLOCK_FIEND_PATRON"
+    ],
+    "subclasses/hunter": [
+      "ID_WOTC_PHB24_ARCHETYPE_RANGER_HUNTER"
+    ],
+    "subclasses/life domain": [
+      "ID_WOTC_PHB24_ARCHETYPE_CLERIC_LIFE_DOMAIN"
+    ],
+    "subclasses/oath of devotion": [
+      "ID_WOTC_PHB24_ARCHETYPE_PALADIN_OATH_OF_DEVOTION"
+    ],
+    "subclasses/path of the berserker": [
+      "ID_WOTC_PHB24_ARCHETYPE_BARBARIAN_BERSERKER"
+    ],
+    "subclasses/thief": [
+      "ID_WOTC_PHB24_ARCHETYPE_ROGUE_THIEF"
+    ],
+    "subclasses/warrior of the open hand": [
+      "ID_WOTC_PHB24_ARCHETYPE_MONK_WARRIOR_OF_THE_OPEN_HAND"
+    ],
+    "backgrounds/acolyte": [
+      "ID_WOTC_PHB24_BACKGROUND_ACOLYTE"
+    ],
+    "backgrounds/criminal": [
+      "ID_WOTC_PHB24_BACKGROUND_CRIMINAL"
+    ],
+    "backgrounds/sage": [
+      "ID_WOTC_PHB24_BACKGROUND_SAGE"
+    ],
+    "backgrounds/soldier": [
+      "ID_WOTC_PHB24_BACKGROUND_SOLDIER"
+    ],
+    "species/dragonborn": [
+      "ID_WOTC_PHB24_RACE_DRAGONBORN"
+    ],
+    "species/dwarf": [
+      "ID_WOTC_PHB24_RACE_DWARF"
+    ],
+    "species/elf": [
+      "ID_WOTC_PHB24_RACE_ELF"
+    ],
+    "species/gnome": [
+      "ID_WOTC_PHB24_RACE_GNOME"
+    ],
+    "species/goliath": [
+      "ID_WOTC_PHB24_RACE_GOLIATH"
+    ],
+    "species/halfling": [
+      "ID_WOTC_PHB24_RACE_HALFLING"
+    ],
+    "species/human": [
+      "ID_WOTC_PHB24_RACE_HUMAN"
+    ],
+    "species/orc": [
+      "ID_WOTC_PHB24_RACE_ORC"
+    ],
+    "species/tiefling": [
+      "ID_WOTC_PHB24_RACE_TIEFLING"
+    ],
+    "feats/ability score improvement": [
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT",
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT_2",
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT_3",
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT_4",
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT_5",
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT_6",
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT_7",
+      "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT_8"
+    ],
+    "feats/alert": [
+      "ID_WOTC_PHB24_FEAT_ALERT"
+    ],
+    "feats/archery": [
+      "ID_WOTC_PHB24_FEAT_ARCHERY"
+    ],
+    "feats/boon of combat prowess": [
+      "ID_WOTC_PHB24_FEAT_BOON_OF_COMBAT_PROWESS"
+    ],
+    "feats/boon of dimensional travel": [
+      "ID_WOTC_PHB24_FEAT_BOON_OF_DIMENSIONAL_TRAVEL"
+    ],
+    "feats/boon of fate": [
+      "ID_WOTC_PHB24_FEAT_BOON_OF_FATE"
+    ],
+    "feats/boon of irresistible offense": [
+      "ID_WOTC_PHB24_FEAT_BOON_OF_IRRESISTIBLE_OFFENSE"
+    ],
+    "feats/boon of spell recall": [
+      "ID_WOTC_PHB24_FEAT_BOON_OF_SPELL_RECALL"
+    ],
+    "feats/boon of the night spirit": [
+      "ID_WOTC_PHB24_FEAT_BOON_OFTHE_NIGHT_SPIRIT"
+    ],
+    "feats/boon of truesight": [
+      "ID_WOTC_PHB24_FEAT_BOON_OF_TRUESIGHT"
+    ],
+    "feats/defense": [
+      "ID_WOTC_PHB24_FEAT_DEFENSE"
+    ],
+    "feats/grappler": [
+      "ID_WOTC_PHB24_FEAT_GRAPPLER"
+    ],
+    "feats/great weapon fighting": [
+      "ID_WOTC_PHB24_FEAT_GREAT_WEAPON_FIGHTING"
+    ],
+    "feats/magic initiate": [
+      "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE",
+      "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_2",
+      "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_3"
+    ],
+    "feats/savage attacker": [
+      "ID_WOTC_PHB24_FEAT_SAVAGE_ATTACKER"
+    ],
+    "feats/skilled": [
+      "ID_WOTC_PHB24_FEAT_SKILLED",
+      "ID_WOTC_PHB24_FEAT_SKILLED_2",
+      "ID_WOTC_PHB24_FEAT_SKILLED_3",
+      "ID_WOTC_PHB24_FEAT_SKILLED_4",
+      "ID_WOTC_PHB24_FEAT_SKILLED_5",
+      "ID_WOTC_PHB24_FEAT_SKILLED_6",
+      "ID_WOTC_PHB24_FEAT_SKILLED_7",
+      "ID_WOTC_PHB24_FEAT_SKILLED_8",
+      "ID_WOTC_PHB24_FEAT_SKILLED_9"
+    ],
+    "feats/two-weapon fighting": [
+      "ID_WOTC_PHB24_FEAT_TWOWEAPON_FIGHTING"
+    ],
+    "metamagicOptions/careful spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_CAREFUL_SPELL"
+    ],
+    "metamagicOptions/distant spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_DISTANT_SPELL"
+    ],
+    "metamagicOptions/empowered spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_EMPOWERED_SPELL"
+    ],
+    "metamagicOptions/extended spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_EXTENDED_SPELL"
+    ],
+    "metamagicOptions/heightened spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_HEIGHTENED_SPELL"
+    ],
+    "metamagicOptions/quickened spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_QUICKEND_SPELL"
+    ],
+    "metamagicOptions/seeking spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_SEEKING_SPELL"
+    ],
+    "metamagicOptions/subtle spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_SUBTLE_SPELL"
+    ],
+    "metamagicOptions/transmuted spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_TRANSMUTED_SPELL"
+    ],
+    "metamagicOptions/twinned spell": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_TWINNED_SPELL"
+    ],
+    "eldritchInvocations/agonizing blast": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_AGONIZING_BLAST"
+    ],
+    "eldritchInvocations/armor of shadows": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ARMOR_OF_SHADOWS"
+    ],
+    "eldritchInvocations/ascendant step": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ASCENDANT_STEP"
+    ],
+    "eldritchInvocations/devil's sight": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_DEVILS_SIGHT"
+    ],
+    "eldritchInvocations/devouring blade": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_DEVOURING_BLADE",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_DEVOURING_BLADE_SUBELEMENT"
+    ],
+    "eldritchInvocations/eldritch mind": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ELDRITCH_MIND"
+    ],
+    "eldritchInvocations/eldritch smite": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ELDRITCH_SMITE"
+    ],
+    "eldritchInvocations/eldritch spear": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ELDRITCH_SPEAR",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ELDRITCH_SPEAR_REPEATABLE"
+    ],
+    "eldritchInvocations/fiendish vigor": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_FIENDISH_VIGOR"
+    ],
+    "eldritchInvocations/gaze of two minds": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_GAZE_OF_TWO_MINDS"
+    ],
+    "eldritchInvocations/gift of the depths": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_GIFT_OF_THE_DEPTHS"
+    ],
+    "eldritchInvocations/gift of the protectors": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_GIFT_OF_THE_PROTECTORS"
+    ],
+    "eldritchInvocations/investment of the chain master": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_INVESTMENT_OF_THE_CHAIN_MASTER"
+    ],
+    "eldritchInvocations/lessons of the first ones": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_10",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_2",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_3",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_4",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_5",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_6",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_7",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_8",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES_9"
+    ],
+    "eldritchInvocations/lifedrinker": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LIFEDRINKER"
+    ],
+    "eldritchInvocations/mask of many faces": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_MASK_OF_MANY_FACES"
+    ],
+    "eldritchInvocations/master of myriad forms": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_MASTER_OF_MYRIAD_FORMS"
+    ],
+    "eldritchInvocations/misty visions": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_MISTY_VISIONS"
+    ],
+    "eldritchInvocations/one with shadows": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ONE_WITH_SHADOWS"
+    ],
+    "eldritchInvocations/otherworldly leap": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_OTHERWORLDLY_LEAP"
+    ],
+    "eldritchInvocations/pact of the blade": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_BLADE"
+    ],
+    "eldritchInvocations/pact of the chain": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_CHAIN"
+    ],
+    "eldritchInvocations/pact of the tome": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME"
+    ],
+    "eldritchInvocations/repelling blast": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_REPELLING_BLAST"
+    ],
+    "eldritchInvocations/thirsting blade": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_THIRSTING_BLADE",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_THIRSTING_BLADE_SUBELEMENT"
+    ],
+    "eldritchInvocations/visions of distant realms": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_VISIONS_OF_DISTANT_REALMS"
+    ],
+    "eldritchInvocations/whispers of the grave": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_WHISPERS_OF_THE_GRAVE"
+    ],
+    "eldritchInvocations/witch sight": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_WITCH_SIGHT"
+    ],
+    "masteryProperties/cleave": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_CLEAVE"
+    ],
+    "masteryProperties/graze": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_GRAZE"
+    ],
+    "masteryProperties/nick": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_NICK"
+    ],
+    "masteryProperties/push": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_PUSH"
+    ],
+    "masteryProperties/sap": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_SAP"
+    ],
+    "masteryProperties/slow": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_SLOW"
+    ],
+    "masteryProperties/topple": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_TOPPLE"
+    ],
+    "masteryProperties/vex": [
+      "ID_WOTC_PHB24_WEAPON_PROPERTY_VEX"
+    ],
+    "equipment/acid": [
+      "ID_WOTC_PHB24_ITEM_ACID"
+    ],
+    "equipment/airship": [
+      "ID_WOTC_PHB24_ITEM_AIRSHIP"
+    ],
+    "equipment/alchemist's fire": [
+      "ID_WOTC_PHB24_ITEM_ALCHEMISTS_FIRE"
+    ],
+    "equipment/alchemist's supplies": [
+      "ID_WOTC_PHB24_ITEM_TOOL_ALCHEMISTS_SUPPLIES"
+    ],
+    "equipment/amulet (worn or held)": [
+      "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET"
+    ],
+    "equipment/antitoxin": [
+      "ID_WOTC_PHB24_ITEM_ANTITOXIN"
+    ],
+    "equipment/arrows": [
+      "ID_WOTC_PHB24_ITEM_ARROW"
+    ],
+    "equipment/backpack": [
+      "ID_WOTC_PHB24_ITEM_BACKPACK"
+    ],
+    "equipment/ball bearings": [
+      "ID_WOTC_PHB24_ITEM_BALL_BEARINGS"
+    ],
+    "equipment/barrel": [
+      "ID_WOTC_PHB24_ITEM_BARREL"
+    ],
+    "equipment/basket": [
+      "ID_WOTC_PHB24_ITEM_BASKET"
+    ],
+    "equipment/battleaxe": [
+      "ID_WOTC_PHB24_WEAPON_BATTLEAXE"
+    ],
+    "equipment/bedroll": [
+      "ID_WOTC_PHB24_ITEM_BEDROLL"
+    ],
+    "equipment/bell": [
+      "ID_WOTC_PHB24_ITEM_BELL"
+    ],
+    "equipment/blanket": [
+      "ID_WOTC_PHB24_ITEM_BLANKET"
+    ],
+    "equipment/block and tackle": [
+      "ID_WOTC_PHB24_ITEM_BLOCK_AND_TACKLE"
+    ],
+    "equipment/blowgun": [
+      "ID_WOTC_PHB24_WEAPON_BLOWGUN"
+    ],
+    "equipment/bolts": [
+      "ID_WOTC_PHB24_ITEM_BOLT"
+    ],
+    "equipment/book": [
+      "ID_WOTC_PHB24_ITEM_BOOK"
+    ],
+    "equipment/bottle, glass": [
+      "ID_WOTC_PHB24_ITEM_BOTTLE_GLASS"
+    ],
+    "equipment/breastplate": [
+      "ID_WOTC_PHB24_ARMOR_MEDIUM_BREASTPLATE"
+    ],
+    "equipment/brewer's supplies": [
+      "ID_WOTC_PHB24_ITEM_TOOL_BREWERS_SUPPLIES"
+    ],
+    "equipment/bucket": [
+      "ID_WOTC_PHB24_ITEM_BUCKET"
+    ],
+    "equipment/bullets, firearm": [
+      "ID_WOTC_PHB24_ITEM_BULLET_FIREARM"
+    ],
+    "equipment/bullets, sling": [
+      "ID_WOTC_PHB24_ITEM_BULLET_SLING"
+    ],
+    "equipment/burglar's pack": [
+      "ID_WOTC_PHB24_ITEM_BURGLARS_PACK"
+    ],
+    "equipment/calligrapher's supplies": [
+      "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES"
+    ],
+    "equipment/caltrops": [
+      "ID_WOTC_PHB24_ITEM_CALTROPS"
+    ],
+    "equipment/camel": [
+      "ID_WOTC_PHB24_ITEM_CAMEL"
+    ],
+    "equipment/candle": [
+      "ID_WOTC_PHB24_ITEM_CANDLE"
+    ],
+    "equipment/carpenter's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS"
+    ],
+    "equipment/carriage": [
+      "ID_WOTC_PHB24_ITEM_CARRIAGE"
+    ],
+    "equipment/cart": [
+      "ID_WOTC_PHB24_ITEM_CART"
+    ],
+    "equipment/cartographer's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_CARTOGRAPHERS_TOOLS"
+    ],
+    "equipment/case, crossbow bolt": [
+      "ID_WOTC_PHB24_ITEM_CASE_CROSSBOW_BOLT"
+    ],
+    "equipment/case, map or scroll": [
+      "ID_WOTC_PHB24_ITEM_CASE_MAP_OR_SCROLL"
+    ],
+    "equipment/chain": [
+      "ID_WOTC_PHB24_ITEM_CHAIN"
+    ],
+    "equipment/chain mail": [
+      "ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL"
+    ],
+    "equipment/chain shirt": [
+      "ID_WOTC_PHB24_ARMOR_MEDIUM_CHAIN_SHIRT"
+    ],
+    "equipment/chariot": [
+      "ID_WOTC_PHB24_ITEM_CHARIOT"
+    ],
+    "equipment/chest": [
+      "ID_WOTC_PHB24_ITEM_CHEST"
+    ],
+    "equipment/climber's kit": [
+      "ID_WOTC_PHB24_ITEM_CLIMBERS_KIT"
+    ],
+    "equipment/clothes, fine": [
+      "ID_WOTC_PHB24_ITEM_CLOTHES_FINE"
+    ],
+    "equipment/clothes, traveler's": [
+      "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS"
+    ],
+    "equipment/club": [
+      "ID_WOTC_PHB24_WEAPON_CLUB"
+    ],
+    "equipment/cobbler's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_COBBLERS_TOOLS"
+    ],
+    "equipment/component pouch": [
+      "ID_WOTC_PHB24_ITEM_COMPONENT_POUCH"
+    ],
+    "equipment/cook's utensils": [
+      "ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS"
+    ],
+    "equipment/costume": [
+      "ID_WOTC_PHB24_ITEM_COSTUME"
+    ],
+    "equipment/crowbar": [
+      "ID_WOTC_PHB24_ITEM_CROWBAR"
+    ],
+    "equipment/crystal": [
+      "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL"
+    ],
+    "equipment/dagger": [
+      "ID_WOTC_PHB24_WEAPON_DAGGER"
+    ],
+    "equipment/dart": [
+      "ID_WOTC_PHB24_WEAPON_DART"
+    ],
+    "equipment/diplomat's pack": [
+      "ID_WOTC_PHB24_ITEM_DIPLOMATS_PACK"
+    ],
+    "equipment/disguise kit": [
+      "ID_WOTC_PHB24_ITEM_TOOL_DISGUISE_KIT"
+    ],
+    "equipment/dungeoneer's pack": [
+      "ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK"
+    ],
+    "equipment/elephant": [
+      "ID_WOTC_PHB24_ITEM_ELEPHANT"
+    ],
+    "equipment/emblem (borne on fabric or a shield)": [
+      "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM"
+    ],
+    "equipment/entertainer's pack": [
+      "ID_WOTC_PHB24_ITEM_ENTERTAINERS_PACK"
+    ],
+    "equipment/exotic": [
+      "ID_WOTC_PHB24_ITEM_SADDLE_EXOTIC"
+    ],
+    "equipment/explorer's pack": [
+      "ID_WOTC_PHB24_ITEM_EXPLORERS_PACK"
+    ],
+    "equipment/feed per day": [
+      "ID_WOTC_PHB24_ITEM_FEED_PER_DAY"
+    ],
+    "equipment/flail": [
+      "ID_WOTC_PHB24_WEAPON_FLAIL"
+    ],
+    "equipment/flask": [
+      "ID_WOTC_PHB24_ITEM_FLASK"
+    ],
+    "equipment/forgery kit": [
+      "ID_WOTC_PHB24_ITEM_TOOL_FORGERY_KIT"
+    ],
+    "equipment/galley": [
+      "ID_WOTC_PHB24_ITEM_GALLEY"
+    ],
+    "equipment/glaive": [
+      "ID_WOTC_PHB24_WEAPON_GLAIVE"
+    ],
+    "equipment/glassblower's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_GLASSBLOWERS_TOOLS"
+    ],
+    "equipment/grappling hook": [
+      "ID_WOTC_PHB24_ITEM_GRAPPLING_HOOK"
+    ],
+    "equipment/greataxe": [
+      "ID_WOTC_PHB24_WEAPON_GREATAXE"
+    ],
+    "equipment/greatclub": [
+      "ID_WOTC_PHB24_WEAPON_GREATCLUB"
+    ],
+    "equipment/greatsword": [
+      "ID_WOTC_PHB24_WEAPON_GREATSWORD"
+    ],
+    "equipment/halberd": [
+      "ID_WOTC_PHB24_WEAPON_HALBERD"
+    ],
+    "equipment/half plate armor": [
+      "ID_WOTC_PHB24_ARMOR_MEDIUM_HALF_PLATE"
+    ],
+    "equipment/hand crossbow": [
+      "ID_WOTC_PHB24_WEAPON_HAND_CROSSBOW"
+    ],
+    "equipment/handaxe": [
+      "ID_WOTC_PHB24_WEAPON_HANDAXE"
+    ],
+    "equipment/healer's kit": [
+      "ID_WOTC_PHB24_ITEM_HEALERS_KIT"
+    ],
+    "equipment/heavy crossbow": [
+      "ID_WOTC_PHB24_WEAPON_HEAVY_CROSSBOW"
+    ],
+    "equipment/herbalism kit": [
+      "ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT"
+    ],
+    "equipment/hide armor": [
+      "ID_WOTC_PHB24_ARMOR_MEDIUM_HIDE_ARMOR"
+    ],
+    "equipment/holy water": [
+      "ID_WOTC_PHB24_ITEM_HOLY_WATER"
+    ],
+    "equipment/horse, draft": [
+      "ID_WOTC_PHB24_ITEM_HORSE_DRAFT"
+    ],
+    "equipment/horse, riding": [
+      "ID_WOTC_PHB24_ITEM_HORSE_RIDING"
+    ],
+    "equipment/hunting trap": [
+      "ID_WOTC_PHB24_ITEM_HUNTING_TRAP"
+    ],
+    "equipment/ink": [
+      "ID_WOTC_PHB24_ITEM_INK"
+    ],
+    "equipment/ink pen": [
+      "ID_WOTC_PHB24_ITEM_INK_PEN"
+    ],
+    "equipment/javelin": [
+      "ID_WOTC_PHB24_WEAPON_JAVELIN"
+    ],
+    "equipment/jeweler's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_JEWELERS_TOOLS"
+    ],
+    "equipment/jug": [
+      "ID_WOTC_PHB24_ITEM_JUG"
+    ],
+    "equipment/keelboat": [
+      "ID_WOTC_PHB24_ITEM_KEELBOAT"
+    ],
+    "equipment/ladder": [
+      "ID_WOTC_PHB24_ITEM_LADDER"
+    ],
+    "equipment/lamp": [
+      "ID_WOTC_PHB24_ITEM_LAMP"
+    ],
+    "equipment/lance": [
+      "ID_WOTC_PHB24_WEAPON_LANCE"
+    ],
+    "equipment/lantern, bullseye": [
+      "ID_WOTC_PHB24_ITEM_LANTERN_BULLSEYE"
+    ],
+    "equipment/lantern, hooded": [
+      "ID_WOTC_PHB24_ITEM_LANTERN_HOODED"
+    ],
+    "equipment/leather armor": [
+      "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER"
+    ],
+    "equipment/leatherworker's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_LEATHERWORKERS_TOOLS"
+    ],
+    "equipment/light crossbow": [
+      "ID_WOTC_PHB24_WEAPON_LIGHT_CROSSBOW"
+    ],
+    "equipment/light hammer": [
+      "ID_WOTC_PHB24_WEAPON_LIGHTHAMMER"
+    ],
+    "equipment/lock": [
+      "ID_WOTC_PHB24_ITEM_LOCK"
+    ],
+    "equipment/longbow": [
+      "ID_WOTC_PHB24_WEAPON_LONGBOW"
+    ],
+    "equipment/longship": [
+      "ID_WOTC_PHB24_ITEM_LONGSHIP"
+    ],
+    "equipment/longsword": [
+      "ID_WOTC_PHB24_WEAPON_LONGSWORD"
+    ],
+    "equipment/mace": [
+      "ID_WOTC_PHB24_WEAPON_MACE"
+    ],
+    "equipment/magnifying glass": [
+      "ID_WOTC_PHB24_ITEM_MAGNIFYING_GLASS"
+    ],
+    "equipment/manacles": [
+      "ID_WOTC_PHB24_ITEM_MANACLES"
+    ],
+    "equipment/map": [
+      "ID_WOTC_PHB24_ITEM_MAP"
+    ],
+    "equipment/mason's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_MASONS_TOOLS"
+    ],
+    "equipment/mastiff": [
+      "ID_WOTC_PHB24_ITEM_MASTIFF"
+    ],
+    "equipment/maul": [
+      "ID_WOTC_PHB24_WEAPON_MAUL"
+    ],
+    "equipment/military": [
+      "ID_WOTC_PHB24_ITEM_SADDLE_MILITARY"
+    ],
+    "equipment/mirror": [
+      "ID_WOTC_PHB24_ITEM_MIRROR"
+    ],
+    "equipment/morningstar": [
+      "ID_WOTC_PHB24_WEAPON_MORNINGSTAR"
+    ],
+    "equipment/mule": [
+      "ID_WOTC_PHB24_ITEM_MULE"
+    ],
+    "equipment/musket": [
+      "ID_WOTC_PHB24_WEAPON_MUSKET"
+    ],
+    "equipment/navigator's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS"
+    ],
+    "equipment/needles": [
+      "ID_WOTC_PHB24_ITEM_NEEDLE"
+    ],
+    "equipment/net": [
+      "ID_WOTC_PHB24_ITEM_NET"
+    ],
+    "equipment/oil": [
+      "ID_WOTC_PHB24_ITEM_OIL"
+    ],
+    "equipment/orb": [
+      "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB"
+    ],
+    "equipment/padded armor": [
+      "ID_WOTC_PHB24_ARMOR_LIGHT_PADDED"
+    ],
+    "equipment/painter's supplies": [
+      "ID_WOTC_PHB24_ITEM_TOOL_PAINTERS_SUPPLIES"
+    ],
+    "equipment/paper": [
+      "ID_WOTC_PHB24_ITEM_PAPER"
+    ],
+    "equipment/parchment": [
+      "ID_WOTC_PHB24_ITEM_PARCHMENT"
+    ],
+    "equipment/perfume": [
+      "ID_WOTC_PHB24_ITEM_PERFUME"
+    ],
+    "equipment/pike": [
+      "ID_WOTC_PHB24_WEAPON_PIKE"
+    ],
+    "equipment/pistol": [
+      "ID_WOTC_PHB24_WEAPON_PISTOL"
+    ],
+    "equipment/plate armor": [
+      "ID_WOTC_PHB24_ARMOR_HEAVY_PLATE"
+    ],
+    "equipment/poison, basic": [
+      "ID_WOTC_PHB24_ITEM_POISON_BASIC"
+    ],
+    "equipment/poisoner's kit": [
+      "ID_WOTC_PHB24_ITEM_TOOL_POISONERS_KIT"
+    ],
+    "equipment/pole": [
+      "ID_WOTC_PHB24_ITEM_POLE"
+    ],
+    "equipment/pony": [
+      "ID_WOTC_PHB24_ITEM_PONY"
+    ],
+    "equipment/pot, iron": [
+      "ID_WOTC_PHB24_ITEM_POT_IRON"
+    ],
+    "equipment/potion of healing": [
+      "ID_WOTC_PHB24_ITEM_POTION_OF_HEALING"
+    ],
+    "equipment/potter's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_POTTERS_TOOLS"
+    ],
+    "equipment/pouch": [
+      "ID_WOTC_PHB24_ITEM_POUCH"
+    ],
+    "equipment/priest's pack": [
+      "ID_WOTC_PHB24_ITEM_PRIESTS_PACK"
+    ],
+    "equipment/quarterstaff": [
+      "ID_WOTC_PHB24_WEAPON_QUARTERSTAFF"
+    ],
+    "equipment/quiver": [
+      "ID_WOTC_PHB24_ITEM_QUIVER"
+    ],
+    "equipment/ram, portable": [
+      "ID_WOTC_PHB24_ITEM_RAM_PORTABLE"
+    ],
+    "equipment/rapier": [
+      "ID_WOTC_PHB24_WEAPON_RAPIER"
+    ],
+    "equipment/rations": [
+      "ID_WOTC_PHB24_ITEM_RATIONS"
+    ],
+    "equipment/reliquary (held)": [
+      "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY"
+    ],
+    "equipment/riding": [
+      "ID_WOTC_PHB24_ITEM_SADDLE_RIDING"
+    ],
+    "equipment/ring mail": [
+      "ID_WOTC_PHB24_ARMOR_HEAVY_RING_MAIL"
+    ],
+    "equipment/robe": [
+      "ID_WOTC_PHB24_ITEM_ROBE"
+    ],
+    "equipment/rod": [
+      "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ROD"
+    ],
+    "equipment/rope": [
+      "ID_WOTC_PHB24_ITEM_ROPE"
+    ],
+    "equipment/rowboat": [
+      "ID_WOTC_PHB24_ITEM_ROWBOAT"
+    ],
+    "equipment/sack": [
+      "ID_WOTC_PHB24_ITEM_SACK"
+    ],
+    "equipment/sailing ship": [
+      "ID_WOTC_PHB24_ITEM_SAILING_SHIP"
+    ],
+    "equipment/scale mail": [
+      "ID_WOTC_PHB24_ARMOR_MEDIUM_SCALE_MAIL"
+    ],
+    "equipment/scholar's pack": [
+      "ID_WOTC_PHB24_ITEM_SCHOLARS_PACK"
+    ],
+    "equipment/scimitar": [
+      "ID_WOTC_PHB24_WEAPON_SCIMITAR"
+    ],
+    "equipment/shield": [
+      "ID_WOTC_PHB24_ARMOR_SHIELD"
+    ],
+    "equipment/shortbow": [
+      "ID_WOTC_PHB24_WEAPON_SHORTBOW"
+    ],
+    "equipment/shortsword": [
+      "ID_WOTC_PHB24_WEAPON_SHORTSWORD"
+    ],
+    "equipment/shovel": [
+      "ID_WOTC_PHB24_ITEM_SHOVEL"
+    ],
+    "equipment/sickle": [
+      "ID_WOTC_PHB24_WEAPON_SICKLE"
+    ],
+    "equipment/signal whistle": [
+      "ID_WOTC_PHB24_ITEM_SIGNAL_WHISTLE"
+    ],
+    "equipment/sled": [
+      "ID_WOTC_PHB24_ITEM_SLED"
+    ],
+    "equipment/sling": [
+      "ID_WOTC_PHB24_WEAPON_SLING"
+    ],
+    "equipment/smith's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_SMITHS_TOOLS"
+    ],
+    "equipment/spear": [
+      "ID_WOTC_PHB24_WEAPON_SPEAR"
+    ],
+    "equipment/spell scroll(cantrip)": [
+      "ID_WOTC_PHB24_ITEM_SPELL_SCROLL_CANTRIP"
+    ],
+    "equipment/spell scroll(level 1)": [
+      "ID_WOTC_PHB24_ITEM_SPELL_SCROLL_LEVEL1"
+    ],
+    "equipment/spikes, iron": [
+      "ID_WOTC_PHB24_ITEM_SPIKES_IRON"
+    ],
+    "equipment/splint armor": [
+      "ID_WOTC_PHB24_ARMOR_HEAVY_SPLINT"
+    ],
+    "equipment/sprig of mistletoe": [
+      "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE"
+    ],
+    "equipment/spyglass": [
+      "ID_WOTC_PHB24_ITEM_SPYGLASS"
+    ],
+    "equipment/string": [
+      "ID_WOTC_PHB24_ITEM_STRING"
+    ],
+    "equipment/studded leather armor": [
+      "ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER"
+    ],
+    "equipment/tent": [
+      "ID_WOTC_PHB24_ITEM_TENT"
+    ],
+    "equipment/thieves' tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS"
+    ],
+    "equipment/tinderbox": [
+      "ID_WOTC_PHB24_ITEM_TINDERBOX"
+    ],
+    "equipment/tinker's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_TINKERS_TOOLS"
+    ],
+    "equipment/torch": [
+      "ID_WOTC_PHB24_ITEM_TORCH"
+    ],
+    "equipment/trident": [
+      "ID_WOTC_PHB24_WEAPON_TRIDENT"
+    ],
+    "equipment/vial": [
+      "ID_WOTC_PHB24_ITEM_VIAL"
+    ],
+    "equipment/wagon": [
+      "ID_WOTC_PHB24_ITEM_WAGON"
+    ],
+    "equipment/wand": [
+      "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_WAND"
+    ],
+    "equipment/war pick": [
+      "ID_WOTC_PHB24_WEAPON_WAR_PICK"
+    ],
+    "equipment/warhammer": [
+      "ID_WOTC_PHB24_WEAPON_WARHAMMER"
+    ],
+    "equipment/warhorse": [
+      "ID_WOTC_PHB24_ITEM_WARHORSE"
+    ],
+    "equipment/warship": [
+      "ID_WOTC_PHB24_ITEM_WARSHIP"
+    ],
+    "equipment/waterskin": [
+      "ID_WOTC_PHB24_ITEM_WATERSKIN"
+    ],
+    "equipment/weaver's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_WEAVERS_TOOLS"
+    ],
+    "equipment/whip": [
+      "ID_WOTC_PHB24_WEAPON_WHIP"
+    ],
+    "equipment/woodcarver's tools": [
+      "ID_WOTC_PHB24_ITEM_TOOL_WOODCARVERS_TOOLS"
+    ],
+    "equipment/yew wand": [
+      "ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_YEW_WAND"
+    ],
+    "languages/common sign language": [
+      "ID_WOTC_PHB24_LANGUAGE_COMMON_SIGN"
+    ],
+    "languages/draconic": [
+      "ID_WOTC_PHB24_LANGUAGE_DRACONIC"
+    ],
+    "spells/acid arrow": [
+      "ID_WOTC_PHB24_SPELL_MELFS_ACID_ARROW"
+    ],
+    "spells/acid splash": [
+      "ID_WOTC_PHB24_SPELL_ACID_SPLASH"
+    ],
+    "spells/aid": [
+      "ID_WOTC_PHB24_SPELL_AID"
+    ],
+    "spells/alarm": [
+      "ID_WOTC_PHB24_SPELL_ALARM"
+    ],
+    "spells/alter self": [
+      "ID_WOTC_PHB24_SPELL_ALTER_SELF"
+    ],
+    "spells/animal friendship": [
+      "ID_WOTC_PHB24_SPELL_ANIMAL_FRIENDSHIP"
+    ],
+    "spells/animal messenger": [
+      "ID_WOTC_PHB24_SPELL_ANIMAL_MESSENGER"
+    ],
+    "spells/animal shapes": [
+      "ID_WOTC_PHB24_SPELL_ANIMAL_SHAPES"
+    ],
+    "spells/animate dead": [
+      "ID_WOTC_PHB24_SPELL_ANIMATE_DEAD"
+    ],
+    "spells/animate objects": [
+      "ID_WOTC_PHB24_SPELL_ANIMATE_OBJECTS"
+    ],
+    "spells/antilife shell": [
+      "ID_WOTC_PHB24_SPELL_ANTILIFE_SHELL"
+    ],
+    "spells/antimagic field": [
+      "ID_WOTC_PHB24_SPELL_ANTIMAGIC_FIELD"
+    ],
+    "spells/antipathy/sympathy": [
+      "ID_WOTC_PHB24_SPELL_ANTIPATHY_SYMPATHY"
+    ],
+    "spells/arcane eye": [
+      "ID_WOTC_PHB24_SPELL_ARCANE_EYE"
+    ],
+    "spells/arcane hand": [
+      "ID_WOTC_PHB24_SPELL_BIGBYS_HAND"
+    ],
+    "spells/arcane lock": [
+      "ID_WOTC_PHB24_SPELL_ARCANE_LOCK"
+    ],
+    "spells/arcane sword": [
+      "ID_WOTC_PHB24_SPELL_MORDENKAINENS_SWORD"
+    ],
+    "spells/arcanist's magic aura": [
+      "ID_WOTC_PHB24_SPELL_NYSTULS_MAGIC_AURA"
+    ],
+    "spells/astral projection": [
+      "ID_WOTC_PHB24_SPELL_ASTRAL_PROJECTION"
+    ],
+    "spells/augury": [
+      "ID_WOTC_PHB24_SPELL_AUGURY"
+    ],
+    "spells/aura of life": [
+      "ID_WOTC_PHB24_SPELL_AURA_OF_LIFE"
+    ],
+    "spells/awaken": [
+      "ID_WOTC_PHB24_SPELL_AWAKEN"
+    ],
+    "spells/bane": [
+      "ID_WOTC_PHB24_SPELL_BANE"
+    ],
+    "spells/banishment": [
+      "ID_WOTC_PHB24_SPELL_BANISHMENT"
+    ],
+    "spells/barkskin": [
+      "ID_WOTC_PHB24_SPELL_BARKSKIN"
+    ],
+    "spells/beacon of hope": [
+      "ID_WOTC_PHB24_SPELL_BEACON_OF_HOPE"
+    ],
+    "spells/befuddlement": [
+      "ID_WOTC_PHB24_SPELL_BEFUDDLEMENT"
+    ],
+    "spells/bestow curse": [
+      "ID_WOTC_PHB24_SPELL_BESTOW_CURSE"
+    ],
+    "spells/black tentacles": [
+      "ID_WOTC_PHB24_SPELL_EVARDS_BLACK_TENTACLES"
+    ],
+    "spells/blade barrier": [
+      "ID_WOTC_PHB24_SPELL_BLADE_BARRIER"
+    ],
+    "spells/bless": [
+      "ID_WOTC_PHB24_SPELL_BLESS"
+    ],
+    "spells/blight": [
+      "ID_WOTC_PHB24_SPELL_BLIGHT"
+    ],
+    "spells/blindness/deafness": [
+      "ID_WOTC_PHB24_SPELL_BLINDNESS_DEAFNESS"
+    ],
+    "spells/blink": [
+      "ID_WOTC_PHB24_SPELL_BLINK"
+    ],
+    "spells/blur": [
+      "ID_WOTC_PHB24_SPELL_BLUR"
+    ],
+    "spells/burning hands": [
+      "ID_WOTC_PHB24_SPELL_BURNING_HANDS"
+    ],
+    "spells/call lightning": [
+      "ID_WOTC_PHB24_SPELL_CALL_LIGHTNING"
+    ],
+    "spells/calm emotions": [
+      "ID_WOTC_PHB24_SPELL_CALM_EMOTIONS"
+    ],
+    "spells/chain lightning": [
+      "ID_WOTC_PHB24_SPELL_CHAIN_LIGHTNING"
+    ],
+    "spells/charm monster": [
+      "ID_WOTC_PHB24_SPELL_CHARM_MONSTER"
+    ],
+    "spells/charm person": [
+      "ID_WOTC_PHB24_SPELL_CHARM_PERSON"
+    ],
+    "spells/chill touch": [
+      "ID_WOTC_PHB24_SPELL_CHILL_TOUCH"
+    ],
+    "spells/chromatic orb": [
+      "ID_WOTC_PHB24_SPELL_CHROMATIC_ORB"
+    ],
+    "spells/circle of death": [
+      "ID_WOTC_PHB24_SPELL_CIRCLE_OF_DEATH"
+    ],
+    "spells/clairvoyance": [
+      "ID_WOTC_PHB24_SPELL_CLAIRVOYANCE"
+    ],
+    "spells/clone": [
+      "ID_WOTC_PHB24_SPELL_CLONE"
+    ],
+    "spells/cloudkill": [
+      "ID_WOTC_PHB24_SPELL_CLOUDKILL"
+    ],
+    "spells/color spray": [
+      "ID_WOTC_PHB24_SPELL_COLOR_SPRAY"
+    ],
+    "spells/command": [
+      "ID_WOTC_PHB24_SPELL_COMMAND"
+    ],
+    "spells/commune": [
+      "ID_WOTC_PHB24_SPELL_COMMUNE"
+    ],
+    "spells/commune with nature": [
+      "ID_WOTC_PHB24_SPELL_COMMUNE_WITH_NATURE"
+    ],
+    "spells/comprehend languages": [
+      "ID_WOTC_PHB24_SPELL_COMPREHEND_LANGUAGES"
+    ],
+    "spells/compulsion": [
+      "ID_WOTC_PHB24_SPELL_COMPULSION"
+    ],
+    "spells/cone of cold": [
+      "ID_WOTC_PHB24_SPELL_CONE_OF_COLD"
+    ],
+    "spells/confusion": [
+      "ID_WOTC_PHB24_SPELL_CONFUSION"
+    ],
+    "spells/conjure animals": [
+      "ID_WOTC_PHB24_SPELL_CONJURE_ANIMALS"
+    ],
+    "spells/conjure celestial": [
+      "ID_WOTC_PHB24_SPELL_CONJURE_CELESTIAL"
+    ],
+    "spells/conjure elemental": [
+      "ID_WOTC_PHB24_SPELL_CONJURE_ELEMENTAL"
+    ],
+    "spells/conjure fey": [
+      "ID_WOTC_PHB24_SPELL_CONJURE_FEY"
+    ],
+    "spells/conjure minor elementals": [
+      "ID_WOTC_PHB24_SPELL_CONJURE_MINOR_ELEMENTALS"
+    ],
+    "spells/conjure woodland beings": [
+      "ID_WOTC_PHB24_SPELL_CONJURE_WOODLAND_BEINGS"
+    ],
+    "spells/contact other plane": [
+      "ID_WOTC_PHB24_SPELL_CONTACT_OTHER_PLANE"
+    ],
+    "spells/contagion": [
+      "ID_WOTC_PHB24_SPELL_CONTAGION"
+    ],
+    "spells/contingency": [
+      "ID_WOTC_PHB24_SPELL_CONTINGENCY"
+    ],
+    "spells/continual flame": [
+      "ID_WOTC_PHB24_SPELL_CONTINUAL_FLAME"
+    ],
+    "spells/control water": [
+      "ID_WOTC_PHB24_SPELL_CONTROL_WATER"
+    ],
+    "spells/control weather": [
+      "ID_WOTC_PHB24_SPELL_CONTROL_WEATHER"
+    ],
+    "spells/counterspell": [
+      "ID_WOTC_PHB24_SPELL_COUNTERSPELL"
+    ],
+    "spells/create food and water": [
+      "ID_WOTC_PHB24_SPELL_CREATE_FOOD_AND_WATER"
+    ],
+    "spells/create or destroy water": [
+      "ID_WOTC_PHB24_SPELL_CREATE_OR_DESTROY_WATER"
+    ],
+    "spells/create undead": [
+      "ID_WOTC_PHB24_SPELL_CREATE_UNDEAD"
+    ],
+    "spells/creation": [
+      "ID_WOTC_PHB24_SPELL_CREATION"
+    ],
+    "spells/cure wounds": [
+      "ID_WOTC_PHB24_SPELL_CURE_WOUNDS"
+    ],
+    "spells/dancing lights": [
+      "ID_WOTC_PHB24_SPELL_DANCING_LIGHTS"
+    ],
+    "spells/darkness": [
+      "ID_WOTC_PHB24_SPELL_DARKNESS"
+    ],
+    "spells/darkvision": [
+      "ID_WOTC_PHB24_SPELL_DARKVISION"
+    ],
+    "spells/daylight": [
+      "ID_WOTC_PHB24_SPELL_DAYLIGHT"
+    ],
+    "spells/death ward": [
+      "ID_WOTC_PHB24_SPELL_DEATH_WARD"
+    ],
+    "spells/delayed blast fireball": [
+      "ID_WOTC_PHB24_SPELL_DELAYED_BLAST_FIREBALL"
+    ],
+    "spells/demiplane": [
+      "ID_WOTC_PHB24_SPELL_DEMIPLANE"
+    ],
+    "spells/detect evil and good": [
+      "ID_WOTC_PHB24_SPELL_DETECT_EVIL_AND_GOOD"
+    ],
+    "spells/detect magic": [
+      "ID_WOTC_PHB24_SPELL_DETECT_MAGIC"
+    ],
+    "spells/detect poison and disease": [
+      "ID_WOTC_PHB24_SPELL_DETECT_POISON_AND_DISEASE"
+    ],
+    "spells/detect thoughts": [
+      "ID_WOTC_PHB24_SPELL_DETECT_THOUGHTS"
+    ],
+    "spells/dimension door": [
+      "ID_WOTC_PHB24_SPELL_DIMENSION_DOOR"
+    ],
+    "spells/disguise self": [
+      "ID_WOTC_PHB24_SPELL_DISGUISE_SELF"
+    ],
+    "spells/disintegrate": [
+      "ID_WOTC_PHB24_SPELL_DISINTEGRATE"
+    ],
+    "spells/dispel evil and good": [
+      "ID_WOTC_PHB24_SPELL_DISPEL_EVIL_AND_GOOD"
+    ],
+    "spells/dispel magic": [
+      "ID_WOTC_PHB24_SPELL_DISPEL_MAGIC"
+    ],
+    "spells/dissonant whispers": [
+      "ID_WOTC_PHB24_SPELL_DISSONANT_WHISPERS"
+    ],
+    "spells/divination": [
+      "ID_WOTC_PHB24_SPELL_DIVINATION"
+    ],
+    "spells/divine favor": [
+      "ID_WOTC_PHB24_SPELL_DIVINE_FAVOR"
+    ],
+    "spells/divine smite": [
+      "ID_WOTC_PHB24_SPELL_DIVINE_SMITE"
+    ],
+    "spells/divine word": [
+      "ID_WOTC_PHB24_SPELL_DIVINE_WORD"
+    ],
+    "spells/dominate beast": [
+      "ID_WOTC_PHB24_SPELL_DOMINATE_BEAST"
+    ],
+    "spells/dominate monster": [
+      "ID_WOTC_PHB24_SPELL_DOMINATE_MONSTER"
+    ],
+    "spells/dominate person": [
+      "ID_WOTC_PHB24_SPELL_DOMINATE_PERSON"
+    ],
+    "spells/dragon's breath": [
+      "ID_WOTC_PHB24_SPELL_DRAGONS_BREATH"
+    ],
+    "spells/dream": [
+      "ID_WOTC_PHB24_SPELL_DREAM"
+    ],
+    "spells/druidcraft": [
+      "ID_WOTC_PHB24_SPELL_DRUIDCRAFT"
+    ],
+    "spells/earthquake": [
+      "ID_WOTC_PHB24_SPELL_EARTHQUAKE"
+    ],
+    "spells/eldritch blast": [
+      "ID_WOTC_PHB24_SPELL_ELDRITCH_BLAST"
+    ],
+    "spells/elementalism": [
+      "ID_WOTC_PHB24_SPELL_ELEMENTALISM"
+    ],
+    "spells/enhance ability": [
+      "ID_WOTC_PHB24_SPELL_ENHANCE_ABILITY"
+    ],
+    "spells/enlarge/reduce": [
+      "ID_WOTC_PHB24_SPELL_ENLARGE_REDUCE"
+    ],
+    "spells/ensnaring strike": [
+      "ID_WOTC_PHB24_SPELL_ENSNARING_STRIKE"
+    ],
+    "spells/entangle": [
+      "ID_WOTC_PHB24_SPELL_ENTANGLE"
+    ],
+    "spells/enthrall": [
+      "ID_WOTC_PHB24_SPELL_ENTHRALL"
+    ],
+    "spells/etherealness": [
+      "ID_WOTC_PHB24_SPELL_ETHEREALNESS"
+    ],
+    "spells/expeditious retreat": [
+      "ID_WOTC_PHB24_SPELL_EXPEDITIOUS_RETREAT"
+    ],
+    "spells/eyebite": [
+      "ID_WOTC_PHB24_SPELL_EYEBITE"
+    ],
+    "spells/fabricate": [
+      "ID_WOTC_PHB24_SPELL_FABRICATE"
+    ],
+    "spells/faerie fire": [
+      "ID_WOTC_PHB24_SPELL_FAERIE_FIRE"
+    ],
+    "spells/faithful hound": [
+      "ID_WOTC_PHB24_SPELL_MORDENKAINENS_FAITHFUL_HOUND"
+    ],
+    "spells/false life": [
+      "ID_WOTC_PHB24_SPELL_FALSE_LIFE"
+    ],
+    "spells/fear": [
+      "ID_WOTC_PHB24_SPELL_FEAR"
+    ],
+    "spells/feather fall": [
+      "ID_WOTC_PHB24_SPELL_FEATHER_FALL"
+    ],
+    "spells/find familiar": [
+      "ID_WOTC_PHB24_SPELL_FIND_FAMILIAR"
+    ],
+    "spells/find steed": [
+      "ID_WOTC_PHB24_SPELL_FIND_STEED"
+    ],
+    "spells/find the path": [
+      "ID_WOTC_PHB24_SPELL_FIND_THE_PATH"
+    ],
+    "spells/find traps": [
+      "ID_WOTC_PHB24_SPELL_FIND_TRAPS"
+    ],
+    "spells/finger of death": [
+      "ID_WOTC_PHB24_SPELL_FINGER_OF_DEATH"
+    ],
+    "spells/fire bolt": [
+      "ID_WOTC_PHB24_SPELL_FIRE_BOLT"
+    ],
+    "spells/fire shield": [
+      "ID_WOTC_PHB24_SPELL_FIRE_SHIELD"
+    ],
+    "spells/fire storm": [
+      "ID_WOTC_PHB24_SPELL_FIRE_STORM"
+    ],
+    "spells/fireball": [
+      "ID_WOTC_PHB24_SPELL_FIREBALL"
+    ],
+    "spells/flame blade": [
+      "ID_WOTC_PHB24_SPELL_FLAME_BLADE"
+    ],
+    "spells/flame strike": [
+      "ID_WOTC_PHB24_SPELL_FLAME_STRIKE"
+    ],
+    "spells/flaming sphere": [
+      "ID_WOTC_PHB24_SPELL_FLAMING_SPHERE"
+    ],
+    "spells/flesh to stone": [
+      "ID_WOTC_PHB24_SPELL_FLESH_TO_STONE"
+    ],
+    "spells/floating disk": [
+      "ID_WOTC_PHB24_SPELL_TENSERS_FLOATING_DISK"
+    ],
+    "spells/fly": [
+      "ID_WOTC_PHB24_SPELL_FLY"
+    ],
+    "spells/fog cloud": [
+      "ID_WOTC_PHB24_SPELL_FOG_CLOUD"
+    ],
+    "spells/forbiddance": [
+      "ID_WOTC_PHB24_SPELL_FORBIDDANCE"
+    ],
+    "spells/forcecage": [
+      "ID_WOTC_PHB24_SPELL_FORCECAGE"
+    ],
+    "spells/foresight": [
+      "ID_WOTC_PHB24_SPELL_FORESIGHT"
+    ],
+    "spells/freedom of movement": [
+      "ID_WOTC_PHB24_SPELL_FREEDOM_OF_MOVEMENT"
+    ],
+    "spells/freezing sphere": [
+      "ID_WOTC_PHB24_SPELL_OTILUKES_FREEZING_SPHERE"
+    ],
+    "spells/gaseous form": [
+      "ID_WOTC_PHB24_SPELL_GASEOUS_FORM"
+    ],
+    "spells/gate": [
+      "ID_WOTC_PHB24_SPELL_GATE"
+    ],
+    "spells/geas": [
+      "ID_WOTC_PHB24_SPELL_GEAS"
+    ],
+    "spells/gentle repose": [
+      "ID_WOTC_PHB24_SPELL_GENTLE_REPOSE"
+    ],
+    "spells/giant insect": [
+      "ID_WOTC_PHB24_SPELL_GIANT_INSECT"
+    ],
+    "spells/glibness": [
+      "ID_WOTC_PHB24_SPELL_GLIBNESS"
+    ],
+    "spells/globe of invulnerability": [
+      "ID_WOTC_PHB24_SPELL_GLOBE_OF_INVULNERABILITY"
+    ],
+    "spells/glyph of warding": [
+      "ID_WOTC_PHB24_SPELL_GLYPH_OF_WARDING"
+    ],
+    "spells/goodberry": [
+      "ID_WOTC_PHB24_SPELL_GOODBERRY"
+    ],
+    "spells/grease": [
+      "ID_WOTC_PHB24_SPELL_GREASE"
+    ],
+    "spells/greater invisibility": [
+      "ID_WOTC_PHB24_SPELL_GREATER_INVISIBILITY"
+    ],
+    "spells/greater restoration": [
+      "ID_WOTC_PHB24_SPELL_GREATER_RESTORATION"
+    ],
+    "spells/guardian of faith": [
+      "ID_WOTC_PHB24_SPELL_GUARDIAN_OF_FAITH"
+    ],
+    "spells/guards and wards": [
+      "ID_WOTC_PHB24_SPELL_GUARDS_AND_WARDS"
+    ],
+    "spells/guidance": [
+      "ID_WOTC_PHB24_SPELL_GUIDANCE"
+    ],
+    "spells/guiding bolt": [
+      "ID_WOTC_PHB24_SPELL_GUIDING_BOLT"
+    ],
+    "spells/gust of wind": [
+      "ID_WOTC_PHB24_SPELL_GUST_OF_WIND"
+    ],
+    "spells/hallow": [
+      "ID_WOTC_PHB24_SPELL_HALLOW"
+    ],
+    "spells/hallucinatory terrain": [
+      "ID_WOTC_PHB24_SPELL_HALLUCINATORY_TERRAIN"
+    ],
+    "spells/harm": [
+      "ID_WOTC_PHB24_SPELL_HARM"
+    ],
+    "spells/haste": [
+      "ID_WOTC_PHB24_SPELL_HASTE"
+    ],
+    "spells/heal": [
+      "ID_WOTC_PHB24_SPELL_HEAL"
+    ],
+    "spells/healing word": [
+      "ID_WOTC_PHB24_SPELL_HEALING_WORD"
+    ],
+    "spells/heat metal": [
+      "ID_WOTC_PHB24_SPELL_HEAT_METAL"
+    ],
+    "spells/hellish rebuke": [
+      "ID_WOTC_PHB24_SPELL_HELLISH_REBUKE"
+    ],
+    "spells/heroes' feast": [
+      "ID_WOTC_PHB24_SPELL_HEROES_FEAST"
+    ],
+    "spells/heroism": [
+      "ID_WOTC_PHB24_SPELL_HEROISM"
+    ],
+    "spells/hex": [
+      "ID_WOTC_PHB24_SPELL_HEX"
+    ],
+    "spells/hideous laughter": [
+      "ID_WOTC_PHB24_SPELL_TASHAS_HIDEOUS_LAUGHTER"
+    ],
+    "spells/hold monster": [
+      "ID_WOTC_PHB24_SPELL_HOLD_MONSTER"
+    ],
+    "spells/hold person": [
+      "ID_WOTC_PHB24_SPELL_HOLD_PERSON"
+    ],
+    "spells/holy aura": [
+      "ID_WOTC_PHB24_SPELL_HOLY_AURA"
+    ],
+    "spells/hunter's mark": [
+      "ID_WOTC_PHB24_SPELL_HUNTERS_MARK"
+    ],
+    "spells/hypnotic pattern": [
+      "ID_WOTC_PHB24_SPELL_HYPNOTIC_PATTERN"
+    ],
+    "spells/ice knife": [
+      "ID_WOTC_PHB24_SPELL_ICE_KNIFE"
+    ],
+    "spells/ice storm": [
+      "ID_WOTC_PHB24_SPELL_ICE_STORM"
+    ],
+    "spells/identify": [
+      "ID_WOTC_PHB24_SPELL_IDENTIFY"
+    ],
+    "spells/illusory script": [
+      "ID_WOTC_PHB24_SPELL_ILLUSORY_SCRIPT"
+    ],
+    "spells/imprisonment": [
+      "ID_WOTC_PHB24_SPELL_IMPRISONMENT"
+    ],
+    "spells/incendiary cloud": [
+      "ID_WOTC_PHB24_SPELL_INCENDIARY_CLOUD"
+    ],
+    "spells/inflict wounds": [
+      "ID_WOTC_PHB24_SPELL_INFLICT_WOUNDS"
+    ],
+    "spells/insect plague": [
+      "ID_WOTC_PHB24_SPELL_INSECT_PLAGUE"
+    ],
+    "spells/instant summons": [
+      "ID_WOTC_PHB24_SPELL_DRAWMIJS_INSTANT_SUMMONS"
+    ],
+    "spells/invisibility": [
+      "ID_WOTC_PHB24_SPELL_INVISIBILITY"
+    ],
+    "spells/irresistible dance": [
+      "ID_WOTC_PHB24_SPELL_OTTOS_IRRESISTIBLE_DANCE"
+    ],
+    "spells/jump": [
+      "ID_WOTC_PHB24_SPELL_JUMP"
+    ],
+    "spells/knock": [
+      "ID_WOTC_PHB24_SPELL_KNOCK"
+    ],
+    "spells/legend lore": [
+      "ID_WOTC_PHB24_SPELL_LEGEND_LORE"
+    ],
+    "spells/lesser restoration": [
+      "ID_WOTC_PHB24_SPELL_LESSER_RESTORATION"
+    ],
+    "spells/levitate": [
+      "ID_WOTC_PHB24_SPELL_LEVITATE"
+    ],
+    "spells/light": [
+      "ID_WOTC_PHB24_SPELL_LIGHT"
+    ],
+    "spells/lightning bolt": [
+      "ID_WOTC_PHB24_SPELL_LIGHTNING_BOLT"
+    ],
+    "spells/locate animals or plants": [
+      "ID_WOTC_PHB24_SPELL_LOCATE_ANIMALS_OR_PLANTS"
+    ],
+    "spells/locate creature": [
+      "ID_WOTC_PHB24_SPELL_LOCATE_CREATURE"
+    ],
+    "spells/locate object": [
+      "ID_WOTC_PHB24_SPELL_LOCATE_OBJECT"
+    ],
+    "spells/longstrider": [
+      "ID_WOTC_PHB24_SPELL_LONGSTRIDER"
+    ],
+    "spells/mage armor": [
+      "ID_WOTC_PHB24_SPELL_MAGE_ARMOR"
+    ],
+    "spells/mage hand": [
+      "ID_WOTC_PHB24_SPELL_MAGE_HAND"
+    ],
+    "spells/magic circle": [
+      "ID_WOTC_PHB24_SPELL_MAGIC_CIRCLE"
+    ],
+    "spells/magic jar": [
+      "ID_WOTC_PHB24_SPELL_MAGIC_JAR"
+    ],
+    "spells/magic missile": [
+      "ID_WOTC_PHB24_SPELL_MAGIC_MISSILE"
+    ],
+    "spells/magic mouth": [
+      "ID_WOTC_PHB24_SPELL_MAGIC_MOUTH"
+    ],
+    "spells/magic weapon": [
+      "ID_WOTC_PHB24_SPELL_MAGIC_WEAPON"
+    ],
+    "spells/magnificent mansion": [
+      "ID_WOTC_PHB24_SPELL_MORDENKAINENS_MAGNIFICENT_MANSION"
+    ],
+    "spells/major image": [
+      "ID_WOTC_PHB24_SPELL_MAJOR_IMAGE"
+    ],
+    "spells/mass cure wounds": [
+      "ID_WOTC_PHB24_SPELL_MASS_CURE_WOUNDS"
+    ],
+    "spells/mass heal": [
+      "ID_WOTC_PHB24_SPELL_MASS_HEAL"
+    ],
+    "spells/mass healing word": [
+      "ID_WOTC_PHB24_SPELL_MASS_HEALING_WORD"
+    ],
+    "spells/mass suggestion": [
+      "ID_WOTC_PHB24_SPELL_MASS_SUGGESTION"
+    ],
+    "spells/maze": [
+      "ID_WOTC_PHB24_SPELL_MAZE"
+    ],
+    "spells/meld into stone": [
+      "ID_WOTC_PHB24_SPELL_MELD_INTO_STONE"
+    ],
+    "spells/mending": [
+      "ID_WOTC_PHB24_SPELL_MENDING"
+    ],
+    "spells/message": [
+      "ID_WOTC_PHB24_SPELL_MESSAGE"
+    ],
+    "spells/meteor swarm": [
+      "ID_WOTC_PHB24_SPELL_METEOR_SWARM"
+    ],
+    "spells/mind blank": [
+      "ID_WOTC_PHB24_SPELL_MIND_BLANK"
+    ],
+    "spells/mind spike": [
+      "ID_WOTC_PHB24_SPELL_MIND_SPIKE"
+    ],
+    "spells/minor illusion": [
+      "ID_WOTC_PHB24_SPELL_MINOR_ILLUSION"
+    ],
+    "spells/mirage arcane": [
+      "ID_WOTC_PHB24_SPELL_MIRAGE_ARCANE"
+    ],
+    "spells/mirror image": [
+      "ID_WOTC_PHB24_SPELL_MIRROR_IMAGE"
+    ],
+    "spells/mislead": [
+      "ID_WOTC_PHB24_SPELL_MISLEAD"
+    ],
+    "spells/misty step": [
+      "ID_WOTC_PHB24_SPELL_MISTY_STEP"
+    ],
+    "spells/modify memory": [
+      "ID_WOTC_PHB24_SPELL_MODIFY_MEMORY"
+    ],
+    "spells/moonbeam": [
+      "ID_WOTC_PHB24_SPELL_MOONBEAM"
+    ],
+    "spells/move earth": [
+      "ID_WOTC_PHB24_SPELL_MOVE_EARTH"
+    ],
+    "spells/nondetection": [
+      "ID_WOTC_PHB24_SPELL_NONDETECTION"
+    ],
+    "spells/pass without trace": [
+      "ID_WOTC_PHB24_SPELL_PASS_WITHOUT_TRACE"
+    ],
+    "spells/passwall": [
+      "ID_WOTC_PHB24_SPELL_PASSWALL"
+    ],
+    "spells/phantasmal force": [
+      "ID_WOTC_PHB24_SPELL_PHANTASMAL_FORCE"
+    ],
+    "spells/phantasmal killer": [
+      "ID_WOTC_PHB24_SPELL_PHANTASMAL_KILLER"
+    ],
+    "spells/phantom steed": [
+      "ID_WOTC_PHB24_SPELL_PHANTOM_STEED"
+    ],
+    "spells/planar ally": [
+      "ID_WOTC_PHB24_SPELL_PLANAR_ALLY"
+    ],
+    "spells/planar binding": [
+      "ID_WOTC_PHB24_SPELL_PLANAR_BINDING"
+    ],
+    "spells/plane shift": [
+      "ID_WOTC_PHB24_SPELL_PLANE_SHIFT"
+    ],
+    "spells/plant growth": [
+      "ID_WOTC_PHB24_SPELL_PLANT_GROWTH"
+    ],
+    "spells/poison spray": [
+      "ID_WOTC_PHB24_SPELL_POISON_SPRAY"
+    ],
+    "spells/polymorph": [
+      "ID_WOTC_PHB24_SPELL_POLYMORPH"
+    ],
+    "spells/power word heal": [
+      "ID_WOTC_PHB24_SPELL_POWER_WORD_HEAL"
+    ],
+    "spells/power word kill": [
+      "ID_WOTC_PHB24_SPELL_POWER_WORD_KILL"
+    ],
+    "spells/power word stun": [
+      "ID_WOTC_PHB24_SPELL_POWER_WORD_STUN"
+    ],
+    "spells/prayer of healing": [
+      "ID_WOTC_PHB24_SPELL_PRAYER_OF_HEALING"
+    ],
+    "spells/prestidigitation": [
+      "ID_WOTC_PHB24_SPELL_PRESTIDIGITATION"
+    ],
+    "spells/prismatic spray": [
+      "ID_WOTC_PHB24_SPELL_PRISMATIC_SPRAY"
+    ],
+    "spells/prismatic wall": [
+      "ID_WOTC_PHB24_SPELL_PRISMATIC_WALL"
+    ],
+    "spells/private sanctum": [
+      "ID_WOTC_PHB24_SPELL_MORDENKAINENS_PRIVATE_SANCTUM"
+    ],
+    "spells/produce flame": [
+      "ID_WOTC_PHB24_SPELL_PRODUCE_FLAME"
+    ],
+    "spells/programmed illusion": [
+      "ID_WOTC_PHB24_SPELL_PROGRAMMED_ILLUSION"
+    ],
+    "spells/project image": [
+      "ID_WOTC_PHB24_SPELL_PROJECT_IMAGE"
+    ],
+    "spells/protection from energy": [
+      "ID_WOTC_PHB24_SPELL_PROTECTION_FROM_ENERGY"
+    ],
+    "spells/protection from evil and good": [
+      "ID_WOTC_PHB24_SPELL_PROTECTION_FROM_EVIL_AND_GOOD"
+    ],
+    "spells/protection from poison": [
+      "ID_WOTC_PHB24_SPELL_PROTECTION_FROM_POISON"
+    ],
+    "spells/purify food and drink": [
+      "ID_WOTC_PHB24_SPELL_PURIFY_FOOD_AND_DRINK"
+    ],
+    "spells/raise dead": [
+      "ID_WOTC_PHB24_SPELL_RAISE_DEAD"
+    ],
+    "spells/ray of enfeeblement": [
+      "ID_WOTC_PHB24_SPELL_RAY_OF_ENFEEBLEMENT"
+    ],
+    "spells/ray of frost": [
+      "ID_WOTC_PHB24_SPELL_RAY_OF_FROST"
+    ],
+    "spells/ray of sickness": [
+      "ID_WOTC_PHB24_SPELL_RAY_OF_SICKNESS"
+    ],
+    "spells/regenerate": [
+      "ID_WOTC_PHB24_SPELL_REGENERATE"
+    ],
+    "spells/reincarnate": [
+      "ID_WOTC_PHB24_SPELL_REINCARNATE"
+    ],
+    "spells/remove curse": [
+      "ID_WOTC_PHB24_SPELL_REMOVE_CURSE"
+    ],
+    "spells/resilient sphere": [
+      "ID_WOTC_PHB24_SPELL_OTILUKES_RESILIENT_SPHERE"
+    ],
+    "spells/resistance": [
+      "ID_WOTC_PHB24_SPELL_RESISTANCE"
+    ],
+    "spells/resurrection": [
+      "ID_WOTC_PHB24_SPELL_RESURRECTION"
+    ],
+    "spells/reverse gravity": [
+      "ID_WOTC_PHB24_SPELL_REVERSE_GRAVITY"
+    ],
+    "spells/revivify": [
+      "ID_WOTC_PHB24_SPELL_REVIVIFY"
+    ],
+    "spells/rope trick": [
+      "ID_WOTC_PHB24_SPELL_ROPE_TRICK"
+    ],
+    "spells/sacred flame": [
+      "ID_WOTC_PHB24_SPELL_SACRED_FLAME"
+    ],
+    "spells/sanctuary": [
+      "ID_WOTC_PHB24_SPELL_SANCTUARY"
+    ],
+    "spells/scorching ray": [
+      "ID_WOTC_PHB24_SPELL_SCORCHING_RAY"
+    ],
+    "spells/scrying": [
+      "ID_WOTC_PHB24_SPELL_SCRYING"
+    ],
+    "spells/searing smite": [
+      "ID_WOTC_PHB24_SPELL_SEARING_SMITE"
+    ],
+    "spells/secret chest": [
+      "ID_WOTC_PHB24_SPELL_LEOMUNDS_SECRET_CHEST"
+    ],
+    "spells/see invisibility": [
+      "ID_WOTC_PHB24_SPELL_SEE_INVISIBILITY"
+    ],
+    "spells/seeming": [
+      "ID_WOTC_PHB24_SPELL_SEEMING"
+    ],
+    "spells/sending": [
+      "ID_WOTC_PHB24_SPELL_SENDING"
+    ],
+    "spells/sequester": [
+      "ID_WOTC_PHB24_SPELL_SEQUESTER"
+    ],
+    "spells/shapechange": [
+      "ID_WOTC_PHB24_SPELL_SHAPECHANGE"
+    ],
+    "spells/shatter": [
+      "ID_WOTC_PHB24_SPELL_SHATTER"
+    ],
+    "spells/shield": [
+      "ID_WOTC_PHB24_SPELL_SHIELD"
+    ],
+    "spells/shield of faith": [
+      "ID_WOTC_PHB24_SPELL_SHIELD_OF_FAITH"
+    ],
+    "spells/shillelagh": [
+      "ID_WOTC_PHB24_SPELL_SHILLELAGH"
+    ],
+    "spells/shining smite": [
+      "ID_WOTC_PHB24_SPELL_SHINING_SMITE"
+    ],
+    "spells/shocking grasp": [
+      "ID_WOTC_PHB24_SPELL_SHOCKING_GRASP"
+    ],
+    "spells/silence": [
+      "ID_WOTC_PHB24_SPELL_SILENCE"
+    ],
+    "spells/silent image": [
+      "ID_WOTC_PHB24_SPELL_SILENT_IMAGE"
+    ],
+    "spells/simulacrum": [
+      "ID_WOTC_PHB24_SPELL_SIMULACRUM"
+    ],
+    "spells/sleep": [
+      "ID_WOTC_PHB24_SPELL_SLEEP"
+    ],
+    "spells/sleet storm": [
+      "ID_WOTC_PHB24_SPELL_SLEET_STORM"
+    ],
+    "spells/slow": [
+      "ID_WOTC_PHB24_SPELL_SLOW"
+    ],
+    "spells/sorcerous burst": [
+      "ID_WOTC_PHB24_SPELL_SORCEROUS_BURST"
+    ],
+    "spells/spare the dying": [
+      "ID_WOTC_PHB24_SPELL_SPARE_THE_DYING"
+    ],
+    "spells/speak with animals": [
+      "ID_WOTC_PHB24_SPELL_SPEAK_WITH_ANIMALS"
+    ],
+    "spells/speak with dead": [
+      "ID_WOTC_PHB24_SPELL_SPEAK_WITH_DEAD"
+    ],
+    "spells/speak with plants": [
+      "ID_WOTC_PHB24_SPELL_SPEAK_WITH_PLANTS"
+    ],
+    "spells/spider climb": [
+      "ID_WOTC_PHB24_SPELL_SPIDER_CLIMB"
+    ],
+    "spells/spike growth": [
+      "ID_WOTC_PHB24_SPELL_SPIKE_GROWTH"
+    ],
+    "spells/spirit guardians": [
+      "ID_WOTC_PHB24_SPELL_SPIRIT_GUARDIANS"
+    ],
+    "spells/spiritual weapon": [
+      "ID_WOTC_PHB24_SPELL_SPIRITUAL_WEAPON"
+    ],
+    "spells/starry wisp": [
+      "ID_WOTC_PHB24_SPELL_STARRY_WISP"
+    ],
+    "spells/stinking cloud": [
+      "ID_WOTC_PHB24_SPELL_STINKING_CLOUD"
+    ],
+    "spells/stone shape": [
+      "ID_WOTC_PHB24_SPELL_STONE_SHAPE"
+    ],
+    "spells/stoneskin": [
+      "ID_WOTC_PHB24_SPELL_STONESKIN"
+    ],
+    "spells/storm of vengeance": [
+      "ID_WOTC_PHB24_SPELL_STORM_OF_VENGEANCE"
+    ],
+    "spells/suggestion": [
+      "ID_WOTC_PHB24_SPELL_SUGGESTION"
+    ],
+    "spells/summon dragon": [
+      "ID_WOTC_PHB24_SPELL_SUMMON_DRAGON"
+    ],
+    "spells/sunbeam": [
+      "ID_WOTC_PHB24_SPELL_SUNBEAM"
+    ],
+    "spells/sunburst": [
+      "ID_WOTC_PHB24_SPELL_SUNBURST"
+    ],
+    "spells/symbol": [
+      "ID_WOTC_PHB24_SPELL_SYMBOL"
+    ],
+    "spells/telekinesis": [
+      "ID_WOTC_PHB24_SPELL_TELEKINESIS"
+    ],
+    "spells/telepathic bond": [
+      "ID_WOTC_PHB24_SPELL_RARYS_TELEPATHIC_BOND"
+    ],
+    "spells/teleport": [
+      "ID_WOTC_PHB24_SPELL_TELEPORT"
+    ],
+    "spells/teleportation circle": [
+      "ID_WOTC_PHB24_SPELL_TELEPORTATION_CIRCLE"
+    ],
+    "spells/thaumaturgy": [
+      "ID_WOTC_PHB24_SPELL_THAUMATURGY"
+    ],
+    "spells/thunderwave": [
+      "ID_WOTC_PHB24_SPELL_THUNDERWAVE"
+    ],
+    "spells/time stop": [
+      "ID_WOTC_PHB24_SPELL_TIME_STOP"
+    ],
+    "spells/tiny hut": [
+      "ID_WOTC_PHB24_SPELL_LEOMUNDS_TINY_HUT"
+    ],
+    "spells/tongues": [
+      "ID_WOTC_PHB24_SPELL_TONGUES"
+    ],
+    "spells/transport via plants": [
+      "ID_WOTC_PHB24_SPELL_TRANSPORT_VIA_PLANTS"
+    ],
+    "spells/tree stride": [
+      "ID_WOTC_PHB24_SPELL_TREE_STRIDE"
+    ],
+    "spells/true polymorph": [
+      "ID_WOTC_PHB24_SPELL_TRUE_POLYMORPH"
+    ],
+    "spells/true resurrection": [
+      "ID_WOTC_PHB24_SPELL_TRUE_RESURRECTION"
+    ],
+    "spells/true seeing": [
+      "ID_WOTC_PHB24_SPELL_TRUE_SEEING"
+    ],
+    "spells/true strike": [
+      "ID_WOTC_PHB24_SPELL_TRUE_STRIKE"
+    ],
+    "spells/tsunami": [
+      "ID_WOTC_PHB24_SPELL_TSUNAMI"
+    ],
+    "spells/unseen servant": [
+      "ID_WOTC_PHB24_SPELL_UNSEEN_SERVANT"
+    ],
+    "spells/vampiric touch": [
+      "ID_WOTC_PHB24_SPELL_VAMPIRIC_TOUCH"
+    ],
+    "spells/vicious mockery": [
+      "ID_WOTC_PHB24_SPELL_VICIOUS_MOCKERY"
+    ],
+    "spells/vitriolic sphere": [
+      "ID_WOTC_PHB24_SPELL_VITRIOLIC_SPHERE"
+    ],
+    "spells/wall of fire": [
+      "ID_WOTC_PHB24_SPELL_WALL_OF_FIRE"
+    ],
+    "spells/wall of force": [
+      "ID_WOTC_PHB24_SPELL_WALL_OF_FORCE"
+    ],
+    "spells/wall of ice": [
+      "ID_WOTC_PHB24_SPELL_WALL_OF_ICE"
+    ],
+    "spells/wall of stone": [
+      "ID_WOTC_PHB24_SPELL_WALL_OF_STONE"
+    ],
+    "spells/wall of thorns": [
+      "ID_WOTC_PHB24_SPELL_WALL_OF_THORNS"
+    ],
+    "spells/warding bond": [
+      "ID_WOTC_PHB24_SPELL_WARDING_BOND"
+    ],
+    "spells/water breathing": [
+      "ID_WOTC_PHB24_SPELL_WATER_BREATHING"
+    ],
+    "spells/water walk": [
+      "ID_WOTC_PHB24_SPELL_WATER_WALK"
+    ],
+    "spells/web": [
+      "ID_WOTC_PHB24_SPELL_WEB"
+    ],
+    "spells/weird": [
+      "ID_WOTC_PHB24_SPELL_WEIRD"
+    ],
+    "spells/wind walk": [
+      "ID_WOTC_PHB24_SPELL_WIND_WALK"
+    ],
+    "spells/wind wall": [
+      "ID_WOTC_PHB24_SPELL_WIND_WALL"
+    ],
+    "spells/wish": [
+      "ID_WOTC_PHB24_SPELL_WISH"
+    ],
+    "spells/word of recall": [
+      "ID_WOTC_PHB24_SPELL_WORD_OF_RECALL"
+    ],
+    "spells/zone of truth": [
+      "ID_WOTC_PHB24_SPELL_ZONE_OF_TRUTH"
+    ],
+    "animals/badger": [
+      "ID_WOTC_MM25_COMPANION_BADGER"
+    ],
+    "animals/bat": [
+      "ID_WOTC_MM25_COMPANION_BAT"
+    ],
+    "animals/cat": [
+      "ID_WOTC_MM25_COMPANION_CAT"
+    ],
+    "animals/crab": [
+      "ID_WOTC_MM25_COMPANION_CRAB"
+    ],
+    "animals/frog": [
+      "ID_WOTC_MM25_COMPANION_FROG"
+    ],
+    "animals/goat": [
+      "ID_WOTC_MM25_COMPANION_GOAT"
+    ],
+    "animals/hawk": [
+      "ID_WOTC_MM25_COMPANION_HAWK"
+    ],
+    "animals/lizard": [
+      "ID_WOTC_MM25_COMPANION_LIZARD"
+    ],
+    "animals/octopus": [
+      "ID_WOTC_MM25_COMPANION_OCTOPUS"
+    ],
+    "animals/owl": [
+      "ID_WOTC_MM25_COMPANION_OWL"
+    ],
+    "animals/rat": [
+      "ID_WOTC_MM25_COMPANION_RAT"
+    ],
+    "animals/raven": [
+      "ID_WOTC_MM25_COMPANION_RAVEN"
+    ],
+    "animals/scorpion": [
+      "ID_WOTC_MM25_COMPANION_SCORPION"
+    ],
+    "animals/spider": [
+      "ID_WOTC_MM25_COMPANION_SPIDER"
+    ],
+    "animals/venomous snake": [
+      "ID_WOTC_MM25_COMPANION_VENOMOUS_SNAKE"
+    ],
+    "animals/weasel": [
+      "ID_WOTC_MM25_COMPANION_WEASEL"
+    ]
+  },
+  "curated": {
+    "ID_WOTC_MM25_COMPANION_IMP": "Find Familiar / Pact of the Chain form; an SRD 5.2.1 monster stat block",
+    "ID_WOTC_MM25_COMPANION_PSEUDODRAGON": "Find Familiar / Pact of the Chain form; an SRD 5.2.1 monster stat block",
+    "ID_WOTC_MM25_COMPANION_QUASIT": "Find Familiar / Pact of the Chain form; an SRD 5.2.1 monster stat block",
+    "ID_WOTC_MM25_COMPANION_SKELETON": "Find Familiar / Pact of the Chain form; an SRD 5.2.1 monster stat block",
+    "ID_WOTC_MM25_COMPANION_SPHINX_OF_WONDER": "Find Familiar / Pact of the Chain form; an SRD 5.2.1 monster stat block",
+    "ID_WOTC_MM25_COMPANION_SPRITE": "Find Familiar / Pact of the Chain form; an SRD 5.2.1 monster stat block",
+    "ID_WOTC_PHB24_WEAPON_GROUP_POLEARMS": "weapon group referenced by the Polearm-style feats and the SRD polearm weapons",
+    "ID_WOTC_PHB24_RULE_BURNING": "SRD 5.2.1 Rules Glossary hazard",
+    "ID_WOTC_PHB24_RULE_DEHYDRATION": "SRD 5.2.1 Rules Glossary hazard",
+    "ID_WOTC_PHB24_RULE_MALNUTRITION": "SRD 5.2.1 Rules Glossary hazard",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD": "starting equipment pack for an SRD 5.2.1 class or background",
+    "ID_WOTC_PHB24_ITEM_TOOL_DICE_SET": "instance of the SRD 5.2.1 Gaming Set tool entry (generic game)",
+    "ID_WOTC_PHB24_ITEM_TOOL_PLAYING_CARDS_SET": "instance of the SRD 5.2.1 Gaming Set tool entry (generic game)",
+    "ID_WOTC_PHB24_INSTRUMENT_BAGPIPES": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_DRUM": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_DULCIMER": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_FLUTE": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_HORN": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_LUTE": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_LYRE": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_PANFLUTE": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_SHAWM": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_INSTRUMENT_VIOL": "instance of the SRD 5.2.1 Musical Instrument tool entry (generic instrument name)",
+    "ID_WOTC_PHB24_ITEM_BARDING": "listed in the SRD 5.2.1 Mounts and Vehicles table at a multiple of the armor's cost, so it carries no coin cell to extract"
+  },
+  "excluded": {
+    "ID_WOTC_PHB24_ITEM_TOOL_DRAGONCHESS_SET": "gaming set named for a publisher-specific game; SRD 5.2.1 lists Gaming Set generically",
+    "ID_WOTC_PHB24_ITEM_TOOL_THREE_DRAGON_ANTE_SET": "gaming set named for a publisher-specific game; SRD 5.2.1 lists Gaming Set generically",
+    "ID_WOTC_PHB24_ARCHETYPE_BARBARIAN_WILD_HEART": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_BARBARIAN_WORLD_TREE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_BARBARIAN_ZEALOT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_BARD_COLLEGE_OF_DANCE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_BARD_COLLEGE_OF_GLAMOUR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_BARD_COLLEGE_OF_VALOR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_CLERIC_LIGHT_DOMAIN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_CLERIC_TRICKERY_DOMAIN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_CLERIC_WAR_DOMAIN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_DRUID_CIRCLE_OF_THE_MOON": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_DRUID_CIRCLE_OF_THE_SEA": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_DRUID_CIRCLE_OF_THE_STARS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_STAR_MAP": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_FIGHTER_BATTLE_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_FIGHTER_ELDRITCH_KNIGHT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_FIGHTER_PSI_WARRIOR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_MONK_WARRIOR_OF_THE_ELEMENTS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_MONK_WARRIOR_OF_MERCY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_MONK_WARRIOR_OF_SHADOW": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_PALADIN_OATH_OF_THE_ANCIENTS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_PALADIN_OATH_OF_GLORY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_PALADIN_OATH_OF_VENGEANCE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_RANGER_BEAST_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_COMPANION_RANGER_BEAST_MASTER_PRIMAL_COMPANION_BEAST_OF_THE_LAND": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_COMPANION_RANGER_BEAST_MASTER_PRIMAL_COMPANION_BEAST_OF_THE_SKY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_COMPANION_RANGER_BEAST_MASTER_PRIMAL_COMPANION_BEAST_OF_THE_SEA": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_RANGER_FEY_WANDERER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_RANGER_GLOOM_STALKER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_ROGUE_ARCANE_TRICKSTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_ROGUE_ASSASSIN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_ROGUE_SOULKNIFE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_SORCERER_ABERRANT_SORCERY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_SORCERER_CLOCKWORK_SORCERY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_SORCERER_WILD_MAGIC_SORCERY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_WARLOCK_ARCHFEY_PATRON": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_WARLOCK_CELESTIAL_PATRON": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_WARLOCK_GREAT_OLD_ONE_PATRON": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_WIZARD_ABJURER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_WIZARD_DIVINER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ARCHETYPE_WIZARD_ILLUSIONIST": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_ARTISAN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_CHARLATAN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_ENTERTAINER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_FARMER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_GUARD": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_GUIDE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_HERMIT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_MERCHANT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_NOBLE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_SAILOR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_SCRIBE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_BACKGROUND_WAYFARER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_BLESSED_WARRIOR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_DRUIDIC_WARRIOR": "not in SRD 5.2.1",
+    "ID_WOTC_MM25_COMPANION_SLAAD_TADPOLE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_BOON_OF_ENERGY_RESISTANCE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_BOON_OF_FORTITUDE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_BOON_OF_RECOVERY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_BOON_OF_SKILL": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_BOON_OF_SPEED": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_BLIND_FIGHTING": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_DUELING": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_INTERCEPTION": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_PROTECTION": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_THROWN_WEAPON_FIGHTING": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_UNARMED_FIGHTING": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_ACTOR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_ATHLETE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_CHARGER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_CHEF": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_CROSSBOW_EXPERT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_CRUSHER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_DEFENSIVE_DUELIST": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_DUAL_WIELDER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_DURABLE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_ELEMENTAL_ADEPT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_ELEMENTAL_ADEPT_2": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_ELEMENTAL_ADEPT_3": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_ELEMENTAL_ADEPT_4": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_ELEMENTAL_ADEPT_5": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_FEYTOUCHED": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_GREAT_WEAPON_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_HEAVILY_ARMORED": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_HEAVY_ARMOR_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_INSPIRING_LEADER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_KEEN_MIND": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_LIGHTLY_ARMORED": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_MAGE_SLAYER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_MARTIAL_WEAPON_TRAINING": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_MEDIUM_ARMOR_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_MODERATELY_ARMORED": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_MOUNTED_COMBATANT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_OBSERVANT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_PIERCER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_POISONER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_POLEARM_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_RESILIENT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_RITUAL_CASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SENTINEL": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SHADOWTOUCHED": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SHARPSHOOTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SHIELD_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SKILL_EXPERT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SKULKER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SLASHER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SPEEDY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_SPELLSNIPER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_TELEKINETIC": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_TELEPATHIC": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_WAR_CASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_WEAPON_MASTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_FEAT_UNLOCKER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_CRAFTER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_HEALER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_LUCKY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_MUSICIAN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_TAVERN_BRAWLER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_FEAT_TOUGH": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ARTISAN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CHARLATAN": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ENTERTAINER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_FARMER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUARD": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_GUIDE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_HERMIT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_MERCHANT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_NOBLE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAILOR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SCRIBE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_WAYFARER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_PROFICIENCY_WEAPON_PROFICIENCY_MUSKET": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_PROFICIENCY_WEAPON_PROFICIENCY_PISTOL": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_PROFICIENCY_GROUP_POLEARMS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_ARCANE_GATE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_ARCANE_VIGOR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_ARMOR_OF_AGATHYS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_ARMS_OF_HADAR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_AURA_OF_PURITY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_AURA_OF_VITALITY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_BANISHING_SMITE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_BEAST_SENSE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_BLADE_WARD": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_BLINDING_SMITE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_CIRCLE_OF_POWER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_CLOUD_OF_DAGGERS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_COMPELLED_DUEL": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_CONJURE_BARRAGE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_CONJURE_VOLLEY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_CORDON_OF_ARROWS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_CROWN_OF_MADNESS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_CRUSADERS_MANTLE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_DESTRUCTIVE_WAVE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_ELEMENTAL_WEAPON": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_FEIGN_DEATH": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_FOUNT_OF_MOONLIGHT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_FRIENDS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_GRASPING_VINE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_HAIL_OF_THORNS": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_HUNGER_OF_HADAR": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_JALLARZIS_STORM_OF_RADIANCE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_LIGHTNING_ARROW": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_MIND_SLIVER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_POWER_WORD_FORTIFY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_STAGGERING_SMITE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_STEEL_WIND_STRIKE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_ABERRATION": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_BEAST": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_CELESTIAL": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_CONSTRUCT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_ELEMENTAL": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_FEY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_FIEND": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SUMMON_UNDEAD": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SWIFT_QUIVER": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_SYNAPTIC_STATIC": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_TASHAS_BUBBLING_CAULDRON": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_TELEPATHY": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_THORN_WHIP": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_THUNDERCLAP": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_THUNDEROUS_SMITE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_TOLL_THE_DEAD": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_WITCH_BOLT": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_WORD_OF_RADIANCE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_WRATHFUL_SMITE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_SPELL_YOLANDES_REGAL_PRESENCE": "not in SRD 5.2.1",
+    "ID_WOTC_PHB24_RACE_AASIMAR": "Aasimar is not an SRD 5.2.1 species"
+  }
+}

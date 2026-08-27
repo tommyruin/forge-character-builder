@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/AuroraLegacy/elements",
+  "commit": "4fc7b24e762599f45d2836f3fc7814658d407315",
+  "acceptedFileCount": 796,
+  "manifest": "AuroraLegacy.manifest.sha256",
+  "acceptedExtensions": [
+    ".xml",
+    ".index"
+  ]
+}

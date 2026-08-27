@@ -1,0 +1,53 @@
+{
+  "name": "dm-forge-character-builder-dev",
+  "version": "1.0.11",
+  "private": true,
+  "description": "Forge Character Builder: a TypeScript rules engine and browser client for D&D 5e — .dnd5e import/export, content XML ingestion, leveling, statistics, character sheet PDFs, and VTT export.",
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/tommyruin/forge-character-builder",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/client"
+  ],
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "vitest run --maxWorkers=1 --no-file-parallelism",
+    "test:corpus": "FCB_REQUIRE_CORPUS=1 vitest run --maxWorkers=1 --no-file-parallelism",
+    "test:watch": "vitest",
+    "test:coverage": "FCB_REQUIRE_CORPUS=1 vitest run --coverage --maxWorkers=1 --no-file-parallelism",
+    "client:lint": "npm run lint --workspace dm-forge-character-builder",
+    "client:dev": "npm run dev --workspace dm-forge-character-builder",
+    "client:build": "npm run build --workspace dm-forge-character-builder",
+    "client:test": "npm run test --workspace dm-forge-character-builder",
+    "perf:choice": "node scripts/perf-choice-latency.mjs",
+    "verify:compression": "node scripts/verify-compression.mjs",
+    "verify:browser": "node scripts/verify-browser.mjs",
+    "corpus:fetch": "node scripts/fetch-corpus.mjs",
+    "coverage:gate": "node scripts/coverage-gate.mjs",
+    "content:extract-srd-inventory": "node scripts/extract-srd-inventory.mjs --report && node scripts/extract-srd51-inventory.mjs --report",
+    "content:build-srd": "node scripts/build-srd-content.mjs build --edition all",
+    "content:check-srd": "node scripts/build-srd-content.mjs check --edition all",
+    "sheets:build": "node scripts/build-sheet-templates.mjs build",
+    "sheets:check": "node scripts/build-sheet-templates.mjs check",
+    "release": "node scripts/release.mjs",
+    "release:dry": "node scripts/release.mjs --dry-run",
+    "audit:public": "node scripts/audit-public-tree.mjs --strict"
+  },
+  "devDependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^3.2.7",
+    "@vitest/eslint-plugin": "^1.6.26",
+    "eslint": "^10.8.1",
+    "playwright": "^1.62.1",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.66.0",
+    "vitest": "^3.0.0"
+  }
+}

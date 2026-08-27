@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Saving Throw Proficiency (Strength)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_SAVINGTHROW_STRENGTH">
+		<supports>Saving Throw</supports>
+		<rules>
+			<stat name="strength:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" />
+		</rules>
+	</element>
+	<element name="Saving Throw Proficiency (Dexterity)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_SAVINGTHROW_DEXTERITY">
+		<supports>Saving Throw</supports>
+		<rules>
+			<stat name="dexterity:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" />
+		</rules>
+	</element>
+	<element name="Saving Throw Proficiency (Constitution)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_SAVINGTHROW_CONSTITUTION">
+		<supports>Saving Throw</supports>
+		<rules>
+			<stat name="constitution:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" />
+		</rules>
+	</element>
+	<element name="Saving Throw Proficiency (Intelligence)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_SAVINGTHROW_INTELLIGENCE">
+		<supports>Saving Throw</supports>
+		<rules>
+			<stat name="intelligence:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" />
+		</rules>
+	</element>
+	<element name="Saving Throw Proficiency (Wisdom)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM">
+		<supports>Saving Throw</supports>
+		<rules>
+			<stat name="wisdom:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" />
+		</rules>
+	</element>
+	<element name="Saving Throw Proficiency (Charisma)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_SAVINGTHROW_CHARISMA">
+		<supports>Saving Throw</supports>
+		<rules>
+			<stat name="charisma:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" />
+		</rules>
+	</element>
+</elements>

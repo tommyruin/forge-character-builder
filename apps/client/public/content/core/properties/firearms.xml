@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Ammunition" type="Weapon Property" source="Core" id="ID_INTERNAL_WEAPON_PROPERTY_FIREARM_AMMUNITION">
+		<description>
+			<p>A firearm's ammunition is spent when it is fired and cannot be recovered afterwards.</p>
+		</description>
+	</element>
+	<element name="Burst Fire" type="Weapon Property" source="Core" id="ID_INTERNAL_WEAPON_PROPERTY_FIREARM_BURST_FIRE">
+		<description>
+			<p>A weapon with this property can make a normal attack against one target, or spray a 10-foot cube within its normal range instead: each creature in the cube must succeed on a DC 15 Dexterity saving throw or take the weapon's normal damage. Spraying spends ten pieces of ammunition.</p>
+		</description>
+	</element>
+	<element name="Reload" type="Weapon Property" source="Core" id="ID_INTERNAL_WEAPON_PROPERTY_FIREARM_RELOAD">
+		<description>
+			<p>A weapon with this property fires a limited number of shots, after which it must be reloaded with an action or a bonus action.</p>
+		</description>
+	</element>
+</elements>

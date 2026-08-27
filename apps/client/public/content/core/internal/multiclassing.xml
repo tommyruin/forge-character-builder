@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Multiclassing" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_MULTICLASSING">
+		<description>
+			<p>Multiclassing allows you to gain levels in multiple classes. Doing so lets you mix the abilities of those classes to realize a character concept that might not be reflected in one of the standard class options.</p>
+			<p class="indent">With this rule, you have the option of gaining a level in a new class whenever you advance in level, instead of gaining a level in your current class. Your levels in all your classes are added together to determine your character level. For example, if you have three levels in wizard and two in fighter, you’re a 5th-level character.</p>
+			<p class="indent">As you advance in levels, you might primarily remain a member of your original class with just a few levels in another class, or you might change course entirely, never looking back at the class you left behind. You might even start progressing in a third or fourth class. Compared to a single-class character of the same level, you’ll sacrifice some focus in exchange for versatility.</p>
+			<p class="indent">To qualify for a new class, you must meet the ability score prerequisites for both your current class and your new one.</p>
+		</description>
+		<sheet>
+			<description>Multiclassing allows you to gain levels in multiple classes. To qualify for a new class, you must meet the ability score prerequisites for both your current class and your new one.</description>
+		</sheet>
+		<setters>
+			<set name="default">true</set>
+			<set name="short">Multiclassing allows you to gain levels in multiple classes. To qualify for a new class, you must meet the ability score prerequisites for both your current class and your new one.</set>
+			<set name="locked">true</set>
+		</setters>
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_MULTICLASS_SPELLCASTING" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE" />
+		</rules>
+	</element>
+	<element name="Multiclassing Prerequisite" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE">
+		<setters>
+			<set name="allow duplicate">false</set>
+		</setters>
+	</element>
+	<element name="Multiclassing (Level 2)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_2">
+		<setters>
+			<set name="level">2</set>
+		</setters>
+	</element>
+	<element name="Multiclassing (Level 3)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_3" />
+	<element name="Multiclassing (Level 4)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_4" />
+	<element name="Multiclassing (Level 5)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_5" />
+	<element name="Multiclassing (Level 6)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_6" />
+	<element name="Multiclassing (Level 7)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_7" />
+	<element name="Multiclassing (Level 8)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_8" />
+	<element name="Multiclassing (Level 9)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_9" />
+	<element name="Multiclassing (Level 10)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_10" />
+	<element name="Multiclassing (Level 11)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_11" />
+	<element name="Multiclassing (Level 12)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_12" />
+	<element name="Multiclassing (Level 13)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_13" />
+	<element name="Multiclassing (Level 14)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_14" />
+	<element name="Multiclassing (Level 15)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_15" />
+	<element name="Multiclassing (Level 16)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_16" />
+	<element name="Multiclassing (Level 17)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_17" />
+	<element name="Multiclassing (Level 18)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_18" />
+	<element name="Multiclassing (Level 19)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_19" />
+	<element name="Multiclassing (Level 20)" type="Grants" source="Internal" id="ID_INTERNAL_MULTICLASS_LEVEL_20" />
+	<element name="Multiclass Spellcasting" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_MULTICLASS_SPELLCASTING">
+		<description>
+			<p>Your capacity for spellcasting depends partly on your combined levels in all your spellcasting classes and partly on your individual levels in those classes. Once you have the Spellcasting feature from more than one class, use the rules below. If you multiclass but have the Spellcasting feature from only one class, you follow the rules as described in that class.</p>
+		</description>
+		<rules>
+			<stat name="multiclass:spellcasting:slot:1" value="2" level="1" />
+			<stat name="multiclass:spellcasting:slot:1" value="1" level="2" />
+			<stat name="multiclass:spellcasting:slot:1" value="1" level="3" />
+			<stat name="multiclass:spellcasting:slot:2" value="2" level="3" />
+			<stat name="multiclass:spellcasting:slot:2" value="1" level="4" />
+			<stat name="multiclass:spellcasting:slot:3" value="2" level="5" />
+			<stat name="multiclass:spellcasting:slot:3" value="1" level="6" />
+			<stat name="multiclass:spellcasting:slot:4" value="1" level="7" />
+			<stat name="multiclass:spellcasting:slot:4" value="1" level="8" />
+			<stat name="multiclass:spellcasting:slot:4" value="1" level="9" />
+			<stat name="multiclass:spellcasting:slot:5" value="1" level="9" />
+			<stat name="multiclass:spellcasting:slot:5" value="1" level="10" />
+			<stat name="multiclass:spellcasting:slot:5" value="1" level="18" />
+			<stat name="multiclass:spellcasting:slot:6" value="1" level="11" />
+			<stat name="multiclass:spellcasting:slot:6" value="1" level="19" />
+			<stat name="multiclass:spellcasting:slot:7" value="1" level="13" />
+			<stat name="multiclass:spellcasting:slot:7" value="1" level="20" />
+			<stat name="multiclass:spellcasting:slot:8" value="1" level="15" />
+			<stat name="multiclass:spellcasting:slot:9" value="1" level="17" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Solo" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_SOLO" />
+	<element name="Multiclass Spellcasting Slots Full" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FULL">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="1" />
+			<stat name="multiclass:spellcasting:level" value="1" level="2" />
+			<stat name="multiclass:spellcasting:level" value="1" level="3" />
+			<stat name="multiclass:spellcasting:level" value="1" level="4" />
+			<stat name="multiclass:spellcasting:level" value="1" level="5" />
+			<stat name="multiclass:spellcasting:level" value="1" level="6" />
+			<stat name="multiclass:spellcasting:level" value="1" level="7" />
+			<stat name="multiclass:spellcasting:level" value="1" level="8" />
+			<stat name="multiclass:spellcasting:level" value="1" level="9" />
+			<stat name="multiclass:spellcasting:level" value="1" level="10" />
+			<stat name="multiclass:spellcasting:level" value="1" level="11" />
+			<stat name="multiclass:spellcasting:level" value="1" level="12" />
+			<stat name="multiclass:spellcasting:level" value="1" level="13" />
+			<stat name="multiclass:spellcasting:level" value="1" level="14" />
+			<stat name="multiclass:spellcasting:level" value="1" level="15" />
+			<stat name="multiclass:spellcasting:level" value="1" level="16" />
+			<stat name="multiclass:spellcasting:level" value="1" level="17" />
+			<stat name="multiclass:spellcasting:level" value="1" level="18" />
+			<stat name="multiclass:spellcasting:level" value="1" level="19" />
+			<stat name="multiclass:spellcasting:level" value="1" level="20" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Half" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_HALF">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="2" />
+			<stat name="multiclass:spellcasting:level" value="1" level="4" />
+			<stat name="multiclass:spellcasting:level" value="1" level="6" />
+			<stat name="multiclass:spellcasting:level" value="1" level="8" />
+			<stat name="multiclass:spellcasting:level" value="1" level="10" />
+			<stat name="multiclass:spellcasting:level" value="1" level="12" />
+			<stat name="multiclass:spellcasting:level" value="1" level="14" />
+			<stat name="multiclass:spellcasting:level" value="1" level="16" />
+			<stat name="multiclass:spellcasting:level" value="1" level="18" />
+			<stat name="multiclass:spellcasting:level" value="1" level="20" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Third" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_THIRD">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="3" />
+			<stat name="multiclass:spellcasting:level" value="1" level="6" />
+			<stat name="multiclass:spellcasting:level" value="1" level="9" />
+			<stat name="multiclass:spellcasting:level" value="1" level="12" />
+			<stat name="multiclass:spellcasting:level" value="1" level="15" />
+			<stat name="multiclass:spellcasting:level" value="1" level="18" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Fourth" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FOURTH">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="4" />
+			<stat name="multiclass:spellcasting:level" value="1" level="8" />
+			<stat name="multiclass:spellcasting:level" value="1" level="12" />
+			<stat name="multiclass:spellcasting:level" value="1" level="16" />
+			<stat name="multiclass:spellcasting:level" value="1" level="20" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Fifth" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FIFTH">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="5" />
+			<stat name="multiclass:spellcasting:level" value="1" level="10" />
+			<stat name="multiclass:spellcasting:level" value="1" level="15" />
+			<stat name="multiclass:spellcasting:level" value="1" level="20" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Half Up" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_HALF_UP">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="1" />
+			<stat name="multiclass:spellcasting:level" value="1" level="3" />
+			<stat name="multiclass:spellcasting:level" value="1" level="5" />
+			<stat name="multiclass:spellcasting:level" value="1" level="7" />
+			<stat name="multiclass:spellcasting:level" value="1" level="9" />
+			<stat name="multiclass:spellcasting:level" value="1" level="11" />
+			<stat name="multiclass:spellcasting:level" value="1" level="13" />
+			<stat name="multiclass:spellcasting:level" value="1" level="15" />
+			<stat name="multiclass:spellcasting:level" value="1" level="17" />
+			<stat name="multiclass:spellcasting:level" value="1" level="19" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Third Up" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_THIRD_UP">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="2" />
+			<stat name="multiclass:spellcasting:level" value="1" level="5" />
+			<stat name="multiclass:spellcasting:level" value="1" level="8" />
+			<stat name="multiclass:spellcasting:level" value="1" level="11" />
+			<stat name="multiclass:spellcasting:level" value="1" level="14" />
+			<stat name="multiclass:spellcasting:level" value="1" level="17" />
+			<stat name="multiclass:spellcasting:level" value="1" level="20" />
+		</rules>
+	</element>
+	<element name="Multiclass Spellcasting Slots Fourth Up" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FOURTH_UP">
+		<rules>
+			<stat name="multiclass:spellcasting:level" value="1" level="2" />
+			<stat name="multiclass:spellcasting:level" value="1" level="6" />
+			<stat name="multiclass:spellcasting:level" value="1" level="10" />
+			<stat name="multiclass:spellcasting:level" value="1" level="14" />
+			<stat name="multiclass:spellcasting:level" value="1" level="18" />
+		</rules>
+	</element>
+</elements>

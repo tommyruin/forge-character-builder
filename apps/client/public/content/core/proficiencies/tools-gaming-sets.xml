@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Tool Proficiency (Gaming set)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_GAMING_SET">
+		<description>
+			<p>This item encompasses a wide range of game pieces, including dice and decks of cards (for games such as Three-Dragon Ante). A few common examples appear on the Tools table, but other kinds of gaming sets exist. If you are proficient with a gaming set, you can add your proficiency bonus to ability checks you make to play a game with that set. Each type of gaming set requires a separate proficiency.</p>
+		</description>
+		<rules>
+			<grant name="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_DICE_SET" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_DRAGONCHESS_SET" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_PLAYING_CARD_SET" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_THREE_DRAGON_ANTE_SET" type="Proficiency" />
+		</rules>
+	</element>
+	<element name="Tool Proficiency (Dice set)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_DICE_SET">
+		<supports>Gaming Set</supports>
+	</element>
+	<element name="Tool Proficiency (Dragonchess set)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_DRAGONCHESS_SET">
+		<supports>Gaming Set</supports>
+	</element>
+	<element name="Tool Proficiency (Playing card set)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_PLAYING_CARD_SET">
+		<supports>Gaming Set</supports>
+	</element>
+	<element name="Tool Proficiency (Three-Dragon Ante set)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_GAMING_SET_PROFICIENCY_THREE_DRAGON_ANTE_SET">
+		<supports>Gaming Set</supports>
+	</element>
+</elements>

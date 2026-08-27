@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Authored rule appends for unarmed strikes.
+
+  Several published items and feats change an unarmed strike but ship in the
+  upstream corpus as prose only, with no <rules> block, so nothing can read
+  them. Each append below adds the statistic rules the engine's unarmed surface
+  already consumes (see packages/engine/src/attacks/unarmed.ts); no descriptive
+  text is reproduced here.
+
+  <append> blocks are collected across every ingested file and applied after
+  all elements are known, so these patch elements defined later in the fetched
+  third-party corpus. An append whose target is not installed records an
+  "append-target" diagnostic and is otherwise inert, so a character without the
+  relevant supplement is unaffected.
+
+  Keys follow the corpus convention: no bonus= sums, bonus="base" replaces, and
+  a shared bonus= name keeps the largest value only.
+  See third-party/elements/provenance.md.
+-->
+<elements>
+
+	<!-- Eldritch Claw Tattoo: +1 to the attack and damage rolls of unarmed
+	     strikes. The Unearthed Arcana printing already carries these rules; the
+	     Tasha's printing of the same item does not. -->
+	<append id="ID_WOTC_TCOE_MAGIC_ITEM_TATTOO_ELDRITCH_CLAW_TATTOO">
+		<rules>
+			<stat name="unarmed strike:attack" value="1" />
+			<stat name="unarmed strike:damage" value="1" />
+		</rules>
+	</append>
+
+	<!-- Wraps of Unarmed Prowess: +1/+2/+3 to the attack and damage rolls of
+	     unarmed strikes, by rarity. -->
+	<append id="ID_WOTC_BOMT_MAGIC_ITEM_WRAPS_OF_UNARMED_PROWESS_UNCOMMON">
+		<rules>
+			<stat name="unarmed strike:attack" value="1" />
+			<stat name="unarmed strike:damage" value="1" />
+		</rules>
+	</append>
+
+	<append id="ID_WOTC_BOMT_MAGIC_ITEM_WRAPS_OF_UNARMED_PROWESS_RARE">
+		<rules>
+			<stat name="unarmed strike:attack" value="2" />
+			<stat name="unarmed strike:damage" value="2" />
+		</rules>
+	</append>
+
+	<append id="ID_WOTC_BOMT_MAGIC_ITEM_WRAPS_OF_UNARMED_PROWESS_VERY_RARE">
+		<rules>
+			<stat name="unarmed strike:attack" value="3" />
+			<stat name="unarmed strike:damage" value="3" />
+		</rules>
+	</append>
+
+	<!-- Tavern Brawler: the unarmed strike uses a d4. The engine keeps the
+	     largest die offered, so a monk's Martial Arts die still wins. Every
+	     unarmed strike:dice rule shares the "unarmed strike" bonus bucket:
+	     rules on one key that share a bucket keep only the largest, while
+	     different bucket names would add together. -->
+	<append id="ID_PHB_FEAT_TAVERNBRAWLER">
+		<rules>
+			<stat name="unarmed strike:dice" value="4" bonus="unarmed strike" />
+		</rules>
+	</append>
+
+	<append id="ID_WOTC_PHB24_FEAT_TAVERN_BRAWLER">
+		<rules>
+			<stat name="unarmed strike:dice" value="4" bonus="unarmed strike" />
+		</rules>
+	</append>
+
+	<!-- Unarmed Fighting (2024 feat): a d6, or a d8 with no weapon or shield
+	     in hand. Encoded exactly as the Tasha's fighting style of the same
+	     name already encodes it. -->
+	<append id="ID_WOTC_PHB24_FEAT_UNARMED_FIGHTING">
+		<rules>
+			<stat name="unarmed strike:dice" value="6" bonus="unarmed strike" />
+			<stat name="unarmed strike:dice" value="8" bonus="unarmed strike" equipped="[primary:none],[secondary:none]" />
+		</rules>
+	</append>
+
+</elements>

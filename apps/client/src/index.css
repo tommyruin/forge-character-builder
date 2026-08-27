@@ -1,0 +1,8125 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "BookInsanityRemake";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Bookinsanity.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "BookInsanityRemake";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/homebrewery-assets/fonts/5e/Bookinsanity Bold.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "BookInsanityRemake";
+  font-style: italic;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Bookinsanity Italic.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "BookInsanityRemake";
+  font-style: italic;
+  font-weight: 700;
+  src: url("/homebrewery-assets/fonts/5e/Bookinsanity Bold Italic.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "ScalySansRemake";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Scaly Sans.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "ScalySansRemake";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/homebrewery-assets/fonts/5e/Scaly Sans Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "ScalySansRemake";
+  font-style: italic;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Scaly Sans Italic.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "ScalySansRemake";
+  font-style: italic;
+  font-weight: 700;
+  src: url("/homebrewery-assets/fonts/5e/Scaly Sans Bold Italic.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "ScalySansSmallCapsRemake";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Scaly Sans Caps.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "MrEavesRemake";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Mr Eaves Small Caps.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "SolberaImitationRemake";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Solbera Imitation Tweak.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "NodestoCapsCondensed";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/Nodesto Caps Condensed.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "NodestoCapsCondensed";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/homebrewery-assets/fonts/5e/Nodesto Caps Condensed Bold.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "WalterTurncoat";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/homebrewery-assets/fonts/5e/WalterTurncoat-Regular.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Overpass";
+  font-style: normal;
+  font-weight: 500;
+  src: url("/homebrewery-assets/fonts/5e/Overpass Medium.woff2") format("woff2");
+}
+
+/* Layout thresholds this stylesheet navigates by. Anything else is local
+   polish for one component and carries no structural meaning:
+
+   - viewport 820/821px — mobile shell (bottom nav, document scroll) vs desktop
+     shell (app-height panes that own their own scrolling). Mirrored in JS by
+     MOBILE_VIEWPORT_QUERY in src/layoutBreakpoints.js; keep the two in step.
+   - container fcb-pane 1080/1081px — section rail becomes a horizontal pill
+     strip.
+   - container fcb-pane 700px — two-column tab bodies collapse to one.
+
+   The pane thresholds are container queries, not viewport ones, so a tab in a
+   narrow Split View pane reflows exactly like a narrow window. */
+:root {
+  color-scheme: dark;
+  /* Keep application controls at the same fixed scale as the DM Forge portal.
+     Character-sheet content retains its own specialist type and sizing below. */
+  font-size: 16px;
+  /* Height the compact sticky character bar occupies; App.jsx measures the real height.
+     The larger DM Forge banner scrolls away and is intentionally not part of this offset. */
+  --fcb-topbar-h: var(--dmf-tool-nav-height);
+  /* Real subbar height is measured by CharacterWorkspace via ResizeObserver;
+     this is the single-row fallback. */
+  --fcb-subbar-h: 56px;
+  /* Fixed height of the horizontal section-nav strip (narrow-container mode), so the
+     description panel's sticky offset can be computed from it. */
+  --fcb-navstrip-h: var(--dmf-tool-nav-height);
+  /* I3: the single gap between a tab's navigation band stack and its content.
+     Stated once so every tab shape answers the question the same way. */
+  --fcb-band-gap: 8px;
+  /* Height of a tab-local sub-tab bar (Equipment | Inventory, MANAGE sections). 0 by
+     default; .fcb-has-subtabs raises it so every sticky offset below the bar shifts
+     down by the stuck bar's height. */
+  --fcb-subtab-h: 0px;
+  /* The shared DM Forge page column (--dmf-page-max-width): the top bar, the tab
+     strip, the editing surfaces and the footer all cap and centre on it, matching
+     the portal header. Wide enough for the three-column surfaces and Split View. */
+  --fcb-content-width: min(var(--dmf-page-max-width), 100%);
+  --fcb-gutter: var(--dmf-page-gutter);
+  --fcb-viewport-height: 100svh;
+  --fcb-bg: var(--dmf-background);
+  --fcb-bg-soft: var(--dmf-background-soft);
+  --fcb-surface: var(--dmf-surface);
+  --fcb-surface-2: var(--dmf-surface-strong);
+  --fcb-surface-3: color-mix(
+    in srgb,
+    var(--dmf-surface-strong) 82%,
+    var(--dmf-text)
+  );
+  --fcb-border: var(--dmf-border);
+  --fcb-border-soft: var(--dmf-border-soft);
+  --fcb-text: var(--dmf-text);
+  --fcb-text-muted: var(--dmf-text-muted);
+  --fcb-text-faint: var(--dmf-text-faint);
+  --fcb-primary: var(--dmf-primary);
+  --fcb-primary-light: color-mix(in srgb, var(--dmf-primary) 82%, white);
+  --fcb-primary-strong: var(--dmf-primary-strong);
+  --fcb-cyan: var(--dmf-primary);
+  --fcb-teal: var(--dmf-success);
+  --fcb-amber: var(--dmf-primary);
+  --fcb-red: var(--dmf-danger);
+  --fcb-green: var(--dmf-success);
+  /* Status palette. Derived from the theme's own danger/success/warning hues so
+     destructive and completion states re-tint with the theme instead of staying
+     the dark theme's reds and greens. */
+  --fcb-danger-bg: color-mix(in srgb, var(--dmf-danger) 16%, transparent);
+  --fcb-danger-border: color-mix(in srgb, var(--dmf-danger) 55%, transparent);
+  --fcb-danger-text: color-mix(in srgb, var(--dmf-danger) 45%, var(--dmf-text));
+  --fcb-success-bg: color-mix(in srgb, var(--dmf-success) 14%, transparent);
+  --fcb-success-border: color-mix(
+    in srgb,
+    var(--dmf-success) 50%,
+    transparent
+  );
+  --fcb-success-text: color-mix(
+    in srgb,
+    var(--dmf-success) 45%,
+    var(--dmf-text)
+  );
+  --fcb-warning-bg: color-mix(in srgb, var(--dmf-warning) 16%, transparent);
+  --fcb-warning-border: color-mix(
+    in srgb,
+    var(--dmf-warning) 52%,
+    transparent
+  );
+  --fcb-warning-text: color-mix(
+    in srgb,
+    var(--dmf-warning) 45%,
+    var(--dmf-text)
+  );
+  --fcb-scrim: color-mix(in srgb, var(--dmf-background) 72%, transparent);
+  /* Controls sit one step above the panel they are placed on. Filling them with
+     the panel surface left a button reading as plain text with a hairline. */
+  --fcb-control: color-mix(
+    in srgb,
+    var(--dmf-text) 14%,
+    var(--dmf-surface-strong)
+  );
+  --fcb-control-hover: color-mix(
+    in srgb,
+    var(--dmf-primary) 26%,
+    var(--dmf-surface-strong)
+  );
+  --fcb-control-border: color-mix(
+    in srgb,
+    var(--dmf-text) 22%,
+    var(--dmf-border)
+  );
+  --hb-page: #eee5ce;
+  --hb-accent: #e0e5c1;
+  --hb-header: #58180d;
+  --hb-rule: #c0ad6a;
+  --hb-ink: #2f2419;
+  --hb-muted: #766649;
+  --hb-note: #f8f1d9;
+  --fcb-radius-sm: var(--dmf-radius-sm);
+  --fcb-radius: var(--dmf-radius);
+  --fcb-radius-lg: var(--dmf-radius-lg);
+  --fcb-shadow: var(--dmf-shadow);
+  --fcb-shadow-soft: 0 10px 28px rgba(5, 2, 0, 0.25);
+  --fcb-gradient-primary: linear-gradient(
+    135deg,
+    var(--dmf-primary-strong),
+    var(--dmf-primary)
+  );
+  --fcb-gradient-warm: linear-gradient(
+    135deg,
+    var(--dmf-primary),
+    var(--dmf-accent),
+    var(--dmf-success)
+  );
+  --fcb-transition: var(--dmf-transition);
+  font-family: var(--dmf-font-body);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="retro"] body {
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="retro"] .fcb-character-list-heading h1,
+:root[data-theme="retro"] .fcb-page-heading h1,
+:root[data-theme="retro"] .fcb-page-heading h2 {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--dmf-page-background);
+  color: var(--fcb-text);
+  /* 0.875rem == 14px at the 16px baseline, but scales with the fluid root above so
+     body-inherited text grows in step with the explicitly-sized rem text. */
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Firefox needs the standards-based properties below; the WebKit pseudo-elements
+   that follow provide the matching detailed treatment in Chromium-based browsers.
+   Keep the rule ahead of the responsive exceptions so intentionally hidden tab
+   scrollbars can continue to override it. */
+html,
+body,
+.fcb-app-shell,
+.fcb-app-shell * {
+  scrollbar-color: var(--fcb-border) transparent;
+  scrollbar-width: thin;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--fcb-primary) 42%, transparent);
+}
+
+::-webkit-scrollbar {
+  height: 9px;
+  width: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--fcb-bg-soft) 92%, transparent);
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(
+    in srgb,
+    var(--fcb-text-faint) 72%,
+    var(--fcb-bg-soft)
+  );
+  border: 2px solid color-mix(in srgb, var(--fcb-bg-soft) 92%, transparent);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fcb-primary);
+}
+
+.fcb-app-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: var(--fcb-viewport-height);
+  color: var(--fcb-text);
+}
+
+/* An open character is an application workspace, not a document. Keep the portal
+   chrome and the editor inside the viewport while the public Start pages retain
+   their ordinary document flow. */
+.fcb-app-shell--workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: var(--fcb-viewport-height);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fcb-app-shell--workspace > .fcb-workspace {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Library sections are application surfaces: keep the global navigation and
+   attribution visible while the selected section owns the content scroll. */
+.fcb-app-shell--library {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: var(--fcb-viewport-height);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fcb-app-shell--library > .fcb-library-shell {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --fcb-viewport-height: 100dvh;
+  }
+}
+
+.fcb-workspace {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  /* The editor frequently expands option lists and refreshes character details in place.
+     Pane scroll regions own that behaviour instead of the document. */
+  overflow: hidden;
+  overflow-anchor: none;
+}
+
+.fcb-workspace[hidden],
+.fcb-library-shell[hidden],
+.fcb-persistent-surface[hidden] {
+  display: none !important;
+}
+
+.fcb-app-shell
+  > :not(
+    .dmf-background,
+    .fcb-topbar,
+    .fcb-boot-splash,
+    .fcb-fast-start-notice-stack,
+    .fcb-engine-state-marker
+  ) {
+  position: relative;
+}
+
+.fcb-public-footer {
+  width: var(--fcb-content-width);
+  margin: var(--dmf-space-24) auto 0;
+  padding: var(--dmf-space-16) var(--fcb-gutter) var(--dmf-space-24);
+  border-top: 1px solid var(--fcb-border-soft);
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.fcb-public-footer a {
+  color: var(--fcb-primary-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fcb-public-footer p + p {
+  margin-top: 6px;
+}
+
+.fcb-topbar {
+  position: sticky;
+  top: 0;
+  overflow-anchor: none;
+  z-index: 30;
+  border-bottom: 1px solid var(--fcb-border);
+  /* Solid (was 0.94 + backdrop-blur). The blur is intentionally gone: it promotes
+     this sticky bar to a GPU compositing layer, and on fractional-DPR displays (e.g. 1.25)
+     the scaled layout lands the layer off the device-pixel grid, so the whole layer —
+     text included — gets bilinearly resampled and the brand/tabs look fuzzy. The opaque
+     surface also prevents page content bleeding through the pinned navigation stack. */
+  background: var(--fcb-bg-soft);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.fcb-topbar-inner {
+  /* Spacing between controls inside one top-bar group (see .fcb-topbar-actions). */
+  --fcb-topbar-group-gap: 6px;
+
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  min-height: var(--dmf-tool-nav-height);
+  /* Full-bleed bar background (.fcb-topbar), but the inner row is capped and
+     centred to the same column as .fcb-main — and as the portal header — so the
+     brand/tabs line up with the content gutters on wide viewports. */
+  width: var(--fcb-content-width);
+  margin: 0 auto;
+  padding: 0 var(--fcb-gutter);
+}
+
+.fcb-topbar-brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.fcb-topbar-brand:hover {
+  opacity: 0.84;
+}
+
+.fcb-topbar-brand:focus-visible {
+  border-radius: var(--fcb-radius-sm);
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: 3px;
+}
+
+/* Slot the workspace portals its action buttons + character badge into (App.jsx). */
+.fcb-topbar-actions:empty {
+  display: none;
+}
+
+/* The top bar's controls form three groups of identical icon-only squares:
+   the open character's actions (this portal: undo, save, level up, split
+   view), storage (export, Drive sync, autosave) and site-wide (theme,
+   support). Controls within a group sit --fcb-topbar-group-gap apart; a
+   thin divider marks each group boundary. The group gap is declared on
+   .fcb-topbar-inner. */
+.fcb-topbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fcb-topbar-group-gap);
+  margin-left: auto;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.fcb-topbar-actions > .fcb-toolbar {
+  flex-wrap: nowrap;
+  gap: var(--fcb-topbar-group-gap);
+}
+
+.fcb-topbar-utilities {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--fcb-topbar-group-gap);
+  margin-left: auto;
+  padding: 8px 0;
+}
+
+.fcb-topbar-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 22px;
+  margin: 0 2px;
+  background: var(--fcb-border);
+}
+
+/* With a character open the utilities follow the action portal directly, so
+   the row gap is replaced by a group gap and a divider separates the
+   character group from the storage group. */
+.fcb-app-shell--workspace .fcb-topbar-actions:not(:empty) + .fcb-topbar-utilities {
+  margin-left: calc(var(--fcb-topbar-group-gap) - 14px);
+}
+
+.fcb-topbar-actions:not(:empty) + .fcb-topbar-utilities::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 1px;
+  height: 22px;
+  margin: 0 2px;
+  background: var(--fcb-border);
+}
+
+/* Character loading leaves the workspace action portal empty. Restore the normal
+   auto margin in that state so utility controls stay anchored to the right edge
+   instead of collapsing beside the brand. */
+.fcb-topbar-actions:empty + .fcb-topbar-utilities {
+  margin-left: auto;
+}
+
+/* Same raised surface and shape as every other icon button: sitting
+   transparent and pill-shaped beside the filled, square-cornered buttons made
+   these read as a different kind of thing rather than as controls. */
+.fcb-topbar-utility {
+  position: relative;
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--fcb-control-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-control);
+  box-shadow: 0 1px 2px
+    color-mix(in srgb, var(--dmf-shadow-color) 60%, transparent);
+  color: var(--fcb-text-muted);
+}
+
+.fcb-cloud-utility-dot {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--fcb-bg-soft);
+  border-radius: 50%;
+  background: var(--fcb-text-faint);
+}
+
+.fcb-cloud-utility.is-connected .fcb-cloud-utility-dot {
+  background: var(--dmf-success);
+}
+
+.fcb-cloud-utility:is(.is-connecting, .is-syncing)
+  .fcb-cloud-utility-dot {
+  background: var(--fcb-cyan);
+  animation: fcb-cloud-pulse 1.2s ease-in-out infinite;
+}
+
+.fcb-cloud-utility:is(.is-reconnect, .is-error) .fcb-cloud-utility-dot {
+  background: var(--fcb-amber);
+}
+
+/* Autosave utility: green dot while edits save themselves, amber (with the
+   icon tinted to match) while the user is saving by hand. */
+.tcb-autosave-utility-dot {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--fcb-bg-soft);
+  border-radius: 50%;
+  background: var(--dmf-success);
+}
+
+.tcb-autosave-utility.is-off {
+  color: var(--fcb-amber);
+}
+
+.tcb-autosave-utility.is-off .tcb-autosave-utility-dot {
+  background: var(--fcb-amber);
+}
+
+/* Save and Undo are icon-only squares like the rest of the character group;
+   Save signals pending work with the same corner dot the utilities use. */
+.fcb-manual-save-button {
+  position: relative;
+}
+
+.fcb-manual-save-dot {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--fcb-bg-soft);
+  border-radius: 50%;
+  background: var(--fcb-amber);
+}
+
+.fcb-manual-save-button[data-unsaved='true']:not(:disabled) {
+  border-color: var(--fcb-amber);
+}
+
+.fcb-manual-save-button[data-unsaved='true'] .fcb-manual-save-dot {
+  display: block;
+}
+
+.fcb-topbar-utility:hover,
+.fcb-topbar-utility:focus-visible {
+  border-color: var(--fcb-primary);
+  background: var(--fcb-control-hover);
+  color: var(--fcb-text);
+  outline: none;
+}
+
+.fcb-topbar-utility svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+/* Matches the marketing header's support glow so the one optional, generous
+   action reads the same on both surfaces. The glow keyframes are defined below. */
+.fcb-topbar-utility--support {
+  border-color: color-mix(in srgb, var(--dmf-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--dmf-primary) 14%, var(--fcb-control));
+  color: var(--fcb-text);
+  animation: fcb-support-glow 3.2s ease-in-out infinite;
+}
+
+@keyframes fcb-support-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--dmf-primary) 16%, transparent),
+      0 0 10px -3px color-mix(in srgb, var(--dmf-primary) 36%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--dmf-primary) 30%, transparent),
+      0 0 20px -1px color-mix(in srgb, var(--dmf-primary) 62%, transparent);
+  }
+}
+
+.fcb-topbar-utility--support svg {
+  color: var(--dmf-primary);
+}
+
+.fcb-topbar-utility--support:hover,
+.fcb-topbar-utility--support:focus-visible {
+  border-color: var(--dmf-primary);
+  background: color-mix(in srgb, var(--dmf-primary) 24%, var(--fcb-control));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--dmf-primary) 32%, transparent),
+    0 0 18px -1px color-mix(in srgb, var(--dmf-primary) 62%, transparent);
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-topbar-utility--support {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--dmf-primary) 24%, transparent),
+      0 0 14px -2px color-mix(in srgb, var(--dmf-primary) 48%, transparent);
+    animation: none;
+  }
+}
+
+.fcb-primary-tabs,
+.fcb-secondary-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.fcb-global-tabs {
+  flex: 1 1 0;
+  max-width: 720px;
+  overflow: hidden;
+}
+
+.fcb-primary-tabs::-webkit-scrollbar,
+.fcb-secondary-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.fcb-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    color var(--fcb-transition),
+    background var(--fcb-transition),
+    border-color var(--fcb-transition);
+}
+
+.fcb-primary-tabs .fcb-tab {
+  padding: 0 18px;
+}
+
+.fcb-global-tabs .fcb-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.fcb-global-tabs .fcb-tab-label--full,
+.fcb-global-tabs .fcb-tab-label--compact {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-global-tabs .fcb-tab-label--full {
+  display: block;
+}
+
+.fcb-secondary-tabs .fcb-tab {
+  min-height: 40px;
+  padding: 0 13px;
+}
+
+.fcb-tab:hover {
+  background: color-mix(in srgb, var(--fcb-text) 8%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-tab.is-active {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-tab-character {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  max-width: 220px;
+  background: color-mix(in srgb, var(--fcb-teal) 7%, transparent);
+  text-transform: none;
+}
+
+.fcb-tab-character:hover {
+  background: color-mix(in srgb, var(--fcb-teal) 11%, transparent);
+}
+
+.fcb-tab-character.is-active {
+  border-color: var(--fcb-teal);
+  background: color-mix(in srgb, var(--fcb-teal) 15%, transparent);
+}
+
+.fcb-tab-character-copy {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.fcb-mobile-workspace-nav,
+.fcb-mobile-category-select,
+.fcb-stat-pill-label--compact,
+.fcb-tab-label--compact {
+  display: none;
+}
+
+.fcb-tab-character-name {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-tab-character-metadata {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--fcb-text-faint);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--fcb-amber);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+@media (min-width: 821px) and (max-width: 1280px) {
+  .fcb-topbar-inner {
+    gap: 8px;
+  }
+
+  .fcb-primary-tabs .fcb-tab {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .fcb-global-tabs .fcb-tab-label--full {
+    display: none;
+  }
+
+  .fcb-global-tabs .fcb-tab-label--compact {
+    display: block;
+  }
+
+  .fcb-topbar-actions > .fcb-toolbar,
+  .fcb-topbar-utilities {
+    gap: 4px;
+  }
+}
+
+.fcb-subbar {
+  /* Sticks right below the (already sticky) topbar so the primary navigation and
+     the workspace tab strip stay available while scrolling. */
+  position: sticky;
+  top: calc(var(--fcb-topbar-h) - 1px);
+  overflow-anchor: none;
+  z-index: 25;
+  border-bottom: 1px solid var(--fcb-border-soft);
+  /* No backdrop-blur — see .fcb-topbar. The blur composited this bar into its own layer,
+     which resamples (fuzzes) the START submenu text on fractional-DPR displays when scaled. */
+  background: var(--fcb-bg-soft);
+}
+
+/* Keep workspace tab targets clickable when a long-running library action scrolls the
+   document back to the sticky navigation boundary. */
+.fcb-app-shell--workspace .fcb-subbar {
+  z-index: 31;
+}
+
+.fcb-subbar-inner {
+  display: flex;
+  /* Stats wrap under the tab strip when both don't fit; the measured --fcb-subbar-h
+     keeps every sticky offset correct when that happens. */
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 16px;
+  /* Matches .fcb-topbar-inner / .fcb-main so the tab strip aligns with the
+     content column instead of hugging the left edge on wide viewports. */
+  width: var(--fcb-content-width);
+  margin: 0 auto;
+  padding: 0 var(--fcb-gutter);
+}
+
+.fcb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* A `width: 100%` text field is a flex item with nothing stopping it shrinking,
+   so on a crowded row it is the first thing to collapse --- to the point of
+   being untypable --- while the controls beside it hold their intrinsic width.
+   Give it a floor and let the row wrap instead. The character card overrides
+   this back to 0 below 460px, where it lays its toolbar out as an explicit
+   grid. */
+.fcb-toolbar > .fcb-input {
+  min-width: 8rem;
+}
+
+.fcb-attack-meta-item {
+  display: inline-flex;
+  min-width: 30px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: 999px;
+  color: var(--fcb-text-muted);
+  font-family: var(--dmf-font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Every icon comes from the shared registry, so one rule sizes them all. */
+.fcb-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.fcb-icon-sm {
+  width: 14px;
+  height: 14px;
+}
+
+.fcb-icon-lg {
+  width: 18px;
+  height: 18px;
+}
+
+.fcb-attack-actions {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.fcb-attack-heading {
+  min-height: 38px;
+  padding-right: 220px;
+}
+
+.fcb-attack-actions .fcb-icon-button {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+}
+
+/* Sheet controls float over the page's top right. They sit on the tab, not
+   inside the scrolling canvas, so they stay put as the sheet scrolls, and
+   carry their own surface to stay legible over white PDF pages. */
+.fcb-sheet-float {
+  position: absolute;
+  /* Inset past the body padding and the canvas scrollbar so the bar sits on
+     the page rather than straddling its top-right corner. */
+  top: 30px;
+  right: 32px;
+  z-index: 5;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-surface) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--fcb-shadow-soft);
+}
+
+.fcb-sheet-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fcb-sheet-zoom-value {
+  min-width: 3.5rem;
+}
+
+/* Sheet accent swatches (Manage → Sheet): a ring of the accent colour around
+   a filled disc; the chosen one carries a heavier ring. */
+.fcb-sheet-accent-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fcb-sheet-accent-swatch {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.fcb-sheet-accent-swatch:hover,
+.fcb-sheet-accent-swatch:focus-visible {
+  border-color: var(--dmf-border, currentColor);
+}
+
+.fcb-sheet-accent-swatch-disc {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--fcb-swatch);
+  box-shadow: 0 0 0 2px var(--dmf-surface, #fff), 0 0 0 3px transparent;
+}
+
+.fcb-sheet-accent-swatch.is-active {
+  border-color: currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-weight: 600;
+}
+
+.fcb-sheet-accent-swatch.is-active .fcb-sheet-accent-swatch-disc {
+  box-shadow: 0 0 0 2px var(--dmf-surface, #fff), 0 0 0 4px var(--fcb-swatch);
+}
+
+.fcb-sheet-theme-discs {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.fcb-sheet-theme-discs .fcb-sheet-accent-swatch-disc {
+  width: 16px;
+  height: 16px;
+}
+
+.fcb-sheet-theme-swatch {
+  border-color: transparent;
+}
+
+.fcb-sheet-theme-swatch.is-active {
+  border-color: var(--dmf-border, currentColor);
+}
+
+.fcb-sheet-theme-swatch.is-active .fcb-sheet-accent-swatch-disc {
+  box-shadow: 0 0 0 2px var(--dmf-surface, #fff), 0 0 0 3px var(--fcb-swatch);
+}
+
+.fcb-sheet-face-select {
+  max-width: 320px;
+}
+
+.fcb-sheet-face-select .fcb-filter-select-value,
+.fcb-sheet-face-select .fcb-filter-select-option {
+  font-size: 1.05rem;
+}
+
+.fcb-info-tip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  color: var(--dmf-muted, currentColor);
+  opacity: 0.75;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.fcb-info-tip:hover {
+  opacity: 1;
+}
+
+.fcb-info-tip-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.fcb-sheet-colour-part {
+  display: flex;
+  align-items: center;
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Spell browser school/source filters share one row; each select gives up its
+   default full width and splits the row instead. `min-width: 0` matters when
+   the row shares a line with the search input: without it the row floors at
+   its selects' intrinsic option-text width (~194px each) and pushes the
+   trailing select off the window. */
+.fcb-spell-filter-row {
+  display: flex;
+  flex: 1 1 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
+.fcb-spell-filter-row > .fcb-select {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+/* Filter dropdown (content browser type/source). Owns its popup so long lists
+   scroll in a bounded menu instead of relying on the platform select popup,
+   which clips lists taller than the screen. */
+.fcb-filter-select {
+  position: relative;
+}
+
+.fcb-filter-select-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.fcb-filter-select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-filter-select-caret {
+  flex: 0 0 auto;
+  color: var(--fcb-text-faint);
+}
+
+/* Portaled to document.body and positioned from the trigger's viewport rect,
+   so panel overflow can never clip it; inline styles set the rect-derived
+   left/width/top/max-height. */
+.fcb-filter-select-menu {
+  position: fixed;
+  z-index: 80;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface);
+  box-shadow: var(--fcb-shadow, 0 12px 32px rgb(0 0 0 / 0.35));
+  max-height: min(50vh, 320px);
+  overflow-y: auto;
+}
+
+.fcb-filter-select-option {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--fcb-radius-sm);
+  color: var(--fcb-text);
+  text-align: left;
+}
+
+.fcb-filter-select-option:hover,
+.fcb-filter-select-option:focus-visible {
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+}
+
+.fcb-filter-select-option.is-selected {
+  background: color-mix(in srgb, var(--fcb-primary) 24%, transparent);
+  font-weight: 700;
+}
+
+.fcb-filter-select-empty {
+  padding: 6px 10px;
+  color: var(--fcb-text-faint);
+}
+
+/* Export dropdown (character file + VTT converters). */
+.fcb-export-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.fcb-export-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  min-width: 220px;
+  max-width: calc(100vw - 24px);
+  max-height: min(60vh, 320px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
+.fcb-export-menu-item {
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--fcb-radius-sm);
+  background: transparent;
+  color: var(--fcb-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.fcb-export-menu-item:hover:not(:disabled) {
+  background: var(--fcb-surface-hover, rgb(255 255 255 / 6%));
+}
+
+.fcb-export-menu-item:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* A tab whose content is split into sub-tabs (EQUIPMENT, MANAGE) wraps itself in this
+   class so descendants' sticky offsets account for the stuck sub-tab bar. */
+.fcb-has-subtabs {
+  --fcb-subtab-h: var(--fcb-navstrip-h);
+}
+
+/* I6: every sticky top and height cap derives from these; contexts change
+   the inputs, never the formula. A custom property built from var() freezes
+   its inputs where it is declared, so the one definition is repeated on
+   every element that switches an input — on :root alone, the switches would
+   stop shifting anything below them. The switch points: .fcb-workspace gets
+   the measured --fcb-subbar-h, .fcb-has-subtabs raises --fcb-subtab-h, and
+   .fcb-magic-layout zeroes it in a narrow pane where its bar wraps. */
+:root,
+.fcb-workspace,
+.fcb-has-subtabs,
+.fcb-magic-layout {
+  --fcb-sticky-base: calc(var(--fcb-topbar-h) + var(--fcb-subbar-h));
+  --fcb-sticky-top: calc(var(--fcb-sticky-base) + var(--fcb-subtab-h));
+  --fcb-sticky-avail: calc(var(--fcb-viewport-height) - var(--fcb-sticky-top));
+}
+
+/* The sub-tab strip joins the sticky navigation stack: it rides right below the
+   workspace subbar (which itself sticks below the topbar), so Equipment | Inventory
+   stay reachable while scrolling. Its density and gutter match Build's section strip. */
+.fcb-subtab-bar {
+  position: sticky;
+  top: calc(var(--fcb-sticky-base) - 1px);
+  z-index: 22;
+  height: var(--fcb-subtab-h);
+  display: flex;
+  /* What a band holds runs its full height, so a tab strip's active underline
+     sits on the band's bottom edge instead of floating above it with a sliver
+     of band below. Anything that should not stretch says so itself. */
+  align-items: stretch;
+  margin: calc(0px - var(--fcb-gutter)) 0 14px;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* I2: a band continues the navigation strip above it, so it shares that
+     strip's surface. On --fcb-bg it is a different colour butted against the
+     strip, which reads as a gap instead of as one navigation block. */
+  background: var(--fcb-bg-soft);
+  border-bottom: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-subtab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* The sub-tab bar continues the full-width navigation stack above it, so it
+   bleeds back through the page gutter to the window edge while its tabs stay
+   on the gutter line. */
+.fcb-workspace-content .fcb-workspace-tab > .fcb-subtab-bar {
+  width: calc(100% + var(--fcb-gutter));
+  margin-left: calc(0px - var(--fcb-gutter));
+  padding-left: var(--fcb-gutter);
+}
+
+/* Outside Split View the pane spans the page, so the bar bleeds both ways. In
+   Split View only its outer edge reaches the window; the inner edge stops at
+   the pane so it never runs under the sheet beside it. */
+.fcb-workspace-content:not(.fcb-split-layout)
+  .fcb-workspace-tab
+  > .fcb-subtab-bar {
+  width: calc(100% + var(--fcb-gutter) + var(--fcb-gutter));
+  margin-right: calc(0px - var(--fcb-gutter));
+  padding-right: var(--fcb-gutter);
+}
+
+/* In Split View the bar's inner end is a visible edge against the sheet
+   rather than running off the window, so it is finished instead of cut. Only
+   the bottom corner is free: the top meets the navigation above it, and a
+   curve there would notch the join. */
+.fcb-split-layout .fcb-workspace-tab > .fcb-subtab-bar {
+  border-bottom-right-radius: var(--fcb-radius);
+  /* The bar ends here rather than running off the window, so its content
+     needs the same gutter on this side that the page edge gives it. */
+  padding-right: var(--fcb-gutter);
+}
+
+/* Set the sheet down from the workspace bar above it so the two read as
+   separate surfaces rather than one continuous block. */
+.fcb-split-layout > .fcb-sheet-preview {
+  margin-top: 8px;
+}
+
+.fcb-main {
+  width: var(--fcb-content-width);
+  margin: 0 auto;
+  padding: var(--fcb-gutter) var(--fcb-gutter) var(--dmf-space-32);
+  /* Inline-size container: layouts inside respond to the width they actually get
+     (halved by Split View) rather than the viewport. */
+  container: fcb-pane / inline-size;
+}
+
+.fcb-workspace-alerts {
+  flex: 0 0 auto;
+}
+
+.fcb-workspace-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.fcb-workspace-content {
+  min-height: 0;
+  height: 100%;
+}
+
+/* The workspace editor column (everything except the sheet preview in Split View).
+   A nearer container than .fcb-main, so the tab grids collapse when Split View
+   halves their width even though the viewport is wide. */
+.fcb-editor-pane {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  container: fcb-pane / inline-size;
+}
+
+.fcb-start-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.fcb-panel,
+.fcb-card {
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 72px),
+    color-mix(in srgb, var(--fcb-surface) 94%, transparent);
+  box-shadow: var(--fcb-shadow-soft);
+}
+
+.fcb-panel {
+  overflow: hidden;
+}
+
+.fcb-card {
+  padding: 18px;
+}
+
+.fcb-panel-header,
+.fcb-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+  padding: 15px 16px;
+}
+
+.fcb-card-header {
+  border-bottom: 0;
+  padding: 0 0 14px;
+}
+
+.fcb-panel-title,
+.fcb-card-title {
+  margin: 0;
+  color: var(--fcb-text);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.fcb-panel-subtitle,
+.fcb-card-subtitle {
+  margin: 4px 0 0;
+  color: var(--fcb-text-muted);
+  font-size: 0.82rem;
+}
+
+.fcb-panel-body {
+  padding: 16px;
+}
+
+/* Keep the source catalogue's top controls and commit actions visible while the source
+   groups take the only scrolling region. This avoids making users scroll through dozens of
+   source rows just to find the search or apply controls again. */
+/* Manage's grid cell next to the section rail: the sub-tab panels stack inside it. */
+.fcb-manage-content {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  align-items: start;
+  align-content: start;
+}
+
+/* Magic's view body under the sub-tab bar; gains the builder-layout rail
+   whenever the active view has sections to navigate. */
+.fcb-manage-content > .fcb-manage-single-primary.fcb-manage-sources-primary {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fcb-character-sources-panel {
+  display: flex;
+  min-height: 100%;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fcb-sources-panel {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fcb-sources-panel-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface);
+  box-shadow: 0 10px 22px rgb(0 0 0 / 22%);
+}
+
+.fcb-sources-header {
+  align-items: flex-start;
+}
+
+.fcb-sources-count {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.fcb-sources-controls {
+  display: grid;
+  gap: 16px;
+}
+
+.fcb-sources-controls-row {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.fcb-sources-search {
+  min-width: 0;
+}
+
+.fcb-sources-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fcb-source-groups-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  scrollbar-gutter: stable;
+}
+
+.fcb-source-group-heading {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.fcb-source-group-title-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The (i) beside a group of built-in book stubs; its note wraps under the title. */
+.fcb-source-group-info {
+  display: contents;
+}
+
+.fcb-source-group-info-summary {
+  display: inline-flex;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fcb-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  cursor: pointer;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.8rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  list-style: none;
+  user-select: none;
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    color var(--fcb-transition);
+}
+
+.fcb-source-group-info-summary::-webkit-details-marker {
+  display: none;
+}
+
+.fcb-source-group-info-summary:hover,
+.fcb-source-group-info[open] > .fcb-source-group-info-summary {
+  background: color-mix(in srgb, var(--fcb-text) 7%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-source-group-info-summary:focus-visible {
+  outline: 2px solid var(--fcb-accent, currentColor);
+  outline-offset: 2px;
+}
+
+.fcb-source-group-note {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  max-width: 60ch;
+}
+
+.fcb-source-group-title-row h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fcb-source-group-toggle {
+  display: inline-flex;
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--fcb-radius-sm);
+  background: transparent;
+  color: var(--fcb-text-muted);
+  padding: 4px 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    color var(--fcb-transition);
+}
+
+.fcb-source-group-toggle:hover {
+  border-color: var(--fcb-border);
+  background: color-mix(in srgb, var(--fcb-text) 7%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-source-group-toggle:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: 2px;
+}
+
+.fcb-source-actions-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 8;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface);
+  box-shadow: 0 -10px 22px rgb(0 0 0 / 22%);
+}
+
+.fcb-source-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fcb-source-save-default {
+  margin-left: auto;
+}
+
+.fcb-source-action-label--compact,
+.fcb-sources-unavailable--compact {
+  display: none;
+}
+
+/* Informational, deliberately not the red alert: preserved restrictions for
+   unloaded content are expected state, not a failure. */
+.fcb-sources-unavailable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--fcb-primary) 35%, var(--fcb-border));
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-primary) 11%, transparent);
+  color: var(--fcb-text-muted);
+  font-size: 0.82rem;
+}
+
+.fcb-sources-unavailable p {
+  margin: 0;
+  min-width: 0;
+}
+
+.fcb-sources-unavailable button {
+  flex: 0 0 auto;
+}
+
+.fcb-source-actions-footer p {
+  margin: 10px 0 0;
+}
+
+/* The mobile workspace normally lets a tab grow with the document. Sources are the
+   exception: keep this tab inside the available editor height so its group list, rather
+   than the whole page, owns the scroll while the search and actions stay available. */
+@media (max-width: 820px) {
+  .fcb-workspace-content:has(.fcb-manage-sources-primary) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .fcb-workspace-content:has(.fcb-manage-sources-primary)
+    > .fcb-editor-pane,
+  .fcb-workspace-content:has(.fcb-manage-sources-primary)
+    .fcb-manage-layout {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .fcb-workspace-content:has(.fcb-manage-sources-primary)
+    .fcb-manage-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fcb-workspace-content:has(.fcb-manage-sources-primary)
+    .fcb-manage-layout
+    > .fcb-left-nav {
+    flex: 0 0 auto;
+  }
+
+  .fcb-workspace-content:has(.fcb-manage-sources-primary)
+    .fcb-manage-content {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .fcb-workspace-content:has(.fcb-manage-sources-primary)
+    .fcb-manage-content
+    > .fcb-manage-single-primary.fcb-manage-sources-primary {
+    height: auto;
+    flex: 1 1 auto;
+  }
+}
+
+/* Sources keep their controls and commit actions visible while the catalogue owns
+   scrolling. Compact either narrow screens or short landscape viewports so those
+   fixed cards cannot consume the catalogue's usable height. */
+@media (max-width: 820px), (max-height: 700px) {
+  .fcb-character-sources-panel {
+    gap: 8px;
+  }
+
+  .fcb-sources-panel {
+    flex: 1 1 0;
+  }
+
+  .fcb-sources-panel-top .fcb-panel-header {
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .fcb-sources-panel-top .fcb-panel-body {
+    padding: 8px 12px 10px;
+  }
+
+  .fcb-sources-header,
+  .fcb-sources-intro,
+  .fcb-source-actions-help,
+  .fcb-source-action-label--full,
+  .fcb-sources-unavailable--full {
+    display: none;
+  }
+
+  .fcb-source-action-label--compact,
+  .fcb-sources-unavailable--compact {
+    display: inline;
+  }
+
+  .fcb-sources-search-label {
+    display: none;
+  }
+
+  .fcb-sources-controls {
+    gap: 8px;
+  }
+
+  .fcb-sources-controls-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .fcb-sources-bulk-actions {
+    flex-wrap: nowrap;
+  }
+
+  .fcb-sources-search .fcb-input {
+    margin-top: 0;
+  }
+
+  .fcb-source-groups-scroll {
+    padding: 8px;
+    scrollbar-gutter: auto;
+  }
+
+  .fcb-source-actions-footer {
+    padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .fcb-source-footer-actions {
+    flex-wrap: nowrap;
+  }
+}
+
+/* The resource chip carries the longest label in the summary row ("SPELL
+   POINTS 44"). Spelled out it still fits a 390px phone, so it stays spelled
+   out there; below ~380px it is the difference between the row fitting and
+   PREP --- the chip most worth reading --- landing off-screen. This is local
+   polish for one chip, not a layout threshold. */
+@media (max-width: 380px) {
+  .fcb-caster-summary .fcb-stat-pill-label--full {
+    display: none;
+  }
+
+  .fcb-caster-summary .fcb-stat-pill-label--compact {
+    display: inline;
+  }
+}
+
+@media (max-width: 460px) {
+  .fcb-sources-controls-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-sources-bulk-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fcb-sources-bulk-actions .fcb-button {
+    width: 100%;
+  }
+
+  .fcb-source-footer-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fcb-source-footer-actions .fcb-button {
+    width: 100%;
+    min-width: 0;
+    padding-right: 8px;
+    padding-left: 8px;
+    font-size: 0.72rem;
+  }
+
+  .fcb-source-save-default {
+    margin-left: 0;
+  }
+}
+
+.fcb-page-heading {
+  margin: 0 0 16px;
+}
+
+.fcb-page-heading h1,
+.fcb-page-heading h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2vw, 2.05rem);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.fcb-page-heading p {
+  max-width: 820px;
+  margin: 8px 0 0;
+  color: var(--fcb-text-muted);
+}
+
+.fcb-character-list {
+  min-height: clamp(500px, calc(var(--fcb-viewport-height) - 310px), 760px);
+}
+
+.fcb-cloud-sync {
+  display: grid;
+  min-height: clamp(500px, calc(var(--fcb-viewport-height) - 310px), 760px);
+  align-content: start;
+  gap: 20px;
+}
+
+.fcb-cloud-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 8px 0 24px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-cloud-heading h1 {
+  margin: 0;
+  color: var(--fcb-primary-light);
+  font-family: var(--dmf-font-display);
+  font-size: clamp(2rem, 3vw, 2.25rem);
+  font-weight: 700;
+}
+
+.fcb-cloud-heading p {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--fcb-text-muted);
+  font-family: var(--dmf-font-body);
+  font-size: 0.875rem;
+}
+
+.fcb-cloud-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.fcb-cloud-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--fcb-text-faint);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--fcb-text-faint) 12%, transparent);
+}
+
+.fcb-cloud-status.is-connected .fcb-cloud-status-dot {
+  background: var(--dmf-success);
+  box-shadow: 0 0 0 4px rgba(130, 179, 102, 0.14);
+}
+
+.fcb-cloud-status.is-busy .fcb-cloud-status-dot {
+  background: var(--fcb-cyan);
+  animation: fcb-cloud-pulse 1.2s ease-in-out infinite;
+}
+
+.fcb-cloud-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.85fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.fcb-cloud-card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.fcb-cloud-card-copy {
+  margin: 0;
+  color: var(--fcb-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.fcb-cloud-steps {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--fcb-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.fcb-cloud-steps li::marker {
+  color: var(--fcb-primary-light);
+  font-weight: 800;
+}
+
+.fcb-cloud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fcb-cloud-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fcb-cloud-summary-item {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-surface-2) 78%, transparent);
+}
+
+.fcb-cloud-summary-item strong,
+.fcb-cloud-summary-item span {
+  display: block;
+}
+
+.fcb-cloud-summary-item strong {
+  color: var(--fcb-text);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.fcb-cloud-summary-item span {
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--fcb-text-faint);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-detail-list,
+.fcb-cloud-detail-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.fcb-detail-list > div,
+.fcb-cloud-detail-list > div {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.7fr) minmax(0, 1.3fr);
+  gap: 12px;
+}
+
+.fcb-detail-list dt,
+.fcb-cloud-detail-list dt {
+  color: var(--fcb-text-faint);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.fcb-detail-list dd,
+.fcb-cloud-detail-list dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--fcb-text-muted);
+  font-size: 0.76rem;
+}
+
+.fcb-cloud-privacy {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--fcb-cyan) 26%, transparent);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-cyan) 7%, transparent);
+  color: var(--fcb-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.fcb-cloud-info {
+  border-top: 1px solid var(--fcb-border-soft);
+  padding-top: 12px;
+  color: var(--fcb-text-muted);
+  font-size: 0.82rem;
+}
+
+.fcb-cloud-info > div {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.fcb-cloud-info p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.fcb-cloud-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / 52%);
+  animation: fcb-drawer-backdrop-in 160ms ease-out;
+}
+
+.fcb-app-shell > .fcb-cloud-drawer-backdrop {
+  position: fixed;
+}
+
+.fcb-cloud-drawer {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(560px, 100vw);
+  height: 100%;
+  border-left: 1px solid var(--fcb-border);
+  background: var(--fcb-bg-soft);
+  box-shadow: -20px 0 54px rgb(0 0 0 / 32%);
+  animation: fcb-drawer-in 180ms ease-out;
+}
+
+.fcb-cloud-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-cloud-drawer-header h1 {
+  margin: 2px 0 0;
+  color: var(--fcb-primary-light);
+  font-family: var(--dmf-font-display);
+  font-size: 1.5rem;
+}
+
+.fcb-cloud-drawer-eyebrow {
+  margin: 0;
+  color: var(--fcb-text-faint);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fcb-cloud-drawer-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+}
+
+.fcb-cloud-drawer .fcb-cloud-sync {
+  min-height: 0;
+}
+
+.fcb-cloud-drawer .fcb-cloud-heading {
+  align-items: flex-start;
+  padding-top: 0;
+}
+
+.fcb-cloud-drawer .fcb-cloud-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The narrower workspace drawers (Level Up & XP, Content changes). They share
+   the cloud drawer's geometry but sit below the confirmation dialogs they open,
+   so the backdrop keeps its own stacking level. */
+.fcb-side-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fcb-side-drawer {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(24rem, 100vw);
+  height: 100%;
+  border-left: 1px solid var(--fcb-border);
+  background: var(--fcb-surface);
+  box-shadow: -20px 0 54px rgb(0 0 0 / 32%);
+}
+
+/* The close button is the only way out where no scrim is left to tap, so the
+   header stays put and only the body scrolls. */
+.fcb-side-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-side-drawer-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+}
+
+@keyframes fcb-drawer-in {
+  from {
+    transform: translateX(24px);
+  }
+}
+
+@keyframes fcb-drawer-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.fcb-shell-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--fcb-primary) 35%, var(--fcb-border));
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-primary) 11%, transparent);
+  color: var(--fcb-text-muted);
+  font-size: 0.82rem;
+}
+
+.fcb-shell-notice button {
+  border: 0;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  font-size: 1.2rem;
+}
+
+@keyframes fcb-cloud-pulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-cloud-drawer,
+  .fcb-cloud-drawer-backdrop,
+  .fcb-cloud-status.is-busy .fcb-cloud-status-dot,
+  .fcb-cloud-utility:is(.is-connecting, .is-syncing)
+    .fcb-cloud-utility-dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .fcb-cloud-drawer {
+    width: 100vw;
+    border-left: 0;
+    animation: none;
+  }
+
+  /* No scrim is left to tap at this width, so the panel takes the screen and
+     the close button carries the dismissal. */
+  .fcb-side-drawer {
+    width: 100vw;
+    border-left: 0;
+  }
+
+  .fcb-cloud-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fcb-cloud-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-cloud-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+}
+
+.fcb-character-list-heading {
+  display: grid;
+  gap: 20px;
+  padding: 8px 0 28px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-character-list-heading h1,
+.fcb-content-heading h1,
+.fcb-homebrew-heading h1 {
+  color: var(--fcb-primary-light);
+  font-family: var(--dmf-font-display);
+  font-size: clamp(2rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.fcb-character-list-heading p,
+.fcb-content-heading p,
+.fcb-homebrew-heading p {
+  max-width: 760px;
+  font-family: var(--dmf-font-body);
+  font-size: 0.875rem;
+}
+
+.fcb-character-create-form {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 144px 128px;
+  gap: 12px;
+  max-width: 960px;
+}
+
+.fcb-character-create-form .fcb-input,
+.fcb-character-create-form .fcb-button {
+  min-height: 44px;
+  font-size: 0.82rem;
+}
+
+.fcb-character-create-form .fcb-input {
+  padding-inline: 14px;
+  font-family: var(--dmf-font-body);
+  font-size: 0.875rem;
+}
+
+.fcb-character-empty {
+  display: grid;
+  min-height: 260px;
+  padding: 30px 20px 38px;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.fcb-character-empty-mark {
+  position: relative;
+  display: grid;
+  width: 136px;
+  height: 136px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      color-mix(in srgb, var(--fcb-primary) 34%, transparent) 0deg 0.7deg,
+      transparent 0.7deg 12deg
+    ),
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--fcb-primary) 12%, transparent),
+      transparent 68%
+    );
+}
+
+.fcb-character-empty-mark::after {
+  position: absolute;
+  inset: 16px;
+  border: 1px solid color-mix(in srgb, var(--fcb-primary) 34%, transparent);
+  border-radius: 50%;
+  content: "";
+}
+
+.fcb-character-empty-mark .dmf-logo,
+.fcb-character-empty-mark .dmf-logo__icon {
+  position: relative;
+  z-index: 1;
+}
+
+.fcb-character-empty-mark .dmf-logo__icon {
+  box-shadow: 0 0 42px
+    color-mix(in srgb, var(--fcb-primary) 25%, transparent);
+}
+
+.fcb-character-empty p {
+  margin: 0;
+  color: var(--fcb-text-muted);
+  font-family: var(--dmf-font-body);
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.fcb-button,
+.fcb-icon-button {
+  border: 1px solid var(--fcb-control-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-control);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--dmf-shadow-color) 60%, transparent);
+  color: var(--fcb-text);
+  font-size: 0.82rem;
+  font-weight: 750;
+  transition:
+    transform var(--fcb-transition),
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    opacity var(--fcb-transition);
+}
+
+.fcb-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--dmf-control-min-height);
+  padding: 7px 12px;
+}
+
+.fcb-icon-button {
+  display: inline-grid;
+  width: var(--dmf-control-min-height);
+  height: var(--dmf-control-min-height);
+  place-items: center;
+  padding: 0;
+}
+
+.fcb-level-up-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.fcb-level-up-label {
+  display: none;
+}
+
+.fcb-export-icon-only {
+  width: var(--dmf-control-min-height);
+  min-width: var(--dmf-control-min-height);
+  padding: 0;
+}
+
+.fcb-export-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.fcb-button:hover,
+.fcb-icon-button:hover {
+  border-color: var(--fcb-primary);
+  background: var(--fcb-control-hover);
+}
+
+.fcb-button:active,
+.fcb-icon-button:active {
+  transform: translateY(1px);
+}
+
+.fcb-button-primary {
+  border-color: color-mix(in srgb, var(--fcb-primary) 68%, transparent);
+  background: var(--fcb-gradient-primary);
+  color: var(--dmf-on-primary);
+  box-shadow: 0 10px 22px
+    color-mix(in srgb, var(--fcb-primary) 24%, transparent);
+}
+
+.fcb-button-danger {
+  border-color: var(--fcb-danger-border);
+  color: var(--fcb-danger-text);
+}
+
+/* Level Up & XP reads as the one "advance the character" action in the toolbar,
+   so it carries the success hue rather than the neutral control fill. Built from
+   --dmf-success, which re-tints per theme like the danger and warning states do,
+   so retro gets its own olive rather than the dark theme's green. The button is
+   icon-only at every width (.fcb-level-up-label never renders), so the white
+   glyph only needs the 3:1 a graphic asks for - both stops clear it. Sits after
+   the .fcb-button:hover rules so the neutral hover fill does not win on order. */
+.fcb-level-up-button {
+  --fcb-level-up-fill: color-mix(in srgb, var(--dmf-success) 88%, black);
+
+  width: var(--dmf-control-min-height);
+  min-width: var(--dmf-control-min-height);
+  padding: 0;
+  border-color: color-mix(in srgb, var(--dmf-success) 72%, transparent);
+  background: linear-gradient(
+    135deg,
+    var(--fcb-level-up-fill),
+    var(--dmf-success)
+  );
+  color: #ffffff;
+  box-shadow: 0 10px 22px
+    color-mix(in srgb, var(--dmf-success) 24%, transparent);
+}
+
+.fcb-level-up-button:hover {
+  border-color: var(--dmf-success);
+  background: linear-gradient(
+    135deg,
+    var(--dmf-success),
+    color-mix(in srgb, var(--dmf-success) 82%, white)
+  );
+}
+
+.fcb-button:disabled,
+.fcb-icon-button:disabled {
+  opacity: 0.45;
+}
+
+.fcb-input,
+.fcb-select,
+.fcb-textarea {
+  width: 100%;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 84%, transparent);
+  color: var(--fcb-text);
+  outline: none;
+  transition:
+    border-color var(--fcb-transition),
+    box-shadow var(--fcb-transition),
+    background var(--fcb-transition);
+}
+
+.fcb-input,
+.fcb-select {
+  min-height: var(--dmf-control-min-height);
+  padding: 7px 10px;
+}
+
+.fcb-textarea {
+  padding: 10px;
+  resize: vertical;
+}
+
+.fcb-input::placeholder,
+.fcb-textarea::placeholder {
+  color: var(--fcb-text-faint);
+}
+
+.fcb-hp-roll-input {
+  appearance: textfield;
+}
+
+.fcb-hp-roll-input::-webkit-inner-spin-button,
+.fcb-hp-roll-input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+/* The roll control at the end of a Level History row: an HP tag, the value, and
+   a nudge either side of it. The tag sits outside the field so the number gets
+   the whole box and can be read at a glance down the column. */
+.fcb-level-hp {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.fcb-level-hp__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--fcb-text-faint);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fcb-level-hp .fcb-hp-roll-input {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.25rem;
+  padding: 0 0.125rem;
+  border-color: var(--fcb-border);
+  background: var(--fcb-surface);
+  color: var(--fcb-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* A fixed value is not an empty field - keep it legible rather than letting the
+   shared disabled fade bury it. */
+.fcb-level-hp .fcb-hp-roll-input:disabled {
+  border-style: dashed;
+  color: var(--fcb-text-muted);
+  opacity: 1;
+}
+
+.fcb-level-hp__nudge {
+  display: inline-grid;
+  width: 1.75rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--fcb-control-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-control);
+  color: var(--fcb-text-muted);
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    color var(--fcb-transition);
+  touch-action: manipulation;
+}
+
+.fcb-level-hp__nudge svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.fcb-level-hp__nudge:hover:not(:disabled) {
+  border-color: var(--fcb-primary);
+  background: var(--fcb-control-hover);
+  color: var(--fcb-text);
+}
+
+.fcb-level-hp__nudge:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.fcb-level-hp__nudge:disabled {
+  opacity: 0.35;
+}
+
+/* Touch: the nudges become the primary way to change a roll, so they get a real
+   target instead of a pointer-sized one. */
+@media (pointer: coarse) {
+  .fcb-level-hp__nudge {
+    width: 2.25rem;
+    height: 2.5rem;
+  }
+
+  .fcb-level-hp .fcb-hp-roll-input {
+    min-height: 2.5rem;
+  }
+}
+
+.fcb-input:focus,
+.fcb-select:focus,
+.fcb-textarea:focus {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-surface) 96%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--fcb-primary) 18%, transparent);
+}
+
+.fcb-field-label {
+  display: block;
+  color: var(--fcb-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fcb-field-label > :is(input, select, textarea) {
+  margin-top: 6px;
+}
+
+.fcb-alert {
+  border: 1px solid var(--fcb-danger-border);
+  border-radius: var(--fcb-radius);
+  background: rgba(127, 29, 29, 0.32);
+  color: var(--fcb-danger-text);
+  padding: 11px 12px;
+}
+
+.fcb-library-update-alert {
+  border-color: color-mix(
+    in srgb,
+    var(--fcb-primary) 34%,
+    var(--fcb-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--fcb-primary) 10%,
+    var(--fcb-surface)
+  );
+  color: var(--fcb-text);
+}
+
+.fcb-content-loading-progress {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+}
+
+.fcb-content-loading-progress .fcb-character-loading-detail {
+  min-height: 0;
+}
+
+.fcb-content-loading-progress .fcb-character-loading-detail > p {
+  margin: 0;
+}
+
+.fcb-muted-copy {
+  color: var(--fcb-text-muted);
+}
+
+.fcb-empty-copy {
+  margin: 0;
+  color: var(--fcb-text-faint);
+  font-size: 0.9rem;
+}
+
+/* Live stat pills share the subbar row with the tab strip (wrapping below it when
+   narrow); they ride the sticky subbar, so they stay visible while editing. */
+.fcb-subbar-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  padding: 6px 0;
+}
+
+.fcb-stat-pill,
+.fcb-meta-pill {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-surface) 78%, transparent);
+  color: var(--fcb-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.2;
+  padding: 5px 8px;
+}
+
+.fcb-stat-pill strong,
+.fcb-meta-pill strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--fcb-text);
+  font-weight: 850;
+}
+
+.fcb-builder-layout,
+.fcb-builder-grid,
+.fcb-two-panel-grid,
+.fcb-content-grid {
+  display: grid;
+  gap: 18px;
+}
+
+/* Section nav (Race/Class/… rail) + tab body. A separate wrapper rather than a third
+   grid column so the nav can become a sticky horizontal strip in narrow containers —
+   a sticky grid item can only stick within its own grid area, so it must be a
+   block-level child of a tall wrapper to have room to stick. */
+.fcb-builder-layout {
+  grid-template-columns: minmax(170px, 0.55fr) minmax(0, 3.45fr);
+  align-items: start;
+}
+
+/* A sub-tabbed layout fills its pane (height: 100%), and a grid's default
+   align-content stretches implicit auto rows into that height — with short
+   content the leftover space lands in the sub-tab row and opens a gap between
+   the band and the content below it. Pin the band row to its content and give
+   the content row the remainder. */
+.fcb-builder-layout.fcb-has-subtabs {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+/* A band belongs to the navigation stack, not to either column: it sits above
+   the whole layout. Without this it takes the rail's cell, which pushes the
+   rail into the content column and the content onto a row of its own at rail
+   width. */
+.fcb-builder-layout > .fcb-subtab-bar {
+  grid-column: 1 / -1;
+}
+
+.fcb-builder-grid {
+  grid-template-columns: minmax(0, 2.1fr) minmax(280px, 1.35fr);
+  align-items: start;
+  min-width: 0;
+}
+
+.fcb-two-panel-grid {
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  align-items: start;
+}
+
+.fcb-inventory-primary {
+  container: fcb-inventory-primary / inline-size;
+}
+
+.fcb-magic-stack {
+  container: fcb-magic-primary / inline-size;
+}
+
+.fcb-content-grid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(340px, 1fr);
+  align-items: start;
+}
+
+.fcb-homebrew-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) auto minmax(220px, 0.8fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  overflow: visible;
+}
+
+.fcb-homebrew-collection-picker {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--fcb-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fcb-homebrew-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--fcb-text-muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.fcb-homebrew-status-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fcb-teal);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--fcb-teal) 45%, transparent);
+}
+
+.fcb-homebrew-status-dot.is-error {
+  background: var(--fcb-amber);
+  box-shadow: none;
+}
+
+.fcb-homebrew-builder-state {
+  overflow: hidden;
+  color: var(--fcb-text-faint);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-homebrew-builder-state::before {
+  margin-right: 8px;
+  color: var(--fcb-text-faint);
+  content: "·";
+}
+
+.fcb-homebrew-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.fcb-homebrew-new-collection,
+.fcb-homebrew-download-button {
+  gap: 6px;
+}
+
+.fcb-homebrew-new-symbol {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.fcb-homebrew-download-icon {
+  display: none;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.fcb-homebrew-delete-collection {
+  color: var(--fcb-danger-text);
+}
+
+.fcb-homebrew-delete-collection svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.fcb-homebrew-overflow {
+  position: relative;
+}
+
+.fcb-homebrew-overflow > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.fcb-homebrew-overflow > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fcb-homebrew-overflow .fcb-export-menu-list {
+  display: none;
+}
+
+.fcb-homebrew-overflow[open] .fcb-export-menu-list {
+  display: flex;
+}
+
+.fcb-homebrew-delete-action {
+  color: var(--fcb-danger-text);
+}
+
+.fcb-homebrew-ingest-result:not(:empty) {
+  margin-top: 12px;
+}
+
+.fcb-homebrew-ingest-result > p {
+  margin: 0;
+}
+
+.fcb-homebrew-workspace {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 280px) minmax(0, 1fr)
+    minmax(360px, var(--dmf-inspector-width, 420px));
+  align-items: start;
+  gap: 18px;
+  margin-top: 18px;
+  min-width: 0;
+}
+
+.fcb-homebrew-library {
+  display: flex;
+  min-width: 0;
+  max-height: calc(100dvh - 32px);
+  flex-direction: column;
+  overflow: visible;
+}
+
+.fcb-homebrew-library > nav {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.fcb-homebrew-nav-row {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  align-content: center;
+  gap: 2px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  padding: 9px 12px;
+  text-align: left;
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    color var(--fcb-transition);
+}
+
+.fcb-homebrew-nav-row:hover {
+  background: color-mix(in srgb, var(--fcb-text) 7%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-homebrew-nav-row.is-active {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 15%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-homebrew-nav-row:disabled {
+  opacity: 0.48;
+}
+
+.fcb-homebrew-nav-row > span {
+  overflow: hidden;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-homebrew-nav-row > small {
+  color: var(--fcb-text-faint);
+  font-size: 0.68rem;
+}
+
+.fcb-homebrew-library-heading {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--fcb-border-soft);
+  border-bottom: 1px solid var(--fcb-border-soft);
+  padding: 13px 12px;
+}
+
+.fcb-homebrew-library-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fcb-homebrew-library-heading h2,
+.fcb-homebrew-library-heading span {
+  margin: 0;
+  color: var(--fcb-text-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fcb-homebrew-search-field {
+  display: grid;
+  gap: 6px;
+  color: var(--fcb-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fcb-homebrew-element-list {
+  min-height: 120px;
+  overflow-y: auto;
+  padding: 4px 0;
+  overscroll-behavior: contain;
+}
+
+.fcb-homebrew-element-list > .fcb-empty-copy {
+  padding: 14px 12px;
+}
+
+.fcb-homebrew-element-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.fcb-homebrew-delete-element {
+  margin-right: 6px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  color: var(--fcb-danger-text);
+}
+
+.fcb-homebrew-delete-element svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.fcb-homebrew-add-element {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--fcb-border-soft);
+  padding: 12px;
+}
+
+.fcb-homebrew-editor {
+  container: fcb-homebrew-editor / inline-size;
+}
+
+.fcb-homebrew-editor > .fcb-panel {
+  min-width: 0;
+}
+
+.fcb-homebrew-mobile-back {
+  display: none;
+  margin-bottom: 10px;
+}
+
+.fcb-homebrew-advanced {
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 50%, transparent);
+}
+
+.fcb-homebrew-advanced > summary {
+  padding: 12px;
+  color: var(--fcb-text-muted);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fcb-homebrew-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  border-top: 1px solid var(--fcb-border-soft);
+  padding: 12px;
+}
+
+.fcb-homebrew-file-path,
+.fcb-homebrew-element-id {
+  margin: 0;
+  color: var(--fcb-text-faint);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.fcb-homebrew-element-id {
+  border-top: 1px solid var(--fcb-border-soft);
+  padding: 12px;
+}
+
+.fcb-homebrew-form-section {
+  display: grid;
+  gap: 12px;
+}
+
+.fcb-homebrew-form-section + .fcb-homebrew-form-section {
+  border-top: 1px solid var(--fcb-border-soft);
+  padding-top: 16px;
+}
+
+.fcb-homebrew-form-section > h3 {
+  margin: 0;
+  color: var(--fcb-text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fcb-homebrew-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fcb-homebrew-stat-row,
+.fcb-homebrew-grant-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(96px, 0.36fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.fcb-homebrew-grant-fields {
+  grid-template-columns: minmax(132px, 0.42fr) minmax(0, 1fr) auto;
+}
+
+.fcb-homebrew-row-remove {
+  margin-bottom: 1px;
+}
+
+.fcb-homebrew-inspector {
+  align-self: start;
+  min-width: 0;
+}
+
+.fcb-homebrew-inspector-header {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+  padding: 0 12px 12px;
+}
+
+.fcb-homebrew-scope {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: var(--fcb-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fcb-homebrew-inspector-body {
+  min-height: 240px;
+  overflow: auto;
+  padding: 12px;
+  overscroll-behavior: contain;
+}
+
+.fcb-homebrew-live-preview {
+  min-width: 0;
+}
+
+.fcb-homebrew-preview-note {
+  margin: 16px 0 0;
+  border-top: 1px solid var(--fcb-border-soft);
+  color: var(--fcb-text-faint);
+  padding-top: 12px;
+  font-size: 0.72rem;
+}
+
+.fcb-homebrew-xml {
+  max-height: calc(100dvh - 280px);
+  margin: 0;
+  overflow: auto;
+  border-radius: var(--fcb-radius-sm);
+  background: var(--fcb-surface-2);
+  color: var(--fcb-text-muted);
+  padding: 12px;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.fcb-homebrew-inspector-actions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--fcb-border-soft);
+  padding: 10px 12px;
+}
+
+@media (min-width: 1101px) {
+  .fcb-homebrew-library {
+    position: sticky;
+    top: 16px;
+  }
+
+  .fcb-homebrew-inspector {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100dvh - 32px);
+  }
+}
+
+@media (max-width: 1100px) {
+  .fcb-homebrew-toolbar {
+    grid-template-columns: minmax(210px, 1fr) auto minmax(110px, auto) auto;
+    gap: 8px;
+  }
+
+  .fcb-homebrew-workspace {
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  }
+
+  .fcb-homebrew-library {
+    grid-row: 1 / span 2;
+  }
+
+  .fcb-homebrew-inspector {
+    grid-column: 2;
+    position: static;
+  }
+}
+
+@media (max-width: 1000px) and (min-width: 701px) {
+  .fcb-homebrew-toolbar {
+    grid-template-columns: minmax(190px, 1fr) 42px 12px auto;
+  }
+
+  .fcb-homebrew-collection-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-homebrew-collection-label,
+  .fcb-homebrew-save-label,
+  .fcb-homebrew-builder-state,
+  .fcb-homebrew-new-label,
+  .fcb-homebrew-download-label {
+    display: none;
+  }
+
+  .fcb-homebrew-new-collection,
+  .fcb-homebrew-download-button {
+    width: 42px;
+    min-width: 42px;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .fcb-homebrew-new-symbol {
+    font-size: 1.25rem;
+  }
+
+  .fcb-homebrew-download-icon {
+    display: block;
+  }
+
+  .fcb-homebrew-status {
+    width: 12px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 700px) {
+  .fcb-homebrew-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .fcb-homebrew-collection-picker,
+  .fcb-homebrew-status,
+  .fcb-homebrew-toolbar-actions {
+    grid-column: 1 / -1;
+  }
+
+  .fcb-homebrew-collection-picker {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .fcb-homebrew-toolbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .fcb-homebrew-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-homebrew-library,
+  .fcb-homebrew-inspector {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+    max-height: none;
+  }
+
+  .fcb-homebrew-mobile-back {
+    display: inline-flex;
+  }
+
+  .fcb-homebrew-workspace.is-mobile-library .fcb-homebrew-editor {
+    display: none;
+  }
+
+  .fcb-homebrew-workspace.is-mobile-library .fcb-homebrew-inspector {
+    display: none;
+  }
+
+  .fcb-homebrew-workspace.is-mobile-editor .fcb-homebrew-library {
+    display: none;
+  }
+
+  .fcb-homebrew-element-list {
+    max-height: 300px;
+  }
+
+  .fcb-homebrew-advanced-grid,
+  .fcb-homebrew-field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-homebrew-stat-row,
+  .fcb-homebrew-grant-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-homebrew-row-remove,
+  .fcb-homebrew-grant-fields > .fcb-button {
+    justify-self: start;
+  }
+
+  .fcb-homebrew-xml {
+    max-height: 60dvh;
+  }
+}
+
+.fcb-content-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.fcb-content-heading > div:first-child {
+  min-width: 0;
+}
+
+.fcb-content-heading-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.fcb-content-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(200px, 1.3fr) minmax(
+      180px,
+      1fr
+    );
+  gap: 12px;
+  align-items: end;
+}
+
+.fcb-content-reload-status {
+  margin: 0 0 16px;
+  border: 1px solid color-mix(in srgb, var(--fcb-cyan) 34%, transparent);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-cyan) 10%, transparent);
+  color: var(--fcb-cyan);
+  padding: 9px 12px;
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fcb-file-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(2px);
+}
+
+.fcb-file-drawer {
+  display: flex;
+  width: min(520px, 100vw);
+  height: var(--fcb-viewport-height);
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--fcb-border);
+  background: var(--fcb-surface);
+  box-shadow: -24px 0 64px rgba(0, 0, 0, 0.42);
+  animation: fcb-file-drawer-enter 180ms ease-out;
+}
+
+.fcb-file-drawer-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+  padding: 20px;
+}
+
+.fcb-file-drawer-body {
+  display: grid;
+  min-height: 0;
+  gap: 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+}
+
+.fcb-file-manager-section {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.fcb-file-manager-section + .fcb-file-manager-section {
+  border-top: 1px solid var(--fcb-border-soft);
+  padding-top: 22px;
+}
+
+.fcb-local-cache-control {
+  border-top: 1px solid var(--fcb-border-soft);
+  padding-top: 18px;
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+}
+
+.fcb-local-cache-control > summary {
+  min-height: var(--dmf-control-min-height);
+  cursor: pointer;
+  color: var(--fcb-text-faint);
+  font-weight: 750;
+}
+
+.fcb-local-cache-control-body {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.fcb-local-cache-control-body p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.fcb-local-cache-note {
+  color: var(--fcb-text-faint);
+  font-size: 0.74rem;
+}
+
+.fcb-local-cache-message {
+  color: var(--fcb-cyan);
+}
+
+.fcb-import-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface-2);
+}
+
+.fcb-import-mode button {
+  min-height: var(--dmf-control-min-height);
+  border: 0;
+  border-radius: calc(var(--fcb-radius) - 3px);
+  background: transparent;
+  color: var(--fcb-text-muted);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.fcb-import-mode button:hover {
+  color: var(--fcb-text);
+}
+
+.fcb-import-mode button.is-active {
+  background: var(--fcb-surface-3);
+  color: var(--fcb-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.fcb-import-device-form,
+.fcb-import-web-form {
+  display: grid;
+  gap: 11px;
+}
+
+.fcb-import-actions,
+.fcb-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fcb-source-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.fcb-source-actions .fcb-button {
+  padding-inline: 9px;
+}
+
+.fcb-import-help {
+  margin: 0;
+  color: var(--fcb-text-faint);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.fcb-content-import-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--fcb-cyan) 34%, transparent);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-cyan) 8%, transparent);
+  color: var(--fcb-cyan);
+  padding: 9px 10px;
+  font-size: 0.76rem;
+}
+
+.fcb-duplicate-import-prompt,
+.fcb-cloud-duplicate-alert {
+  display: grid;
+  gap: 10px;
+}
+
+.fcb-duplicate-import-prompt h3,
+.fcb-duplicate-import-prompt p,
+.fcb-cloud-duplicate-alert p {
+  margin: 0;
+}
+
+.fcb-duplicate-import-prompt ul,
+.fcb-duplicate-group ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.fcb-matching-paths {
+  min-width: 0;
+}
+
+.fcb-matching-paths summary,
+.fcb-cloud-info summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.fcb-matching-paths-list {
+  max-height: 180px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  overflow-y: auto;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-surface) 72%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.fcb-matching-paths-list p {
+  margin: 8px 0 0;
+  color: var(--fcb-text-faint);
+}
+
+.fcb-duplicate-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.fcb-duplicate-group {
+  display: grid;
+  gap: 12px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--fcb-amber) 36%,
+    var(--fcb-border)
+  );
+  border-radius: var(--fcb-radius);
+  background: color-mix(
+    in srgb,
+    var(--fcb-amber) 6%,
+    var(--fcb-surface-2)
+  );
+  padding: 12px;
+}
+
+.fcb-duplicate-group p,
+.fcb-duplicate-group legend,
+.fcb-duplicate-group summary,
+.fcb-duplicate-group li {
+  color: var(--fcb-text-muted);
+  font-size: 0.74rem;
+}
+
+.fcb-duplicate-group fieldset {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fcb-duplicate-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.fcb-duplicate-source span {
+  display: grid;
+  gap: 2px;
+}
+
+.fcb-duplicate-source small {
+  color: var(--fcb-text-faint);
+}
+
+.fcb-file-list-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.fcb-file-list {
+  display: grid;
+  max-height: min(52vh, 620px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  list-style: none;
+}
+
+.fcb-file-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 11px;
+}
+
+.fcb-file-row + .fcb-file-row {
+  border-top: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-file-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.fcb-file-row-copy strong,
+.fcb-file-row-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-file-row-copy strong {
+  color: var(--fcb-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.fcb-file-row-copy span {
+  color: var(--fcb-text-faint);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 460px) {
+  .fcb-file-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fcb-source-actions {
+    justify-content: flex-start;
+  }
+}
+
+@keyframes fcb-file-drawer-enter {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-file-drawer {
+    animation: none;
+  }
+}
+
+.fcb-left-nav {
+  position: sticky;
+  overflow-anchor: none;
+  top: calc(var(--fcb-sticky-top) + 20px);
+  display: grid;
+  /* Rows pack at the top: when the rail's grid cell stretches to the column
+     height, the items must keep their content size instead of distributing. */
+  align-content: start;
+  gap: 8px;
+}
+
+@container fcb-pane (min-width: 1081px) {
+  .fcb-equipment-category-nav {
+    min-height: 0;
+    max-height: calc(var(--fcb-sticky-avail) - 40px);
+    padding-right: 4px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-color: var(--fcb-border) transparent;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+}
+
+.fcb-nav-item {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--fcb-radius);
+  background: transparent;
+  color: var(--fcb-text-muted);
+  padding: 10px 11px;
+  text-align: left;
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    color var(--fcb-transition);
+}
+
+.fcb-nav-item:hover {
+  border-color: var(--fcb-border);
+  background: color-mix(in srgb, var(--fcb-text) 7%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-nav-item.is-active {
+  border-color: color-mix(in srgb, var(--fcb-primary) 58%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fcb-primary) 20%, transparent),
+    color-mix(in srgb, var(--fcb-primary) 8%, transparent)
+  );
+  color: var(--fcb-text);
+}
+
+.fcb-nav-item-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fcb-nav-item-detail {
+  margin-top: 4px;
+  color: var(--fcb-text-faint);
+  font-size: 0.75rem;
+}
+
+.fcb-rule-list {
+  display: grid;
+  gap: 10px;
+}
+
+.fcb-rule-card {
+  overflow: hidden;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-surface) 90%, transparent);
+}
+
+.fcb-rule-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--fcb-text);
+  padding: 13px 14px;
+  text-align: left;
+}
+
+.fcb-rule-trigger-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.fcb-rule-trigger-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.fcb-rule-title {
+  font-weight: 800;
+}
+
+.fcb-rule-subtitle {
+  margin-top: 2px;
+  color: var(--fcb-text-faint);
+  font-size: 0.75rem;
+}
+
+/* The chosen option name(s), surfaced in a collapsed rule card's header so the
+   selection is visible without expanding the option grid. */
+.fcb-rule-selected {
+  margin-top: 3px;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--fcb-cyan);
+  /* The chosen value is the card's answer: it sits beside 36px controls and
+     must not read as a caption next to them. */
+  font-size: 1rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-status-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: var(--fcb-radius-sm);
+  padding: 3px 7px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fcb-rule-slot-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fcb-status-complete {
+  background: var(--fcb-success-bg);
+  color: var(--fcb-success-text);
+}
+
+.fcb-status-needed {
+  background: var(--fcb-warning-bg);
+  color: var(--fcb-warning-text);
+}
+
+.fcb-rule-options {
+  border-top: 1px solid var(--fcb-border-soft);
+  padding: 13px;
+}
+
+.fcb-option-grid {
+  display: grid;
+  max-height: none;
+  gap: 8px;
+  overflow-y: visible;
+}
+
+.fcb-option-row,
+.fcb-table-row-button {
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 72%, transparent);
+  color: var(--fcb-text);
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition);
+}
+
+.fcb-option-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  /* The info button has a fixed height, so without this it would sit at the
+     top of a two-line row instead of on the row's centre line. */
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+}
+
+/* The trailing control keeps an even gutter on both sides of its column. */
+.fcb-option-row > .fcb-icon-button {
+  margin: 4px 6px;
+}
+
+.fcb-option-row > .fcb-option-main {
+  justify-self: stretch;
+}
+
+.fcb-option-row.is-selected,
+.fcb-table-row-button.is-selected {
+  border-color: color-mix(in srgb, var(--fcb-primary) 72%, transparent);
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+}
+
+.fcb-option-main {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.fcb-option-main:hover,
+.fcb-table-row-button:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.fcb-option-title {
+  font-weight: 750;
+}
+
+.fcb-option-subtitle {
+  color: var(--fcb-text-faint);
+  font-size: 0.74rem;
+}
+
+.fcb-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.86rem;
+}
+
+.fcb-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--fcb-surface);
+  color: var(--fcb-text-faint);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  padding: 8px 10px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.fcb-table td {
+  border-top: 1px solid var(--fcb-border-soft);
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+.fcb-table tbody tr:hover td {
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.fcb-scroll-panel {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.fcb-description-panel {
+  position: sticky;
+  top: calc(var(--fcb-sticky-top) + 20px);
+  display: flex;
+  min-height: 0;
+  max-height: calc(var(--fcb-sticky-avail) - 40px);
+  flex-direction: column;
+  /* Clips rather than scrolls: a scrollbar paints on the border box, so a
+     rounded panel that scrolls itself gets a straight track down its edge on
+     platforms that draw classic scrollbars. The inner region scrolls instead. */
+  overflow: hidden;
+  scroll-margin-top: var(--fcb-sticky-top);
+}
+
+.fcb-description-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.fcb-description-return {
+  display: none;
+}
+
+.fcb-content-renderer {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(92, 65, 39, 0.48);
+  border-radius: var(--fcb-radius-sm);
+  background-color: var(--hb-page);
+  background-image: url("/homebrewery-assets/assets/parchmentBackground.jpg");
+  background-size: 420px auto;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    inset 0 0 38px rgba(60, 38, 17, 0.12),
+    0 18px 42px rgba(8, 4, 1, 0.34);
+  color: var(--hb-ink);
+  font-family: "BookInsanityRemake", Georgia, serif;
+  padding: 22px 22px 30px;
+}
+
+.fcb-content-renderer::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 36px;
+  background-image: url("/homebrewery-assets/assets/PHB_footerAccent.png");
+  background-position: bottom center;
+  background-size: cover;
+  content: "";
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.fcb-content-header {
+  position: relative;
+  border-bottom: 2px solid var(--hb-rule);
+  margin-bottom: 13px;
+  padding-bottom: 12px;
+}
+
+.fcb-content-header h2 {
+  margin: 0;
+  color: var(--hb-header);
+  font-family: "MrEavesRemake", "NodestoCapsCondensed", Georgia, serif;
+  font-size: clamp(1.85rem, 3vw, 2.45rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 0.96;
+}
+
+.fcb-content-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+  color: var(--hb-muted);
+  font-family: "ScalySansSmallCapsRemake", "ScalySansRemake", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.fcb-source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--hb-header);
+  text-decoration: none;
+}
+
+.fcb-source-link:hover {
+  color: #9c2b1b;
+  text-decoration: underline;
+}
+
+.fcb-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 14px;
+}
+
+.fcb-content-renderer .fcb-meta-pill {
+  border-color: rgba(120, 94, 52, 0.38);
+  background: rgba(224, 229, 193, 0.78);
+  color: var(--hb-muted);
+  font-family: "ScalySansRemake", sans-serif;
+}
+
+.fcb-content-renderer .fcb-meta-pill strong {
+  color: var(--hb-header);
+}
+
+.fcb-rich-text {
+  color: var(--hb-ink);
+  font-size: 1rem;
+  line-height: 1.33;
+}
+
+.fcb-rich-text > * + * {
+  margin-top: 0.72em;
+}
+
+.fcb-rich-text h1,
+.fcb-rich-text h2,
+.fcb-rich-text h3,
+.fcb-rich-text h4,
+.fcb-rich-text h5,
+.fcb-rich-text h6 {
+  color: var(--hb-header);
+  font-family: "MrEavesRemake", "NodestoCapsCondensed", Georgia, serif;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.fcb-rich-text h1 {
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.fcb-rich-text h2 {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.fcb-rich-text h3 {
+  border-bottom: 2px solid var(--hb-rule);
+  padding-bottom: 5px;
+  font-size: 1.32rem;
+  line-height: 0.98;
+}
+
+.fcb-rich-text h4,
+.fcb-rich-text h5 {
+  font-size: 1.05rem;
+  line-height: 1.05;
+}
+
+.fcb-rich-text h5,
+.fcb-rich-text h6,
+.fcb-hb-caption {
+  color: #3b2a17;
+  font-family: "ScalySansSmallCapsRemake", "ScalySansRemake", sans-serif;
+  letter-spacing: 0.03em;
+}
+
+.fcb-rich-text p {
+  margin: 0;
+}
+
+/* Spell casting metadata block (school/level + Casting Time…Duration lines):
+   tight rows internally, then clear air before the spell text begins. */
+.fcb-rich-text .fcb-spell-meta {
+  margin-bottom: 1.35em;
+}
+
+.fcb-rich-text .fcb-spell-meta-line + .fcb-spell-meta-line {
+  margin-top: 0.35em;
+}
+
+.fcb-rich-text
+  p
+  + p:not(.fcb-hb-flavor):not(.fcb-hb-indent):not(.fcb-hb-caption):not(
+    .fcb-spell-meta-line
+  ):not(.fcb-stat-line):not(.fcb-hb-entry) {
+  text-indent: 1em;
+}
+
+/* Generated weapon/armour facts: a list, not prose, so the lines stay flush
+   and sit tighter than paragraphs before the authored text begins. */
+.fcb-rich-text .fcb-stat-block {
+  margin-bottom: 1.1em;
+}
+
+.fcb-rich-text .fcb-stat-block p + p {
+  margin-top: 0.3em;
+}
+
+/* A labelled entry heads its own block; only its continuation paragraphs take
+   the book's indent. */
+.fcb-rich-text .fcb-stat-line,
+.fcb-rich-text .fcb-hb-entry {
+  text-indent: 0;
+}
+
+.fcb-rich-text .fcb-hb-entry {
+  margin-top: 0.72em;
+}
+
+.fcb-rich-text strong {
+  color: #2f1e11;
+  font-weight: 700;
+}
+
+.fcb-rich-text em {
+  color: #4f3a22;
+  font-style: italic;
+}
+
+.fcb-rich-text a {
+  color: var(--hb-header);
+  text-decoration-color: rgba(156, 43, 27, 0.4);
+}
+
+.fcb-rich-text ul,
+.fcb-rich-text ol {
+  margin-bottom: 0.72em;
+  padding-left: 1.35em;
+}
+
+/* The global reset strips list markers; descriptions must show them. */
+.fcb-rich-text ul {
+  list-style: disc outside;
+}
+
+.fcb-rich-text ol {
+  list-style: decimal outside;
+}
+
+.fcb-rich-text li + li {
+  margin-top: 0.28rem;
+}
+
+.fcb-rich-list-plain {
+  list-style: none;
+  padding-left: 0 !important;
+}
+
+.fcb-rich-lead {
+  color: #3b2a17;
+  font-style: italic;
+  font-weight: 650;
+}
+
+.fcb-rich-underline {
+  text-decoration: underline;
+  text-decoration-color: rgba(156, 43, 27, 0.65);
+  text-underline-offset: 3px;
+}
+
+.fcb-rich-reference {
+  border-left: 2px solid rgba(156, 43, 27, 0.55);
+  padding-left: 10px;
+}
+
+/* Corpus semantics per the legacy reference stylesheet: .feature/.emphasis
+   are bold in-family labels with trailing space, .flavor is a plain italic
+   lead-in, and .sidebar is the bordered callout box. */
+.fcb-rich-text .fcb-hb-feature {
+  color: var(--hb-header);
+  font-style: italic;
+  font-weight: 700;
+  padding-right: 0.25em;
+}
+
+.fcb-rich-text .fcb-hb-emphasis {
+  font-weight: 700;
+  padding-right: 0.3em;
+}
+
+.fcb-hb-flavor {
+  color: var(--hb-muted);
+  font-style: italic;
+  text-indent: 0 !important;
+}
+
+.fcb-hb-sidebar {
+  clear: both;
+  border-top: 1px solid rgba(120, 94, 52, 0.55);
+  border-bottom: 1px solid rgba(120, 94, 52, 0.55);
+  margin: 0.95em 0;
+  padding: 10px 12px;
+  background: rgba(224, 229, 193, 0.55);
+}
+
+/* Rhythm inside block callouts: the top-level `> * + *` rule only reaches
+   direct children of .fcb-rich-text, so nested containers restate it. */
+.fcb-hb-sidebar > * + *,
+.fcb-hb-note > * + *,
+.fcb-hb-descriptive > * + * {
+  margin-top: 0.72em;
+}
+
+.fcb-hb-indent {
+  text-indent: 1em;
+}
+
+/* The corpus separates paragraphs with `<br/><span class="indent"/>`;
+   text-indent is inert on an inline empty span, so the separator becomes a
+   visible indent by occupying its own width. */
+.fcb-hb-indent:empty {
+  display: inline-block;
+  width: 1em;
+}
+
+.fcb-hb-caption {
+  color: var(--hb-muted);
+  font-size: 0.9em;
+  text-indent: 0 !important;
+}
+
+.fcb-hb-note,
+.fcb-hb-descriptive {
+  margin: 0.95em 0;
+  color: var(--hb-ink);
+  font-family: "ScalySansRemake", sans-serif;
+  font-size: 0.92em;
+  line-height: 1.25;
+  text-indent: 0;
+}
+
+.fcb-hb-note {
+  border-style: solid;
+  border-width: 1px;
+  border-image-outset: 7px 0;
+  border-image-repeat: stretch;
+  border-image-slice: 12;
+  border-image-source: url("/homebrewery-assets/assets/noteBorder.png");
+  background: var(--hb-accent);
+  box-shadow: 1px 4px 14px rgba(88, 70, 40, 0.35);
+  padding: 10px 12px;
+}
+
+.fcb-hb-descriptive {
+  border-style: solid;
+  border-width: 7px;
+  border-image-outset: 4px;
+  border-image-repeat: stretch;
+  border-image-slice: 12;
+  border-image-source: url("/homebrewery-assets/assets/descriptiveBorder.png");
+  background: #faf7ea;
+  box-shadow: 0 0 6px #faf7ea;
+  padding: 8px 10px;
+}
+
+.fcb-hb-note > *:first-child,
+.fcb-hb-descriptive > *:first-child {
+  margin-top: 0;
+}
+
+.fcb-hb-note > *:last-child,
+.fcb-hb-descriptive > *:last-child {
+  margin-bottom: 0;
+}
+
+.fcb-hb-quote {
+  margin: 0.9em 0;
+  border-left: 0;
+  color: #3b2a17;
+  font-style: italic;
+}
+
+.fcb-hb-attribution {
+  display: block;
+  color: var(--hb-muted);
+  font-family: "ScalySansRemake", sans-serif;
+  font-style: normal;
+  text-align: right;
+}
+
+.fcb-hb-attribution::before {
+  content: "--- ";
+}
+
+.fcb-hb-wide {
+  display: block;
+  width: 100%;
+}
+
+.fcb-hb-monster {
+  border-style: solid;
+  border-width: 7px 6px;
+  border-image-outset: 0 2px;
+  border-image-repeat: round;
+  border-image-slice: 14;
+  border-image-source: url("/homebrewery-assets/assets/monsterBorderFancy.png");
+  margin: 1em 0;
+  padding: 8px 10px;
+  background-color: #f2e5b5;
+  background-image: url("/homebrewery-assets/assets/parchmentBackgroundGrayscale.jpg");
+  background-blend-mode: overlay;
+  box-shadow: 1px 4px 14px rgba(88, 70, 40, 0.35);
+  color: var(--hb-header);
+  font-family: "ScalySansRemake", sans-serif;
+}
+
+.fcb-hb-monster h2,
+.fcb-hb-monster h3 {
+  color: var(--hb-header);
+}
+
+.fcb-hb-monster hr {
+  height: 6px;
+  margin: 0.45em 0;
+  background-image: url("/homebrewery-assets/assets/redTriangle.png");
+  background-size: 100% 100%;
+}
+
+.fcb-hb-bonus {
+  float: right;
+  padding-right: 0.5em;
+}
+
+.fcb-rich-table-wrap {
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Authored centering: content XML uses inline text-align styles and <center>;
+   the renderer maps that recognized subset onto this class. */
+.fcb-hb-center,
+.fcb-rich-text table.fcb-hb-center th,
+.fcb-rich-text table.fcb-hb-center td {
+  text-align: center;
+}
+
+.fcb-rich-text table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 360px;
+  color: var(--hb-ink);
+  font-family: "ScalySansRemake", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.fcb-rich-text th,
+.fcb-rich-text td {
+  border-bottom: 0;
+  padding: 4px 7px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.fcb-rich-text th {
+  color: var(--hb-header);
+  font-weight: 700;
+}
+
+.fcb-rich-text tbody tr:nth-child(odd) {
+  background: var(--hb-accent);
+}
+
+.fcb-hb-class-table.fcb-rich-table-wrap,
+.fcb-hb-frame.fcb-rich-table-wrap {
+  margin: 1.2em 0;
+  border-style: solid;
+  border-width: 14px;
+  border-image-outset: 7px 5px;
+  border-image-repeat: stretch;
+  border-image-slice: 180;
+  border-image-source: url("/homebrewery-assets/assets/frameBorder.png");
+  background: #fffef7;
+}
+
+.fcb-hb-decoration.fcb-rich-table-wrap {
+  background-image:
+    url("/homebrewery-assets/assets/classTableDecoration.png"),
+    url("/homebrewery-assets/assets/classTableDecoration.png");
+  background-position:
+    top center,
+    bottom center;
+  background-repeat: no-repeat;
+  background-size: 78% auto;
+  padding: 16px 0;
+}
+
+.fcb-rich-text blockquote {
+  margin: 0;
+  border-left: 0;
+  padding: 0 0 0 16px;
+  color: #3b2a17;
+  font-style: italic;
+}
+
+.fcb-rich-text hr {
+  visibility: visible;
+  height: 14px;
+  margin: 0.95em auto;
+  background-image: url("/homebrewery-assets/assets/horizontalRule.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: min(92%, 340px) 100%;
+  border: 0;
+}
+
+.fcb-rich-text code {
+  border: 1px solid rgba(88, 24, 13, 0.25);
+  border-radius: var(--fcb-radius-sm);
+  background: #faf7ea;
+  padding: 1px 5px;
+  color: var(--hb-header);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84em;
+}
+
+.fcb-rich-text pre code {
+  display: block;
+  border-style: solid;
+  border-width: 1px;
+  border-image-outset: 2px;
+  border-image-repeat: stretch;
+  border-image-slice: 26;
+  border-image-source: url("/homebrewery-assets/assets/codeBorder.png");
+  padding: 10px 12px;
+  white-space: pre-wrap;
+}
+
+.fcb-sheet-descriptions {
+  border-top: 2px solid var(--hb-rule);
+  margin-top: 16px;
+  padding-top: 14px;
+}
+
+.fcb-sheet-descriptions > h3 {
+  margin: 0 0 10px;
+  color: var(--hb-header);
+  font-family: "MrEavesRemake", Georgia, serif;
+  font-size: 1.08rem;
+  font-weight: 400;
+}
+
+.fcb-sheet-entry {
+  border: 1px solid rgba(120, 94, 52, 0.35);
+  border-radius: var(--fcb-radius-sm);
+  background: rgba(250, 247, 234, 0.5);
+  padding: 10px;
+}
+
+.fcb-sheet-entry + .fcb-sheet-entry {
+  margin-top: 9px;
+}
+
+.fcb-sheet-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.fcb-rich-text-sheet {
+  font-size: 0.84rem;
+}
+
+.fcb-content-renderer .fcb-empty-copy {
+  color: var(--hb-muted);
+  font-family: "ScalySansRemake", sans-serif;
+}
+
+.fcb-ability-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.fcb-ability-grid.has-point-cost .fcb-ability-row {
+  grid-template-columns:
+    minmax(80px, 1fr) minmax(58px, 0.7fr) minmax(80px, 1.1fr)
+    minmax(66px, 0.9fr) minmax(44px, 0.5fr);
+}
+
+.fcb-ability-methods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.fcb-mode-button {
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 68%, transparent);
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 8px 10px;
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    color var(--fcb-transition);
+}
+
+.fcb-mode-button:hover,
+.fcb-mode-button.is-active {
+  border-color: color-mix(in srgb, var(--fcb-primary) 62%, transparent);
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-ability-summary,
+.fcb-roll-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fcb-ability-summary {
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 64%, transparent);
+  color: var(--fcb-text-muted);
+  padding: 8px 10px;
+  font-size: 0.82rem;
+}
+
+.fcb-ability-summary strong {
+  color: var(--fcb-text);
+  font-size: 0.98rem;
+}
+
+.fcb-ability-summary.is-warning strong {
+  color: var(--fcb-warning-text);
+}
+
+.fcb-roll-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fcb-ability-row {
+  display: grid;
+  /* Column minimums must fit the narrowest builder column (Split View halves the
+     pane, then the 2-col builder grid takes ~58% of it — ~370px of content width);
+     .fcb-panel clips overflow, so a too-wide row loses its Total column. */
+  grid-template-columns:
+    minmax(80px, 1fr) minmax(58px, 0.7fr) minmax(90px, 1.2fr)
+    minmax(66px, 0.9fr);
+  align-items: start;
+  gap: 10px;
+}
+
+/* Cells may shrink below their content's natural width (inputs/selects have large
+   intrinsic minimums) — fluid controls instead of a clipped grid. */
+.fcb-ability-row > * {
+  min-width: 0;
+}
+
+.fcb-ability-row .fcb-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.fcb-ability-row-header {
+  align-items: center;
+  color: var(--fcb-text-faint);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fcb-ability-name,
+.fcb-ability-bonus {
+  display: grid;
+  gap: 3px;
+}
+
+.fcb-ability-name strong {
+  color: var(--fcb-text);
+  font-size: 0.86rem;
+}
+
+.fcb-ability-name span {
+  color: var(--fcb-text-faint);
+  font-size: 0.72rem;
+}
+
+.fcb-ability-cost {
+  color: var(--fcb-text-faint);
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding-top: 6px;
+  text-align: center;
+}
+
+.fcb-ability-preview {
+  justify-content: center;
+  min-height: var(--dmf-control-min-height);
+}
+
+.fcb-meta-pill.is-muted {
+  color: var(--fcb-text-faint);
+}
+
+.fcb-ability-source-list {
+  display: grid;
+  gap: 2px;
+  color: var(--fcb-text-faint);
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.fcb-ability-source-list.is-empty {
+  opacity: 0.72;
+}
+
+.fcb-ability-label-compact {
+  display: none;
+}
+
+.fcb-character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.fcb-character-card {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 461px) {
+  .fcb-character-card .fcb-toolbar {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .fcb-character-card .fcb-toolbar .fcb-button {
+    padding-inline: 8px;
+  }
+}
+
+.fcb-character-card-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fcb-portrait {
+  width: var(--fcb-portrait-size, 52px);
+  height: var(--fcb-portrait-size, 52px);
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  border-radius: 50%;
+  background: var(--fcb-gradient-primary);
+}
+
+.fcb-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fcb-portrait-button {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--dmf-on-primary);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fcb-portrait-button:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: 2px;
+}
+
+.fcb-portrait-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.fcb-portrait-frame {
+  position: relative;
+  width: var(--fcb-portrait-size, 52px);
+  height: var(--fcb-portrait-size, 52px);
+  flex: 0 0 auto;
+}
+
+/* A companion's portrait anchors its stat block, so it reads at card size
+   rather than the avatar size used beside a character's name. */
+.fcb-portrait-controls--lg {
+  --fcb-portrait-size: 92px;
+}
+
+.fcb-portrait-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.fcb-portrait-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, #0e0907 78%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.fcb-portrait-controls:hover .fcb-portrait-overlay,
+.fcb-portrait-controls:focus-within .fcb-portrait-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.fcb-portrait-overlay-action,
+.fcb-portrait-remove {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--dmf-on-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 88%, #0e0907);
+  cursor: pointer;
+  transition:
+    filter 140ms ease,
+    transform 140ms ease;
+}
+
+.fcb-portrait-overlay-action {
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, white 70%, transparent);
+  border-radius: 50%;
+}
+
+.fcb-portrait-overlay-action svg {
+  width: 17px;
+  height: 17px;
+}
+
+.fcb-portrait-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid color-mix(in srgb, white 65%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fcb-red) 88%, #0e0907);
+}
+
+.fcb-portrait-remove svg {
+  width: 13px;
+  height: 13px;
+}
+
+.fcb-portrait-overlay-action:hover,
+.fcb-portrait-overlay-action:focus-visible,
+.fcb-portrait-remove:hover,
+.fcb-portrait-remove:focus-visible {
+  filter: brightness(1.16);
+  transform: scale(1.06);
+}
+
+.fcb-portrait-overlay-action:focus-visible,
+.fcb-portrait-remove:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: 2px;
+}
+
+.fcb-portrait-overlay-action:disabled,
+.fcb-portrait-remove:disabled {
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.fcb-upload-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fcb-upload-list li {
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  padding: 6px 8px;
+  font-size: 0.78rem;
+}
+
+.fcb-upload-list .is-accepted {
+  color: var(--fcb-success-text);
+}
+
+.fcb-upload-list .is-rejected {
+  color: #fca5a5;
+}
+
+/* Narrow editor container — Split View on, or a small window. Container-based (not
+   viewport-based) so both cases trigger the same compact layouts. The section nav
+   becomes a horizontal pill strip stuck below the subbar (the user-confirmed
+   responsive-only variant), freeing the rail's width for the panels. */
+@container fcb-pane (max-width: 1080px) {
+  .fcb-builder-layout {
+    display: block;
+  }
+
+  .fcb-builder-layout > .fcb-left-nav {
+    position: sticky;
+    top: calc(var(--fcb-sticky-top) - 1px);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: var(--fcb-navstrip-h);
+    /* Bleed over .fcb-main's 24px top padding so the strip meets the subbar when stuck. */
+    margin: calc(0px - var(--fcb-gutter)) 0 14px;
+    padding: 0 2px;
+    overflow-x: auto;
+    /* Collapsed, the rail is a band: same surface as the strip above it. */
+    background: var(--fcb-bg-soft);
+    border-bottom: 1px solid var(--fcb-border-soft);
+  }
+
+  /* One edge under the whole stack rather than one per band — two hairlines
+     put a line between the sub-tab bar and the rail, which reads as a gap.
+     A general sibling, not an adjacent one: Equipment carries its hidden
+     narrow-viewport category select between the two. */
+  .fcb-subtab-bar:has(~ .fcb-left-nav) {
+    border-bottom-color: transparent;
+  }
+
+  /* Under a sub-tab bar the padding bleed already happened (the bar owns it), so the
+     strip keeps its normal flow position instead of pulling up into the bar. */
+  .fcb-has-subtabs .fcb-builder-layout > .fcb-left-nav {
+    margin-top: 0;
+  }
+
+  /* Same design language as the BUILD/MAGIC tab strip right above: underline tabs,
+     not pills. */
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    width: auto;
+    height: var(--fcb-navstrip-h);
+    padding: 0 13px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    white-space: nowrap;
+  }
+
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item:hover {
+    background: color-mix(in srgb, var(--fcb-text) 8%, transparent);
+    color: var(--fcb-text);
+  }
+
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item.is-active {
+    border-color: var(--fcb-primary);
+    background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+    color: var(--fcb-text);
+  }
+
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item-detail {
+    display: none;
+  }
+
+  .fcb-builder-layout > .fcb-left-nav::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  /* Inside the builder layout the sticky strip sits above; clear it. */
+  .fcb-builder-layout .fcb-description-panel {
+    top: calc(var(--fcb-sticky-top) + var(--fcb-navstrip-h) + 6px);
+    max-height: calc(
+      var(--fcb-sticky-avail) - var(--fcb-navstrip-h) - 26px
+    );
+  }
+
+  .fcb-builder-grid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  }
+
+  .fcb-content-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-content-grid > .fcb-description-panel {
+    position: static;
+    max-height: none;
+  }
+}
+
+@container fcb-pane (max-width: 700px) {
+  .fcb-builder-grid,
+  .fcb-two-panel-grid,
+  .fcb-content-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-description-panel {
+    position: static;
+    max-height: none;
+  }
+
+  .fcb-content-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fcb-content-heading-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .fcb-content-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-file-drawer {
+    width: 100vw;
+    border-left: 0;
+  }
+}
+
+/* Split View can leave the Magic primary column narrower than the browser viewport.
+   Reuse the mobile spell-row layout at that actual column width so the Prepared action
+   stays inside the panel instead of being clipped by its overflow boundary. */
+@container fcb-magic-primary (max-width: 700px) {
+  .fcb-mobile-list-panel {
+    border: 0 !important;
+    border-radius: 0;
+  }
+
+  .fcb-mobile-list-table,
+  .fcb-mobile-list-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .fcb-mobile-list-table thead {
+    display: none;
+  }
+
+  .fcb-mobile-list-table tbody {
+    display: grid;
+    gap: 8px;
+  }
+
+  .fcb-mobile-list-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 8px;
+    padding: 8px;
+    border: 1px solid var(--fcb-border-soft);
+    border-radius: var(--fcb-radius-sm);
+    background: color-mix(in srgb, var(--fcb-bg-soft) 72%, transparent);
+  }
+
+  .fcb-mobile-list-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .fcb-mobile-list-table td:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .fcb-mobile-list-table td:first-child .inline-flex {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .fcb-mobile-list-table td[data-label="School"],
+  .fcb-mobile-list-table td[data-label="Source"] {
+    grid-column: 1;
+  }
+
+  .fcb-mobile-list-table td[data-label="School"]::before,
+  .fcb-mobile-list-table td[data-label="Source"]::before {
+    color: var(--fcb-text-faint);
+    content: attr(data-label) ": ";
+    font-weight: 700;
+  }
+
+  [data-testid="spell-browser"]
+    .fcb-mobile-list-table
+    td[data-label="School"],
+  [data-testid="spell-browser"]
+    .fcb-mobile-list-table
+    td[data-label="Source"] {
+    display: none;
+  }
+
+  .fcb-mobile-list-table .fcb-mobile-list-actions {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+
+  .fcb-mobile-list-table td[colspan] {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Inventory: the table lives inside the left column of its own two-panel layout, so its
+   width can be narrow even when the overall editor pane is wide. Restack rows based on
+   that actual inventory column rather than the outer viewport/container. */
+.fcb-inventory-action-icon {
+  display: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.fcb-inventory-action-glyph {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 14px;
+  text-align: center;
+}
+
+.fcb-inventory-item-header {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.fcb-inventory-item-name {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.25;
+}
+
+.fcb-inventory-item-type {
+  line-height: 1.25;
+}
+
+.fcb-inventory-desktop-info {
+  order: -1;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.fcb-inventory-mobile-actions {
+  display: none;
+}
+
+.fcb-inventory-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.fcb-inventory-actions--desktop {
+  width: auto;
+}
+
+.fcb-inventory-action-label {
+  display: inline;
+}
+
+.fcb-inventory-coin-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.fcb-inventory-coin-field {
+  display: block;
+}
+
+.fcb-inventory-coin-field > span {
+  display: block;
+}
+
+.fcb-inventory-coin-input {
+  display: block;
+  width: 5rem;
+  margin-top: 6px;
+}
+
+@container fcb-inventory-primary (max-width: 960px) {
+  .fcb-inventory-table thead {
+    display: none;
+  }
+
+  .fcb-inventory-table,
+  .fcb-inventory-table tbody,
+  .fcb-inventory-table tr,
+  .fcb-inventory-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .fcb-inventory-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "item item"
+      "qty equipped";
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 0;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--fcb-border-soft);
+  }
+
+  .fcb-inventory-table tr:last-child {
+    border-bottom: 0;
+  }
+
+  .fcb-inventory-table td {
+    width: auto;
+    border-top: 0;
+    padding: 2px 0;
+    text-align: left;
+  }
+
+  .fcb-inventory-table td[data-label="Item"] {
+    display: block;
+    min-width: 0;
+    grid-area: item;
+    padding: 0 0 3px;
+  }
+
+  .fcb-inventory-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    flex: 0 0 auto;
+    color: var(--fcb-text-faint);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-right: 6px;
+  }
+
+  .fcb-inventory-table td[data-label="Item"]::before,
+  .fcb-inventory-table td[data-label="Actions"]::before {
+    display: none;
+  }
+
+  .fcb-inventory-table td[data-label="Actions"] {
+    display: none;
+  }
+
+  .fcb-inventory-item-header {
+    display: flex;
+    width: 100%;
+    gap: 5px;
+  }
+
+  .fcb-inventory-item-name {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-wrap: anywhere;
+  }
+
+  .fcb-inventory-item-name .font-semibold,
+  .fcb-inventory-item-type {
+    line-height: 1.25;
+  }
+
+  .fcb-inventory-item-type {
+    margin-left: 0;
+    font-size: 0.75rem;
+  }
+
+  .fcb-inventory-desktop-info {
+    display: none;
+  }
+
+  .fcb-inventory-mobile-actions {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-info,
+  .fcb-inventory-mobile-actions .fcb-inventory-action-button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-info {
+    font-size: 0.9rem;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-actions {
+    width: auto;
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-action-label {
+    display: none;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-action-icon {
+    display: block;
+    width: 14px;
+    height: 14px;
+  }
+
+  .fcb-inventory-table td[data-label="Item"] .inline-flex {
+    max-width: 100%;
+    min-width: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .fcb-inventory-table td[data-label="Qty"] {
+    grid-area: qty;
+  }
+
+  .fcb-inventory-table td[data-label="Equipped"] {
+    grid-area: equipped;
+    text-align: right;
+  }
+
+  .fcb-inventory-coins {
+    margin-top: 12px;
+    padding: 10px;
+  }
+
+  .fcb-inventory-coins .fcb-card-title {
+    margin-bottom: 8px;
+  }
+
+  .fcb-inventory-coins .fcb-inventory-coin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .fcb-inventory-coins .fcb-inventory-coin-field {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fcb-inventory-coins .fcb-inventory-coin-field > span {
+    flex: 0 0 1.6rem;
+  }
+
+  .fcb-inventory-coins .fcb-inventory-coin-input {
+    min-width: 0;
+    width: auto;
+    min-height: 36px;
+    flex: 1 1 auto;
+    margin-top: 0;
+    padding: 5px 8px;
+  }
+
+  .fcb-inventory-coins .fcb-inventory-coin-apply {
+    width: 100%;
+    min-height: 36px;
+    padding-inline: 8px;
+  }
+}
+
+@container fcb-inventory-primary (max-width: 419px) {
+  .fcb-inventory-table tr {
+    padding-inline: 6px;
+  }
+
+  .fcb-inventory-table td[data-label="Equipped"] {
+    text-align: left;
+  }
+
+  .fcb-inventory-item-header {
+    gap: 3px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Narrow screens: the floating bar tightens and drops the Save word so it
+     never covers a meaningful slice of the page. */
+  .fcb-sheet-float {
+    top: 20px;
+    right: 22px;
+    gap: 3px;
+    padding: 3px;
+  }
+
+  .fcb-sheet-zoom {
+    gap: 3px;
+  }
+
+  .fcb-sheet-float .fcb-sheet-zoom-value {
+    min-width: 48px;
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+
+  .fcb-sheet-float .fcb-button-primary {
+    font-size: 0;
+    gap: 0;
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .fcb-sheet-body {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 820px) {
+  html,
+  body {
+    /* Stop fast upward gestures at the document edge. The character workspace
+       owns its scroll below, and this root boundary also prevents mobile Start
+       pages from chaining into rubber-banding or pull-to-refresh. */
+    overscroll-behavior-y: none;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fcb-topbar-inner,
+  .fcb-subbar-inner {
+    padding: 0 var(--fcb-gutter);
+  }
+
+  .fcb-topbar-brand {
+    flex: 0 0 auto;
+  }
+
+  .fcb-topbar-brand .dmf-logo__title,
+  .fcb-topbar-brand .dmf-logo__subtitle {
+    display: none;
+  }
+
+  .fcb-topbar-inner {
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 0 8px;
+  }
+
+  .fcb-secondary-tabs {
+    width: 100%;
+    overflow-x: visible;
+  }
+
+  .fcb-secondary-tabs .fcb-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-right: 4px;
+    padding-left: 4px;
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .fcb-global-tabs {
+    order: 4;
+    flex: 0 0 calc(100% + (2 * var(--fcb-gutter)));
+    width: calc(100% + (2 * var(--fcb-gutter)));
+    min-height: 44px;
+    margin: 0 calc(0px - var(--fcb-gutter));
+    padding: 0 var(--fcb-gutter);
+    overflow: hidden;
+    border-top: 1px solid var(--fcb-border-soft);
+  }
+
+  .fcb-global-tabs .fcb-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 4px;
+    font-size: 0.68rem;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+
+  .fcb-global-tabs .fcb-tab-character {
+    max-width: none;
+  }
+
+  .fcb-global-tabs .fcb-tab-character-metadata {
+    font-size: 0.54rem;
+  }
+
+  .fcb-global-tabs .fcb-tab-label--full {
+    display: none;
+  }
+
+  .fcb-global-tabs .fcb-tab-label--compact {
+    display: block;
+  }
+
+  .fcb-topbar-actions {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    margin-left: auto;
+    padding: 6px 0;
+  }
+
+  .fcb-topbar-utilities {
+    gap: 2px;
+    margin-left: auto;
+    padding: 6px 0;
+  }
+
+  .fcb-topbar-actions:not(:empty) + .fcb-topbar-utilities {
+    margin-left: 0;
+  }
+
+  .fcb-topbar-utility {
+    width: 36px;
+    height: 36px;
+  }
+
+  .fcb-workspace > .fcb-subbar {
+    display: none;
+  }
+
+  .fcb-level-up-button {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  .fcb-level-up-label {
+    display: none;
+  }
+
+  .fcb-level-up-icon {
+    display: block;
+  }
+
+  /* The live stat pills would need their own wrapped bar at this width — the numbers
+     are one tap away on the sheet, so hide them instead of stacking another row. Same
+     for the Save button (the collection's Export covers it); Level Up & XP stays and
+     fits beside the brand + primary tabs. */
+  .fcb-subbar-stats,
+  .fcb-save-button {
+    display: none;
+  }
+
+  .fcb-main {
+    padding: var(--fcb-gutter);
+  }
+
+  .fcb-workspace-main {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: none;
+    padding-bottom: var(--dmf-space-24);
+    scrollbar-width: none;
+  }
+
+  .fcb-workspace-main::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fcb-workspace-content,
+  .fcb-editor-pane {
+    height: auto;
+    overflow: visible;
+  }
+
+  .fcb-mobile-workspace-nav {
+    position: static;
+    z-index: 35;
+    display: grid;
+    flex: 0 0 auto;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: calc(64px + var(--dmf-safe-area-bottom));
+    padding: 4px 6px calc(4px + var(--dmf-safe-area-bottom));
+    border-top: 1px solid var(--fcb-border);
+    background: color-mix(in srgb, var(--fcb-bg-soft) 98%, transparent);
+    box-shadow: 0 -10px 30px rgb(0 0 0 / 22%);
+  }
+
+  .fcb-mobile-workspace-nav button {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 56px;
+    padding: 5px 2px 3px;
+    border: 0;
+    border-radius: var(--fcb-radius-sm);
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    background: transparent;
+    color: var(--fcb-text-faint);
+    font-size: 0.66rem;
+    font-weight: 650;
+    letter-spacing: 0;
+  }
+
+  .fcb-mobile-workspace-nav button::before {
+    position: absolute;
+    top: -4px;
+    right: 18%;
+    left: 18%;
+    height: 2px;
+    border-radius: 999px;
+    background: transparent;
+    content: "";
+  }
+
+  .fcb-mobile-workspace-nav button.is-active {
+    background: transparent;
+    color: var(--fcb-primary-light);
+  }
+
+  .fcb-global-tabs .fcb-tab:focus-visible {
+    outline: 2px solid var(--fcb-primary);
+    outline-offset: -2px;
+  }
+
+  .fcb-mobile-workspace-nav button:focus-visible {
+    outline: none;
+  }
+
+  .fcb-mobile-workspace-nav button:focus-visible svg {
+    border-radius: var(--fcb-radius-sm);
+    outline: 2px solid var(--fcb-primary);
+    outline-offset: 3px;
+  }
+
+  .fcb-mobile-workspace-nav button.is-active::before {
+    background: var(--fcb-primary);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  }
+
+  .fcb-mobile-workspace-nav svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.65;
+  }
+
+  .fcb-segmented-tabs {
+    display: flex;
+    min-height: 44px;
+    padding: 3px;
+    overflow: visible;
+    border: 1px solid var(--fcb-border-soft);
+    border-radius: var(--fcb-radius);
+    background: color-mix(in srgb, var(--fcb-surface) 64%, transparent);
+  }
+
+  /* Segments split the row evenly, so a long label gets a fixed slice however
+     many tabs there are. `.fcb-tab` is overflow: visible by default, which let
+     an over-long label paint outside its own button and run off the window
+     instead of being cut at the segment edge. Clip it here: the compact labels
+     above are the real fix, this is the floor under them. */
+  .fcb-segmented-tabs .fcb-tab {
+    min-height: 36px;
+    min-width: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: calc(var(--fcb-radius) - 3px);
+    font-size: 0.72rem;
+    letter-spacing: 0;
+    text-overflow: ellipsis;
+    text-transform: none;
+    white-space: nowrap;
+  }
+
+  .fcb-segmented-tabs .fcb-tab > .fcb-tab-label--compact,
+  .fcb-segmented-tabs .fcb-tab > .fcb-tab-label--full {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fcb-segmented-tabs .fcb-tab.is-active {
+    background: color-mix(
+      in srgb,
+      var(--fcb-primary) 16%,
+      var(--fcb-surface)
+    );
+    box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+  }
+
+  .fcb-tab-label--full {
+    display: none;
+  }
+
+  .fcb-tab-label--compact {
+    display: inline;
+  }
+
+  .fcb-has-subtabs {
+    --fcb-subtab-h: 0px;
+  }
+
+  .fcb-subtab-bar {
+    position: static;
+    top: auto;
+    height: auto;
+    margin: 0 0 8px;
+    padding: 0;
+    border-bottom: 0;
+    background: transparent;
+  }
+
+  /* One scrolling line, not a wrapped block. The bleed and mask below only
+     read as a scroll affordance if the row actually stays on one line ---
+     while the base `flex-wrap: wrap` applied, the pills wrapped to two rows
+     and none of this did anything. */
+  .fcb-spell-level-tabs {
+    flex-wrap: nowrap;
+    width: calc(100% + var(--fcb-gutter) + var(--fcb-gutter));
+    margin-right: calc(0px - var(--fcb-gutter));
+    margin-left: calc(0px - var(--fcb-gutter));
+    padding-right: var(--fcb-gutter);
+    padding-left: var(--fcb-gutter);
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 var(--fcb-gutter),
+      #000 calc(100% - var(--fcb-gutter)),
+      transparent 100%
+    );
+  }
+
+  .fcb-spell-level-tabs > .fcb-spell-level-tab {
+    flex: 0 0 auto;
+  }
+
+  /* A gated rule locks every level above the character's cap --- often eight
+     of the nine pills. They are not choosable, so on a phone they cost a row
+     of scrolling to say nothing; the count stands in for them. */
+  .fcb-spell-level-tab.is-locked:not(.is-active) {
+    display: none;
+  }
+
+  .fcb-spell-level-locked-note {
+    display: inline-block;
+  }
+
+  .fcb-spell-level-tabs::-webkit-scrollbar,
+  .fcb-builder-layout > .fcb-left-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fcb-builder-layout > .fcb-left-nav {
+    position: static;
+    top: auto;
+    z-index: auto;
+    width: calc(100% + var(--fcb-gutter) + var(--fcb-gutter));
+    height: var(--fcb-navstrip-h);
+    margin: 0 calc(0px - var(--fcb-gutter)) 14px;
+    padding: 0 var(--fcb-gutter);
+    border-bottom: 0;
+    background: transparent;
+    scrollbar-width: none;
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 var(--fcb-gutter),
+      #000 calc(100% - var(--fcb-gutter)),
+      transparent 100%
+    );
+  }
+
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item {
+    text-transform: none;
+  }
+
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item.is-active {
+    background: transparent;
+  }
+
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item-title {
+    font-size: 0.72rem;
+    letter-spacing: 0;
+    line-height: 1.2;
+    text-transform: none;
+  }
+
+  /* One row, not a stacked label over a field. Stacked, this stand-in was
+     taller than the pill strip it replaces, which would have spent vertical
+     room to solve a horizontal problem. */
+  .fcb-mobile-category-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: var(--fcb-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .fcb-mobile-category-select > span {
+    flex: 0 0 auto;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .fcb-mobile-category-select > .fcb-select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .fcb-mobile-category-select + .fcb-left-nav {
+    display: none;
+  }
+
+  /* `flex: 1 1 100%` on the row, and `width: 100%` on the field beside it,
+     each claim a whole line on their own. Content-sized bases let the two ride
+     one line when both fit and wrap only when they genuinely cannot --- one
+     usable row where there is room, two where there is not, and never one
+     crushed row. The `min-width` floor above is what stops the field being the
+     one that gives way. */
+  .fcb-toolbar > .fcb-input {
+    flex: 1 1 8rem;
+    width: auto;
+  }
+
+  .fcb-spell-filter-row {
+    flex: 1 1 12rem;
+  }
+
+  .fcb-builder-layout .fcb-description-panel {
+    position: static;
+    top: auto;
+    display: block;
+    max-height: none;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* The document scrolls on mobile, so the inner region must not trap it. */
+  .fcb-description-scroll {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .fcb-description-panel.is-mobile-hidden-when-empty {
+    display: none;
+  }
+
+  .fcb-description-panel .fcb-panel-body {
+    padding: 14px 2px 0;
+  }
+
+  .fcb-description-panel {
+    scroll-margin-top: 0;
+  }
+
+  .fcb-description-panel.is-mobile-navigation-target {
+    min-height: calc(
+      var(--fcb-viewport-height) - var(--fcb-topbar-h) -
+        var(--fcb-navstrip-h)
+    );
+    overflow: visible;
+  }
+
+  .fcb-description-return {
+    position: sticky;
+    top: 10px;
+    z-index: 2;
+    display: flex;
+    width: fit-content;
+    max-width: calc(100% - 20px);
+    justify-content: center;
+    margin: 10px auto;
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--fcb-bg) 38%, transparent);
+  }
+
+  .fcb-description-panel .fcb-empty-copy {
+    text-align: left;
+  }
+
+  .fcb-scroll-panel:not(.fcb-pdf-canvas),
+  .fcb-option-grid {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .fcb-mobile-list-panel {
+    border: 0 !important;
+    border-radius: 0;
+  }
+
+  .fcb-mobile-list-table,
+  .fcb-mobile-list-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .fcb-mobile-list-table thead {
+    display: none;
+  }
+
+  .fcb-mobile-list-table tbody {
+    display: grid;
+    gap: 8px;
+  }
+
+  .fcb-mobile-list-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 8px;
+    padding: 8px;
+    border: 1px solid var(--fcb-border-soft);
+    border-radius: var(--fcb-radius-sm);
+    background: color-mix(in srgb, var(--fcb-bg-soft) 72%, transparent);
+  }
+
+  .fcb-mobile-list-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .fcb-mobile-list-table td:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .fcb-mobile-list-table td:first-child .inline-flex {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .fcb-mobile-list-table td[data-label="School"],
+  .fcb-mobile-list-table td[data-label="Source"] {
+    grid-column: 1;
+  }
+
+  .fcb-mobile-list-table td[data-label="School"]::before,
+  .fcb-mobile-list-table td[data-label="Source"]::before {
+    color: var(--fcb-text-faint);
+    content: attr(data-label) ": ";
+    font-weight: 700;
+  }
+
+  [data-testid="spell-browser"]
+    .fcb-mobile-list-table
+    td[data-label="School"],
+  [data-testid="spell-browser"]
+    .fcb-mobile-list-table
+    td[data-label="Source"] {
+    display: none;
+  }
+
+  .fcb-spell-mobile-meta {
+    display: block;
+    flex-basis: 100%;
+    overflow: hidden;
+    color: var(--fcb-text-faint);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fcb-magic-stack > * + * {
+    margin-top: 10px !important;
+  }
+
+  .fcb-magic-choices > .fcb-panel-header {
+    align-items: center;
+    padding: 10px 12px;
+  }
+
+  .fcb-magic-choices > .fcb-panel-body,
+  .fcb-magic-choices .fcb-rule-options {
+    padding: 10px;
+  }
+
+  .fcb-magic-choices .fcb-rule-trigger {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .fcb-rule-selected {
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .fcb-mobile-list-table .fcb-mobile-list-actions {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+
+  .fcb-mobile-list-table td[colspan] {
+    grid-column: 1 / -1;
+  }
+
+  .fcb-public-footer:not(.is-mobile-visible) {
+    display: none;
+  }
+
+  .fcb-character-list {
+    min-height: 560px;
+  }
+
+  .fcb-character-list-heading {
+    gap: 18px;
+    padding: 4px 0 22px;
+  }
+
+  .fcb-character-list-heading h1,
+  .fcb-content-heading h1,
+  .fcb-homebrew-heading h1 {
+    font-size: 1.75rem;
+  }
+
+  .fcb-character-create-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .fcb-character-create-form .fcb-input {
+    grid-column: 1 / -1;
+  }
+
+  .fcb-character-create-form .fcb-input,
+  .fcb-character-create-form .fcb-button {
+    min-height: 48px;
+  }
+
+  .fcb-character-empty {
+    min-height: 230px;
+    padding: 22px 8px 30px;
+  }
+
+  .fcb-character-empty-mark {
+    width: 112px;
+    height: 112px;
+  }
+
+  .fcb-character-empty-mark .dmf-logo__icon {
+    width: 78px;
+    height: 78px;
+  }
+
+  .fcb-ability-methods {
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
+  .fcb-mode-button {
+    min-width: 0;
+    padding-right: 4px;
+    padding-left: 4px;
+    font-size: 0.7rem;
+    line-height: 1.15;
+  }
+
+  .fcb-ability-summary {
+    margin-bottom: 10px;
+    padding: 7px 10px;
+  }
+
+  .fcb-roll-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fcb-roll-pool {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: 100%;
+    gap: 4px;
+  }
+
+  .fcb-roll-pool .fcb-meta-pill {
+    min-width: 0;
+    padding: 4px 2px;
+    justify-content: center;
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+
+  .fcb-ability-grid {
+    gap: 0;
+  }
+
+  .fcb-ability-row,
+  .fcb-ability-grid.has-point-cost .fcb-ability-row {
+    grid-template-columns:
+      minmax(74px, 1fr) minmax(60px, 0.72fr) minmax(66px, 0.8fr)
+      34px;
+    align-items: center;
+    gap: 5px 8px;
+    padding: 9px 0;
+    border-top: 1px solid var(--fcb-border-soft);
+  }
+
+  .fcb-ability-grid:not(.has-point-cost) .fcb-ability-row {
+    grid-template-columns: minmax(82px, 1fr) minmax(66px, 0.8fr) minmax(
+        70px,
+        0.85fr
+      );
+  }
+
+  .fcb-ability-row-header,
+  .fcb-ability-grid.has-point-cost .fcb-ability-row-header {
+    padding: 0 0 6px;
+    border-top: 0;
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+  }
+
+  .fcb-ability-column-name,
+  .fcb-ability-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .fcb-ability-column-score {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .fcb-ability-row > .fcb-input {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .fcb-ability-column-bonus {
+    display: none;
+  }
+
+  .fcb-ability-column-total {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .fcb-ability-preview {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .fcb-ability-column-cost {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .fcb-ability-cost {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    padding-top: 0;
+  }
+
+  .fcb-ability-grid:not(.has-point-cost) .fcb-ability-column-cost,
+  .fcb-ability-grid:not(.has-point-cost) .fcb-ability-cost {
+    display: none;
+  }
+
+  .fcb-ability-bonus {
+    grid-column: 1;
+    grid-row: 2;
+    display: block;
+    min-height: 14px;
+  }
+
+  .fcb-ability-source-list {
+    display: block;
+    overflow: hidden;
+    font-size: 0.58rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fcb-ability-bonus > .fcb-meta-pill {
+    display: none;
+  }
+
+  .fcb-ability-name {
+    gap: 0;
+  }
+
+  .fcb-ability-name strong {
+    font-size: 0.78rem;
+  }
+
+  .fcb-ability-name span {
+    display: none;
+  }
+
+  .fcb-ability-row .fcb-input,
+  .fcb-ability-preview {
+    min-height: 40px;
+  }
+
+  .fcb-ability-label-full {
+    display: none;
+  }
+
+  .fcb-ability-label-compact {
+    display: inline;
+  }
+
+  /* No blanket `.fcb-toolbar { flex-wrap: nowrap }` here. It used to force
+     every toolbar onto one line at phone width, which crushed the spell
+     browser's filter row: the search input collapsed to a 22px nub and the
+     trailing source select was cut off past the window edge. The two toolbars
+     that genuinely want one line scope it themselves --- the topbar actions at
+     `.fcb-topbar-actions > .fcb-toolbar`, and the character card, which takes
+     an explicit grid below 460px. Everything else wraps, as the base rule
+     intends. */
+}
+
+@media (max-width: 460px) {
+  .fcb-character-list-heading {
+    gap: 12px;
+    padding-bottom: 18px;
+  }
+
+  .fcb-character-list-heading h1,
+  .fcb-content-heading h1,
+  .fcb-homebrew-heading h1 {
+    font-size: 1.3rem;
+    line-height: 1.15;
+  }
+
+  .fcb-character-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fcb-character-card,
+  .fcb-character-card-main {
+    min-width: 0;
+  }
+
+  .fcb-character-card .fcb-toolbar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+    gap: var(--dmf-space-8);
+  }
+
+  .fcb-character-card .fcb-toolbar > *,
+  .fcb-character-card .fcb-toolbar .fcb-button {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .fcb-character-card .fcb-export-menu-list {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+
+/* Touch devices: enlarge tap targets to the ~44px accessibility minimum. Keyed on
+   pointer type (not viewport) so mouse/desktop density stays compact; a touch laptop
+   or phone gets larger hit areas at every width. */
+@media (pointer: coarse) {
+  :root {
+    --fcb-navstrip-h: var(--dmf-control-height-lg);
+  }
+
+  .fcb-button {
+    min-height: 44px;
+  }
+
+  .fcb-icon-button {
+    width: var(--dmf-control-height-lg);
+    height: var(--dmf-control-height-lg);
+  }
+
+  .fcb-attack-heading {
+    min-height: var(--dmf-control-height-lg);
+    padding-right: 244px;
+  }
+
+  .fcb-input,
+  .fcb-select {
+    min-height: 44px;
+  }
+
+  .fcb-tab,
+  .fcb-secondary-tabs .fcb-tab,
+  .fcb-spell-level-tab,
+  .fcb-mode-button,
+  .fcb-subtab-action,
+  .fcb-export-menu-item {
+    min-height: var(--dmf-control-height-lg);
+  }
+
+  .fcb-sheet-float .fcb-sheet-zoom-button {
+    width: var(--dmf-control-height-lg);
+    min-width: var(--dmf-control-height-lg);
+    height: var(--dmf-control-height-lg);
+    min-height: var(--dmf-control-height-lg);
+  }
+
+  /* These carry a fixed height, so clear it before applying the minimum. */
+  .fcb-nav-item,
+  .fcb-builder-layout > .fcb-left-nav .fcb-nav-item {
+    height: auto;
+    min-height: var(--dmf-control-height-lg);
+  }
+}
+
+@media (max-width: 820px) and (pointer: coarse) {
+  .fcb-level-up-button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* --- Boot splash (engine + rules content load in a Web Worker) --- */
+.fcb-boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in srgb, var(--fcb-primary) 16%, transparent) 0%,
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--fcb-bg-soft) 98%, transparent) 0%,
+      color-mix(in srgb, var(--fcb-bg) 99%, transparent) 100%
+    );
+  /* No backdrop-blur: the gradient above is ~opaque so the blur was invisible, but it
+     composited the splash and fuzzed the loading text on fractional-DPR displays. */
+  animation: fcb-boot-fade 200ms ease both;
+}
+
+@keyframes fcb-boot-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fcb-boot-card {
+  width: min(420px, 100%);
+  padding: 32px 28px;
+  text-align: center;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius-lg);
+  background: var(--fcb-surface);
+  box-shadow: var(--fcb-shadow);
+}
+
+.fcb-boot-logo {
+  justify-content: center;
+  animation: fcb-boot-pulse 1.6s ease-in-out infinite;
+}
+
+.fcb-boot-logo .dmf-logo__title {
+  font-size: 1.3rem;
+}
+
+.fcb-boot-logo .dmf-logo__subtitle {
+  font-size: 0.78rem;
+}
+
+@keyframes fcb-boot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 color-mix(in srgb, var(--fcb-primary) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 28px
+      color-mix(in srgb, var(--fcb-primary) 42%, transparent);
+  }
+}
+
+.fcb-boot-title {
+  margin: 14px 0 4px;
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  color: var(--fcb-text);
+}
+
+.fcb-boot-sub {
+  margin: 0 0 18px;
+  color: var(--fcb-text-muted);
+  font-size: 0.92rem;
+}
+
+.fcb-boot-sub.fcb-boot-error {
+  color: var(--fcb-amber);
+}
+
+.fcb-boot-steps {
+  list-style: none;
+  margin: 0 auto 16px;
+  padding: 0;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.fcb-boot-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fcb-text-faint);
+  font-size: 0.9rem;
+  transition: color var(--fcb-transition);
+}
+
+.fcb-boot-step-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid var(--fcb-border);
+  background: transparent;
+  flex: none;
+}
+
+.fcb-boot-step.is-active {
+  color: var(--fcb-text);
+}
+
+.fcb-boot-step.is-active .fcb-boot-step-dot {
+  border-color: var(--fcb-amber);
+  background: var(--fcb-amber);
+  animation: fcb-boot-blink 1s ease-in-out infinite;
+}
+
+.fcb-boot-step.is-done {
+  color: var(--fcb-text-muted);
+}
+
+.fcb-boot-step.is-done .fcb-boot-step-dot {
+  border-color: var(--fcb-green);
+  background: var(--fcb-green);
+}
+
+@keyframes fcb-boot-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.fcb-boot-detail {
+  margin: 0;
+  color: var(--fcb-text-faint);
+  font-size: 0.78rem;
+}
+
+.fcb-boot-card > .fcb-character-loading-track {
+  margin-bottom: 7px;
+}
+
+.fcb-boot-progress-detail {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.fcb-boot-progress-detail strong {
+  color: var(--fcb-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fcb-boot-retry {
+  margin-top: 16px;
+}
+
+/* Background supplement-ingest indicator (non-blocking; the builder is already usable). */
+.fcb-boot-pill {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 14px;
+  border: 1px solid var(--fcb-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fcb-surface) 94%, transparent);
+  box-shadow: var(--fcb-shadow-soft);
+  color: var(--fcb-text-muted);
+  font-size: 0.82rem;
+  animation: fcb-boot-fade 200ms ease both;
+}
+
+.fcb-boot-pill.is-warn {
+  color: var(--fcb-amber);
+}
+
+.fcb-boot-pill-spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--fcb-primary) 30%, transparent);
+  border-top-color: var(--fcb-amber);
+  animation: fcb-boot-spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes fcb-boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-boot-logo,
+  .fcb-boot-step.is-active .fcb-boot-step-dot,
+  .fcb-boot-pill-spinner {
+    animation: none;
+  }
+}
+
+/* --- Character loading: real engine progress while a saved character is rebuilt --- */
+.fcb-workspace-main.is-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fcb-character-loading {
+  display: grid;
+  gap: 16px;
+  width: min(560px, 100%);
+  margin: auto;
+  padding: clamp(24px, 5vw, 40px);
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius-lg);
+  background:
+    radial-gradient(
+      100% 120% at 0% 0%,
+      color-mix(in srgb, var(--fcb-primary) 12%, transparent),
+      transparent 58%
+    ),
+    var(--fcb-surface);
+  box-shadow: var(--fcb-shadow-soft);
+}
+
+.fcb-character-loading-heading {
+  display: grid;
+  gap: 5px;
+}
+
+.fcb-character-loading-kicker {
+  color: var(--fcb-amber);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.fcb-character-loading h2 {
+  margin: 0;
+  color: var(--fcb-text);
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  line-height: 1.25;
+}
+
+.fcb-character-loading-track {
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(in srgb, var(--fcb-primary) 25%, var(--fcb-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fcb-primary) 13%, transparent);
+}
+
+.fcb-character-loading-value {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fcb-primary) 76%, white),
+    var(--fcb-amber)
+  );
+  box-shadow: 0 0 18px color-mix(in srgb, var(--fcb-amber) 38%, transparent);
+  transition: width 180ms ease-out;
+}
+
+.fcb-character-loading-track.is-indeterminate
+  .fcb-character-loading-value {
+  width: 34%;
+  animation: fcb-character-loading-slide 1.15s ease-in-out infinite;
+}
+
+@keyframes fcb-character-loading-slide {
+  from {
+    transform: translateX(-115%);
+  }
+  to {
+    transform: translateX(305%);
+  }
+}
+
+.fcb-character-loading-detail {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 1.25rem;
+  color: var(--fcb-text-muted);
+  font-size: 0.86rem;
+}
+
+.fcb-character-loading-detail p,
+.fcb-character-loading-error {
+  margin: 0;
+}
+
+.fcb-character-loading-detail strong {
+  color: var(--fcb-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fcb-character-loading-error {
+  color: var(--fcb-danger-text);
+  line-height: 1.55;
+}
+
+.fcb-character-loading.is-error {
+  border-color: var(--fcb-danger-border);
+}
+
+.fcb-character-loading.is-error .fcb-button {
+  justify-self: start;
+}
+
+@media (max-width: 820px) {
+  .fcb-character-loading {
+    width: 100%;
+    padding: 24px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-character-loading-value {
+    transition: none;
+  }
+
+  .fcb-character-loading-track.is-indeterminate
+    .fcb-character-loading-value {
+    width: 100%;
+    opacity: 0.62;
+    animation: none;
+    transform: none;
+  }
+}
+
+/* --- Action feedback: toast stack + transient row flash --------------------------- */
+.fcb-toast-stack {
+  position: fixed;
+  right: 18px;
+  bottom: 64px; /* clears the background-content boot pill */
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none; /* informational only — never intercept clicks */
+}
+
+.fcb-toast {
+  max-width: min(340px, 80vw);
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-surface) 96%, transparent);
+  box-shadow: var(--fcb-shadow-soft);
+  color: var(--fcb-text);
+  font-size: 0.84rem;
+  animation: fcb-toast-in 180ms ease both;
+}
+
+.fcb-toast strong {
+  color: var(--fcb-cyan);
+}
+
+.fcb-fast-start-notice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.fcb-fast-start-notice-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--fcb-cyan);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fcb-cyan) 16%, transparent);
+}
+
+.fcb-fast-start-notice.is-building .fcb-fast-start-notice-dot {
+  animation: fcb-fast-start-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.fcb-fast-start-notice.is-error .fcb-fast-start-notice-dot {
+  background: var(--fcb-red);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--fcb-red) 16%, transparent);
+}
+
+@keyframes fcb-fast-start-pulse {
+  from {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fcb-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fcb-row-flash {
+  0% {
+    background: color-mix(in srgb, var(--fcb-primary) 38%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.fcb-table tr.is-flash td {
+  animation: fcb-row-flash 1.8s ease-out both;
+}
+
+.fcb-owned-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid rgba(111, 141, 87, 0.55);
+  border-radius: 999px;
+  background: rgba(95, 127, 85, 0.16);
+  color: #a7c48f;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* --- Split view: character editing beside the live sheet preview ------------------ */
+.fcb-split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.fcb-sheet-preview {
+  position: sticky;
+  top: var(--fcb-sticky-base);
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* pdf.js canvas viewer: a scrollable stack of page canvases. Scroll lives on this container
+   so regenerations (which only swap the canvas children) preserve the reader's position. */
+.fcb-pdf-canvas {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--fcb-surface);
+}
+
+.fcb-sheet-tab {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.fcb-sheet-tab .fcb-sheet-body {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fcb-sheet-tab .fcb-sheet-body > .fcb-pdf-canvas {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.fcb-sheet-preview > .fcb-pdf-canvas {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.fcb-pdf-canvas .fcb-pdf-page {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto 10px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 18%);
+}
+
+.fcb-sheet-preview .fcb-sheet-preview-canvas {
+  height: 100%;
+  min-height: 0;
+  /* Without the old header the page would start at the panel's very edge, so
+     its square corners were bitten off by the panel's radius. This mat keeps
+     the sheet clear of the arc. */
+  padding: 10px;
+}
+
+/* Floats over the page while a regeneration is in flight; the panel has no
+   header to host it, and it is absent entirely once the sheet is current. */
+.fcb-sheet-preview-status {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-surface) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--fcb-shadow-soft);
+  color: var(--fcb-text-faint);
+  font-size: 0.76rem;
+}
+
+.fcb-sheet-preview-status.is-stale {
+  color: var(--fcb-amber);
+}
+
+/* No stacked fallback: below 1081px viewport CharacterWorkspace deactivates split view
+   entirely (SPLIT_MIN_VIEWPORT) — a sheet stacked under the editor is no quicker than
+   the SHEET tab — so the side-by-side grid is the only rendered form. */
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-toast,
+  .fcb-fast-start-notice.is-building .fcb-fast-start-notice-dot,
+  .fcb-table tr.is-flash td {
+    animation: none;
+  }
+}
+
+/* ---------- MAGIC tab: spell-level tabs, grey-out states, companion stat block ---------- */
+
+/* The level pills and, when there are no spell facts to sit opposite, the
+   pick count — one row rather than the count floating on its own above. */
+.fcb-spell-level-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fcb-spell-level-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+/* The pills already carry the row's bottom margin. */
+.fcb-spell-level-row > .fcb-spell-browser-status {
+  margin-bottom: 12px;
+}
+
+.fcb-spell-level-tab {
+  min-height: var(--dmf-control-min-height);
+  padding: 0 12px;
+  border: 1px solid var(--fcb-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    color var(--fcb-transition),
+    background var(--fcb-transition),
+    border-color var(--fcb-transition);
+}
+
+.fcb-spell-level-tab:hover {
+  background: color-mix(in srgb, var(--fcb-text) 8%, transparent);
+  color: var(--fcb-text);
+}
+
+.fcb-spell-level-tab.is-active {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  color: var(--fcb-text);
+}
+
+/* Level has no learnable spells left (all picked / over limit): readable but muted. */
+.fcb-spell-level-tab.is-exhausted:not(.is-active) {
+  opacity: 0.65;
+}
+
+/* Level requires spell slots the character doesn't have yet. */
+.fcb-spell-level-tab.is-locked:not(.is-active) {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+/* Stands in for the locked pills where there is no room for them. Hidden
+   wherever they are shown, so the two never appear together. */
+.fcb-spell-level-locked-note {
+  display: none;
+  align-self: center;
+  padding: 0 4px;
+  color: var(--fcb-text-faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* A spell the character can't legally learn right now: greyed but still readable,
+   clicking it opens the "why not" popup. */
+.fcb-table tr.fcb-spell-unlearnable td {
+  opacity: 0.5;
+}
+
+.fcb-table tr.fcb-spell-unlearnable:hover td {
+  opacity: 0.75;
+}
+
+.fcb-spell-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border: 1px solid var(--fcb-border);
+  border-radius: 4px;
+  color: var(--fcb-text-faint);
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+/* Spell casting-time badge (A action / BA bonus action / RE reaction / timed) shown
+   beside the spell name. Bonus & reaction are tinted so they stand out from the common
+   "1 action" case; longer ritual/timed casts render an abbreviated raw label. */
+.fcb-cast-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border: 1px solid var(--fcb-border);
+  border-radius: 4px;
+  color: var(--fcb-text-muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.fcb-cast-badge[data-cast="bonus"] {
+  border-color: color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--fcb-primary) 14%, transparent);
+  color: var(--fcb-amber);
+}
+
+.fcb-cast-badge[data-cast="reaction"] {
+  border-color: rgba(111, 141, 87, 0.6);
+  background: rgba(111, 141, 87, 0.16);
+  color: #a9c58c;
+}
+
+.fcb-cast-badge[data-cast="long"] {
+  color: var(--fcb-text-faint);
+}
+
+/* The Magic view tabs and the active caster's spellcasting summary share one
+   bar: tabs left, summary pinned right under the workspace stat pills. */
+.fcb-magic-subbar {
+  /* The bar carries the caster's stat pills as well as the tabs. A fixed
+     height plus overflow-y:hidden cuts them off wherever they need more room
+     (touch targets, larger text), so it grows instead of clipping. */
+  height: auto;
+  min-height: var(--fcb-subtab-h);
+}
+
+.fcb-magic-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fcb-caster-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: visible;
+  padding: 0 0 2px;
+}
+
+.fcb-magic-subbar > .fcb-caster-summary {
+  align-self: center;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  margin-left: auto;
+  padding: 0;
+}
+
+@media (max-width: 820px) {
+  .fcb-magic-subbar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .fcb-magic-tabs,
+  .fcb-magic-subbar > .fcb-caster-summary {
+    flex-basis: 100%;
+  }
+
+  /* Five stat pills wrap to two rows at phone width, which costs more vertical
+     room than the segmented tabs above them. One line instead --- but PREP is
+     the last chip and the one worth reading at a glance, so the row has to FIT
+     rather than scroll: anything past the edge is a chip nobody finds. The
+     tightening below plus the compact resource label buys the ~35px needed.
+     The scroll stays as a floor for the narrowest phones, where five chips
+     cannot fit at any legible size. */
+  .fcb-magic-subbar > .fcb-caster-summary {
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: calc(100% + var(--fcb-gutter) + var(--fcb-gutter));
+    margin-right: calc(0px - var(--fcb-gutter));
+    margin-left: calc(0px - var(--fcb-gutter));
+    padding-right: var(--fcb-gutter);
+    padding-left: var(--fcb-gutter);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .fcb-magic-subbar > .fcb-caster-summary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fcb-caster-summary > .fcb-stat-pill {
+    padding-right: 6px;
+    padding-left: 6px;
+    font-size: 0.7rem;
+  }
+}
+
+.fcb-caster-summary > .fcb-stat-pill {
+  flex: 0 0 auto;
+}
+
+.fcb-spell-mobile-meta {
+  display: none;
+}
+
+.fcb-spell-level-heading {
+  margin: 0;
+  padding: 10px 14px 6px;
+  color: var(--fcb-text-faint);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Companion stat block: the six-ability strip. */
+/* The portrait anchors the identity block, so the name and its subtitle sit
+   beside it rather than above the stat block. */
+.fcb-companion-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* The stat block reads top to bottom as one creature entry: statistics, then
+   its abilities, each separated enough to scan without hunting. */
+.fcb-companion-body {
+  display: grid;
+  gap: 16px;
+  font-size: 0.875rem;
+}
+
+/* Facts pair a short label with a short value, so the columns stay close
+   enough to read as pairs instead of stretching across the panel. */
+.fcb-companion-body .fcb-detail-list {
+  max-width: 560px;
+}
+
+.fcb-companion-feature-group {
+  display: grid;
+  gap: 8px;
+}
+
+/* A creature's abilities read as a stat block: the name leads its own rules
+   text rather than sitting in a row of anonymous chips. */
+.fcb-companion-feature {
+  padding: 10px 12px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: var(--fcb-surface-2);
+}
+
+.fcb-companion-feature-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fcb-text);
+  font-weight: 800;
+  font-size: 0.84rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fcb-companion-feature-name:hover {
+  color: var(--fcb-primary);
+}
+
+.fcb-companion-feature-name:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: 2px;
+}
+
+.fcb-companion-feature-text {
+  margin: 4px 0 0;
+  color: var(--fcb-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.fcb-companion-source {
+  margin: 0;
+  color: var(--fcb-text-faint);
+  font-size: 0.76rem;
+}
+
+.fcb-companion-abilities {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.fcb-companion-ability {
+  padding: 8px 4px;
+  text-align: center;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: rgba(148, 163, 184, 0.05);
+}
+
+.fcb-companion-ability-name {
+  color: var(--fcb-text-faint);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.fcb-companion-ability-score {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--fcb-text);
+}
+
+.fcb-companion-ability-mod {
+  color: var(--fcb-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+@container fcb-pane (max-width: 700px) {
+  /* In a narrow pane the bar wraps (tabs row + summary row), so it cannot keep
+     the fixed sticky height; let it flow and zero the sticky offset. */
+  .fcb-magic-layout {
+    --fcb-subtab-h: 0px;
+  }
+
+  .fcb-magic-subbar {
+    position: static;
+    top: auto;
+    height: auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+    border-bottom: 0;
+    background: transparent;
+  }
+
+  .fcb-magic-tabs,
+  .fcb-magic-subbar > .fcb-caster-summary {
+    flex-basis: 100%;
+  }
+
+  /* Five stat pills wrap to two rows at phone width, which costs more vertical
+     room than the segmented tabs above them. One line instead --- but PREP is
+     the last chip and the one worth reading at a glance, so the row has to FIT
+     rather than scroll: anything past the edge is a chip nobody finds. The
+     tightening below plus the compact resource label buys the ~35px needed.
+     The scroll stays as a floor for the narrowest phones, where five chips
+     cannot fit at any legible size. */
+  .fcb-magic-subbar > .fcb-caster-summary {
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: calc(100% + var(--fcb-gutter) + var(--fcb-gutter));
+    margin-right: calc(0px - var(--fcb-gutter));
+    margin-left: calc(0px - var(--fcb-gutter));
+    padding-right: var(--fcb-gutter);
+    padding-left: var(--fcb-gutter);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .fcb-magic-subbar > .fcb-caster-summary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fcb-caster-summary {
+    gap: 6px;
+    padding-bottom: 0;
+  }
+
+  .fcb-caster-summary > .fcb-stat-pill {
+    min-width: 0;
+    justify-content: flex-start;
+    padding-right: 6px;
+    padding-left: 6px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .fcb-companion-abilities {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* --- Import progress: an indeterminate bar shown while a character file loads in.
+   Character import is a single opaque async op (no progress events), so the bar is
+   indeterminate — it communicates "working", not a percentage. Reuses the boot
+   spinner + amber accent for consistency with the rest of the shell. ------------- */
+.fcb-import-progress {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 16px;
+  animation: fcb-boot-fade 200ms ease both;
+}
+
+.fcb-import-progress-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fcb-text-muted);
+  font-size: 0.84rem;
+}
+
+.fcb-import-progress-track {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  overflow: hidden;
+}
+
+.fcb-import-progress-track::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  border-radius: 999px;
+  background: var(--fcb-amber);
+  animation: fcb-import-slide 1.1s ease-in-out infinite;
+}
+
+@keyframes fcb-import-slide {
+  0% {
+    left: -35%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-import-progress-track::after {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
+/* Desktop workspace overrides live last so the older document-layout rules above cannot
+   reintroduce sticky or nested vertical scroll owners. */
+.fcb-global-equipment-search {
+  position: relative;
+}
+
+.fcb-global-equipment-results {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface-2);
+  box-shadow: var(--fcb-shadow);
+  scrollbar-color: var(--fcb-border) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.fcb-global-equipment-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fcb-global-equipment-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-global-equipment-result:last-child {
+  border-bottom: 0;
+}
+
+.fcb-global-equipment-result:focus-within,
+.fcb-global-equipment-result:hover {
+  background: var(--fcb-surface-hover, rgb(255 255 255 / 6%));
+}
+
+.fcb-global-equipment-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.fcb-global-equipment-name {
+  min-width: 0;
+  text-align: left;
+}
+
+.fcb-global-equipment-source {
+  overflow: hidden;
+  color: var(--fcb-text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcb-global-equipment-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fcb-global-equipment-status,
+.fcb-global-equipment-limit {
+  margin: 0;
+  padding: 12px;
+  color: var(--fcb-text-muted);
+  font-size: 0.82rem;
+}
+
+.fcb-global-equipment-limit {
+  border-top: 1px solid var(--fcb-border-soft);
+}
+
+@media (max-width: 460px) {
+  .fcb-global-equipment-results {
+    max-height: min(360px, 55vh);
+  }
+
+  .fcb-global-equipment-result {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .fcb-global-equipment-actions {
+    gap: 4px;
+  }
+}
+
+@media (min-width: 821px) {
+  .fcb-app-shell--workspace .fcb-public-footer {
+    margin: 0;
+    margin-inline: auto;
+    padding: 5px var(--fcb-gutter) 6px;
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .fcb-app-shell--library .fcb-public-footer {
+    margin: 0;
+    margin-inline: auto;
+    padding: 5px var(--fcb-gutter) 6px;
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .fcb-app-shell--library .fcb-public-footer p + p {
+    display: inline;
+    margin-left: 10px;
+  }
+
+  .fcb-app-shell--workspace .fcb-public-footer p + p {
+    display: inline;
+    margin-left: 10px;
+  }
+
+  .fcb-app-shell--workspace .fcb-topbar,
+  .fcb-app-shell--workspace .fcb-subbar {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+  }
+
+  .fcb-app-shell--workspace .fcb-subbar-inner {
+    flex-wrap: nowrap;
+  }
+
+  .fcb-app-shell--library .fcb-library-main {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    width: var(--fcb-content-width);
+    margin: 0 auto;
+    padding: var(--fcb-gutter);
+  }
+
+  /* The side gutter lives on the content, not on this element: overflow:hidden
+     here would clip the sub-tab bar's full-bleed back to the padding box. */
+  .fcb-app-shell--workspace .fcb-workspace-main {
+    overflow: hidden;
+    width: var(--fcb-content-width);
+    margin: 0 auto;
+    padding: 0 0 var(--fcb-gutter);
+  }
+
+  .fcb-workspace-content {
+    height: 100%;
+    min-height: 0;
+    padding-inline: var(--fcb-gutter);
+  }
+
+  .fcb-split-layout {
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1.5fr) minmax(420px, 1fr);
+    align-items: stretch;
+  }
+
+  .fcb-split-layout > .fcb-editor-pane,
+  .fcb-split-layout > .fcb-sheet-preview,
+  .fcb-editor-pane > .fcb-workspace-tab {
+    min-height: 0;
+  }
+
+  /* I3, second half: what a tab puts directly under the workspace navigation.
+     A band — a sub-tab bar, or the rail once a collapsed pane lays it out as
+     one — continues that navigation and stays flush against it. Anything else
+     is content, and takes the band gap.
+
+     Keyed on what the tab renders rather than on which tab it is, because
+     Magic drops its bar for a character with no caster; naming the usually
+     barless tabs instead left that case flush against the workspace bar.
+     This has to stay at one class of specificity so the collapsed-pane rule
+     further down, which turns the rail into a band, can still zero it. */
+  .fcb-workspace-tab {
+    padding-top: var(--fcb-band-gap);
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .fcb-workspace-tab.fcb-has-subtabs {
+    padding-top: 0;
+  }
+
+  /* A tab whose root is itself the panel has to move the frame rather than
+     indent what sits inside it. It is also sized to fill the pane, and the
+     pane clips, so the gap has to come back out of its height. */
+  .fcb-workspace-tab.fcb-panel {
+    padding-top: 0;
+    margin-top: var(--fcb-band-gap);
+    height: calc(100% - var(--fcb-band-gap));
+  }
+
+  .fcb-editor-pane {
+    height: 100%;
+    min-height: 0;
+    /* `clip` rather than `hidden` so the sub-tab bar's gutter-width bleed can
+       paint past the pane edge; everything else still clips. Browsers without
+       overflow-clip-margin fall back to clipping at the pane edge. */
+    overflow: clip;
+    overflow-clip-margin: var(--fcb-gutter);
+  }
+
+  .fcb-workspace-tab.fcb-builder-layout {
+    display: grid;
+  }
+
+  .fcb-workspace-tab > .fcb-subtab-bar {
+    position: static;
+    top: auto;
+    flex: 0 0 var(--fcb-subtab-h);
+    margin: 0 0 8px;
+  }
+
+  /* Magic's bar also holds the caster stat pills, so it takes the height its
+     content needs rather than being fixed to the nav strip and clipping. */
+  .fcb-workspace-tab > .fcb-magic-subbar {
+    flex: 0 0 auto;
+    min-height: var(--fcb-subtab-h);
+  }
+
+  /* I4/I5: every pane scroll region, in one behaviour block. Only flex
+     sizing stays per-site. Separate copies are how the shape drifted into
+     three variants across the tabs. None of these may carry a border radius:
+     a scrollbar paints on the border box, outside any rounding. */
+  .fcb-editor-primary,
+  .fcb-magic-layout .fcb-magic-stack,
+  .fcb-manage-layout .fcb-editor-primary,
+  .fcb-manage-single-primary,
+  .fcb-description-scroll,
+  .fcb-inventory-scroll,
+  .fcb-equipment-catalog .fcb-equipment-results {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    border-radius: 0;
+  }
+
+  .fcb-description-panel {
+    position: static;
+    top: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .fcb-builder-layout,
+  .fcb-builder-grid,
+  .fcb-two-panel-grid {
+    min-height: 0;
+  }
+
+  .fcb-build-tab .fcb-builder-layout,
+  .fcb-equipment-tab .fcb-builder-layout,
+  .fcb-build-tab .fcb-builder-grid,
+  .fcb-equipment-tab .fcb-builder-grid,
+  .fcb-magic-layout .fcb-two-panel-grid,
+  .fcb-manage-layout .fcb-two-panel-grid {
+    height: 100%;
+    align-items: stretch;
+  }
+
+  .fcb-build-tab .fcb-builder-grid > .fcb-panel,
+  .fcb-equipment-tab .fcb-builder-grid > .fcb-editor-primary {
+    min-height: 0;
+  }
+
+  .fcb-build-tab .fcb-builder-grid > .fcb-panel:first-child {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .fcb-manage-content {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    /* Column flex reads align-items on the horizontal axis: panels must span
+       the content column, not shrink to their text width. */
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .fcb-manage-content > .fcb-two-panel-grid,
+  .fcb-manage-content > .fcb-manage-single-primary {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  .fcb-build-tab .fcb-panel-body.fcb-editor-primary {
+    flex: 1 1 auto;
+  }
+
+  .fcb-equipment-tab .fcb-editor-primary,
+  .fcb-magic-layout .fcb-magic-stack,
+  .fcb-manage-single-primary {
+    height: 100%;
+  }
+
+  /* Inventory follows the same model as the other tabs: the grid takes the
+     height left in the tab, the panel clips to its radius, and the region
+     inside it owns the scrolling. */
+  .fcb-equipment-tab > .fcb-two-panel-grid {
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
+    align-items: stretch;
+  }
+
+  .fcb-inventory-primary {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-inventory-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-inventory-scroll {
+    flex: 1 1 auto;
+  }
+
+  /* The catalog owns its height so the panel itself never scrolls: the search
+     is a fixed header and only the item list moves. A panel that scrolls as a
+     whole drags its rows across its own rounded corners and squares them off
+     at both ends, because it cannot clip to a radius it is scrolling past. */
+  .fcb-equipment-primary {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    gap: var(--dmf-space-12);
+  }
+
+  .fcb-equipment-catalog {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-equipment-catalog > .fcb-panel-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-equipment-search {
+    position: static;
+    flex: 0 0 auto;
+    margin: -16px -16px 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--fcb-border-soft);
+    background: var(--fcb-surface);
+  }
+
+  .fcb-equipment-search .fcb-input {
+    margin: 0;
+  }
+
+  .fcb-equipment-catalog .fcb-equipment-results {
+    flex: 1 1 auto;
+  }
+
+  /* The header no longer scrolls with the rows, so the sticky column heads
+     pin to the top of the list's own scroll region. */
+  .fcb-equipment-catalog .fcb-table th {
+    top: 0;
+  }
+
+  .fcb-equipment-category-nav {
+    position: static;
+    top: auto;
+    overflow-x: visible;
+  }
+
+  /* The rail, in every tab that has one. This was a list of three tab names,
+     which is why adding a fourth rail meant remembering to extend it. */
+  .fcb-builder-layout > .fcb-left-nav {
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow-x: visible;
+    overflow-y: hidden;
+  }
+
+  .fcb-spell-point-table-wrap,
+  .fcb-secondary-tabs,
+  .fcb-subtab-bar {
+    overflow-y: hidden;
+  }
+
+  /* A rail is a column of entries the content decides the length of, so any
+     of them can outgrow the pane: Equipment publishes seventeen categories
+     from the SRD alone, and a full caster's Magic rail reaches ten. Left to
+     grow, the rail spills past the pane, which clips it — and neither the
+     rail nor the pane scrolls, so those entries cannot be reached at all.
+     Capping it at the row and scrolling is stated for the rail in general,
+     not for the one tab that hit it first, which is the same reason the rule
+     above no longer names tabs. `overflow-y: auto` shows nothing until there
+     is something to scroll, so a rail that fits is unchanged; `min-height: 0`
+     is what lets the rail take the row's height instead of its content's.
+     Only in a wide pane: collapsed, the rail is a horizontal strip that
+     scrolls on the other axis, which the block below owns.
+
+     No `scrollbar-gutter: stable` here, unlike the pane scrollers: a gutter is
+     reserved whenever the box can scroll, and most rails never do, so on a
+     platform with classic scrollbars every rail would give up the width
+     permanently for a scrollbar only Equipment shows. */
+  @container fcb-pane (min-width: 1081px) {
+    .fcb-builder-layout > .fcb-left-nav {
+      min-height: 0;
+      max-height: 100%;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+    }
+  }
+
+  .fcb-sheet-tab {
+    min-height: 0;
+  }
+
+  .fcb-sheet-tab .fcb-sheet-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-sheet-tab .fcb-pdf-canvas {
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+  }
+
+  .fcb-sheet-preview {
+    position: static;
+    display: flex;
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-sheet-preview .fcb-sheet-preview-canvas {
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+  }
+
+  .fcb-sheet-preview-canvas {
+    height: auto;
+    min-height: 0;
+  }
+
+  .fcb-manage-single-primary:empty {
+    display: none;
+  }
+
+  /* When Split View narrows the editor pane, Build and Equipment use the same
+     horizontal-rail flow. Keep the rail in normal layout so it cannot overlap the
+     grid that owns the editor/details scroll regions. */
+  @container fcb-pane (max-width: 1080px) {
+    /* I2: the band stack is flush, and by I3 the content carries the single
+       offset — so the shell's own gap is zero. It must be zeroed on both
+       selectors: the compound one out-ranks any later reset, which is how
+       Build and Manage drifted to 16px while Magic sat at 8px, and dropping
+       it entirely exposes the 18px base grid gap underneath. */
+    .fcb-builder-layout,
+    .fcb-workspace-tab.fcb-builder-layout {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    /* Collapsed, the rail is a band in the same navigation stack as the
+       sub-tab bar, so it sits flush against the bar above and bleeds through
+       the page gutter rather than floating inset below it. */
+    .fcb-workspace-tab.fcb-builder-layout {
+      padding-top: 0;
+    }
+
+    /* Where a tab stacks a view bar above a collapsed rail, the two are one
+       navigation block, so the seam between them closes. Stated once for every
+       tab rather than per tab, which is how they drifted apart before. */
+    .fcb-workspace-tab > .fcb-subtab-bar {
+      margin-bottom: 0;
+    }
+
+    /* I3: every content region a tab can put under its band stack, including
+       the two-panel grid Equipment/Inventory hangs directly off the tab root
+       — the case that had no offset at all. */
+    .fcb-builder-layout > .fcb-builder-grid,
+    .fcb-builder-layout > .fcb-two-panel-grid,
+    .fcb-builder-layout > .fcb-manage-content,
+    .fcb-workspace-tab > .fcb-two-panel-grid {
+      margin-top: var(--fcb-band-gap);
+    }
+
+    .fcb-builder-layout > .fcb-left-nav {
+      position: static;
+      top: auto;
+      z-index: auto;
+      display: flex;
+      flex: 0 0 var(--fcb-navstrip-h);
+      width: calc(100% + var(--fcb-gutter));
+      margin: 0;
+      margin-left: calc(0px - var(--fcb-gutter));
+      padding-left: var(--fcb-gutter);
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .fcb-workspace-content:not(.fcb-split-layout)
+      .fcb-builder-layout
+      > .fcb-left-nav {
+      width: calc(100% + var(--fcb-gutter) + var(--fcb-gutter));
+      margin-right: calc(0px - var(--fcb-gutter));
+      padding-right: var(--fcb-gutter);
+    }
+
+    .fcb-split-layout .fcb-builder-layout > .fcb-left-nav {
+      border-bottom-right-radius: var(--fcb-radius);
+      padding-right: var(--fcb-gutter);
+    }
+
+    .fcb-builder-layout > .fcb-builder-grid,
+    .fcb-builder-layout > .fcb-two-panel-grid {
+      display: grid;
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      height: auto;
+      align-self: stretch;
+      align-items: stretch;
+    }
+
+    .fcb-builder-layout > .fcb-manage-content {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      align-self: stretch;
+    }
+  }
+}
+
+@media (max-width: 820px) {
+  .fcb-app-shell--library {
+    display: block;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .fcb-app-shell--workspace {
+    display: grid;
+    height: var(--fcb-viewport-height);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .fcb-workspace {
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .fcb-app-shell--library > .fcb-library-shell {
+    display: block;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .fcb-equipment-primary {
+    display: block;
+  }
+
+  .fcb-equipment-catalog {
+    overflow: visible;
+  }
+
+  .fcb-equipment-search {
+    position: static;
+    margin: 0 0 12px;
+    padding: 0;
+    border-bottom: 0;
+    background: transparent;
+  }
+
+  .fcb-equipment-catalog .fcb-table th {
+    top: 0;
+  }
+
+}
+
+/* Busy cursor while a choice is writing: the workspace disables its inputs
+   during mutations, and the cursor communicates that selection is locked. */
+html.fcb-busy-cursor,
+html.fcb-busy-cursor * {
+  cursor: progress !important;
+}
+
+/* Themed replacements for what used to be Tailwind colour literals. Each keys
+   off the semantic status tokens so all three themes re-tint together. */
+.fcb-warning-note {
+  color: var(--fcb-warning-text);
+}
+
+.fcb-warning-banner {
+  border-color: var(--fcb-warning-border);
+  background: var(--fcb-warning-bg);
+  color: var(--fcb-warning-text);
+}
+
+.fcb-repick-badge {
+  border: 1px solid var(--fcb-warning-border);
+  background: var(--fcb-warning-bg);
+  color: var(--fcb-warning-text);
+}
+
+.fcb-tab-dot-repick {
+  background: var(--dmf-danger);
+  box-shadow: 0 0 12px var(--fcb-danger-border);
+}
+
+.fcb-scrim-overlay {
+  background: var(--fcb-scrim);
+}
+
+.fcb-inset-panel {
+  background: color-mix(in srgb, var(--fcb-bg) 62%, transparent);
+}
+
+/* Row highlighted because its element is open in the description panel. */
+.fcb-row-inspected {
+  background: color-mix(in srgb, var(--fcb-primary) 12%, transparent);
+}
+
+.fcb-strong-text {
+  color: var(--fcb-text);
+}
+
+.fcb-danger-note {
+  color: var(--fcb-danger-text);
+}
+
+.fcb-success-note {
+  color: var(--fcb-success-text);
+}
+
+/* Pushes the pick count to the far end of the spell browser's facts row. */
+.fcb-spell-browser-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* A one-pixel, non-interactive status anchor for automated browser checks. */
+.fcb-engine-state-marker {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+  font-size: 0;
+}

@@ -1,0 +1,203 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<character version="1.0.3" preview="false">
+	<!-- Aurora - https://www.aurorabuilder.com -->
+	<!-- information -->
+	<information>
+		<group>
+		</group>
+		<generationOption>1</generationOption>
+	</information>
+	<!-- display data -->
+	<display-properties favorite="false">
+		<name>Test Blank</name>
+		<race>Rock Gnome</race>
+		<class>
+		</class>
+		<archetype>
+		</archetype>
+		<background>
+		</background>
+		<level>1</level>
+		<portrait>
+			<companion>
+			</companion>
+			<local></local>
+			<base64><![CDATA[]]></base64>
+		</portrait>
+	</display-properties>
+	<!-- build data -->
+	<build>
+		<input>
+			<name>Test Blank</name>
+			<gender>Male</gender>
+			<player-name>Test Player</player-name>
+			<experience>0</experience>
+			<attacks>
+				<description><![CDATA[]]></description>
+			</attacks>
+			<backstory><![CDATA[]]></backstory>
+			<background-trinket></background-trinket>
+			<background-traits></background-traits>
+			<background-ideals></background-ideals>
+			<background-bonds></background-bonds>
+			<background-flaws></background-flaws>
+			<background>
+				<feature name="">
+					<description><![CDATA[]]></description>
+				</feature>
+			</background>
+			<organization>
+				<name>
+				</name>
+				<symbol></symbol>
+				<allies><![CDATA[]]></allies>
+			</organization>
+			<additional-features><![CDATA[]]></additional-features>
+			<currency>
+				<copper>0</copper>
+				<silver>0</silver>
+				<electrum>0</electrum>
+				<gold>0</gold>
+				<platinum>0</platinum>
+				<equipment><![CDATA[]]></equipment>
+				<treasure><![CDATA[]]></treasure>
+			</currency>
+			<notes>
+				<note column="left">
+				</note>
+				<note column="right">
+				</note>
+			</notes>
+			<quest>
+			</quest>
+		</input>
+		<appearance>
+			<portrait></portrait>
+			<age>
+			</age>
+			<height>2'11"</height>
+			<weight>35 lb.</weight>
+			<eyes>
+			</eyes>
+			<skin>
+			</skin>
+			<hair>
+			</hair>
+		</appearance>
+		<abilities available-points="15">
+			<strength>10</strength>
+			<dexterity>10</dexterity>
+			<constitution>10</constitution>
+			<intelligence>10</intelligence>
+			<wisdom>10</wisdom>
+			<charisma>10</charisma>
+		</abilities>
+		<elements level-count="1" registered-count="3">
+			<element type="Level" name="1" id="ID_LEVEL_1">
+				<element type="Race" name="Race" requiredLevel="1" checksum="1597ef76" registered="ID_RACE_GNOME">
+					<element type="Size" name="Small" id="ID_SIZE_SMALL" />
+					<element type="Vision" name="Darkvision" id="ID_VISION_DARKVISION" />
+					<element type="Racial Trait" name="Gnome Cunning" id="ID_RACIAL_TRAIT_GNOME_CUNNING" />
+					<element type="Language" name="Common" id="ID_LANGUAGE_COMMON" />
+					<element type="Language" name="Gnomish" id="ID_LANGUAGE_GNOMISH" />
+					<element type="Racial Trait" name="Gnome Subrace" id="ID_RACIAL_TRAIT_GNOME_SUBRACE">
+						<element type="Sub Race" name="Gnome Subrace" requiredLevel="1" checksum="d8fc9aec" registered="ID_SUB_RACE_ROCK_GNOME">
+							<element type="Racial Trait" name="Artificer’s Lore" id="ID_RACIAL_TRAIT_ARTIFICERS_LORE" />
+							<element type="Racial Trait" name="Tinker" id="ID_RACIAL_TRAIT_TINKER">
+								<element type="Proficiency" name="Tool Proficiency (Tinker’s tools)" id="ID_PROFICIENCY_TOOL_PROFICIENCY_TINKERS_TOOLS" />
+							</element>
+						</element>
+					</element>
+				</element>
+				<element type="Class" name="Class" requiredLevel="1" checksum="33a7b15b" registered="" />
+				<element type="Background" name="Background" requiredLevel="1" checksum="6a621392" registered="" />
+				<element type="Alignment" name="Alignment" requiredLevel="1" checksum="c9ac49d5" registered="" />
+				<element type="Deity" name="Deity" requiredLevel="1" checksum="989cce4c" registered="" />
+				<element type="Grants" name="Base" id="ID_INTERNAL_GRANTS_CHARACTER_BASE" />
+				<element type="Grants" name="Spellcasting Base" id="ID_INTERNAL_GRANTS_SPELLCASTING_BASE" />
+				<element type="Grants" name="Base Armor Class" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE" />
+				<element type="Grants" name="Dexterity Modifier" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER" />
+				<element type="Grants" name="Constitution Modifier" id="ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER" />
+			</element>
+		</elements>
+		<defenses>
+			<conditional>
+			</conditional>
+		</defenses>
+		<companion name="">
+			<attributes>
+				<strength>10</strength>
+				<dexterity>10</dexterity>
+				<constitution>10</constitution>
+				<intelligence>10</intelligence>
+				<wisdom>10</wisdom>
+				<charisma>10</charisma>
+			</attributes>
+			<saves>
+				<save ability="strength">0</save>
+				<save ability="dexterity">0</save>
+				<save ability="constitution">0</save>
+				<save ability="intelligence">0</save>
+				<save ability="wisdom">0</save>
+				<save ability="charisma">0</save>
+			</saves>
+			<skills>
+				<skill name="Acrobatics">0</skill>
+				<skill name="Animal Handling">0</skill>
+				<skill name="Arcana">0</skill>
+				<skill name="Athletics">0</skill>
+				<skill name="Deception">0</skill>
+				<skill name="History">0</skill>
+				<skill name="Insight">0</skill>
+				<skill name="Intimidation">0</skill>
+				<skill name="Investigation">0</skill>
+				<skill name="Medicine">0</skill>
+				<skill name="Nature">0</skill>
+				<skill name="Perception">0</skill>
+				<skill name="Performance">0</skill>
+				<skill name="Persuasion">0</skill>
+				<skill name="Religion">0</skill>
+				<skill name="Sleight of Hand">0</skill>
+				<skill name="Stealth">0</skill>
+				<skill name="Survival">0</skill>
+			</skills>
+			<portrait location="local">
+			</portrait>
+		</companion>
+		<equipment>
+			<storage name="#1" />
+			<storage name="#2" />
+			<item identifier="ddd7c3bd-bc3b-4218-bb6b-0feac5576609" name="Abacus" id="ID_WOTC_PHB_ITEM_ABACUS">
+				<details card="true">
+					<name>
+					</name>
+					<notes></notes>
+				</details>
+			</item>
+		</equipment>
+		<sum element-count="17">
+			<element type="Level" id="ID_LEVEL_1" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_CHARACTER_BASE" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_SPELLCASTING_BASE" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER" />
+			<element type="Race" id="ID_RACE_GNOME" />
+			<element type="Size" id="ID_SIZE_SMALL" />
+			<element type="Vision" id="ID_VISION_DARKVISION" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_GNOME_CUNNING" />
+			<element type="Language" id="ID_LANGUAGE_COMMON" />
+			<element type="Language" id="ID_LANGUAGE_GNOMISH" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_GNOME_SUBRACE" />
+			<element type="Sub Race" id="ID_SUB_RACE_ROCK_GNOME" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_ARTIFICERS_LORE" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_TINKER" />
+			<element type="Proficiency" id="ID_PROFICIENCY_TOOL_PROFICIENCY_TINKERS_TOOLS" />
+		</sum>
+		<magic />
+	</build>
+	<!-- restricted sources -->
+	<sources>
+		<restricted />
+	</sources>
+</character>

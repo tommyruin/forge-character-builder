@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Authored: the eight favored-terrain options the ranger's Natural Explorer
+	feature selects from (System Reference Document 5.1, Ranger, Natural
+	Explorer). Their identifiers match the ones saved characters carry.
+-->
+<elements>
+	<element name="Arctic" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_ARCTIC">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is the arctic. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+	<element name="Coast" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_COAST">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is the coast. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+	<element name="Desert" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_DESERT">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is the desert. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+	<element name="Forest" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_FOREST">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is the forest. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+	<element name="Grassland" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_GRASSLAND">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is grassland. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+	<element name="Mountain" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_MOUNTAIN">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is the mountains. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+	<element name="Swamp" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_SWAMP">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is the swamp. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+	<element name="Underdark" type="Class Feature" source="System Reference Document" id="ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_UNDERDARK">
+		<supports>Favored Terrain</supports>
+		<description>
+			<p>Your favored terrain is the Underdark. When you make an Intelligence or Wisdom check related to your favored terrain, your proficiency bonus is doubled if you are using a skill that you’re proficient in.</p>
+		</description>
+	</element>
+</elements>

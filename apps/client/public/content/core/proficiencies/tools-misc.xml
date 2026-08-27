@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Tool Proficiency (Navigator’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_NAVIGATORS_TOOLS">
+		<supports>Tool</supports>
+		<description>
+			<p>This set of instruments is used for navigation at sea. Proficiency with navigator’s tools lets you chart a ship’s course and follow navigation charts. In addition, these tools allow you to add your proficiency bonus to any ability check you make to avoid getting lost at sea.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Thieves’ tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_THIEVES_TOOLS">
+		<supports>Tool, Thieves tools</supports>
+		<description>
+			<p class="indent">This set of tools includes a small file, a set of lock picks, a small mirror mounted on a metal handle, a set of narrow-bladed scissors, and a pair of pliers. Proficiency with these tools lets you add your proficiency bonus to any ability checks you make to disarm traps or open locks.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Vehicles (land))" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_VEHICLES_LAND">
+		<supports>Tool, Vehicles</supports>
+	</element>
+	<element name="Tool Proficiency (Vehicles (water))" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_VEHICLES_WATER">
+		<supports>Tool, Vehicles</supports>
+	</element>
+</elements>

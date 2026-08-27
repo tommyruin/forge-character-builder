@@ -1,0 +1,115 @@
+{
+  "description": "Exact places where a denylisted term is a persisted or interoperability contract rather than residue. Each entry names the file, the permitted pattern, and why it is permitted.",
+  "entries": [
+    {
+      "path": "apps/client/src/transport/localStore.js",
+      "pattern": "aurora-local",
+      "reason": "persisted IndexedDB database name; renaming would strand every user's stored characters"
+    },
+    {
+      "path": "apps/client/src/transport/__tests__/localStoreAtomic.test.js",
+      "pattern": "aurora-local",
+      "reason": "tests the persisted database name"
+    },
+    {
+      "path": "apps/client/src/components/CharacterWorkspace.jsx",
+      "pattern": "aurora-split-view",
+      "reason": "persisted localStorage key for the split-view preference"
+    },
+    {
+      "path": "apps/client/src/transport/engineTransport.ts",
+      "pattern": "aurora-character-package",
+      "reason": "package format token accepted for files already on users' disks"
+    },
+    {
+      "path": "packages/engine/src/character/service.ts",
+      "pattern": "Aurora - https://www\\.aurorabuilder\\.com",
+      "reason": "the exporter header other .dnd5e readers key on"
+    },
+    {
+      "path": "packages/engine/src/testing/dnd5e-samples.ts",
+      "pattern": "Aurora - https://www\\.aurorabuilder\\.com",
+      "reason": "byte-exact sample of the exporter header"
+    },
+    {
+      "path": "packages/engine/src/dnd5e/document.test.ts",
+      "pattern": "aurorabuilder\\.com",
+      "reason": "asserts the exporter header round-trips byte-exact"
+    },
+    {
+      "path": "packages/engine/src/content/proxies.ts",
+      "pattern": "Aurora Legacy Essentials",
+      "reason": "content-source display name whose proxy prefix is baked into element ids"
+    },
+    {
+      "path": "packages/engine/src/worker-handlers.test.ts",
+      "pattern": "ID_SOURCE_AURORA_LEGACY_ESSENTIALS",
+      "reason": "element id from the corpus"
+    },
+    {
+      "path": "scripts/fetch-corpus.mjs",
+      "pattern": "AuroraLegacy",
+      "reason": "the public corpus repository's name and download URL"
+    },
+    {
+      "path": "third-party/elements/provenance.md",
+      "pattern": "AuroraLegacy",
+      "reason": "provenance record of the public corpus"
+    },
+    {
+      "path": "third-party/elements/testdata.provenance.json",
+      "pattern": "AuroraLegacy",
+      "reason": "provenance record of the public corpus"
+    },
+    {
+      "path": "third-party/srd-5.2/provenance.md",
+      "pattern": "AuroraLegacy",
+      "reason": "provenance record of the public corpus"
+    },
+    {
+      "path": "scripts/audit/denylist-terms.json",
+      "pattern": ".*",
+      "reason": "the denylist itself"
+    },
+    {
+      "path": "scripts/audit/allowlist.json",
+      "pattern": ".*",
+      "reason": "the allowlist itself"
+    },
+    {
+      "path": "scripts/audit-public-tree.mjs",
+      "pattern": ".*",
+      "reason": "the audit itself"
+    },
+    {
+      "path": "README.md",
+      "pattern": "aurora-(local|split-view)",
+      "reason": "documents the frozen storage names"
+    },
+    {
+      "path": "docs/contract.md",
+      "pattern": "aurora-local",
+      "reason": "documents the frozen database name"
+    },
+    {
+      "path": "apps/client/src/transport/__tests__/engineTransport.contract.test.ts",
+      "pattern": "aurora-character-package",
+      "reason": "tests the package format token accepted for existing files"
+    },
+    {
+      "path": "NOTICE.md",
+      "pattern": "AuroraLegacy",
+      "reason": "attribution of the public corpus"
+    },
+    {
+      "path": ".gitattributes",
+      "pattern": ".*",
+      "reason": "no residue; listed so the file is documented"
+    },
+    {
+      "path": "packages/engine/src/content/core-baseline.test.ts",
+      "pattern": "Builder\\\\.Presentation\\|aurora",
+      "reason": "the test that keeps those names out of the core baseline"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Coverage reports. Anchored: a bare `coverage/` would also swallow
+# fixtures/coverage/, which is committed input for the corpus coverage gate.
+/coverage/
+apps/*/coverage/
+packages/*/coverage/
+
+# Logs, editors, OS
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# The content corpus is third-party data, fetched and byte-verified by
+# `npm run corpus:fetch` against the committed sha256 manifest.
+third-party/elements/testdata/
+
+# Local run artifacts and environment
+test-results/
+output/
+.env
+.env.*
+!.env.example

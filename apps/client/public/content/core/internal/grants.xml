@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Ritual Casting" type="Grants" source="Internal" id="ID_INTERNAL_RITUAL_CASTING" />
+	<element name="Ritual Casting" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_RITUAL_CASTING" />
+	<element name="Multiclass" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_MULTICLASS" />
+	<element name="Counts As Equipped Armor" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_COUNTS_AS_EQUIPPED_ARMOR" />
+	<element name="Counts As Equipped Light Armor" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_COUNTS_AS_EQUIPPED_LIGHT_ARMOR" />
+	<element name="Counts As Equipped Medium Armor" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_COUNTS_AS_EQUIPPED_MEDIUM_ARMOR" />
+	<element name="Counts As Equipped Heavy Armor" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_COUNTS_AS_EQUIPPED_HEAVY_ARMOR" />
+	<element name="Optional Background Feature" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_OPTIONAL_BACKGROUND_FEATURE" />
+	<element name="Optional Background Variant" type="Grants" source="Internal" id="ID_INTERNAL_GRANT_OPTIONAL_BACKGROUND_VARIANT" />
+	<element name="Stealth Disadvantage" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_STEALTH_DISADVANTAGE">
+		<requirements>!ID_INTERNAL_GRANTS_IGNORE_STEALTH_DISADVANTAGE</requirements>
+	</element>
+	<element name="Ignore Stealth Disadvantage" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_IGNORE_STEALTH_DISADVANTAGE" />
+	<element name="Initiative Advantage" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_INITIATIVE_ADVANTAGE" />
+	<element name="Ignore Companion Multiattack" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_IGNORE_COMPANION_MULTIATTACK" />
+	<element name="Dragonmark" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_DRAGONMARK" />
+	<element name="Capacity Halved" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_WEIGHT_CAPACITY_HALVED" />
+	<element name="Capacity Doubled" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_WEIGHT_CAPACITY_DOUBLED" />
+	<element name="Capacity Count As Larger Size" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_WEIGHT_CAPACITY_COUNTS_AS_LARGER" />
+</elements>

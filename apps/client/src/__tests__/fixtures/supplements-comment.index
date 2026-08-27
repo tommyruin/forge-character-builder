@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<index>
+  <info>
+    <name>Offline supplements comment regression</name>
+  </info>
+  <files>
+    <!--
+      Legacy manifests retain retired files as comments. These entries must not
+      be treated as downloads, even when they still contain a URL.
+      <file name="retired-supplement.xml" url="https://example.test/retired-supplement.xml" />
+      <obsolete name="older-supplement.xml" url="https://example.test/older-supplement.xml" />
+    -->
+    <file name="active-supplement.xml" url="https://example.test/active-supplement.xml" />
+  </files>
+</index>

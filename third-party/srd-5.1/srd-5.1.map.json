@@ -1,0 +1,3344 @@
+{
+  "schemaVersion": 1,
+  "inventoryDigest": "b4c8c5ffbe3d61227157b50728de58bd8dc74974d83adcfaacff37066f60dc71",
+  "corpusCommit": "4fc7b24e762599f45d2836f3fc7814658d407315",
+  "excludedFiles": {
+    "deities.xml": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "source.xml": "the corpus Source element carries the publisher's product description; the core baseline ships the Source element",
+    "items/magic/items-firearms.xml": "firearms are not SRD 5.1 content",
+    "items/magic/items-gifts.xml": "supernatural gifts are not SRD 5.1 content",
+    "items/magic/items-treasure.xml": "treasure tables are not SRD 5.1 content",
+    "items/magic/items-vehicle.xml": "vehicles are not SRD 5.1 magic items",
+    "items/magic/items-vehicles.xml": "vehicles are not SRD 5.1 magic items",
+    "items/magic/replicate-infusions.xml": "artificer infusions are not SRD 5.1 content"
+  },
+  "renames": {
+    "Bigby’s Hand": "Arcane Hand",
+    "Melf’s Acid Arrow": "Acid Arrow",
+    "Evard’s Black Tentacles": "Black Tentacles",
+    "Mordenkainen’s Faithful Hound": "Faithful Hound",
+    "Mordenkainen’s Magnificent Mansion": "Magnificent Mansion",
+    "Mordenkainen’s Private Sanctum": "Private Sanctum",
+    "Mordenkainen’s Sword": "Arcane Sword",
+    "Otto’s Irresistible Dance": "Irresistible Dance",
+    "Tenser’s Floating Disk": "Floating Disk",
+    "Otiluke’s Freezing Sphere": "Freezing Sphere",
+    "Otiluke’s Resilient Sphere": "Resilient Sphere",
+    "Tasha’s Hideous Laughter": "Hideous Laughter",
+    "Drawmij’s Instant Summons": "Instant Summons",
+    "Leomund’s Secret Chest": "Secret Chest",
+    "Leomund’s Tiny Hut": "Tiny Hut",
+    "Nystul’s Magic Aura": "Arcanist’s Magic Aura",
+    "Rary’s Telepathic Bond": "Telepathic Bond",
+    "Heward’s Handy Haversack": "Handy Haversack",
+    "Daern’s Instant Fortress": "Instant Fortress",
+    "Iron Bands of Bilarro": "Iron Bands of Binding",
+    "Nolzur’s Marvelous Pigments": "Marvelous Pigments",
+    "Quiver of Ehlonna": "Efficient Quiver",
+    "Keoghtom’s Ointment": "Restorative Ointment",
+    "Quaal’s Feather Token": "Feather Token",
+    "Apparatus of Kwalish": "Apparatus of the Crab"
+  },
+  "edits": {
+    "hill-dwarf-setting-sentence": {
+      "file": "races/race-dwarf.xml",
+      "from": "<p>As a hill dwarf, you have keen senses, deep intuition, and remarkable resilience. The gold dwarves of Faerûn in their mighty southern kingdom are hill dwarves, as are the exiled Neidar and the debased Klar of Krynn in the Dragonlance setting.</p>",
+      "to": "<p>As a hill dwarf, you have keen senses, deep intuition, and remarkable resilience.</p>",
+      "why": "SRD 5.1 Hill Dwarf prints only the first sentence"
+    },
+    "high-elf-paragraph": {
+      "file": "races/race-elf.xml",
+      "from": "<p>As a high elf, you have a keen mind and a mastery of at least the basics of magic. In many of the worlds of D&amp;D, there are two kinds of high elves. One type (which includes the gray elves and valley elves of Greyhawk, the Silvanesti of Dragonlance, and the sun elves of the Forgotten Realms) is haughty and reclusive, believing themselves to be superior to non-elves and even other elves. The other type (including the high elves of Greyhawk. the Qualinesti of Dragonlance, and the moon elves of the Forgotten Realms) are more common and more friendly, and often encountered among humans and other races. The sun elves of Faerûn (also called gold elves or sunrise elves) have bronze skin and hair of copper, black, or golden blond. Their eyes are golden, silver, or black. Moon elves (also called silver elves or gray elves) are much paler, with alabaster skin sometimes tinged with blue. They often have hair of silver-white, black, or blue, but various shades of blond, brown, and red are not uncommon. Their eyes are blue or green and flecked with gold.</p>",
+      "to": "<p>As a high elf, you have a keen mind and a mastery of at least the basics of magic. In many fantasy gaming worlds, there are two kinds of high elves. One type is haughty and reclusive, believing themselves to be superior to non-elves and even other elves. The other type is more common and more friendly, and often encountered among humans and other races.</p>",
+      "why": "SRD 5.1 High Elf paragraph, without the handbook's setting examples and coloration notes"
+    },
+    "lightfoot-greyhawk-sentence": {
+      "file": "races/race-halfling.xml",
+      "from": "<p>Lightfoots are more prone to wanderlust than other halflings, and often dwell alongside other races or take up a nomadic life. In the world of Greyhawk, these halflings are called hairfeet or tallfellows.</p>",
+      "to": "<p>Lightfoots are more prone to wanderlust than other halflings, and often dwell alongside other races or take up a nomadic life.</p>",
+      "why": "SRD 5.1 Lightfoot prints the sentence without the Greyhawk example"
+    },
+    "rock-gnome-dragonlance-sentence": {
+      "file": "races/race-gnome.xml",
+      "from": "<p>As a rock gnome, you have a natural inventiveness and hardiness beyond that of other gnomes. Most gnomes in the worlds of D&amp;D are rock gnomes, including the tinker gnomes of the Dragonlance setting.</p>",
+      "to": "<p>As a rock gnome, you have a natural inventiveness and hardiness beyond that of other gnomes.</p>",
+      "why": "SRD 5.1 Rock Gnome prints only the first sentence"
+    },
+    "ranger-humanoid-yuan-ti": {
+      "file": "classes/class-ranger.xml",
+      "from": " (including minotaurs and yuan-ti)",
+      "to": " (including minotaurs)",
+      "why": "yuan-ti are not SRD 5.1 content; the sentence otherwise stands"
+    },
+    "orb-of-dragonkind-world": {
+      "file": "items/magic/items-wondrous.xml",
+      "from": "<p>Ages past, on the world of Krynn, elves and humans",
+      "to": "<p>Ages past, elves and humans"
+    },
+    "orb-of-dragonkind-wizards": {
+      "file": "items/magic/items-wondrous.xml",
+      "from": "the wizards of the Towers of High Sorcery came together",
+      "to": "powerful wizards came together"
+    },
+    "orb-of-dragonkind-deity": {
+      "file": "items/magic/items-wondrous.xml",
+      "from": "worship of Takhisis (Tiamat's name on Krynn),",
+      "to": "worship of Tiamat,"
+    }
+  },
+  "toleratedEmptySelects": {
+    "ID_BACKGROUND_ACOLYTE": "the optional 'Variant Feature' select (supports Optional Background Feature) has no candidates in the shipped set; it is an optional hook for uploaded content and was empty before this change",
+    "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BOOK_OF_ANCIENT_SECRETS": "selects spells by a 'Ritual' supports tag that no spell carries (the engine derives ritual casting from the spell's setter instead); empty before this change too"
+  },
+  "unmappedChapters": {
+    "deities": "generated from the document's pantheon tables into the deities file; the corpus pantheon is not SRD content"
+  },
+  "unmatchedInventory": {
+    "eldritchInvocations/dark one's blessing": "a Fiend patron feature printed on the invocations page, published with the subclass rather than as an invocation",
+    "eldritchInvocations/dark one's own luck": "a Fiend patron feature printed on the invocations page, published with the subclass rather than as an invocation",
+    "eldritchInvocations/expanded spell list": "a Fiend patron feature printed on the invocations page, published with the subclass rather than as an invocation",
+    "eldritchInvocations/fiend expanded spells": "a Fiend patron feature printed on the invocations page, published with the subclass rather than as an invocation",
+    "equipment/crawler mucus": "Carrion Crawler Mucus; the row loses its first word to the table layout and is kept by curation",
+    "equipment/galley": "the corpus carries no waterborne vehicle items for the 2014 rules, so there is nothing to publish for this row",
+    "equipment/keelboat": "the corpus carries no waterborne vehicle items for the 2014 rules, so there is nothing to publish for this row",
+    "equipment/longship": "the corpus carries no waterborne vehicle items for the 2014 rules, so there is nothing to publish for this row",
+    "equipment/pack": "the Equipment Packs table header row, not an item",
+    "equipment/rowboat": "the corpus carries no waterborne vehicle items for the 2014 rules, so there is nothing to publish for this row",
+    "equipment/sailing ship": "the corpus carries no waterborne vehicle items for the 2014 rules, so there is nothing to publish for this row",
+    "equipment/warship": "the corpus carries no waterborne vehicle items for the 2014 rules, so there is nothing to publish for this row",
+    "magicItems/location": "second line of the wrapped heading \"Amulet of Proof against Detection and Location\"; the amulet is kept by curation"
+  },
+  "entries": {
+    "classes/barbarian": [
+      "ID_WOTC_PHB_CLASS_BARBARIAN"
+    ],
+    "classes/bard": [
+      "ID_WOTC_PHB_CLASS_BARD"
+    ],
+    "classes/cleric": [
+      "ID_WOTC_PHB_CLASS_CLERIC"
+    ],
+    "classes/druid": [
+      "ID_WOTC_PHB_CLASS_DRUID"
+    ],
+    "classes/fighter": [
+      "ID_WOTC_PHB_CLASS_FIGHTER"
+    ],
+    "classes/monk": [
+      "ID_WOTC_PHB_CLASS_MONK"
+    ],
+    "classes/paladin": [
+      "ID_WOTC_PHB_CLASS_PALADIN"
+    ],
+    "classes/ranger": [
+      "ID_WOTC_PHB_CLASS_RANGER"
+    ],
+    "classes/rogue": [
+      "ID_WOTC_PHB_CLASS_ROGUE"
+    ],
+    "classes/sorcerer": [
+      "ID_WOTC_PHB_CLASS_SORCERER"
+    ],
+    "classes/warlock": [
+      "ID_WOTC_PHB_CLASS_WARLOCK"
+    ],
+    "classes/wizard": [
+      "ID_WOTC_PHB_CLASS_WIZARD"
+    ],
+    "subclasses/champion": [
+      "ID_WOTC_PHB_ARCHETYPE_CHAMPION"
+    ],
+    "subclasses/circle of the land": [
+      "ID_WOTC_PHB_ARCHETYPE_CIRCLEOFTHELAND"
+    ],
+    "subclasses/college of lore": [
+      "ID_WOTC_PHB_ARCHETYPE_COLLEGE_OF_LORE"
+    ],
+    "subclasses/draconic bloodline": [
+      "ID_WOTC_PHB_ARCHETYPE_DRACONIC_BLOODLINE"
+    ],
+    "subclasses/hunter": [
+      "ID_WOTC_ARCHETYPE_RANGER_HUNTER"
+    ],
+    "subclasses/life domain": [
+      "ID_WOTC_PHB_ARCHETYPE_LIFEDOMAIN"
+    ],
+    "subclasses/oath of devotion": [
+      "ID_WOTC_PHB_ARCHETYPE_PALADIN_OATH_OF_DEVOTION"
+    ],
+    "subclasses/path of the berserker": [
+      "ID_WOTC_PHB_ARCHETYPE_PATH_OF_THE_BERSERKER"
+    ],
+    "subclasses/school of evocation": [
+      "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_EVOCATION"
+    ],
+    "subclasses/the fiend": [
+      "ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_FIEND"
+    ],
+    "subclasses/thief": [
+      "ID_WOTC_PHB_ARCHETYPE_THIEF"
+    ],
+    "subclasses/way of the open hand": [
+      "ID_WOTC_PHB_ARCHETYPE_WAY_OF_THE_OPEN_HAND"
+    ],
+    "backgrounds/acolyte": [
+      "ID_BACKGROUND_ACOLYTE"
+    ],
+    "races/dwarf": [
+      "ID_SRD_RACE_DWARF"
+    ],
+    "races/elf": [
+      "ID_RACE_ELF"
+    ],
+    "races/halfling": [
+      "ID_RACE_HALFLING"
+    ],
+    "races/human": [
+      "ID_RACE_HUMAN"
+    ],
+    "races/dragonborn": [
+      "ID_RACE_DRAGONBORN"
+    ],
+    "races/gnome": [
+      "ID_RACE_GNOME"
+    ],
+    "races/half-elf": [
+      "ID_RACE_HALFELF"
+    ],
+    "races/half-orc": [
+      "ID_RACE_HALFORC"
+    ],
+    "races/tiefling": [
+      "ID_RACE_TIEFLING"
+    ],
+    "subraces/high elf": [
+      "ID_SUB_RACE_HIGH_ELF"
+    ],
+    "subraces/hill dwarf": [
+      "ID_SUB_RACE_HILL_DWARF"
+    ],
+    "subraces/lightfoot": [
+      "ID_SUB_RACE_LIGHTFOOT_HALFLING"
+    ],
+    "subraces/rock gnome": [
+      "ID_SUB_RACE_ROCK_GNOME"
+    ],
+    "feats/grappler": [
+      "ID_PHB_FEAT_GRAPPLER"
+    ],
+    "eldritchInvocations/agonizing blast": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_AGONIZING_BLAST"
+    ],
+    "eldritchInvocations/armor of shadows": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_ARMOR_OF_SHADOWS"
+    ],
+    "eldritchInvocations/ascendant step": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_ASCENDANT_STEP"
+    ],
+    "eldritchInvocations/beast speech": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BEAST_SPEECH"
+    ],
+    "eldritchInvocations/beguiling influence": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BEGUILING_INFLUENCE"
+    ],
+    "eldritchInvocations/bewitching whispers": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BEWITCHING_WHISPERS"
+    ],
+    "eldritchInvocations/book of ancient secrets": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BOOK_OF_ANCIENT_SECRETS"
+    ],
+    "eldritchInvocations/chains of carceri": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_CHAINS_OF_CARCERI"
+    ],
+    "eldritchInvocations/devil's sight": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_DEVILS_SIGHT"
+    ],
+    "eldritchInvocations/dreadful word": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_DREADFUL_WORD"
+    ],
+    "eldritchInvocations/eldritch sight": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_ELDRITCH_SIGHT"
+    ],
+    "eldritchInvocations/eldritch spear": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_Eldritch_Spear"
+    ],
+    "eldritchInvocations/eyes of the rune keeper": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_EYES_OF_THE_RUNEKEEPER"
+    ],
+    "eldritchInvocations/fiendish vigor": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_FIENDISH_VIGOR"
+    ],
+    "eldritchInvocations/gaze of two minds": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_GAZE_OF_TWO_MINDS"
+    ],
+    "eldritchInvocations/lifedrinker": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_LIFEDRINKER"
+    ],
+    "eldritchInvocations/mask of many faces": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_MASK_OF_MANY_FACES"
+    ],
+    "eldritchInvocations/master of myriad forms": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_MASTER_OF_MYRIAD_FORMS"
+    ],
+    "eldritchInvocations/minions of chaos": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_MINIONS_OF_CHAOS"
+    ],
+    "eldritchInvocations/mire the mind": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_MIRE_THE_MIND"
+    ],
+    "eldritchInvocations/misty visions": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_MISTY_VISIONS"
+    ],
+    "eldritchInvocations/one with shadows": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_ONE_WITH_SHADOWS"
+    ],
+    "eldritchInvocations/otherworldly leap": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_OTHERWORLDLY_LEAP"
+    ],
+    "eldritchInvocations/pact of the tome": [
+      "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_TOME"
+    ],
+    "eldritchInvocations/repelling blast": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_REPELLING_BLAST"
+    ],
+    "eldritchInvocations/sculptor of flesh": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_SCULPTOR_OF_FLESH"
+    ],
+    "eldritchInvocations/sign of ill omen": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_SIGN_OF_ILL_OMEN"
+    ],
+    "eldritchInvocations/thief of five fates": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_THIEF_OF_FIVE_FATES"
+    ],
+    "eldritchInvocations/thirsting blade": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_THIRSTING_BLADE"
+    ],
+    "eldritchInvocations/visions of distant realms": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_VISIONS_OF_DISTANT_REALMS"
+    ],
+    "eldritchInvocations/voice of the chain master": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_VOICE_OF_THE_CHAIN_MASTER"
+    ],
+    "eldritchInvocations/whispers of the grave": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_WHISPERS_OF_THE_GRAVE"
+    ],
+    "eldritchInvocations/witch sight": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_WITCH_SIGHT"
+    ],
+    "equipment/abacus": [
+      "ID_WOTC_PHB_ITEM_ABACUS"
+    ],
+    "equipment/acid (vial)": [
+      "ID_WOTC_PHB_ITEM_ACID_VIAL"
+    ],
+    "equipment/alchemist's fire (flask)": [
+      "ID_WOTC_PHB_ITEM_ALCHEMISTS_FIRE_FLASK"
+    ],
+    "equipment/alchemist's supplies": [
+      "ID_WOTC_PHB_ITEM_TOOL_ALCHEMISTS_SUPPLIES"
+    ],
+    "equipment/amulet": [
+      "ID_WOTC_PHB_ITEM_AMULET"
+    ],
+    "equipment/antitoxin (vial)": [
+      "ID_WOTC_PHB_ITEM_ANTITOXIN_VIAL"
+    ],
+    "equipment/arrows (20)": [
+      "ID_WOTC_PHB_ITEM_ARROW"
+    ],
+    "equipment/assassin's blood": [
+      "ID_WOTC_DMG_ITEM_POISON_ASSASSINS_BLOOD"
+    ],
+    "equipment/backpack": [
+      "ID_WOTC_PHB_ITEM_BACKPACK"
+    ],
+    "equipment/bagpipes": [
+      "ID_WOTC_SRD_INSTRUMENT_BAGPIPES"
+    ],
+    "equipment/ball bearings (bag of 1,000)": [
+      "ID_WOTC_PHB_ITEM_BALLBEARINGS"
+    ],
+    "equipment/barrel": [
+      "ID_WOTC_PHB_ITEM_BARREL"
+    ],
+    "equipment/basket": [
+      "ID_WOTC_PHB_ITEM_BASKET"
+    ],
+    "equipment/battleaxe": [
+      "ID_WOTC_PHB_WEAPON_BATTLEAXE"
+    ],
+    "equipment/bedroll": [
+      "ID_WOTC_PHB_ITEM_BEDROLL"
+    ],
+    "equipment/bell": [
+      "ID_WOTC_PHB_ITEM_BELL"
+    ],
+    "equipment/bit and bridle": [
+      "ID_WOTC_PHB_ITEM_BIT_AND_BRIDLE"
+    ],
+    "equipment/blanket": [
+      "ID_WOTC_PHB_ITEM_BLANKET"
+    ],
+    "equipment/block and tackle": [
+      "ID_WOTC_PHB_ITEM_BLOCKANDTACKLE"
+    ],
+    "equipment/blowgun": [
+      "ID_WOTC_PHB_WEAPON_BLOWGUN"
+    ],
+    "equipment/blowgun needles (50)": [
+      "ID_WOTC_PHB_ITEM_BLOWGUNNEEDLE"
+    ],
+    "equipment/book": [
+      "ID_WOTC_PHB_ITEM_BOOK"
+    ],
+    "equipment/bottle, glass": [
+      "ID_WOTC_PHB_ITEM_BOTTLE_GLASS"
+    ],
+    "equipment/breastplate": [
+      "ID_WOTC_ARMOR_MEDIUM_BREASTPLATE"
+    ],
+    "equipment/brewer's supplies": [
+      "ID_WOTC_PHB_ITEM_TOOL_BREWERS_SUPPLIES"
+    ],
+    "equipment/bucket": [
+      "ID_WOTC_PHB_ITEM_BUCKET"
+    ],
+    "equipment/burnt othur fumes": [
+      "ID_WOTC_DMG_ITEM_POISON_BURNT_OTHUR_FUMES"
+    ],
+    "equipment/calligrapher's supplies": [
+      "ID_WOTC_PHB_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES"
+    ],
+    "equipment/caltrops (bag of 20)": [
+      "ID_WOTC_PHB_ITEM_CALTROPS_BAGOF20"
+    ],
+    "equipment/camel": [
+      "ID_WOTC_PHB_ITEM_CAMEL"
+    ],
+    "equipment/candle": [
+      "ID_WOTC_PHB_ITEM_CANDLE"
+    ],
+    "equipment/carpenter's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_CARPENTERS_TOOLS"
+    ],
+    "equipment/carriage": [
+      "ID_WOTC_PHB_ITEM_CARRIAGE"
+    ],
+    "equipment/cart": [
+      "ID_WOTC_PHB_ITEM_CART"
+    ],
+    "equipment/cartographer's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_CARTOGRAPHERS_TOOLS"
+    ],
+    "equipment/case, crossbow bolt": [
+      "ID_WOTC_PHB_ITEM_CASE_CROSSBOWBOLT"
+    ],
+    "equipment/case, map or scroll": [
+      "ID_WOTC_PHB_ITEM_CASE_MAPORSCROLL"
+    ],
+    "equipment/chain (10 feet)": [
+      "ID_WOTC_PHB_ITEM_CHAIN_10FEET"
+    ],
+    "equipment/chain mail": [
+      "ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL"
+    ],
+    "equipment/chain shirt": [
+      "ID_WOTC_ARMOR_MEDIUM_CHAIN_SHIRT"
+    ],
+    "equipment/chalk (1 piece)": [
+      "ID_WOTC_PHB_ITEM_CHALK_1PIECE"
+    ],
+    "equipment/chariot": [
+      "ID_WOTC_PHB_ITEM_CHARIOT"
+    ],
+    "equipment/chest": [
+      "ID_WOTC_PHB_ITEM_CHEST"
+    ],
+    "equipment/climber's kit": [
+      "ID_WOTC_PHB_ITEM_CLIMBERSKIT"
+    ],
+    "equipment/clothes, common": [
+      "ID_WOTC_PHB_ITEM_CLOTHES_COMMON"
+    ],
+    "equipment/clothes, costume": [
+      "ID_WOTC_PHB_ITEM_CLOTHES_COSTUME"
+    ],
+    "equipment/clothes, fine": [
+      "ID_WOTC_PHB_ITEM_CLOTHES_FINE"
+    ],
+    "equipment/clothes, traveler's": [
+      "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS"
+    ],
+    "equipment/club": [
+      "ID_WOTC_PHB_WEAPON_CLUB"
+    ],
+    "equipment/cobbler's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_COBBLERS_TOOLS"
+    ],
+    "equipment/component pouch": [
+      "ID_WOTC_PHB_ITEM_COMPONENTPOUCH"
+    ],
+    "equipment/cook's utensils": [
+      "ID_WOTC_PHB_ITEM_TOOL_COOKS_UTENSILS"
+    ],
+    "equipment/crossbow bolts (20)": [
+      "ID_WOTC_PHB_ITEM_CROSSBOWBOLT"
+    ],
+    "equipment/crossbow, hand": [
+      "ID_WOTC_PHB_WEAPON_CROSSBOW_HAND"
+    ],
+    "equipment/crossbow, heavy": [
+      "ID_WOTC_PHB_WEAPON_CROSSBOW_HEAVY"
+    ],
+    "equipment/crossbow, light": [
+      "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT"
+    ],
+    "equipment/crowbar": [
+      "ID_WOTC_PHB_ITEM_CROWBAR"
+    ],
+    "equipment/crystal": [
+      "ID_WOTC_PHB_ITEM_CRYSTAL"
+    ],
+    "equipment/dagger": [
+      "ID_WOTC_PHB_WEAPON_DAGGER"
+    ],
+    "equipment/dart": [
+      "ID_WOTC_PHB_WEAPON_DART"
+    ],
+    "equipment/dice set": [
+      "ID_WOTC_PHB_ITEM_TOOL_DICE_SET"
+    ],
+    "equipment/disguise kit": [
+      "ID_WOTC_PHB_ITEM_TOOL_DISGUISE_KIT"
+    ],
+    "equipment/donkey or mule": [
+      "ID_WOTC_PHB_ITEM_DONKEY"
+    ],
+    "equipment/drow poison": [
+      "ID_WOTC_DMG_ITEM_POISON_DROW_POISON"
+    ],
+    "equipment/drum": [
+      "ID_WOTC_SRD_INSTRUMENT_DRUM"
+    ],
+    "equipment/dulcimer": [
+      "ID_WOTC_SRD_INSTRUMENT_DULCIMER"
+    ],
+    "equipment/elephant": [
+      "ID_WOTC_PHB_ITEM_ELEPHANT"
+    ],
+    "equipment/emblem": [
+      "ID_WOTC_PHB_ITEM_EMBLEM"
+    ],
+    "equipment/essence of ether": [
+      "ID_WOTC_DMG_ITEM_POISON_ESSENCE_OF_ETHER"
+    ],
+    "equipment/exotic": [
+      "ID_WOTC_PHB_ITEM_SADDLE_EXOTIC"
+    ],
+    "equipment/feed (per day)": [
+      "ID_WOTC_PHB_ITEM_FEED_PER_DAY"
+    ],
+    "equipment/fishing tackle": [
+      "ID_WOTC_PHB_ITEM_FISHINGTACKLE"
+    ],
+    "equipment/flail": [
+      "ID_WOTC_PHB_WEAPON_FLAIL"
+    ],
+    "equipment/flask or tankard": [
+      "ID_WOTC_PHB_ITEM_FLASKORTANKARD"
+    ],
+    "equipment/flute": [
+      "ID_WOTC_SRD_INSTRUMENT_FLUTE"
+    ],
+    "equipment/forgery kit": [
+      "ID_WOTC_PHB_ITEM_TOOL_FORGERY_KIT"
+    ],
+    "equipment/glaive": [
+      "ID_WOTC_PHB_WEAPON_GLAIVE"
+    ],
+    "equipment/glassblower's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_GLASSBLOWERS_TOOLS"
+    ],
+    "equipment/grappling hook": [
+      "ID_WOTC_PHB_ITEM_GRAPPLINGHOOK"
+    ],
+    "equipment/greataxe": [
+      "ID_WOTC_PHB_WEAPON_GREATAXE"
+    ],
+    "equipment/greatclub": [
+      "ID_WOTC_PHB_WEAPON_GREATCLUB"
+    ],
+    "equipment/greatsword": [
+      "ID_WOTC_PHB_WEAPON_GREATSWORD"
+    ],
+    "equipment/halberd": [
+      "ID_WOTC_PHB_WEAPON_HALBERD"
+    ],
+    "equipment/half plate": [
+      "ID_WOTC_ARMOR_MEDIUM_HALF_PLATE"
+    ],
+    "equipment/hammer": [
+      "ID_WOTC_PHB_ITEM_HAMMER"
+    ],
+    "equipment/hammer, sledge": [
+      "ID_WOTC_PHB_ITEM_HAMMER_SLEDGE"
+    ],
+    "equipment/handaxe": [
+      "ID_WOTC_PHB_WEAPON_HANDAXE"
+    ],
+    "equipment/healer's kit": [
+      "ID_WOTC_PHB_ITEM_HEALERSKIT"
+    ],
+    "equipment/herbalism kit": [
+      "ID_WOTC_PHB_ITEM_TOOL_HERBALISM_KIT"
+    ],
+    "equipment/hide": [
+      "ID_WOTC_ARMOR_MEDIUM_HIDE_ARMOR"
+    ],
+    "equipment/holy water (flask)": [
+      "ID_WOTC_PHB_ITEM_HOLYWATER_FLASK"
+    ],
+    "equipment/horn": [
+      "ID_WOTC_SRD_INSTRUMENT_HORN"
+    ],
+    "equipment/horse, draft": [
+      "ID_WOTC_PHB_ITEM_HORSE_DRAFT"
+    ],
+    "equipment/horse, riding": [
+      "ID_WOTC_PHB_ITEM_HORSE_RIDING"
+    ],
+    "equipment/hourglass": [
+      "ID_WOTC_PHB_ITEM_HOURGLASS"
+    ],
+    "equipment/hunting trap": [
+      "ID_WOTC_PHB_ITEM_HUNTINGTRAP"
+    ],
+    "equipment/ink (1 ounce bottle)": [
+      "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE"
+    ],
+    "equipment/ink pen": [
+      "ID_WOTC_PHB_ITEM_INKPEN"
+    ],
+    "equipment/javelin": [
+      "ID_WOTC_PHB_WEAPON_JAVELIN"
+    ],
+    "equipment/jeweler's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_JEWELERS_TOOLS"
+    ],
+    "equipment/jug or pitcher": [
+      "ID_WOTC_PHB_ITEM_JUGORPITCHER"
+    ],
+    "equipment/ladder (10-foot)": [
+      "ID_WOTC_PHB_ITEM_LADDER_10_FOOT"
+    ],
+    "equipment/lamp": [
+      "ID_WOTC_PHB_ITEM_LAMP"
+    ],
+    "equipment/lance": [
+      "ID_WOTC_PHB_WEAPON_LANCE"
+    ],
+    "equipment/lantern, bullseye": [
+      "ID_WOTC_PHB_ITEM_LANTERN_BULLSEYE"
+    ],
+    "equipment/lantern, hooded": [
+      "ID_WOTC_PHB_ITEM_LANTERN_HOODED"
+    ],
+    "equipment/leather": [
+      "ID_WOTC_ARMOR_LIGHT_LEATHER"
+    ],
+    "equipment/leatherworker's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_LEATHERWORKERS_TOOLS"
+    ],
+    "equipment/light hammer": [
+      "ID_WOTC_PHB_WEAPON_LIGHTHAMMER"
+    ],
+    "equipment/lock": [
+      "ID_WOTC_PHB_ITEM_LOCK"
+    ],
+    "equipment/longbow": [
+      "ID_WOTC_PHB_WEAPON_LONGBOW"
+    ],
+    "equipment/longsword": [
+      "ID_WOTC_PHB_WEAPON_LONGSWORD"
+    ],
+    "equipment/lute": [
+      "ID_WOTC_SRD_INSTRUMENT_LUTE"
+    ],
+    "equipment/lyre": [
+      "ID_WOTC_SRD_INSTRUMENT_LYRE"
+    ],
+    "equipment/mace": [
+      "ID_WOTC_PHB_WEAPON_MACE"
+    ],
+    "equipment/magnifying glass": [
+      "ID_WOTC_PHB_ITEM_MAGNIFYINGGLASS"
+    ],
+    "equipment/malice": [
+      "ID_WOTC_DMG_ITEM_POISON_MALICE"
+    ],
+    "equipment/manacles": [
+      "ID_WOTC_PHB_ITEM_MANACLES"
+    ],
+    "equipment/mason's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_MASONS_TOOLS"
+    ],
+    "equipment/mastiff": [
+      "ID_WOTC_PHB_ITEM_MASTIFF"
+    ],
+    "equipment/maul": [
+      "ID_WOTC_PHB_WEAPON_MAUL"
+    ],
+    "equipment/mess kit": [
+      "ID_WOTC_PHB_ITEM_MESSKIT"
+    ],
+    "equipment/midnight tears": [
+      "ID_WOTC_DMG_ITEM_POISON_MIDNIGHT_TEARS"
+    ],
+    "equipment/military": [
+      "ID_WOTC_PHB_ITEM_SADDLE_MILITARY"
+    ],
+    "equipment/mirror, steel": [
+      "ID_WOTC_PHB_ITEM_MIRROR_STEEL"
+    ],
+    "equipment/morningstar": [
+      "ID_WOTC_PHB_WEAPON_MORNINGSTAR"
+    ],
+    "equipment/navigator's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_NAVIGATORS_TOOLS"
+    ],
+    "equipment/net": [
+      "ID_WOTC_PHB_WEAPON_NET"
+    ],
+    "equipment/oil (flask)": [
+      "ID_WOTC_PHB_ITEM_OIL_FLASK"
+    ],
+    "equipment/oil of taggit": [
+      "ID_WOTC_DMG_ITEM_POISON_OIL_OF_TAGGIT"
+    ],
+    "equipment/orb": [
+      "ID_WOTC_PHB_ITEM_ORB"
+    ],
+    "equipment/padded": [
+      "ID_WOTC_ARMOR_LIGHT_PADDED"
+    ],
+    "equipment/painter's supplies": [
+      "ID_WOTC_PHB_ITEM_TOOL_PAINTERS_SUPPLIES"
+    ],
+    "equipment/pale tincture": [
+      "ID_WOTC_DMG_ITEM_POISON_PALE_TINCTURE"
+    ],
+    "equipment/pan flute": [
+      "ID_WOTC_SRD_INSTRUMENT_PANFLUTE"
+    ],
+    "equipment/paper (one sheet)": [
+      "ID_WOTC_PHB_ITEM_PAPER_ONESHEET"
+    ],
+    "equipment/parchment (one sheet)": [
+      "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET"
+    ],
+    "equipment/perfume (vial)": [
+      "ID_WOTC_PHB_ITEM_PERFUME_VIAL"
+    ],
+    "equipment/pick, miner's": [
+      "ID_WOTC_PHB_ITEM_PICK_MINERS"
+    ],
+    "equipment/pike": [
+      "ID_WOTC_PHB_WEAPON_PIKE"
+    ],
+    "equipment/piton": [
+      "ID_WOTC_PHB_ITEM_PITON"
+    ],
+    "equipment/plate": [
+      "ID_WOTC_ARMOR_HEAVY_PLATE"
+    ],
+    "equipment/playing card set": [
+      "ID_WOTC_PHB_ITEM_TOOL_PLAYING_CARD_SET"
+    ],
+    "equipment/poison, basic (vial)": [
+      "ID_WOTC_PHB_ITEM_POISON_BASIC_VIAL"
+    ],
+    "equipment/poisoner's kit": [
+      "ID_WOTC_PHB_ITEM_TOOL_POISONERS_KIT"
+    ],
+    "equipment/pole (10-foot)": [
+      "ID_WOTC_PHB_ITEM_POLE_10_FOOT"
+    ],
+    "equipment/pony": [
+      "ID_WOTC_PHB_ITEM_PONY"
+    ],
+    "equipment/pot, iron": [
+      "ID_WOTC_PHB_ITEM_POT_IRON"
+    ],
+    "equipment/potion of healing": [
+      "ID_WOTC_PHB_ITEM_POTIONOFHEALING"
+    ],
+    "equipment/potter's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_POTTERS_TOOLS"
+    ],
+    "equipment/pouch": [
+      "ID_WOTC_PHB_ITEM_POUCH"
+    ],
+    "equipment/purple worm poison": [
+      "ID_WOTC_DMG_ITEM_POISON_PURPLE_WORM_POISON"
+    ],
+    "equipment/quarterstaff": [
+      "ID_WOTC_PHB_WEAPON_QUARTERSTAFF"
+    ],
+    "equipment/quiver": [
+      "ID_WOTC_PHB_ITEM_QUIVER"
+    ],
+    "equipment/ram, portable": [
+      "ID_WOTC_PHB_ITEM_RAM_PORTABLE"
+    ],
+    "equipment/rapier": [
+      "ID_WOTC_PHB_WEAPON_RAPIER"
+    ],
+    "equipment/rations (1 day)": [
+      "ID_WOTC_PHB_ITEM_RATIONS_1DAY"
+    ],
+    "equipment/reliquary": [
+      "ID_WOTC_PHB_ITEM_RELIQUARY"
+    ],
+    "equipment/riding": [
+      "ID_WOTC_PHB_ITEM_SADDLE_RIDING"
+    ],
+    "equipment/ring mail": [
+      "ID_WOTC_ARMOR_HEAVY_RING_MAIL"
+    ],
+    "equipment/robes": [
+      "ID_WOTC_PHB_ITEM_ROBES"
+    ],
+    "equipment/rod": [
+      "ID_WOTC_PHB_ITEM_ROD"
+    ],
+    "equipment/rope, hempen (50 feet)": [
+      "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET"
+    ],
+    "equipment/rope, silk (50 feet)": [
+      "ID_WOTC_PHB_ITEM_ROPE_SILK_50FEET"
+    ],
+    "equipment/sack": [
+      "ID_WOTC_PHB_ITEM_SACK"
+    ],
+    "equipment/saddlebags": [
+      "ID_WOTC_PHB_ITEM_SADDLEBAGS"
+    ],
+    "equipment/scale mail": [
+      "ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL"
+    ],
+    "equipment/scale, merchant's": [
+      "ID_WOTC_PHB_ITEM_SCALE_MERCHANTS"
+    ],
+    "equipment/scimitar": [
+      "ID_WOTC_PHB_WEAPON_SCIMITAR"
+    ],
+    "equipment/sealing wax": [
+      "ID_WOTC_PHB_ITEM_SEALINGWAX"
+    ],
+    "equipment/serpent venom": [
+      "ID_WOTC_DMG_ITEM_POISON_SERPENT_VENOM"
+    ],
+    "equipment/shawm": [
+      "ID_WOTC_SRD_INSTRUMENT_SHAWM"
+    ],
+    "equipment/shield": [
+      "ID_WOTC_GEAR_SHIELD"
+    ],
+    "equipment/shortbow": [
+      "ID_WOTC_PHB_WEAPON_SHORTBOW"
+    ],
+    "equipment/shortsword": [
+      "ID_WOTC_PHB_WEAPON_SHORTSWORD"
+    ],
+    "equipment/shovel": [
+      "ID_WOTC_PHB_ITEM_SHOVEL"
+    ],
+    "equipment/sickle": [
+      "ID_WOTC_PHB_WEAPON_SICKLE"
+    ],
+    "equipment/signal whistle": [
+      "ID_WOTC_PHB_ITEM_SIGNALWHISTLE"
+    ],
+    "equipment/signet ring": [
+      "ID_WOTC_PHB_ITEM_SIGNETRING"
+    ],
+    "equipment/sled": [
+      "ID_WOTC_PHB_ITEM_SLED"
+    ],
+    "equipment/sling": [
+      "ID_WOTC_PHB_WEAPON_SLING"
+    ],
+    "equipment/sling bullets (20)": [
+      "ID_WOTC_PHB_ITEM_SLINGBULLET"
+    ],
+    "equipment/smith's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_SMITHS_TOOLS"
+    ],
+    "equipment/soap": [
+      "ID_WOTC_PHB_ITEM_SOAP"
+    ],
+    "equipment/spear": [
+      "ID_WOTC_PHB_WEAPON_SPEAR"
+    ],
+    "equipment/spellbook": [
+      "ID_WOTC_PHB_ITEM_SPELLBOOK"
+    ],
+    "equipment/spikes, iron (10)": [
+      "ID_WOTC_PHB_ITEM_SPIKES_IRON_10"
+    ],
+    "equipment/splint": [
+      "ID_WOTC_ARMOR_HEAVY_SPLINT"
+    ],
+    "equipment/sprig of mistletoe": [
+      "ID_WOTC_PHB_ITEM_SPRIGOFMISTLETOE"
+    ],
+    "equipment/spyglass": [
+      "ID_WOTC_PHB_ITEM_SPYGLASS"
+    ],
+    "equipment/stabling (per day)": [
+      "ID_WOTC_PHB_ITEM_STABLING"
+    ],
+    "equipment/staff": [
+      "ID_WOTC_PHB_ITEM_STAFF"
+    ],
+    "equipment/studded leather": [
+      "ID_WOTC_ARMOR_LIGHT_STUDDED_LEATHER"
+    ],
+    "equipment/tent, two-person": [
+      "ID_WOTC_PHB_ITEM_TENT_TWOPERSON"
+    ],
+    "equipment/thieves' tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS"
+    ],
+    "equipment/tinderbox": [
+      "ID_WOTC_PHB_ITEM_TINDERBOX"
+    ],
+    "equipment/tinker's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_TINKERS_TOOLS"
+    ],
+    "equipment/torch": [
+      "ID_WOTC_PHB_ITEM_TORCH"
+    ],
+    "equipment/torpor": [
+      "ID_WOTC_DMG_ITEM_POISON_TORPOR"
+    ],
+    "equipment/totem": [
+      "ID_WOTC_PHB_ITEM_TOTEM"
+    ],
+    "equipment/trident": [
+      "ID_WOTC_PHB_WEAPON_TRIDENT"
+    ],
+    "equipment/truth serum": [
+      "ID_WOTC_DMG_ITEM_POISON_TRUTH_SERUM"
+    ],
+    "equipment/vial": [
+      "ID_WOTC_PHB_ITEM_VIAL"
+    ],
+    "equipment/viol": [
+      "ID_WOTC_SRD_INSTRUMENT_VIOL"
+    ],
+    "equipment/wagon": [
+      "ID_WOTC_PHB_ITEM_WAGON"
+    ],
+    "equipment/wand": [
+      "ID_WOTC_PHB_ITEM_WAND"
+    ],
+    "equipment/war pick": [
+      "ID_WOTC_PHB_WEAPON_WAR_PICK"
+    ],
+    "equipment/warhammer": [
+      "ID_WOTC_PHB_WEAPON_WARHAMMER"
+    ],
+    "equipment/warhorse": [
+      "ID_WOTC_PHB_ITEM_WARHORSE"
+    ],
+    "equipment/waterskin": [
+      "ID_WOTC_PHB_ITEM_WATERSKIN"
+    ],
+    "equipment/weaver's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_WEAVERS_TOOLS"
+    ],
+    "equipment/whetstone": [
+      "ID_WOTC_PHB_ITEM_WHETSTONE"
+    ],
+    "equipment/whip": [
+      "ID_WOTC_PHB_WEAPON_WHIP"
+    ],
+    "equipment/woodcarver's tools": [
+      "ID_WOTC_PHB_ITEM_TOOL_WOODCARVERS_TOOLS"
+    ],
+    "equipment/wooden staff": [
+      "ID_WOTC_PHB_ITEM_WOODENSTAFF"
+    ],
+    "equipment/wyvern poison": [
+      "ID_WOTC_DMG_ITEM_POISON_WYVERN_POISON"
+    ],
+    "equipment/yew wand": [
+      "ID_WOTC_PHB_ITEM_YEWWAND"
+    ],
+    "spells/acid arrow": [
+      "ID_PHB_SPELL_MELFS_ACID_ARROW"
+    ],
+    "spells/acid splash": [
+      "ID_PHB_SPELL_ACID_SPLASH"
+    ],
+    "spells/aid": [
+      "ID_PHB_SPELL_AID"
+    ],
+    "spells/alarm": [
+      "ID_PHB_SPELL_ALARM"
+    ],
+    "spells/alter self": [
+      "ID_PHB_SPELL_ALTER_SELF"
+    ],
+    "spells/animal friendship": [
+      "ID_PHB_SPELL_ANIMAL_FRIENDSHIP"
+    ],
+    "spells/animal messenger": [
+      "ID_PHB_SPELL_ANIMAL_MESSENGER"
+    ],
+    "spells/animal shapes": [
+      "ID_PHB_SPELL_ANIMAL_SHAPES"
+    ],
+    "spells/animate dead": [
+      "ID_PHB_SPELL_ANIMATE_DEAD"
+    ],
+    "spells/animate objects": [
+      "ID_PHB_SPELL_ANIMATE_OBJECTS"
+    ],
+    "spells/antilife shell": [
+      "ID_PHB_SPELL_ANTILIFE_SHELL"
+    ],
+    "spells/antimagic field": [
+      "ID_PHB_SPELL_ANTIMAGIC_FIELD"
+    ],
+    "spells/antipathy/sympathy": [
+      "ID_PHB_SPELL_ANTIPATHY_SYMPATHY"
+    ],
+    "spells/arcane eye": [
+      "ID_PHB_SPELL_ARCANE_EYE"
+    ],
+    "spells/arcane hand": [
+      "ID_PHB_SPELL_BIGBYS_HAND"
+    ],
+    "spells/arcane lock": [
+      "ID_PHB_SPELL_ARCANE_LOCK"
+    ],
+    "spells/arcane sword": [
+      "ID_PHB_SPELL_MORDENKAINENS_SWORD"
+    ],
+    "spells/arcanist's magic aura": [
+      "ID_PHB_SPELL_NYSTULS_MAGIC_AURA"
+    ],
+    "spells/astral projection": [
+      "ID_PHB_SPELL_ASTRAL_PROJECTION"
+    ],
+    "spells/augury": [
+      "ID_PHB_SPELL_AUGURY"
+    ],
+    "spells/awaken": [
+      "ID_PHB_SPELL_AWAKEN"
+    ],
+    "spells/bane": [
+      "ID_PHB_SPELL_BANE"
+    ],
+    "spells/banishment": [
+      "ID_PHB_SPELL_BANISHMENT"
+    ],
+    "spells/barkskin": [
+      "ID_PHB_SPELL_BARKSKIN"
+    ],
+    "spells/beacon of hope": [
+      "ID_PHB_SPELL_BEACON_OF_HOPE"
+    ],
+    "spells/bestow curse": [
+      "ID_PHB_SPELL_BESTOW_CURSE"
+    ],
+    "spells/black tentacles": [
+      "ID_PHB_SPELL_EVARDS_BLACK_TENTACLES"
+    ],
+    "spells/blade barrier": [
+      "ID_PHB_SPELL_BLADE_BARRIER"
+    ],
+    "spells/bless": [
+      "ID_PHB_SPELL_BLESS"
+    ],
+    "spells/blight": [
+      "ID_PHB_SPELL_BLIGHT"
+    ],
+    "spells/blindness/deafness": [
+      "ID_PHB_SPELL_BLINDNESS_DEAFNESS"
+    ],
+    "spells/blink": [
+      "ID_PHB_SPELL_BLINK"
+    ],
+    "spells/blur": [
+      "ID_PHB_SPELL_BLUR"
+    ],
+    "spells/branding smite": [
+      "ID_PHB_SPELL_BRANDING_SMITE"
+    ],
+    "spells/burning hands": [
+      "ID_PHB_SPELL_BURNING_HANDS"
+    ],
+    "spells/call lightning": [
+      "ID_PHB_SPELL_CALL_LIGHTNING"
+    ],
+    "spells/calm emotions": [
+      "ID_PHB_SPELL_CALM_EMOTIONS"
+    ],
+    "spells/chain lightning": [
+      "ID_PHB_SPELL_CHAIN_LIGHTNING"
+    ],
+    "spells/charm person": [
+      "ID_PHB_SPELL_CHARM_PERSON"
+    ],
+    "spells/chill touch": [
+      "ID_PHB_SPELL_CHILL_TOUCH"
+    ],
+    "spells/circle of death": [
+      "ID_PHB_SPELL_CIRCLE_OF_DEATH"
+    ],
+    "spells/clairvoyance": [
+      "ID_PHB_SPELL_CLAIRVOYANCE"
+    ],
+    "spells/clone": [
+      "ID_PHB_SPELL_CLONE"
+    ],
+    "spells/cloudkill": [
+      "ID_PHB_SPELL_CLOUDKILL"
+    ],
+    "spells/color spray": [
+      "ID_PHB_SPELL_COLOR_SPRAY"
+    ],
+    "spells/command": [
+      "ID_PHB_SPELL_COMMAND"
+    ],
+    "spells/commune": [
+      "ID_PHB_SPELL_COMMUNE"
+    ],
+    "spells/commune with nature": [
+      "ID_PHB_SPELL_COMMUNE_WITH_NATURE"
+    ],
+    "spells/comprehend languages": [
+      "ID_PHB_SPELL_COMPREHEND_LANGUAGES"
+    ],
+    "spells/compulsion": [
+      "ID_PHB_SPELL_COMPULSION"
+    ],
+    "spells/cone of cold": [
+      "ID_PHB_SPELL_CONE_OF_COLD"
+    ],
+    "spells/confusion": [
+      "ID_PHB_SPELL_CONFUSION"
+    ],
+    "spells/conjure animals": [
+      "ID_PHB_SPELL_CONJURE_ANIMALS"
+    ],
+    "spells/conjure celestial": [
+      "ID_PHB_SPELL_CONJURE_CELESTIAL"
+    ],
+    "spells/conjure elemental": [
+      "ID_PHB_SPELL_CONJURE_ELEMENTAL"
+    ],
+    "spells/conjure fey": [
+      "ID_PHB_SPELL_CONJURE_FEY"
+    ],
+    "spells/conjure minor elementals": [
+      "ID_PHB_SPELL_CONJURE_MINOR_ELEMENTALS"
+    ],
+    "spells/conjure woodland beings": [
+      "ID_PHB_SPELL_CONJURE_WOODLAND_BEINGS"
+    ],
+    "spells/contact other plane": [
+      "ID_PHB_SPELL_CONTACT_OTHER_PLANE"
+    ],
+    "spells/contagion": [
+      "ID_PHB_SPELL_CONTAGION"
+    ],
+    "spells/contingency": [
+      "ID_PHB_SPELL_CONTINGENCY"
+    ],
+    "spells/continual flame": [
+      "ID_PHB_SPELL_CONTINUAL_FLAME"
+    ],
+    "spells/control water": [
+      "ID_PHB_SPELL_CONTROL_WATER"
+    ],
+    "spells/control weather": [
+      "ID_PHB_SPELL_CONTROL_WEATHER"
+    ],
+    "spells/counterspell": [
+      "ID_PHB_SPELL_COUNTERSPELL"
+    ],
+    "spells/create food and water": [
+      "ID_PHB_SPELL_CREATE_FOOD_AND_WATER"
+    ],
+    "spells/create or destroy water": [
+      "ID_PHB_SPELL_CREATE_OR_DESTROY_WATER"
+    ],
+    "spells/create undead": [
+      "ID_PHB_SPELL_CREATE_UNDEAD"
+    ],
+    "spells/creation": [
+      "ID_PHB_SPELL_CREATION"
+    ],
+    "spells/cure wounds": [
+      "ID_PHB_SPELL_CURE_WOUNDS"
+    ],
+    "spells/dancing lights": [
+      "ID_PHB_SPELL_DANCING_LIGHTS"
+    ],
+    "spells/darkness": [
+      "ID_PHB_SPELL_DARKNESS"
+    ],
+    "spells/darkvision": [
+      "ID_PHB_SPELL_DARKVISION"
+    ],
+    "spells/daylight": [
+      "ID_PHB_SPELL_DAYLIGHT"
+    ],
+    "spells/death ward": [
+      "ID_PHB_SPELL_DEATH_WARD"
+    ],
+    "spells/delayed blast fireball": [
+      "ID_PHB_SPELL_DELAYED_BLAST_FIREBALL"
+    ],
+    "spells/demiplane": [
+      "ID_PHB_SPELL_DEMIPLANE"
+    ],
+    "spells/detect evil and good": [
+      "ID_PHB_SPELL_DETECT_EVIL_AND_GOOD"
+    ],
+    "spells/detect magic": [
+      "ID_PHB_SPELL_DETECT_MAGIC"
+    ],
+    "spells/detect poison and disease": [
+      "ID_PHB_SPELL_DETECT_POISON_AND_DISEASE"
+    ],
+    "spells/detect thoughts": [
+      "ID_PHB_SPELL_DETECT_THOUGHTS"
+    ],
+    "spells/dimension door": [
+      "ID_PHB_SPELL_DIMENSION_DOOR"
+    ],
+    "spells/disguise self": [
+      "ID_PHB_SPELL_DISGUISE_SELF"
+    ],
+    "spells/disintegrate": [
+      "ID_PHB_SPELL_DISINTEGRATE"
+    ],
+    "spells/dispel evil and good": [
+      "ID_PHB_SPELL_DISPEL_EVIL_AND_GOOD"
+    ],
+    "spells/dispel magic": [
+      "ID_PHB_SPELL_DISPEL_MAGIC"
+    ],
+    "spells/divination": [
+      "ID_PHB_SPELL_DIVINATION"
+    ],
+    "spells/divine favor": [
+      "ID_PHB_SPELL_DIVINE_FAVOR"
+    ],
+    "spells/divine word": [
+      "ID_PHB_SPELL_DIVINE_WORD"
+    ],
+    "spells/dominate beast": [
+      "ID_PHB_SPELL_DOMINATE_BEAST"
+    ],
+    "spells/dominate monster": [
+      "ID_PHB_SPELL_DOMINATE_MONSTER"
+    ],
+    "spells/dominate person": [
+      "ID_PHB_SPELL_DOMINATE_PERSON"
+    ],
+    "spells/dream": [
+      "ID_PHB_SPELL_DREAM"
+    ],
+    "spells/druidcraft": [
+      "ID_PHB_SPELL_DRUIDCRAFT"
+    ],
+    "spells/earthquake": [
+      "ID_PHB_SPELL_EARTHQUAKE"
+    ],
+    "spells/eldritch blast": [
+      "ID_PHB_SPELL_ELDRITCH_BLAST"
+    ],
+    "spells/enhance ability": [
+      "ID_PHB_SPELL_ENHANCE_ABILITY"
+    ],
+    "spells/enlarge/reduce": [
+      "ID_PHB_SPELL_ENLARGE_REDUCE"
+    ],
+    "spells/entangle": [
+      "ID_PHB_SPELL_ENTANGLE"
+    ],
+    "spells/enthrall": [
+      "ID_PHB_SPELL_ENTHRALL"
+    ],
+    "spells/etherealness": [
+      "ID_PHB_SPELL_ETHEREALNESS"
+    ],
+    "spells/expeditious retreat": [
+      "ID_PHB_SPELL_EXPEDITIOUS_RETREAT"
+    ],
+    "spells/eyebite": [
+      "ID_PHB_SPELL_EYEBITE"
+    ],
+    "spells/fabricate": [
+      "ID_PHB_SPELL_FABRICATE"
+    ],
+    "spells/faerie fire": [
+      "ID_PHB_SPELL_FAERIE_FIRE"
+    ],
+    "spells/faithful hound": [
+      "ID_PHB_SPELL_MORDENKAINENS_FAITHFUL_HOUND"
+    ],
+    "spells/false life": [
+      "ID_PHB_SPELL_FALSE_LIFE"
+    ],
+    "spells/fear": [
+      "ID_PHB_SPELL_FEAR"
+    ],
+    "spells/feather fall": [
+      "ID_PHB_SPELL_FEATHER_FALL"
+    ],
+    "spells/feeblemind": [
+      "ID_PHB_SPELL_FEEBLEMIND"
+    ],
+    "spells/find familiar": [
+      "ID_PHB_SPELL_FIND_FAMILIAR"
+    ],
+    "spells/find steed": [
+      "ID_PHB_SPELL_FIND_STEED"
+    ],
+    "spells/find the path": [
+      "ID_PHB_SPELL_FIND_THE_PATH"
+    ],
+    "spells/find traps": [
+      "ID_PHB_SPELL_FIND_TRAPS"
+    ],
+    "spells/finger of death": [
+      "ID_PHB_SPELL_FINGER_OF_DEATH"
+    ],
+    "spells/fire bolt": [
+      "ID_PHB_SPELL_FIRE_BOLT"
+    ],
+    "spells/fire shield": [
+      "ID_PHB_SPELL_FIRE_SHIELD"
+    ],
+    "spells/fire storm": [
+      "ID_PHB_SPELL_FIRE_STORM"
+    ],
+    "spells/fireball": [
+      "ID_PHB_SPELL_FIREBALL"
+    ],
+    "spells/flame blade": [
+      "ID_PHB_SPELL_FLAME_BLADE"
+    ],
+    "spells/flame strike": [
+      "ID_PHB_SPELL_FLAME_STRIKE"
+    ],
+    "spells/flaming sphere": [
+      "ID_PHB_SPELL_FLAMING_SPHERE"
+    ],
+    "spells/flesh to stone": [
+      "ID_PHB_SPELL_FLESH_TO_STONE"
+    ],
+    "spells/floating disk": [
+      "ID_PHB_SPELL_TENSERS_FLOATING_DISK"
+    ],
+    "spells/fly": [
+      "ID_PHB_SPELL_FLY"
+    ],
+    "spells/fog cloud": [
+      "ID_PHB_SPELL_FOG_CLOUD"
+    ],
+    "spells/forbiddance": [
+      "ID_PHB_SPELL_FORBIDDANCE"
+    ],
+    "spells/forcecage": [
+      "ID_PHB_SPELL_FORCECAGE"
+    ],
+    "spells/foresight": [
+      "ID_PHB_SPELL_FORESIGHT"
+    ],
+    "spells/freedom of movement": [
+      "ID_PHB_SPELL_FREEDOM_OF_MOVEMENT"
+    ],
+    "spells/freezing sphere": [
+      "ID_PHB_SPELL_OTILUKES_FREEZING_SPHERE"
+    ],
+    "spells/gaseous form": [
+      "ID_PHB_SPELL_GASEOUS_FORM"
+    ],
+    "spells/gate": [
+      "ID_PHB_SPELL_GATE"
+    ],
+    "spells/geas": [
+      "ID_PHB_SPELL_GEAS"
+    ],
+    "spells/gentle repose": [
+      "ID_PHB_SPELL_GENTLE_REPOSE"
+    ],
+    "spells/giant insect": [
+      "ID_PHB_SPELL_GIANT_INSECT"
+    ],
+    "spells/glibness": [
+      "ID_PHB_SPELL_GLIBNESS"
+    ],
+    "spells/globe of invulnerability": [
+      "ID_PHB_SPELL_GLOBE_OF_INVULNERABILITY"
+    ],
+    "spells/glyph of warding": [
+      "ID_PHB_SPELL_GLYPH_OF_WARDING"
+    ],
+    "spells/goodberry": [
+      "ID_PHB_SPELL_GOODBERRY"
+    ],
+    "spells/grease": [
+      "ID_PHB_SPELL_GREASE"
+    ],
+    "spells/greater invisibility": [
+      "ID_PHB_SPELL_GREATER_INVISIBILITY"
+    ],
+    "spells/greater restoration": [
+      "ID_PHB_SPELL_GREATER_RESTORATION"
+    ],
+    "spells/guardian of faith": [
+      "ID_PHB_SPELL_GUARDIAN_OF_FAITH"
+    ],
+    "spells/guards and wards": [
+      "ID_PHB_SPELL_GUARDS_AND_WARDS"
+    ],
+    "spells/guidance": [
+      "ID_PHB_SPELL_GUIDANCE"
+    ],
+    "spells/guiding bolt": [
+      "ID_PHB_SPELL_GUIDING_BOLT"
+    ],
+    "spells/gust of wind": [
+      "ID_PHB_SPELL_GUST_OF_WIND"
+    ],
+    "spells/hallow": [
+      "ID_PHB_SPELL_HALLOW"
+    ],
+    "spells/hallucinatory terrain": [
+      "ID_PHB_SPELL_HALLUCINATORY_TERRAIN"
+    ],
+    "spells/harm": [
+      "ID_PHB_SPELL_HARM"
+    ],
+    "spells/haste": [
+      "ID_PHB_SPELL_HASTE"
+    ],
+    "spells/heal": [
+      "ID_PHB_SPELL_HEAL"
+    ],
+    "spells/healing word": [
+      "ID_PHB_SPELL_HEALING_WORD"
+    ],
+    "spells/heat metal": [
+      "ID_PHB_SPELL_HEAT_METAL"
+    ],
+    "spells/hellish rebuke": [
+      "ID_PHB_SPELL_HELLISH_REBUKE"
+    ],
+    "spells/heroes' feast": [
+      "ID_PHB_SPELL_HEROES_FEAST"
+    ],
+    "spells/heroism": [
+      "ID_PHB_SPELL_HEROISM"
+    ],
+    "spells/hideous laughter": [
+      "ID_PHB_SPELL_TASHAS_HIDEOUS_LAUGHTER"
+    ],
+    "spells/hold monster": [
+      "ID_PHB_SPELL_HOLD_MONSTER"
+    ],
+    "spells/hold person": [
+      "ID_PHB_SPELL_HOLD_PERSON"
+    ],
+    "spells/holy aura": [
+      "ID_PHB_SPELL_HOLY_AURA"
+    ],
+    "spells/hunter's mark": [
+      "ID_PHB_SPELL_HUNTERS_MARK"
+    ],
+    "spells/hypnotic pattern": [
+      "ID_PHB_SPELL_HYPNOTIC_PATTERN"
+    ],
+    "spells/ice storm": [
+      "ID_PHB_SPELL_ICE_STORM"
+    ],
+    "spells/identify": [
+      "ID_PHB_SPELL_IDENTIFY"
+    ],
+    "spells/illusory script": [
+      "ID_PHB_SPELL_ILLUSORY_SCRIPT"
+    ],
+    "spells/imprisonment": [
+      "ID_PHB_SPELL_IMPRISONMENT"
+    ],
+    "spells/incendiary cloud": [
+      "ID_PHB_SPELL_INCENDIARY_CLOUD"
+    ],
+    "spells/inflict wounds": [
+      "ID_PHB_SPELL_INFLICT_WOUNDS"
+    ],
+    "spells/insect plague": [
+      "ID_PHB_SPELL_INSECT_PLAGUE"
+    ],
+    "spells/instant summons": [
+      "ID_PHB_SPELL_DRAWMIJS_INSTANT_SUMMONS"
+    ],
+    "spells/invisibility": [
+      "ID_PHB_SPELL_INVISIBILITY"
+    ],
+    "spells/irresistible dance": [
+      "ID_PHB_SPELL_OTTOS_IRRESISTIBLE_DANCE"
+    ],
+    "spells/jump": [
+      "ID_PHB_SPELL_JUMP"
+    ],
+    "spells/knock": [
+      "ID_PHB_SPELL_KNOCK"
+    ],
+    "spells/legend lore": [
+      "ID_PHB_SPELL_LEGEND_LORE"
+    ],
+    "spells/lesser restoration": [
+      "ID_PHB_SPELL_LESSER_RESTORATION"
+    ],
+    "spells/levitate": [
+      "ID_PHB_SPELL_LEVITATE"
+    ],
+    "spells/light": [
+      "ID_PHB_SPELL_LIGHT"
+    ],
+    "spells/lightning bolt": [
+      "ID_PHB_SPELL_LIGHTNING_BOLT"
+    ],
+    "spells/locate animals or plants": [
+      "ID_PHB_SPELL_LOCATE_ANIMALS_OR_PLANTS"
+    ],
+    "spells/locate creature": [
+      "ID_PHB_SPELL_LOCATE_CREATURE"
+    ],
+    "spells/locate object": [
+      "ID_PHB_SPELL_LOCATE_OBJECT"
+    ],
+    "spells/longstrider": [
+      "ID_PHB_SPELL_LONGSTRIDER"
+    ],
+    "spells/mage armor": [
+      "ID_PHB_SPELL_MAGE_ARMOR"
+    ],
+    "spells/mage hand": [
+      "ID_PHB_SPELL_MAGE_HAND"
+    ],
+    "spells/magic circle": [
+      "ID_PHB_SPELL_MAGIC_CIRCLE"
+    ],
+    "spells/magic jar": [
+      "ID_PHB_SPELL_MAGIC_JAR"
+    ],
+    "spells/magic missile": [
+      "ID_PHB_SPELL_MAGIC_MISSILE"
+    ],
+    "spells/magic mouth": [
+      "ID_PHB_SPELL_MAGIC_MOUTH"
+    ],
+    "spells/magic weapon": [
+      "ID_PHB_SPELL_MAGIC_WEAPON"
+    ],
+    "spells/magnificent mansion": [
+      "ID_PHB_SPELL_MORDENKAINENS_MAGNIFICENT_MANSION"
+    ],
+    "spells/major image": [
+      "ID_PHB_SPELL_MAJOR_IMAGE"
+    ],
+    "spells/mass cure wounds": [
+      "ID_PHB_SPELL_MASS_CURE_WOUNDS"
+    ],
+    "spells/mass heal": [
+      "ID_PHB_SPELL_MASS_HEAL"
+    ],
+    "spells/mass healing word": [
+      "ID_PHB_SPELL_MASS_HEALING_WORD"
+    ],
+    "spells/mass suggestion": [
+      "ID_PHB_SPELL_MASS_SUGGESTION"
+    ],
+    "spells/maze": [
+      "ID_PHB_SPELL_MAZE"
+    ],
+    "spells/meld into stone": [
+      "ID_PHB_SPELL_MELD_INTO_STONE"
+    ],
+    "spells/mending": [
+      "ID_PHB_SPELL_MENDING"
+    ],
+    "spells/message": [
+      "ID_PHB_SPELL_MESSAGE"
+    ],
+    "spells/meteor swarm": [
+      "ID_PHB_SPELL_METEOR_SWARM"
+    ],
+    "spells/mind blank": [
+      "ID_PHB_SPELL_MIND_BLANK"
+    ],
+    "spells/minor illusion": [
+      "ID_PHB_SPELL_MINOR_ILLUSION"
+    ],
+    "spells/mirage arcane": [
+      "ID_PHB_SPELL_MIRAGE_ARCANE"
+    ],
+    "spells/mirror image": [
+      "ID_PHB_SPELL_MIRROR_IMAGE"
+    ],
+    "spells/mislead": [
+      "ID_PHB_SPELL_MISLEAD"
+    ],
+    "spells/misty step": [
+      "ID_PHB_SPELL_MISTY_STEP"
+    ],
+    "spells/modify memory": [
+      "ID_PHB_SPELL_MODIFY_MEMORY"
+    ],
+    "spells/moonbeam": [
+      "ID_PHB_SPELL_MOONBEAM"
+    ],
+    "spells/move earth": [
+      "ID_PHB_SPELL_MOVE_EARTH"
+    ],
+    "spells/nondetection": [
+      "ID_PHB_SPELL_NONDETECTION"
+    ],
+    "spells/pass without trace": [
+      "ID_PHB_SPELL_PASS_WITHOUT_TRACE"
+    ],
+    "spells/passwall": [
+      "ID_PHB_SPELL_PASSWALL"
+    ],
+    "spells/phantasmal killer": [
+      "ID_PHB_SPELL_PHANTASMAL_KILLER"
+    ],
+    "spells/phantom steed": [
+      "ID_PHB_SPELL_PHANTOM_STEED"
+    ],
+    "spells/planar ally": [
+      "ID_PHB_SPELL_PLANAR_ALLY"
+    ],
+    "spells/planar binding": [
+      "ID_PHB_SPELL_PLANAR_BINDING"
+    ],
+    "spells/plane shift": [
+      "ID_PHB_SPELL_PLANE_SHIFT"
+    ],
+    "spells/plant growth": [
+      "ID_PHB_SPELL_PLANT_GROWTH"
+    ],
+    "spells/poison spray": [
+      "ID_PHB_SPELL_POISON_SPRAY"
+    ],
+    "spells/polymorph": [
+      "ID_PHB_SPELL_POLYMORPH"
+    ],
+    "spells/power word kill": [
+      "ID_PHB_SPELL_POWER_WORD_KILL"
+    ],
+    "spells/power word stun": [
+      "ID_PHB_SPELL_POWER_WORD_STUN"
+    ],
+    "spells/prayer of healing": [
+      "ID_PHB_SPELL_PRAYER_OF_HEALING"
+    ],
+    "spells/prestidigitation": [
+      "ID_PHB_SPELL_PRESTIDIGITATION"
+    ],
+    "spells/prismatic spray": [
+      "ID_PHB_SPELL_PRISMATIC_SPRAY"
+    ],
+    "spells/prismatic wall": [
+      "ID_PHB_SPELL_PRISMATIC_WALL"
+    ],
+    "spells/private sanctum": [
+      "ID_PHB_SPELL_MORDENKAINENS_PRIVATE_SANCTUM"
+    ],
+    "spells/produce flame": [
+      "ID_PHB_SPELL_PRODUCE_FLAME"
+    ],
+    "spells/programmed illusion": [
+      "ID_PHB_SPELL_PROGRAMMED_ILLUSION"
+    ],
+    "spells/project image": [
+      "ID_PHB_SPELL_PROJECT_IMAGE"
+    ],
+    "spells/protection from energy": [
+      "ID_PHB_SPELL_PROTECTION_FROM_ENERGY"
+    ],
+    "spells/protection from evil and good": [
+      "ID_PHB_SPELL_PROTECTION_FROM_EVIL_AND_GOOD"
+    ],
+    "spells/protection from poison": [
+      "ID_PHB_SPELL_PROTECTION_FROM_POISON"
+    ],
+    "spells/purify food and drink": [
+      "ID_PHB_SPELL_PURIFY_FOOD_AND_DRINK"
+    ],
+    "spells/raise dead": [
+      "ID_PHB_SPELL_RAISE_DEAD"
+    ],
+    "spells/ray of enfeeblement": [
+      "ID_PHB_SPELL_RAY_OF_ENFEEBLEMENT"
+    ],
+    "spells/ray of frost": [
+      "ID_PHB_SPELL_RAY_OF_FROST"
+    ],
+    "spells/regenerate": [
+      "ID_PHB_SPELL_REGENERATE"
+    ],
+    "spells/reincarnate": [
+      "ID_PHB_SPELL_REINCARNATE"
+    ],
+    "spells/remove curse": [
+      "ID_PHB_SPELL_REMOVE_CURSE"
+    ],
+    "spells/resilient sphere": [
+      "ID_PHB_SPELL_OTILUKES_RESILIENT_SPHERE"
+    ],
+    "spells/resistance": [
+      "ID_PHB_SPELL_RESISTANCE"
+    ],
+    "spells/resurrection": [
+      "ID_PHB_SPELL_RESURRECTION"
+    ],
+    "spells/reverse gravity": [
+      "ID_PHB_SPELL_REVERSE_GRAVITY"
+    ],
+    "spells/revivify": [
+      "ID_PHB_SPELL_REVIVIFY"
+    ],
+    "spells/rope trick": [
+      "ID_PHB_SPELL_ROPE_TRICK"
+    ],
+    "spells/sacred flame": [
+      "ID_PHB_SPELL_SACRED_FLAME"
+    ],
+    "spells/sanctuary": [
+      "ID_PHB_SPELL_SANCTUARY"
+    ],
+    "spells/scorching ray": [
+      "ID_PHB_SPELL_SCORCHING_RAY"
+    ],
+    "spells/scrying": [
+      "ID_PHB_SPELL_SCRYING"
+    ],
+    "spells/secret chest": [
+      "ID_PHB_SPELL_LEOMUNDS_SECRET_CHEST"
+    ],
+    "spells/see invisibility": [
+      "ID_PHB_SPELL_SEE_INVISIBILITY"
+    ],
+    "spells/seeming": [
+      "ID_PHB_SPELL_SEEMING"
+    ],
+    "spells/sending": [
+      "ID_PHB_SPELL_SENDING"
+    ],
+    "spells/sequester": [
+      "ID_PHB_SPELL_SEQUESTER"
+    ],
+    "spells/shapechange": [
+      "ID_PHB_SPELL_SHAPECHANGE"
+    ],
+    "spells/shatter": [
+      "ID_PHB_SPELL_SHATTER"
+    ],
+    "spells/shield": [
+      "ID_PHB_SPELL_SHIELD"
+    ],
+    "spells/shield of faith": [
+      "ID_PHB_SPELL_SHIELD_OF_FAITH"
+    ],
+    "spells/shillelagh": [
+      "ID_PHB_SPELL_SHILLELAGH"
+    ],
+    "spells/shocking grasp": [
+      "ID_PHB_SPELL_SHOCKING_GRASP"
+    ],
+    "spells/silence": [
+      "ID_PHB_SPELL_SILENCE"
+    ],
+    "spells/silent image": [
+      "ID_PHB_SPELL_SILENT_IMAGE"
+    ],
+    "spells/simulacrum": [
+      "ID_PHB_SPELL_SIMULACRUM"
+    ],
+    "spells/sleep": [
+      "ID_PHB_SPELL_SLEEP"
+    ],
+    "spells/sleet storm": [
+      "ID_PHB_SPELL_SLEET_STORM"
+    ],
+    "spells/slow": [
+      "ID_PHB_SPELL_SLOW"
+    ],
+    "spells/spare the dying": [
+      "ID_PHB_SPELL_SPARE_THE_DYING"
+    ],
+    "spells/speak with animals": [
+      "ID_PHB_SPELL_SPEAK_WITH_ANIMALS"
+    ],
+    "spells/speak with dead": [
+      "ID_PHB_SPELL_SPEAK_WITH_DEAD"
+    ],
+    "spells/speak with plants": [
+      "ID_PHB_SPELL_SPEAK_WITH_PLANTS"
+    ],
+    "spells/spider climb": [
+      "ID_PHB_SPELL_SPIDER_CLIMB"
+    ],
+    "spells/spike growth": [
+      "ID_PHB_SPELL_SPIKE_GROWTH"
+    ],
+    "spells/spirit guardians": [
+      "ID_PHB_SPELL_SPIRIT_GUARDIANS"
+    ],
+    "spells/spiritual weapon": [
+      "ID_PHB_SPELL_SPIRITUAL_WEAPON"
+    ],
+    "spells/stinking cloud": [
+      "ID_PHB_SPELL_STINKING_CLOUD"
+    ],
+    "spells/stone shape": [
+      "ID_PHB_SPELL_STONE_SHAPE"
+    ],
+    "spells/stoneskin": [
+      "ID_PHB_SPELL_STONESKIN"
+    ],
+    "spells/storm of vengeance": [
+      "ID_PHB_SPELL_STORM_OF_VENGEANCE"
+    ],
+    "spells/suggestion": [
+      "ID_PHB_SPELL_SUGGESTION"
+    ],
+    "spells/sunbeam": [
+      "ID_PHB_SPELL_SUNBEAM"
+    ],
+    "spells/sunburst": [
+      "ID_PHB_SPELL_SUNBURST"
+    ],
+    "spells/symbol": [
+      "ID_PHB_SPELL_SYMBOL"
+    ],
+    "spells/telekinesis": [
+      "ID_PHB_SPELL_TELEKINESIS"
+    ],
+    "spells/telepathic bond": [
+      "ID_PHB_SPELL_RARYS_TELEPATHIC_BOND"
+    ],
+    "spells/teleport": [
+      "ID_PHB_SPELL_TELEPORT"
+    ],
+    "spells/teleportation circle": [
+      "ID_PHB_SPELL_TELEPORTATION_CIRCLE"
+    ],
+    "spells/thaumaturgy": [
+      "ID_PHB_SPELL_THAUMATURGY"
+    ],
+    "spells/thunderwave": [
+      "ID_PHB_SPELL_THUNDERWAVE"
+    ],
+    "spells/time stop": [
+      "ID_PHB_SPELL_TIME_STOP"
+    ],
+    "spells/tiny hut": [
+      "ID_PHB_SPELL_LEOMUNDS_TINY_HUT"
+    ],
+    "spells/tongues": [
+      "ID_PHB_SPELL_TONGUES"
+    ],
+    "spells/transport via plants": [
+      "ID_PHB_SPELL_TRANSPORT_VIA_PLANTS"
+    ],
+    "spells/tree stride": [
+      "ID_PHB_SPELL_TREE_STRIDE"
+    ],
+    "spells/true polymorph": [
+      "ID_PHB_SPELL_TRUE_POLYMORPH"
+    ],
+    "spells/true resurrection": [
+      "ID_PHB_SPELL_TRUE_RESURRECTION"
+    ],
+    "spells/true seeing": [
+      "ID_PHB_SPELL_TRUE_SEEING"
+    ],
+    "spells/true strike": [
+      "ID_PHB_SPELL_TRUE_STRIKE"
+    ],
+    "spells/unseen servant": [
+      "ID_PHB_SPELL_UNSEEN_SERVANT"
+    ],
+    "spells/vampiric touch": [
+      "ID_PHB_SPELL_VAMPIRIC_TOUCH"
+    ],
+    "spells/vicious mockery": [
+      "ID_PHB_SPELL_VICIOUS_MOCKERY"
+    ],
+    "spells/wall of fire": [
+      "ID_PHB_SPELL_WALL_OF_FIRE"
+    ],
+    "spells/wall of force": [
+      "ID_PHB_SPELL_WALL_OF_FORCE"
+    ],
+    "spells/wall of ice": [
+      "ID_PHB_SPELL_WALL_OF_ICE"
+    ],
+    "spells/wall of stone": [
+      "ID_PHB_SPELL_WALL_OF_STONE"
+    ],
+    "spells/wall of thorns": [
+      "ID_PHB_SPELL_WALL_OF_THORNS"
+    ],
+    "spells/warding bond": [
+      "ID_PHB_SPELL_WARDING_BOND"
+    ],
+    "spells/water breathing": [
+      "ID_PHB_SPELL_WATER_BREATHING"
+    ],
+    "spells/water walk": [
+      "ID_PHB_SPELL_WATER_WALK"
+    ],
+    "spells/web": [
+      "ID_PHB_SPELL_WEB"
+    ],
+    "spells/weird": [
+      "ID_PHB_SPELL_WEIRD"
+    ],
+    "spells/wind walk": [
+      "ID_PHB_SPELL_WIND_WALK"
+    ],
+    "spells/wind wall": [
+      "ID_PHB_SPELL_WIND_WALL"
+    ],
+    "spells/wish": [
+      "ID_PHB_SPELL_WISH"
+    ],
+    "spells/word of recall": [
+      "ID_PHB_SPELL_WORD_OF_RECALL"
+    ],
+    "spells/zone of truth": [
+      "ID_PHB_SPELL_ZONE_OF_TRUTH"
+    ],
+    "magicItems/adamantine armor": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ADAMANTINE_ARMOR"
+    ],
+    "magicItems/ammunition, +1, +2, or +3": [
+      "ID_WOTC_DMG_MAGIC_ITEM_AMMUNITION_1",
+      "ID_WOTC_DMG_MAGIC_ITEM_AMMUNITION_2",
+      "ID_WOTC_DMG_MAGIC_ITEM_AMMUNITION_3"
+    ],
+    "magicItems/amulet of health": [
+      "ID_WOTC_DMG_MAGIC_ITEM_AMULET_OF_HEALTH"
+    ],
+    "magicItems/amulet of the planes": [
+      "ID_WOTC_DMG_MAGIC_ITEM_AMULET_OF_THE_PLANES"
+    ],
+    "magicItems/animated shield": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ANIMATED_SHIELD"
+    ],
+    "magicItems/apparatus of the crab": [
+      "ID_WOTC_DMG_MAGIC_ITEM_APPARATUS_OF_KWALISH"
+    ],
+    "magicItems/armor of invulnerability": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_INVULNERABILITY"
+    ],
+    "magicItems/armor of resistance": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_ACID",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_COLD",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_FIRE",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_FORCE",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_LIGHTNING",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_NECROTIC",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_POISON",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_PSYCHIC",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_RADIANT",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_RESISTANCE_THUNDER"
+    ],
+    "magicItems/armor of vulnerability": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_OF_VULNERABILITY"
+    ],
+    "magicItems/armor, +1, +2, or +3": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_1",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_2",
+      "ID_WOTC_DMG_MAGIC_ITEM_ARMOR_3"
+    ],
+    "magicItems/arrow of slaying": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ARROW_OF_SLAYING"
+    ],
+    "magicItems/arrow-catching shield": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ARROWCATCHING_SHIELD"
+    ],
+    "magicItems/bag of beans": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BAG_OF_BEANS"
+    ],
+    "magicItems/bag of devouring": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BAG_OF_DEVOURING"
+    ],
+    "magicItems/bag of holding": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BAG_OF_HOLDING"
+    ],
+    "magicItems/bag of tricks": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BAG_OF_TRICKS_GRAY",
+      "ID_WOTC_DMG_MAGIC_ITEM_BAG_OF_TRICKS_RUST",
+      "ID_WOTC_DMG_MAGIC_ITEM_BAG_OF_TRICKS_TAN"
+    ],
+    "magicItems/bead of force": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BEAD_OF_FORCE"
+    ],
+    "magicItems/belt of dwarvenkind": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_DWARVENKIND"
+    ],
+    "magicItems/belt of giant strength": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_CLOUD_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_FIRE_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_FROST_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_HILL_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_STONE_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_BELT_OF_STORM_GIANT_STRENGTH"
+    ],
+    "magicItems/berserker axe": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BERSERKER_AXE"
+    ],
+    "magicItems/boots of elvenkind": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BOOTS_OF_ELVENKIND"
+    ],
+    "magicItems/boots of levitation": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BOOTS_OF_LEVITATION"
+    ],
+    "magicItems/boots of speed": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BOOTS_OF_SPEED"
+    ],
+    "magicItems/boots of striding and springing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BOOTS_OF_STRIDING_AND_SPRINGING"
+    ],
+    "magicItems/boots of the winterlands": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BOOTS_OF_THE_WINTERLANDS"
+    ],
+    "magicItems/bowl of commanding water elementals": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BOWL_OF_COMMANDING_WATER_ELEMENTALS"
+    ],
+    "magicItems/bracers of archery": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BRACERS_OF_ARCHERY"
+    ],
+    "magicItems/bracers of defense": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BRACERS_OF_DEFENSE"
+    ],
+    "magicItems/brazier of commanding fire elementals": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BRAZIER_OF_COMMANDING_FIRE_ELEMENTALS"
+    ],
+    "magicItems/brooch of shielding": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BROOCH_OF_SHIELDING"
+    ],
+    "magicItems/broom of flying": [
+      "ID_WOTC_DMG_MAGIC_ITEM_BROOM_OF_FLYING"
+    ],
+    "magicItems/candle of invocation": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CANDLE_OF_INVOCATION"
+    ],
+    "magicItems/cape of the mountebank": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CAPE_OF_THE_MOUNTEBANK"
+    ],
+    "magicItems/carpet of flying": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CARPET_OF_FLYING"
+    ],
+    "magicItems/censer of controlling air elementals": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CENSER_OF_CONTROLLING_AIR_ELEMENTALS"
+    ],
+    "magicItems/chime of opening": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CHIME_OF_OPENING"
+    ],
+    "magicItems/circlet of blasting": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CIRCLET_OF_BLASTING"
+    ],
+    "magicItems/cloak of arachnida": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_ARACHNIDA"
+    ],
+    "magicItems/cloak of displacement": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_DISPLACEMENT"
+    ],
+    "magicItems/cloak of elvenkind": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_ELVENKIND"
+    ],
+    "magicItems/cloak of protection": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_PROTECTION"
+    ],
+    "magicItems/cloak of the bat": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_THE_BAT"
+    ],
+    "magicItems/cloak of the manta ray": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_THE_MANTA_RAY"
+    ],
+    "magicItems/crystal ball": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CRYSTAL_BALL"
+    ],
+    "magicItems/cube of force": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CUBE_OF_FORCE"
+    ],
+    "magicItems/cubic gate": [
+      "ID_WOTC_DMG_MAGIC_ITEM_CUBIC_GATE"
+    ],
+    "magicItems/dagger of venom": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DAGGER_OF_VENOM"
+    ],
+    "magicItems/dancing sword": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DANCING_SWORD"
+    ],
+    "magicItems/decanter of endless water": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DECANTER_OF_ENDLESS_WATER"
+    ],
+    "magicItems/deck of illusions": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DECK_OF_ILLUSIONS"
+    ],
+    "magicItems/deck of many things": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DECK_OF_MANY_THINGS"
+    ],
+    "magicItems/defender": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DEFENDER"
+    ],
+    "magicItems/demon armor": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DEMON_ARMOR"
+    ],
+    "magicItems/dimensional shackles": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DIMENSIONAL_SHACKLES"
+    ],
+    "magicItems/dragon scale mail": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_BLACK",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_BLUE",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_BRASS",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_BRONZE",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_COPPER",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_GOLD",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_GREEN",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_RED",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_SILVER",
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SCALE_MAIL_WHITE"
+    ],
+    "magicItems/dragon slayer": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DRAGON_SLAYER"
+    ],
+    "magicItems/dust of disappearance": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DUST_OF_DISAPPEARANCE"
+    ],
+    "magicItems/dust of dryness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DUST_OF_DRYNESS"
+    ],
+    "magicItems/dust of sneezing and choking": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DUST_OF_SNEEZING_AND_CHOKING"
+    ],
+    "magicItems/dwarven plate": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DWARVEN_PLATE"
+    ],
+    "magicItems/dwarven thrower": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DWARVEN_THROWER"
+    ],
+    "magicItems/efficient quiver": [
+      "ID_WOTC_DMG_MAGIC_ITEM_QUIVER_OF_EHLONNA"
+    ],
+    "magicItems/efreeti bottle": [
+      "ID_WOTC_DMG_MAGIC_ITEM_EFREETI_BOTTLE"
+    ],
+    "magicItems/elemental gem": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ELEMENTAL_GEM_AIR",
+      "ID_WOTC_DMG_MAGIC_ITEM_ELEMENTAL_GEM_EARTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_ELEMENTAL_GEM_FIRE",
+      "ID_WOTC_DMG_MAGIC_ITEM_ELEMENTAL_GEM_WATER"
+    ],
+    "magicItems/elven chain": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ELVEN_CHAIN"
+    ],
+    "magicItems/eversmoking bottle": [
+      "ID_WOTC_DMG_MAGIC_ITEM_EVERSMOKING_BOTTLE"
+    ],
+    "magicItems/eyes of charming": [
+      "ID_WOTC_DMG_MAGIC_ITEM_EYES_OF_CHARMING"
+    ],
+    "magicItems/eyes of minute seeing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_EYES_OF_MINUTE_SEEING"
+    ],
+    "magicItems/eyes of the eagle": [
+      "ID_WOTC_DMG_MAGIC_ITEM_EYES_OF_THE_EAGLE"
+    ],
+    "magicItems/feather token": [
+      "ID_WOTC_DMG_MAGIC_ITEM_QUAALS_FEATHER_TOKEN"
+    ],
+    "magicItems/figurine of wondrous power": [
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_BRONZE_GRIFFON",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_EBONY_FLY",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_GOLDEN_LIONS",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_IVORY_GOATS",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_MARBLE_ELEPHANT",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_OBSIDIAN_STEED",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_ONYX_DOG",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_SERPENTINE_OWL",
+      "ID_WOTC_DMG_MAGIC_ITEM_FIGURINE_OF_WONDROUS_POWER_SILVER_RAVEN"
+    ],
+    "magicItems/flame tongue": [
+      "ID_WOTC_DMG_MAGIC_ITEM_FLAME_TONGUE"
+    ],
+    "magicItems/folding boat": [
+      "ID_WOTC_DMG_MAGIC_ITEM_FOLDING_BOAT"
+    ],
+    "magicItems/frost brand": [
+      "ID_WOTC_DMG_MAGIC_ITEM_FROST_BRAND"
+    ],
+    "magicItems/gauntlets of ogre power": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GAUNTLETS_OF_OGRE_POWER"
+    ],
+    "magicItems/gem of brightness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GEM_OF_BRIGHTNESS"
+    ],
+    "magicItems/gem of seeing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GEM_OF_SEEING"
+    ],
+    "magicItems/giant slayer": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GIANT_SLAYER"
+    ],
+    "magicItems/glamoured studded leather": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GLAMOURED_STUDDED_LEATHER"
+    ],
+    "magicItems/gloves of missile snaring": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GLOVES_OF_MISSILE_SNARING"
+    ],
+    "magicItems/gloves of swimming and climbing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GLOVES_OF_SWIMMING_AND_CLIMBING"
+    ],
+    "magicItems/goggles of night": [
+      "ID_WOTC_DMG_MAGIC_ITEM_GOGGLES_OF_NIGHT"
+    ],
+    "magicItems/hammer of thunderbolts": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HAMMER_OF_THUNDERBOLTS"
+    ],
+    "magicItems/handy haversack": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HEWARDS_HANDY_HAVERSACK"
+    ],
+    "magicItems/hat of disguise": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HAT_OF_DISGUISE"
+    ],
+    "magicItems/headband of intellect": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HEADBAND_OF_INTELLECT"
+    ],
+    "magicItems/helm of brilliance": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HELM_OF_BRILLIANCE"
+    ],
+    "magicItems/helm of comprehending languages": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HELM_OF_COMPREHENDING_LANGUAGES"
+    ],
+    "magicItems/helm of telepathy": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HELM_OF_TELEPATHY"
+    ],
+    "magicItems/helm of teleportation": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HELM_OF_TELEPORTATION"
+    ],
+    "magicItems/holy avenger": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HOLY_AVENGER"
+    ],
+    "magicItems/horn of blasting": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_BLASTING"
+    ],
+    "magicItems/horn of valhalla": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_VALHALLA_BRASS",
+      "ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_VALHALLA_BRONZE",
+      "ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_VALHALLA_IRON",
+      "ID_WOTC_DMG_MAGIC_ITEM_HORN_OF_VALHALLA_SILVER"
+    ],
+    "magicItems/horseshoes of a zephyr": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HORSESHOES_OF_A_ZEPHYR"
+    ],
+    "magicItems/horseshoes of speed": [
+      "ID_WOTC_DMG_MAGIC_ITEM_HORSESHOES_OF_SPEED"
+    ],
+    "magicItems/immovable rod": [
+      "ID_WOTC_DMG_MAGIC_ITEM_IMMOVABLE_ROD"
+    ],
+    "magicItems/instant fortress": [
+      "ID_WOTC_DMG_MAGIC_ITEM_DAERNS_INSTANT_FORTRESS"
+    ],
+    "magicItems/ioun stone": [
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_ABSORPTION",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_AGILITY",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_AWARENESS",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_FORTITUDE",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_GREATER_ABSORPTION",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_INSIGHT",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_INTELLECT",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_LEADERSHIP",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_MASTERY",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_PROTECTION",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_REGENERATION",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_RESERVE",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_IOUN_STONE_SUSTENANCE"
+    ],
+    "magicItems/iron bands of binding": [
+      "ID_WOTC_DMG_MAGIC_ITEM_IRON_BANDS_OF_BILARRO"
+    ],
+    "magicItems/iron flask": [
+      "ID_WOTC_DMG_MAGIC_ITEM_IRON_FLASK"
+    ],
+    "magicItems/javelin of lightning": [
+      "ID_WOTC_DMG_MAGIC_ITEM_JAVELIN_OF_LIGHTNING"
+    ],
+    "magicItems/lantern of revealing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_LANTERN_OF_REVEALING"
+    ],
+    "magicItems/luck blade": [
+      "ID_WOTC_DMG_MAGIC_ITEM_LUCK_BLADE"
+    ],
+    "magicItems/mace of disruption": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MACE_OF_DISRUPTION"
+    ],
+    "magicItems/mace of smiting": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MACE_OF_SMITING"
+    ],
+    "magicItems/mace of terror": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MACE_OF_TERROR"
+    ],
+    "magicItems/mantle of spell resistance": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MANTLE_OF_SPELL_RESISTANCE"
+    ],
+    "magicItems/manual of bodily health": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_BODILY_HEALTH"
+    ],
+    "magicItems/manual of gainful exercise": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_GAINFUL_EXERCISE"
+    ],
+    "magicItems/manual of golems": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_CLAY_GOLEMS",
+      "ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_FLESH_GOLEMS",
+      "ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_IRON_GOLEMS",
+      "ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_STONE_GOLEMS"
+    ],
+    "magicItems/manual of quickness of action": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MANUAL_OF_QUICKNESS_OF_ACTION"
+    ],
+    "magicItems/marvelous pigments": [
+      "ID_WOTC_DMG_MAGIC_ITEM_NOLZURS_MARVELOUS_PIGMENTS"
+    ],
+    "magicItems/medallion of thoughts": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MEDALLION_OF_THOUGHTS"
+    ],
+    "magicItems/mirror of life trapping": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MIRROR_OF_LIFE_TRAPPING"
+    ],
+    "magicItems/mithral armor": [
+      "ID_WOTC_DMG_MAGIC_ITEM_MITHRAL_ARMOR"
+    ],
+    "magicItems/necklace of adaptation": [
+      "ID_WOTC_DMG_MAGIC_ITEM_NECKLACE_OF_ADAPTATION"
+    ],
+    "magicItems/necklace of fireballs": [
+      "ID_WOTC_DMG_MAGIC_ITEM_NECKLACE_OF_FIREBALLS"
+    ],
+    "magicItems/necklace of prayer beads": [
+      "ID_WOTC_DMG_MAGIC_ITEM_NECKLACE_OF_PRAYER_BEADS"
+    ],
+    "magicItems/nine lives stealer": [
+      "ID_WOTC_DMG_MAGIC_ITEM_NINE_LIVES_STEALER"
+    ],
+    "magicItems/oathbow": [
+      "ID_WOTC_DMG_MAGIC_ITEM_OATHBOW"
+    ],
+    "magicItems/oil of etherealness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_OIL_OF_ETHEREALNESS"
+    ],
+    "magicItems/oil of sharpness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_OIL_OF_SHARPNESS"
+    ],
+    "magicItems/oil of slipperiness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_OIL_OF_SLIPPERINESS"
+    ],
+    "magicItems/orb of dragonkind": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ORB_OF_DRAGONKIND"
+    ],
+    "magicItems/pearl of power": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PEARL_OF_POWER"
+    ],
+    "magicItems/periapt of health": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PERIAPT_OF_HEALTH"
+    ],
+    "magicItems/periapt of proof against poison": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PERIAPT_OF_PROOF_AGAINST_POISON"
+    ],
+    "magicItems/periapt of wound closure": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PERIAPT_OF_WOUND_CLOSURE"
+    ],
+    "magicItems/philter of love": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PHILTER_OF_LOVE"
+    ],
+    "magicItems/pipes of haunting": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PIPES_OF_HAUNTING"
+    ],
+    "magicItems/pipes of the sewers": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PIPES_OF_THE_SEWERS"
+    ],
+    "magicItems/plate armor of etherealness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PLATE_ARMOR_OF_ETHEREALNESS"
+    ],
+    "magicItems/portable hole": [
+      "ID_WOTC_DMG_MAGIC_ITEM_PORTABLE_HOLE"
+    ],
+    "magicItems/potion of animal friendship": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_ANIMAL_FRIENDSHIP"
+    ],
+    "magicItems/potion of clairvoyance": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_CLAIRVOYANCE"
+    ],
+    "magicItems/potion of climbing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_CLIMBING"
+    ],
+    "magicItems/potion of diminution": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_DIMINUTION"
+    ],
+    "magicItems/potion of flying": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_FLYING"
+    ],
+    "magicItems/potion of gaseous form": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_GASEOUS_FORM"
+    ],
+    "magicItems/potion of giant strength": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_CLOUD_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_FIRE_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_FROST_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HILL_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_STONE_GIANT_STRENGTH",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_STORM_GIANT_STRENGTH"
+    ],
+    "magicItems/potion of growth": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_GROWTH"
+    ],
+    "magicItems/potion of healing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HEALING"
+    ],
+    "magicItems/potion of heroism": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HEROISM"
+    ],
+    "magicItems/potion of invisibility": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_INVISIBILITY"
+    ],
+    "magicItems/potion of mind reading": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_MIND_READING"
+    ],
+    "magicItems/potion of poison": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_POISON"
+    ],
+    "magicItems/potion of resistance": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_ACID",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_COLD",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_FIRE",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_FORCE",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_LIGHTNING",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_NECROTIC",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_POISON",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_PSYCHIC",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_RADIANT",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_RESISTANCE_THUNDER"
+    ],
+    "magicItems/potion of speed": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_SPEED"
+    ],
+    "magicItems/potion of water breathing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_WATER_BREATHING"
+    ],
+    "magicItems/potions of healing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_GREATER_HEALING",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HEALING",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_SUPERIOR_HEALING",
+      "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_SUPREME_HEALING"
+    ],
+    "magicItems/restorative ointment": [
+      "ID_WOTC_DMG_MAGIC_ITEM_KEOGHTOMS_OINTMENT"
+    ],
+    "magicItems/ring of animal influence": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_ANIMAL_INFLUENCE"
+    ],
+    "magicItems/ring of djinni summoning": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_DJINNI_SUMMONING"
+    ],
+    "magicItems/ring of elemental command": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_AIR_ELEMENTAL_COMMAND",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_EARTH_ELEMENTAL_COMMAND",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_FIRE_ELEMENTAL_COMMAND",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_WATER_ELEMENTAL_COMMAND"
+    ],
+    "magicItems/ring of evasion": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_EVASION"
+    ],
+    "magicItems/ring of feather falling": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_FEATHER_FALLING"
+    ],
+    "magicItems/ring of free action": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_FREE_ACTION"
+    ],
+    "magicItems/ring of invisibility": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_INVISIBILITY"
+    ],
+    "magicItems/ring of jumping": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_JUMPING"
+    ],
+    "magicItems/ring of mind shielding": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_MIND_SHIELDING"
+    ],
+    "magicItems/ring of protection": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_PROTECTION"
+    ],
+    "magicItems/ring of regeneration": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_REGENERATION"
+    ],
+    "magicItems/ring of resistance": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_ACID",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_COLD",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_FIRE",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_FORCE",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_LIGHTNING",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_NECROTIC",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_POISON",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_PSYCHIC",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_RADIANT",
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_RESISTANCE_THUNDER"
+    ],
+    "magicItems/ring of shooting stars": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_SHOOTING_STARS"
+    ],
+    "magicItems/ring of spell storing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_SPELL_STORING"
+    ],
+    "magicItems/ring of spell turning": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_SPELL_TURNING"
+    ],
+    "magicItems/ring of swimming": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_SWIMMING"
+    ],
+    "magicItems/ring of telekinesis": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_TELEKINESIS"
+    ],
+    "magicItems/ring of the ram": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_THE_RAM"
+    ],
+    "magicItems/ring of three wishes": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_THREE_WISHES"
+    ],
+    "magicItems/ring of warmth": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_WARMTH"
+    ],
+    "magicItems/ring of water walking": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_WATER_WALKING"
+    ],
+    "magicItems/ring of x-ray vision": [
+      "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_XRAY_VISION"
+    ],
+    "magicItems/robe of eyes": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROBE_OF_EYES"
+    ],
+    "magicItems/robe of scintillating colors": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROBE_OF_SCINTILLATING_COLORS"
+    ],
+    "magicItems/robe of stars": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROBE_OF_STARS"
+    ],
+    "magicItems/robe of the archmagi": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROBE_OF_THE_ARCHMAGI"
+    ],
+    "magicItems/robe of useful items": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROBE_OF_USEFUL_ITEMS"
+    ],
+    "magicItems/rod of absorption": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_ABSORPTION"
+    ],
+    "magicItems/rod of alertness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_ALERTNESS"
+    ],
+    "magicItems/rod of lordly might": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_LORDLY_MIGHT"
+    ],
+    "magicItems/rod of rulership": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_RULERSHIP"
+    ],
+    "magicItems/rod of security": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_SECURITY"
+    ],
+    "magicItems/rope of climbing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROPE_OF_CLIMBING"
+    ],
+    "magicItems/rope of entanglement": [
+      "ID_WOTC_DMG_MAGIC_ITEM_ROPE_OF_ENTANGLEMENT"
+    ],
+    "magicItems/scarab of protection": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SCARAB_OF_PROTECTION"
+    ],
+    "magicItems/scimitar of speed": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SCIMITAR_OF_SPEED"
+    ],
+    "magicItems/shield of missile attraction": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SHIELD_OF_MISSILE_ATTRACTION"
+    ],
+    "magicItems/shield, +1, +2, or +3": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SHIELD_1",
+      "ID_WOTC_DMG_MAGIC_ITEM_SHIELD_2",
+      "ID_WOTC_DMG_MAGIC_ITEM_SHIELD_3"
+    ],
+    "magicItems/slippers of spider climbing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SLIPPERS_OF_SPIDER_CLIMBING"
+    ],
+    "magicItems/sovereign glue": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SOVEREIGN_GLUE"
+    ],
+    "magicItems/spell scroll": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_1ST_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_2ND_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_3RD_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_4TH_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_5TH_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_6TH_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_7TH_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_8TH_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_9TH_LEVEL",
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELL_SCROLL_CANTRIP"
+    ],
+    "magicItems/spellguard shield": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SPELLGUARD_SHIELD"
+    ],
+    "magicItems/sphere of annihilation": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SPHERE_OF_ANNIHILATION"
+    ],
+    "magicItems/staff of charming": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_CHARMING"
+    ],
+    "magicItems/staff of fire": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_FIRE"
+    ],
+    "magicItems/staff of frost": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_FROST"
+    ],
+    "magicItems/staff of healing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_HEALING"
+    ],
+    "magicItems/staff of power": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_POWER"
+    ],
+    "magicItems/staff of striking": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_STRIKING"
+    ],
+    "magicItems/staff of swarming insects": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_SWARMING_INSECTS"
+    ],
+    "magicItems/staff of the magi": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_THE_MAGI"
+    ],
+    "magicItems/staff of the python": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_THE_PYTHON"
+    ],
+    "magicItems/staff of the woodlands": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_THE_WOODLANDS"
+    ],
+    "magicItems/staff of thunder and lightning": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_THUNDER_AND_LIGHTNING"
+    ],
+    "magicItems/staff of withering": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_WITHERING"
+    ],
+    "magicItems/stone of controlling earth elementals": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STONE_OF_CONTROLLING_EARTH_ELEMENTALS"
+    ],
+    "magicItems/stone of good luck (luckstone)": [
+      "ID_WOTC_DMG_MAGIC_ITEM_STONE_OF_GOOD_LUCK"
+    ],
+    "magicItems/sun blade": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SUN_BLADE"
+    ],
+    "magicItems/sword of life stealing": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_LIFE_STEALING"
+    ],
+    "magicItems/sword of sharpness": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_SHARPNESS"
+    ],
+    "magicItems/sword of wounding": [
+      "ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_WOUNDING"
+    ],
+    "magicItems/talisman of pure good": [
+      "ID_WOTC_DMG_MAGIC_ITEM_TALISMAN_OF_PURE_GOOD"
+    ],
+    "magicItems/talisman of the sphere": [
+      "ID_WOTC_DMG_MAGIC_ITEM_TALISMAN_OF_THE_SPHERE"
+    ],
+    "magicItems/talisman of ultimate evil": [
+      "ID_WOTC_DMG_MAGIC_ITEM_TALISMAN_OF_ULTIMATE_EVIL"
+    ],
+    "magicItems/tome of clear thought": [
+      "ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_CLEAR_THOUGHT"
+    ],
+    "magicItems/tome of leadership and influence": [
+      "ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_LEADERSHIP_AND_INFLUENCE"
+    ],
+    "magicItems/tome of understanding": [
+      "ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_UNDERSTANDING"
+    ],
+    "magicItems/trident of fish command": [
+      "ID_WOTC_DMG_MAGIC_ITEM_TRIDENT_OF_FISH_COMMAND"
+    ],
+    "magicItems/universal solvent": [
+      "ID_WOTC_DMG_MAGIC_ITEM_UNIVERSAL_SOLVENT"
+    ],
+    "magicItems/vicious weapon": [
+      "ID_WOTC_DMG_MAGIC_ITEM_VICIOUS_WEAPON"
+    ],
+    "magicItems/vorpal sword": [
+      "ID_WOTC_DMG_MAGIC_ITEM_VORPAL_SWORD"
+    ],
+    "magicItems/wand of binding": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_BINDING"
+    ],
+    "magicItems/wand of enemy detection": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_ENEMY_DETECTION"
+    ],
+    "magicItems/wand of fear": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_FEAR"
+    ],
+    "magicItems/wand of fireballs": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_FIREBALLS"
+    ],
+    "magicItems/wand of lightning bolts": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_LIGHTNING_BOLTS"
+    ],
+    "magicItems/wand of magic detection": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_MAGIC_DETECTION"
+    ],
+    "magicItems/wand of magic missiles": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_MAGIC_MISSILES"
+    ],
+    "magicItems/wand of paralysis": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_PARALYSIS"
+    ],
+    "magicItems/wand of polymorph": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_POLYMORPH"
+    ],
+    "magicItems/wand of secrets": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_SECRETS"
+    ],
+    "magicItems/wand of the war mage, +1, +2, or +3": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_THE_WAR_MAGE_1",
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_THE_WAR_MAGE_2",
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_THE_WAR_MAGE_3"
+    ],
+    "magicItems/wand of web": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_WEB"
+    ],
+    "magicItems/wand of wonder": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_WONDER"
+    ],
+    "magicItems/weapon, +1, +2, or +3": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WEAPON_1",
+      "ID_WOTC_DMG_MAGIC_ITEM_WEAPON_2",
+      "ID_WOTC_DMG_MAGIC_ITEM_WEAPON_3"
+    ],
+    "magicItems/well of many worlds": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WELL_OF_MANY_WORLDS"
+    ],
+    "magicItems/wind fan": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WIND_FAN"
+    ],
+    "magicItems/winged boots": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WINGED_BOOTS"
+    ],
+    "magicItems/wings of flying": [
+      "ID_WOTC_DMG_MAGIC_ITEM_WINGS_OF_FLYING"
+    ]
+  },
+  "curated": {
+    "ID_WOTC_ITEM_BURGLARS_PACK": "SRD 5.1 Equipment Packs",
+    "ID_WOTC_ITEM_DIPLOMATS_PACK": "SRD 5.1 Equipment Packs",
+    "ID_WOTC_ITEM_DUNGEONEERS_PACK": "SRD 5.1 Equipment Packs",
+    "ID_WOTC_ITEM_ENTERTAINERS_PACK": "SRD 5.1 Equipment Packs",
+    "ID_WOTC_ITEM_EXPLORERS_PACK": "SRD 5.1 Equipment Packs",
+    "ID_WOTC_ITEM_PRIESTS_PACK": "SRD 5.1 Equipment Packs",
+    "ID_WOTC_ITEM_SCHOLARS_PACK": "SRD 5.1 Equipment Packs",
+    "ID_WOTC_DMG_MAGIC_ITEM_AMULET_OF_PROOF_AGAINST_DETECTION_AND_LOCATION": "SRD 5.1 magic item; its heading wraps onto a second line in the document, which the inventory records as two fragments",
+    "ID_WOTC_DMG_ITEM_POISON_CARRION_CRAWLER_MUCUS": "SRD 5.1 Poisons table; the inventory row loses the first word of the name to the table layout",
+    "ID_WOTC_DMG_MAGIC_ITEM_CRYSTAL_BALL_OF_MIND_READING": "SRD 5.1 Crystal Ball variant, described inside the Crystal Ball entry",
+    "ID_WOTC_DMG_MAGIC_ITEM_CRYSTAL_BALL_OF_TELEPATHY": "SRD 5.1 Crystal Ball variant, described inside the Crystal Ball entry",
+    "ID_WOTC_DMG_MAGIC_ITEM_CRYSTAL_BALL_OF_TRUE_SEEING": "SRD 5.1 Crystal Ball variant, described inside the Crystal Ball entry",
+    "ID_WOTC_PHB_COMPANION_APE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_BABOON": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_BADGER": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_BAT": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_BLACK_BEAR": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_BLOOD_HAWK": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_BOAR": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_CAT": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_CRAB": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_DEER": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_EAGLE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_FLYING_SNAKE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_FROG": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_BADGER": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_CENTIPEDE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_CRAB": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_FIRE_BEETLE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_FROG": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_POISONOUS_SNAKE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_RAT": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_RAT__DISEASED": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_WASP": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_WEASEL": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GIANT_WOLF_SPIDER": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_GOAT": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_HAWK": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_HYENA": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_JACKAL": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_LIZARD": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_MASTIFF": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_MULE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_OCTOPUS": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_OWL": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_PANTHER": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_POISONOUS_SNAKE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_PONY": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_PTERANODON": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_QUIPPER": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_RAT": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_RAVEN": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_REEF_SHARK": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_SCORPION": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_SEA_HORSE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_SPIDER": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_STIRGE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_VULTURE": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_WEASEL": "companion stat block the 2014 familiar, Beast Master and companion features select from",
+    "ID_WOTC_PHB_COMPANION_WOLF": "companion stat block the 2014 familiar, Beast Master and companion features select from"
+  },
+  "excluded": {
+    "ID_WOTC_MM_CLASS_FEATURE_RANGER_FAVORED_ENEMY_HUMANOID_KUO_TOA": "favored-enemy entry describing a creature SRD 5.1 does not carry",
+    "ID_WOTC_MM_CLASS_FEATURE_RANGER_FAVORED_ENEMY_HUMANOID_YUAN_TI_PUREBLOOD": "favored-enemy entry describing a creature SRD 5.1 does not carry",
+    "ID_WOTC_PHB_ARCHETYPE_PATH_OF_THE_TOTEM_WARRIOR": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_COLLEGE_OF_VALOR": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_CLERIC_KNOWLEDGE_DOMAIN": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_CLERIC_LIGHT_DOMAIN": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_CLERIC_NATURE_DOMAIN": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_CLERIC_TEMPEST_DOMAIN": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_CLERIC_Trickery_DOMAIN": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_CLERIC_WAR_DOMAIN": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_CIRCLEOFTHEMOON": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_FIGHTER_BATTLE_MASTER": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_FIGHTER_ELDRITCH_KNIGHT": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_MONK_WAY_OF_THE_FOUR_ELEMENTS": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_MONK_WAY_OF_SHADOW": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_PALADIN_OATH_OF_THE_ANCIENTS": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_PALADIN_OATH_OF_VENGEANCE": "not in System Reference Document 5.1",
+    "ID_WOTC_ARCHETYPE_RANGER_BEAST_MASTER": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_ARCANE_TRICKSTER": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_ASSASSIN": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WILD_MAGIC": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_THE_ARCHFEY": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_THE_GREAT_OLD_ONE": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_ABJURATION": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_CONJURATION": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_DIVINATION": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_ENCHANTMENT": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_ILLUSION": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_NECROMANCY": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ARCHETYPE_WIZARD_SCHOOL_OF_TRANSMUTATION": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_DARKVISION": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_SPEED": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_CONSTITUTION_SAVE": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_RESISTANCE_ACID": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_RESISTANCE_COLD": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_RESISTANCE_FIRE": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_RESISTANCE_LIGHTNING": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_MAGIC_ITEM_TRANSMUTERS_STONE_RESISTANCE_THUNDER": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_CHARLATAN": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_CRIMINAL": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_BACKGROUND_CUSTOM": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_ENTERTAINER": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_FOLK_HERO": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_GUILD_ARTISAN": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_HERMIT": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_NOBLE": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_OUTLANDER": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_SAGE": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_SAILOR": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_SOLDIER": "not in System Reference Document 5.1",
+    "ID_BACKGROUND_URCHIN": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ACTOR": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ALERT": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ATHLETE": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_CHARGER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_CROSSBOWEXPERT": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_DEFENSIVE_DUELIST": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_DUALWIELDER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_DUNGEON_DELVER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_DURABLE": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ELEMENTAL_ADEPT": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ELEMENTAL_ADEPT_2": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ELEMENTAL_ADEPT_3": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ELEMENTAL_ADEPT_4": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_ELEMENTAL_ADEPT_5": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_GREATWEAPONMASTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_HEALER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_HEAVILYARMORED": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_HEAVYARMORMASTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_INSPIRINGLEADER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_KEENMIND": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_LIGHTLYARMORED": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_LINGUIST": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_LUCKY": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_MAGESLAYER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_MAGICINITIATE": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_MARTIALADEPT": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_MEDIUMARMORMASTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_MOBILE": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_MODERATELYARMORED": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_MOUNTEDCOMBATANT": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_OBSERVANT": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_POLEARMMASTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_RESILIENT": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_RITUALCASTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_SAVAGEATTACKER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_SENTINEL": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_SHARPSHOOTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_SHIELDMASTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_SKILLED": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_SKULKER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_SPELLSNIPER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_TAVERNBRAWLER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_TOUGH": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_WARCASTER": "not in System Reference Document 5.1",
+    "ID_PHB_FEAT_WEAPONMASTER": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ITEM_FEAT_UNLOCKER": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ITEM_STRING_10FEET": "not in SRD 5.2.1",
+    "ID_WOTC_PHB_ITEM_MULE": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ITEM_BARDING": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ITEM_SADDLE_PACK": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_ITEM_TOOL_DRAGONCHESS_SET": "not in SRD 5.2.1",
+    "ID_WOTC_PHB_ITEM_TOOL_THREE_DRAGON_ANTE_SET": "not in SRD 5.2.1",
+    "ID_LANGUAGE_DRACONIC": "not in System Reference Document 5.1",
+    "ID_INTERNAL_PROFICIENCY_GROUP_POLEARMS": "not in System Reference Document 5.1",
+    "ID_SUB_RACE_MOUNTAIN_DWARF": "not in System Reference Document 5.1",
+    "ID_SUB_RACE_WOOD_ELF": "not in System Reference Document 5.1",
+    "ID_SUB_RACE_DARK_ELF": "not in System Reference Document 5.1",
+    "ID_SUB_RACE_FOREST_GNOME": "not in System Reference Document 5.1",
+    "ID_SUB_RACE_STOUT_HALFLING": "not in System Reference Document 5.1",
+    "ID_RACE_VARIANT_HUMAN_VARIANT": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_ARCANE_GATE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_ARMOR_OF_AGATHYS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_ARMS_OF_HADAR": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_AURA_OF_LIFE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_AURA_OF_PURITY": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_AURA_OF_VITALITY": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_BANISHING_SMITE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_BEAST_SENSE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_BLADE_WARD": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_BLINDING_SMITE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CHROMATIC_ORB": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CIRCLE_OF_POWER": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CLOUD_OF_DAGGERS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_COMPELLED_DUEL": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CONJURE_BARRAGE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CONJURE_VOLLEY": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CORDON_OF_ARROWS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CROWN_OF_MADNESS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_CRUSADERS_MANTLE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_DESTRUCTIVE_WAVE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_DISSONANT_WHISPERS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_ELEMENTAL_WEAPON": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_ENSNARING_STRIKE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_FEIGN_DEATH": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_FRIENDS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_GRASPING_VINE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_HAIL_OF_THORNS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_HEX": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_HUNGER_OF_HADAR": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_LIGHTNING_ARROW": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_PHANTASMAL_FORCE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_POWER_WORD_HEAL": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_RAY_OF_SICKNESS": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_SEARING_SMITE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_STAGGERING_SMITE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_SWIFT_QUIVER": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_TELEPATHY": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_THORN_WHIP": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_THUNDEROUS_SMITE": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_TSUNAMI": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_WITCH_BOLT": "not in SRD 5.2.1",
+    "ID_PHB_SPELL_WRATHFUL_SMITE": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_MARINERS_ARMOR": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_EFREETI_CHAIN": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SENTINEL_SHIELD": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_FIRE_BREATH": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_ELIXIR_OF_HEALTH": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_INVULNERABILITY": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_LONGEVITY": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_VITALITY": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_THE_PACT_KEEPER_1": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_THE_PACT_KEEPER_2": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_THE_PACT_KEEPER_3": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_TENTACLE_ROD": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_RESURRECTION": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_THE_ADDER": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_WAND_OF_ORCUS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_VENGEANCE": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_WEAPON_OF_WARNING": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_ANSWERING": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_WHELM": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_WAVE": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_MOONBLADE": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLACKRAZOR": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_AXE_OF_THE_DWARVISH_LORDS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SWORD_OF_KAS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_ALCHEMY_JUG": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_CAP_OF_WATER_BREATHING": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_DRIFTGLOBE": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_GLOVES_OF_THIEVERY": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SADDLE_OF_THE_CAVALIER": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SENDING_STONES": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_INVISIBILITY": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_TOME_OF_THE_STILLED_TONGUE": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_DOSS_LUTE": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_FOCHLUCAN_BANDORE": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_MACFUIRMIDH_CITTERN": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_CANAITH_MANDOLIN": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_CLI_LYRE": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_ANSTRUTH_HARP": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_INSTRUMENT_OF_THE_BARDS_OLLAMH_HARP": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION": "not in SRD 5.2.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_ABERRATIONS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_BEASTS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_CELESTIALS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_ELEMENTALS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_FEY": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_FIENDS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_PLANTS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_SCROLL_OF_PROTECTION_UNDEAD": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOOK_OF_EXALTED_DEEDS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOOK_OF_VILE_DARKNESS": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_EYE_OF_VECNA": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_MAGIC_ITEM_HAND_OF_VECNA": "not in System Reference Document 5.1",
+    "ID_WOTC_DMG_ARTIFACT_TABLE": "not in System Reference Document 5.1",
+    "ID_WOTC_PHB_DEITY_AURIL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_AZUTH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BANE": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BESHABA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BHAAL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_CHAUNTEA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_CYRIC": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_DENEIR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ELDATH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_GOND": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_HELM": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ILMATER": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_KELEMVOR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LATHANDER": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LEIRA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LLIIRA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LOVIATAR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MALAR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MASK": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MIELIKKI": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MILIL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MYRKUL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MYSTRA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_OGHMA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SAVRAS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SELUNE": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SHAR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SILVANUS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SUNE": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TALONA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TALOS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TEMPUS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TORM": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TYMORA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TYR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_UMBERLEE": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_WAUKEEN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BEORY": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BOCCOB": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_CELESTIAN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_EHLONNA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ERYTHNUL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_FHARLANGHN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_HEIRONEOUS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_HEXTOR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_KORD": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_INCABULOS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ISTUS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LUZ": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_NERULL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_OBAD_HAI": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_OLIDAMMARA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_PELOR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_PHOLTUS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_RALISHAZ": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_RAO": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ST_CUTHBERT": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THARIZDUN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TRITHEREON": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ULAA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_VECNA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_WEE_JAS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_PALADINE": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BRANCHALA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_HABBAKUK": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_KIRI_JOLITH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MAJERE": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MISHAKAL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SOLINARI": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_GILEAN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_CHISLEV": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_REORX": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SHINARE": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SIRRION": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ZIVILYN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LUNITARI": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TAKHISIS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_CHEMOSH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_HIDDUKEL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MORGION": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SARGONNAS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ZEBOIM": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_NUITARI": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ARAWAI": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_AUREON": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BALINOR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BOLDREI": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_DOL_ARRAH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_DOL_DORN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_KOL_KORRAN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_OLLADRA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_ONATAR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_DEVOURER": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_FURY": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_KEEPER": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_MOCKERY": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_SHADOW": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_TRAVELER": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_SILVER_FLAME": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_BLOOD_OF_VOL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_CULTS_OF_THE_DRAGON_BELOW": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_PATH_OF_LIGHT": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_UNDYING_COURT": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THE_SPIRITS_OF_THE_PAST": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BAHAMUT": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_BLIBDOOLPOOLP": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_CORELLON_LARETHIAN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_DEEP_SASHELAS": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_EADRO": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_GARL_GLITTERGOLD": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_GROLANTOR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_GRUUMSH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_HRUGGEK": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_KURTULMAK": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LAOGZED": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_LOLTH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MAGLUBIYET": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_MORADIN": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_RILLIFANE_RALLATHIL": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SEHANINE_MOONBOW": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SEKOLAH": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SEMUANYA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SKERRIT": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SKORAEUS_STONEBONES": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_SURTUR": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_THRYM": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_TIAMAT": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_PHB_DEITY_YONDALLA": "the corpus pantheon is not SRD 5.1 content; the document's Celtic, Greek, Egyptian and Norse pantheons are generated into this file instead",
+    "ID_WOTC_DMG_ITEM_BOMB": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GUNPOWDER_KEG": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GUNPOWDER_POWDER_HORN": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_DYNAMITE": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GRENADE_FRAGMENTATION": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GRENADE_SMOKE": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GRENADE_LAUNCHER": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PISTOL": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_MUSKET": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_BULLET": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PISTOL_AUTOMATIC": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_REVOLVER": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_RIFLE_HUNTING": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_RIFLE_AUTOMATIC": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_SHOTGUN": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_BULLET_MODERN": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_LASER_PISTOL": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_ANTIMATTER_RIFLE": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_LASER_RIFLE": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ENERGY_CELL": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_FIREARMS": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_RENAISSANCE_FIREARMS_PISTOL": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_RENAISSANCE_FIREARMS_MUSKET": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_PISTOL_AUTOMATIC": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_REVOLVER": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_RIFLE_AUTOMATIC": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_RIFLE_HUNTING": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_SHOTGUN": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_FUTURISTIC_FIREARMS_LASTER_PISTOL": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_FUTURISTIC_FIREARMS_ANTIMATTER_RIFLE": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_PROFICIENCY_WEAPON_FUTURISTIC_FIREARMS_LASER_RIFLE": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_AMMUNITION": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_BURST_FIRE": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_RELOAD_2_SHOTS": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_RELOAD_5_SHOTS": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_RELOAD_6_SHOTS": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_RELOAD_15_SHOTS": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_RELOAD_30_SHOTS": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_WEAPON_PROPERTY_FIREARM_RELOAD_50_SHOTS": "firearms are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLESSING_OF_HEALTH": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLESSING_OF_MAGIC_RESISTANCE": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLESSING_OF_PROTECTION": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLESSING_OF_UNDERSTANDING": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLESSING_OF_VALHALLA": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLESSING_OF_WEAPON_ENHANCEMENT": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BLESSING_OF_WOUND_CLOSURE": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_CHARM_OF_ANIMAL_CONJURING": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_CHARM_OF_DARKVISION": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_CHARM_OF_FEATHER_FALLING": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_CHARM_OF_HEROISM": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_CHARM_OF_RESTORATION": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_CHARM_OF_THE_SLAYER": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_CHARM_OF_VITALITY": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_COMBAT_PROWESS": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_DIMENSIONAL_TRAVEL": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_FATE": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_FORTITUDE": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_HIGH_MAGIC": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_IMMORTALITY": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_INVINCIBILITY": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_IRRESISTIBLE_OFFENSE": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_LUCK": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_MAGIC_RESISTANCE": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_PEERLESS_AIM": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_PERFECT_HEALTH": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_PLANAR_TRAVEL": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_QUICK_CASTING": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_RECOVERY": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_RESILIENCE": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_SKILL_PROFICIENCY": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_SPEED": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_SPELL_MASTERY": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_SPELL_RECALL": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_THE_FIRE_SOUL": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_THE_NIGHT_SPIRIT": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_THE_STORMBORN": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_THE_UNFETTERED": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_TRUESIGHT": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_MAGIC_ITEM_BOON_OF_UNDETECTABILITY": "supernatural gifts are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_AZURITE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BANDED_AGATE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BLUE_QUARTZ": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_EYE_AGATE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_HEMATITE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_LAPIS_LAZULI": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_MALACHITE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_MOSS_AGATE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_OBSIDIAN": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_RHODOCHROSITE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_TIGER_EYE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_TURQUOISE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BLOODSTONE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_CARNELIAN": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_CHALCEDONY": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_CHRYSOPRASE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_CITRINE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_JASPER": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_MOONSTONE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_ONYX": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_QUARTZ": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_SARDONYX": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_STAR_ROSE_QUARTZ": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_ZIRCON": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_AMBER": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_AMETHYST": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_CHRYSOBERYL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_CORAL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_GARNET": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_JADE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_JET": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_PEARL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_SPINEL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_TOURMALINE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_ALEXANDRITE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_AQUAMARINE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BLACK_PEARL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BLUE_SPINEL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_PERIDOT": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_TOPAZ": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BLACK_OPAL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BLUE_SAPPHIRE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_EMERALD": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_FIRE_OPAL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_OPAL": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_STAR_RUBY": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_STAR_SAPPHIRE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_YELLOW_SAPPHIRE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_BLACK_SAPPHIRE": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_DIAMOND": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_JACINTH": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_GEMSTONE_RUBY": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_1": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_2": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_3": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_4": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_5": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_6": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_7": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_8": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_9": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_25GP_10": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_1": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_2": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_3": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_4": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_5": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_6": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_7": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_8": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_9": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_250GP_10": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_1": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_2": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_3": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_4": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_5": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_6": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_7": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_8": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_9": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_750GP_10": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_1": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_2": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_3": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_4": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_5": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_6": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_7": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_8": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_9": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_2500GP_10": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_1": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_2": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_3": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_4": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_5": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_6": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_7": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_ART_OBJECT_7500GP_8": "treasure tables are not SRD 5.1 content",
+    "ID_WOTC_DMG_ITEM_AIRSHIP": "vehicles are not SRD 5.1 magic items",
+    "ID_WOTC_DMG_ITEM_GALLEY": "vehicles are not SRD 5.1 magic items",
+    "ID_WOTC_DMG_ITEM_KEELBOAT": "vehicles are not SRD 5.1 magic items",
+    "ID_WOTC_DMG_ITEM_LONGSHIP": "vehicles are not SRD 5.1 magic items",
+    "ID_WOTC_DMG_ITEM_ROWBOAT": "vehicles are not SRD 5.1 magic items",
+    "ID_WOTC_DMG_ITEM_SAILING_SHIP": "vehicles are not SRD 5.1 magic items",
+    "ID_WOTC_DMG_ITEM_WARSHIP": "vehicles are not SRD 5.1 magic items"
+  }
+}

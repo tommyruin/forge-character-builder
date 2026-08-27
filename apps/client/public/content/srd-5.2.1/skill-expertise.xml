@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Authored expertise elements for the shipped baseline.
+
+	The 2024 classes and feats grant Expertise with
+	`<select type="Proficiency" supports="Skill Expertise">` (Bard, Rogue,
+	Ranger, the Skilled-style feats), and the 2024 Wizard names the elements
+	below by id. The shipped 2014 expertise elements are a different type
+	("Class Feature", supports "Expertise, Skill"), so none of those selects
+	had a candidate against the bundled content.
+
+	These are purely mechanical: each one requires proficiency in its skill
+	and doubles the proficiency bonus for that skill. The id scheme follows
+	the vendored corpus (core/ALE.xml) so the corpus's own references resolve
+	unchanged; the elements themselves are authored here.
+-->
+<elements>
+	<element name="Skill Expertise (Acrobatics)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_ACROBATICS">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_ACROBATICS</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Acrobatics check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="acrobatics:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Animal Handling)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_ANIMAL_HANDLING">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_ANIMALHANDLING</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Animal Handling check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="animal handling:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Arcana)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_ARCANA">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_ARCANA</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Arcana check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="arcana:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Athletics)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_ATHLETICS">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_ATHLETICS</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Athletics check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="athletics:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Deception)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_DECEPTION">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_DECEPTION</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Deception check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="deception:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (History)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_HISTORY">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_HISTORY</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any History check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="history:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Insight)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_INSIGHT">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_INSIGHT</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Insight check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="insight:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Intimidation)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_INTIMIDATION">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_INTIMIDATION</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Intimidation check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="intimidation:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Investigation)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_INVESTIGATION">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_INVESTIGATION</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Investigation check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="investigation:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Medicine)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_MEDICINE">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_MEDICINE</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Medicine check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="medicine:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Nature)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_NATURE">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_NATURE</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Nature check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="nature:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Perception)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_PERCEPTION">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_PERCEPTION</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Perception check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="perception:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Performance)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_PERFORMANCE">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_PERFORMANCE</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Performance check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="performance:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Persuasion)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_PERSUASION">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_PERSUASION</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Persuasion check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="persuasion:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Religion)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_RELIGION">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_RELIGION</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Religion check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="religion:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Sleight of Hand)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_SLEIGHT_OF_HAND">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_SLEIGHTOFHAND</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Sleight of Hand check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="sleight of hand:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Stealth)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_STEALTH">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_STEALTH</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Stealth check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="stealth:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+	<element name="Skill Expertise (Survival)" type="Proficiency" source="Internal" id="ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_SURVIVAL">
+		<supports>Expertise, Skill Expertise, ID_INTERNAL_SUPPORT_EXPERTISE</supports>
+		<requirements>ID_PROFICIENCY_SKILL_SURVIVAL</requirements>
+		<description>
+			<p>Your proficiency bonus is doubled for any Survival check you make.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<stat name="survival:proficiency" value="proficiency" bonus="double" />
+		</rules>
+	</element>
+</elements>

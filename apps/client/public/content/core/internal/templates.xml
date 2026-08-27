@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Ability Score Improvement" type="Class Feature" source="Player’s Handbook" id="ID_INTERNAL_TEMPLATE_CLASS_FEATURE_ABILITY_4">
+		<compendium display="false" />
+		<description>
+			<p>You can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.</p>
+		</description>
+		<sheet display="false" />
+		<rules>
+			<select name="Ability Score Increase (Level 4)" type="Ability Score Improvement" supports="Ability Score Improvement&amp;&amp;Class" number="2" />
+		</rules>
+	</element>
+	<element name="Feat" type="Class Feature" source="Player’s Handbook" id="ID_INTERNAL_TEMPLATE_CLASS_FEATURE_FEAT_4">
+		<compendium display="false" />
+		<requirements>ID_INTERNAL_OPTION_ALLOW_FEATS</requirements>
+		<description>
+			<p>Choose a feat.</p>
+		</description>
+		<sheet display="false" />
+		<setters>
+			<set name="allow duplicate">true</set>
+		</setters>
+		<rules>
+			<select name="Feat (Level 4)" type="Feat" />
+		</rules>
+	</element>
+</elements>

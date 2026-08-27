@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<character version="1.0.3" preview="false">
+	<!-- Aurora - https://www.aurorabuilder.com -->
+	<!-- information -->
+	<information>
+		<group>
+		</group>
+		<generationOption>1</generationOption>
+	</information>
+	<!-- display data -->
+	<display-properties favorite="false">
+		<name>Test Wizard</name>
+		<race>Elf</race>
+		<class>Wizard</class>
+		<archetype>
+		</archetype>
+		<background>
+		</background>
+		<level>1</level>
+		<portrait>
+			<companion>
+			</companion>
+			<local></local>
+			<base64><![CDATA[]]></base64>
+		</portrait>
+	</display-properties>
+	<!-- build data -->
+	<build>
+		<input>
+			<name>Test Wizard</name>
+			<gender>Male</gender>
+			<player-name>Test Player</player-name>
+			<experience>0</experience>
+			<attacks>
+				<description><![CDATA[]]></description>
+			</attacks>
+			<backstory><![CDATA[]]></backstory>
+			<background-trinket></background-trinket>
+			<background-traits></background-traits>
+			<background-ideals></background-ideals>
+			<background-bonds></background-bonds>
+			<background-flaws></background-flaws>
+			<background>
+				<feature name="">
+					<description><![CDATA[]]></description>
+				</feature>
+			</background>
+			<organization>
+				<name>
+				</name>
+				<symbol></symbol>
+				<allies><![CDATA[]]></allies>
+			</organization>
+			<additional-features><![CDATA[]]></additional-features>
+			<currency>
+				<copper>0</copper>
+				<silver>0</silver>
+				<electrum>0</electrum>
+				<gold>0</gold>
+				<platinum>0</platinum>
+				<equipment><![CDATA[]]></equipment>
+				<treasure><![CDATA[]]></treasure>
+			</currency>
+			<notes>
+				<note column="left">
+				</note>
+				<note column="right">
+				</note>
+			</notes>
+			<quest>
+			</quest>
+		</input>
+		<appearance>
+			<portrait></portrait>
+			<age>
+			</age>
+			<height>4'6"</height>
+			<weight>90 lb.</weight>
+			<eyes>
+			</eyes>
+			<skin>
+			</skin>
+			<hair>
+			</hair>
+		</appearance>
+		<abilities available-points="3">
+			<strength>8</strength>
+			<dexterity>14</dexterity>
+			<constitution>12</constitution>
+			<intelligence>15</intelligence>
+			<wisdom>10</wisdom>
+			<charisma>10</charisma>
+		</abilities>
+		<elements level-count="1" registered-count="8">
+			<element type="Level" name="1" id="ID_LEVEL_1" rndhp="6,1,2,2,1,4,2,5,6,5,1,5,1,5,3,6,3,3,4,6">
+				<element type="Race" name="Race" requiredLevel="1" checksum="1597ef76" registered="ID_RACE_ELF">
+					<element type="Size" name="Medium" id="ID_SIZE_MEDIUM" />
+					<element type="Vision" name="Darkvision" id="ID_VISION_DARKVISION" />
+					<element type="Language" name="Common" id="ID_LANGUAGE_COMMON" />
+					<element type="Language" name="Elvish" id="ID_LANGUAGE_ELVISH" />
+					<element type="Racial Trait" name="Keen Senses" id="ID_RACIAL_TRAIT_KEEN_SENSES">
+						<element type="Proficiency" name="Perception" id="ID_PROFICIENCY_SKILL_PERCEPTION" />
+					</element>
+					<element type="Racial Trait" name="Fey Ancestry" id="ID_RACIAL_TRAIT_FEY_ANCESTRY" />
+					<element type="Racial Trait" name="Trance" id="ID_RACIAL_TRAIT_TRANCE" />
+					<element type="Racial Trait" name="Elven Subrace" id="ID_RACIAL_TRAIT_ELVEN_SUBRACE">
+						<element type="Sub Race" name="Elven Subrace" requiredLevel="1" checksum="d0bea9f3" registered="" />
+					</element>
+				</element>
+				<element type="Class" name="Class" requiredLevel="1" checksum="33a7b15b" registered="ID_WOTC_PHB_CLASS_WIZARD">
+					<element type="Proficiency" name="Skill Proficiency (Wizard)" requiredLevel="1" number="1" checksum="d455db3c" registered="" />
+					<element type="Proficiency" name="Skill Proficiency (Wizard)" requiredLevel="1" number="2" checksum="4d5c8a86" registered="" />
+					<element type="Proficiency" name="Weapon Proficiency (Dagger)" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DAGGER" />
+					<element type="Proficiency" name="Weapon Proficiency (Dart)" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DART" />
+					<element type="Proficiency" name="Weapon Proficiency (Sling)" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SLING" />
+					<element type="Proficiency" name="Weapon Proficiency (Quarterstaff)" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_QUARTERSTAFF" />
+					<element type="Proficiency" name="Weapon Proficiency (Crossbow, Light)" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_LIGHT" />
+					<element type="Proficiency" name="Saving Throw Proficiency (Intelligence)" id="ID_PROFICIENCY_SAVINGTHROW_INTELLIGENCE" />
+					<element type="Proficiency" name="Saving Throw Proficiency (Wisdom)" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM" />
+					<element type="Class Feature" name="Spellcasting" id="ID_WOTC_PHB_CLASS_FEATURE_WIZARD_SPELLCASTING_WIZARD">
+						<element type="Spell" name="Cantrip (Wizard)" requiredLevel="1" number="1" checksum="c828af0e" registered="ID_PHB_SPELL_FIRE_BOLT" />
+						<element type="Spell" name="Cantrip (Wizard)" requiredLevel="1" number="2" checksum="90360626" registered="" />
+						<element type="Spell" name="Cantrip (Wizard)" requiredLevel="1" number="3" checksum="11136301" registered="" />
+						<element type="Spell" name="Spellbook (Wizard)" requiredLevel="1" number="1" checksum="cdef01cb" registered="ID_PHB_SPELL_SLEEP" />
+						<element type="Spell" name="Spellbook (Wizard)" requiredLevel="1" number="2" checksum="95f1a8e3" registered="" />
+						<element type="Spell" name="Spellbook (Wizard)" requiredLevel="1" number="3" checksum="14d4cdc4" registered="" />
+						<element type="Spell" name="Spellbook (Wizard)" requiredLevel="1" number="4" checksum="25ccfab3" registered="" />
+						<element type="Spell" name="Spellbook (Wizard)" requiredLevel="1" number="5" checksum="a4e99f94" registered="" />
+						<element type="Spell" name="Spellbook (Wizard)" requiredLevel="1" number="6" checksum="fcf736bc" registered="" />
+						<element type="Grants" name="Ritual Casting" id="ID_INTERNAL_RITUAL_CASTING" />
+						<element type="Proficiency" name="Spellcasting Focus Group (Arcane Focus)" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_ARCANE_FOCUS" />
+					</element>
+					<element type="Class Feature" name="Arcane Recovery" id="ID_WOTC_PHB_CLASS_FEATURE_WIZARD_ARCANE_RECOVERY" />
+				</element>
+				<element type="Background" name="Background" requiredLevel="1" checksum="6a621392" registered="" />
+				<element type="Alignment" name="Alignment" requiredLevel="1" checksum="c9ac49d5" registered="ID_ALIGNMENT_LAWFUL_NEUTRAL" />
+				<element type="Deity" name="Deity" requiredLevel="1" checksum="989cce4c" registered="ID_WOTC_PHB_DEITY_BLIBDOOLPOOLP" />
+				<element type="Grants" name="Base" id="ID_INTERNAL_GRANTS_CHARACTER_BASE" />
+				<element type="Grants" name="Spellcasting Base" id="ID_INTERNAL_GRANTS_SPELLCASTING_BASE" />
+				<element type="Grants" name="Base Armor Class" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE" />
+				<element type="Grants" name="Dexterity Modifier" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER" />
+				<element type="Grants" name="Constitution Modifier" id="ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER" />
+			</element>
+		</elements>
+		<defenses>
+			<conditional>
+			</conditional>
+		</defenses>
+		<companion name="">
+			<attributes>
+				<strength>10</strength>
+				<dexterity>10</dexterity>
+				<constitution>10</constitution>
+				<intelligence>10</intelligence>
+				<wisdom>10</wisdom>
+				<charisma>10</charisma>
+			</attributes>
+			<saves>
+				<save ability="strength">0</save>
+				<save ability="dexterity">0</save>
+				<save ability="constitution">0</save>
+				<save ability="intelligence">0</save>
+				<save ability="wisdom">0</save>
+				<save ability="charisma">0</save>
+			</saves>
+			<skills>
+				<skill name="Acrobatics">0</skill>
+				<skill name="Animal Handling">0</skill>
+				<skill name="Arcana">0</skill>
+				<skill name="Athletics">0</skill>
+				<skill name="Deception">0</skill>
+				<skill name="History">0</skill>
+				<skill name="Insight">0</skill>
+				<skill name="Intimidation">0</skill>
+				<skill name="Investigation">0</skill>
+				<skill name="Medicine">0</skill>
+				<skill name="Nature">0</skill>
+				<skill name="Perception">0</skill>
+				<skill name="Performance">0</skill>
+				<skill name="Persuasion">0</skill>
+				<skill name="Religion">0</skill>
+				<skill name="Sleight of Hand">0</skill>
+				<skill name="Stealth">0</skill>
+				<skill name="Survival">0</skill>
+			</skills>
+			<portrait location="local">
+			</portrait>
+		</companion>
+		<equipment>
+			<storage name="#1" />
+			<storage name="#2" />
+			<item identifier="38da19fd-8a63-4513-99ba-0ffd1f2797c9" name="Leather" id="ID_WOTC_ARMOR_LIGHT_LEATHER">
+				<equipped location="Armor">true</equipped>
+				<details card="true">
+					<name>
+					</name>
+					<notes></notes>
+				</details>
+			</item>
+			<item identifier="ceb01e31-5a49-4648-a2e0-94ad1f8e043a" name="Leather" id="ID_WOTC_ARMOR_LIGHT_LEATHER">
+				<details card="true">
+					<name>
+					</name>
+					<notes></notes>
+				</details>
+			</item>
+			<item identifier="657b77ec-58bf-40d9-8d4d-0098aa43bedc" name="Abacus" id="ID_WOTC_PHB_ITEM_ABACUS">
+				<details card="true">
+					<name>
+					</name>
+					<notes></notes>
+				</details>
+			</item>
+			<item identifier="f026dcfb-a51a-4ceb-9857-838d2694ddb8" name="Arrow" id="ID_WOTC_PHB_ITEM_ARROW" amount="2">
+				<details card="true">
+					<name>
+					</name>
+					<notes></notes>
+				</details>
+			</item>
+		</equipment>
+		<sum element-count="33">
+			<element type="Level" id="ID_LEVEL_1" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_CHARACTER_BASE" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_SPELLCASTING_BASE" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER" />
+			<element type="Grants" id="ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER" />
+			<element type="Race" id="ID_RACE_ELF" />
+			<element type="Size" id="ID_SIZE_MEDIUM" />
+			<element type="Vision" id="ID_VISION_DARKVISION" />
+			<element type="Language" id="ID_LANGUAGE_COMMON" />
+			<element type="Language" id="ID_LANGUAGE_ELVISH" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_KEEN_SENSES" />
+			<element type="Proficiency" id="ID_PROFICIENCY_SKILL_PERCEPTION" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_FEY_ANCESTRY" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_TRANCE" />
+			<element type="Racial Trait" id="ID_RACIAL_TRAIT_ELVEN_SUBRACE" />
+			<element type="Spell" id="ID_PHB_SPELL_FIRE_BOLT" />
+			<element type="Armor" id="ID_WOTC_ARMOR_LIGHT_LEATHER" />
+			<element type="Spell" id="ID_PHB_SPELL_SLEEP" />
+			<element type="Alignment" id="ID_ALIGNMENT_LAWFUL_NEUTRAL" />
+			<element type="Deity" id="ID_WOTC_PHB_DEITY_BLIBDOOLPOOLP" />
+			<element type="Class" id="ID_WOTC_PHB_CLASS_WIZARD" />
+			<element type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DAGGER" />
+			<element type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DART" />
+			<element type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SLING" />
+			<element type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_QUARTERSTAFF" />
+			<element type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_LIGHT" />
+			<element type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_INTELLIGENCE" />
+			<element type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM" />
+			<element type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_WIZARD_SPELLCASTING_WIZARD" />
+			<element type="Grants" id="ID_INTERNAL_RITUAL_CASTING" />
+			<element type="Proficiency" id="ID_INTERNAL_PROFICIENCY_SPELLFOCUS_GROUP_ARCANE_FOCUS" />
+			<element type="Class Feature" id="ID_WOTC_PHB_CLASS_FEATURE_WIZARD_ARCANE_RECOVERY" />
+		</sum>
+		<magic>
+			<spellcasting name="Wizard" ability="Intelligence" attack="4" dc="12" source="ID_WOTC_PHB_CLASS_FEATURE_WIZARD_SPELLCASTING_WIZARD">
+				<slots s1="2" s2="0" s3="0" s4="0" s5="0" s6="0" s7="0" s8="0" s9="0" />
+				<cantrips>
+					<spell name="Fire Bolt" level="0" id="ID_PHB_SPELL_FIRE_BOLT" />
+				</cantrips>
+				<spells>
+					<spell name="Sleep" level="1" id="ID_PHB_SPELL_SLEEP" always-prepared="true" known="true" />
+				</spells>
+			</spellcasting>
+		</magic>
+	</build>
+	<!-- restricted sources -->
+	<sources>
+		<restricted />
+	</sources>
+</character>

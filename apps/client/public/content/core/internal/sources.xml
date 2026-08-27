@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Player’s Handbook" type="Source" source="Core" id="ID_WOTC_SOURCE_PLAYERS_HANDBOOK">
+		<description>
+			<p>The 2014 core rules for players: character creation and advancement, backgrounds, equipment and spells. The bundled baseline carries this source's System Reference Document 5.1 content; upload the book's content files to complete it.</p>
+		</description>
+		<setters>
+			<set name="abbreviation">PHB</set>
+			<set name="author" abbreviation="WOTC" url="http://dnd.wizards.com">Wizards of the Coast</set>
+			<set name="official">true</set>
+			<set name="core">true</set>
+			<set name="release">20140819</set>
+			<set name="incomplete">true</set>
+			<set name="information">The bundled baseline carries only this source's System Reference Document content.</set>
+		</setters>
+	</element>
+	<element name="Dungeon Master’s Guide" type="Source" source="Core" id="ID_WOTC_SOURCE_DUNGEON_MASTERS_GUIDE">
+		<description>
+			<p>The 2014 core rules for game masters: optional rules, magic items and world-building guidance. The bundled baseline carries this source's System Reference Document 5.1 magic items; upload the book's content files to complete it.</p>
+		</description>
+		<setters>
+			<set name="abbreviation">DMG</set>
+			<set name="author" abbreviation="WOTC" url="http://dnd.wizards.com">Wizards of the Coast</set>
+			<set name="official">true</set>
+			<set name="core">true</set>
+			<set name="release">20140930</set>
+			<set name="incomplete">true</set>
+			<set name="information">The bundled baseline carries only this source's System Reference Document content.</set>
+		</setters>
+	</element>
+	<element name="Monster Manual" type="Source" source="Core" id="ID_WOTC_SOURCE_MONSTER_MANUAL">
+		<description>
+			<p>The 2014 core catalogue of creatures and their statistics. The bundled baseline carries none of it; upload the book's content files to use it.</p>
+		</description>
+		<setters>
+			<set name="abbreviation">MM</set>
+			<set name="author" abbreviation="WOTC" url="http://dnd.wizards.com">Wizards of the Coast</set>
+			<set name="official">true</set>
+			<set name="core">true</set>
+			<set name="release">20141209</set>
+			<set name="incomplete">true</set>
+			<set name="information">The bundled baseline carries only this source's System Reference Document content.</set>
+		</setters>
+	</element>
+</elements>

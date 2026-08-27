@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Armor Proficiency (Light Armor)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR">
+		<description>
+			<p>Made from supple and thin materials, light armor favors agile adventurers since it offers some protection without sacrificing mobility. If you wear light armor, you add your Dexterity modifier to the base number from your armor type to determine your Armor Class.</p>
+		</description>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_PADDED" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LEATHER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_STUDDED_LEATHER" />
+		</rules>
+	</element>
+	<element name="Armor Proficiency (Medium Armor)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_MEDIUM_ARMOR">
+		<description>
+			<p>Medium armor offers more protection than light armor, but it also impairs movement more. If you wear medium armor, you add your Dexterity modifier, to a maximum of +2, to the base number from your armor type to determine your Armor Class.</p>
+		</description>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HIDE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_CHAIN_SHIRT" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SCALE_MAIL" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_BREASTPLATE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HALF_PLATE" />
+		</rules>
+	</element>
+	<element name="Armor Proficiency (Heavy Armor)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR">
+		<description>
+			<p>Of all the armor categories, heavy armor offers the best protection. These suits of armor cover the entire body and are designed to stop a wide range of attacks. Only proficient w arriors can manage their weight and bulk.</p>
+			<p class="indent">Heavy armor doesn’t let you add your Dexterity modifier to your Armor Class, but it also doesn’t penalize you if your Dexterity modifier is negative.</p>
+		</description>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_RING_MAIL" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_CHAIN_MAIL" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SPLINT" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_PLATE" />
+		</rules>
+	</element>
+	<element name="Armor Proficiency (Shields)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS">
+		<description>
+			<p>A shield is made from wood or metal and is carried in one hand. Wielding a shield increases your Armor Class by 2. You can benefit from only one shield at a time.</p>
+		</description>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELD" />
+		</rules>
+	</element>
+	<element name="Armor Proficiency (Padded)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_PADDED">
+		<supports>Light Armor, ID_INTERNAL_ARMOR_GROUP_LIGHT</supports>
+		<description>
+			<p>Padded armor consists of quilted layers of cloth and batting.</p>
+		</description>
+	</element>
+	<element name="Armor Proficiency (Leather)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LEATHER">
+		<supports>Light Armor, ID_INTERNAL_ARMOR_GROUP_LIGHT</supports>
+	</element>
+	<element name="Armor Proficiency (Studded Leather)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_STUDDED_LEATHER">
+		<supports>Light Armor, ID_INTERNAL_ARMOR_GROUP_LIGHT</supports>
+	</element>
+	<element name="Armor Proficiency (Hide)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HIDE">
+		<supports>Medium Armor, ID_INTERNAL_ARMOR_GROUP_MEDIUM</supports>
+	</element>
+	<element name="Armor Proficiency (Chain Shirt)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_CHAIN_SHIRT">
+		<supports>Medium Armor, ID_INTERNAL_ARMOR_GROUP_MEDIUM</supports>
+	</element>
+	<element name="Armor Proficiency (Scale Mail)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SCALE_MAIL">
+		<supports>Medium Armor, ID_INTERNAL_ARMOR_GROUP_MEDIUM</supports>
+	</element>
+	<element name="Armor Proficiency (Breastplate)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_BREASTPLATE">
+		<supports>Medium Armor, ID_INTERNAL_ARMOR_GROUP_MEDIUM</supports>
+	</element>
+	<element name="Armor Proficiency (Half Plate)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HALF_PLATE">
+		<supports>Medium Armor, ID_INTERNAL_ARMOR_GROUP_MEDIUM</supports>
+	</element>
+	<element name="Armor Proficiency (Ring Mail)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_RING_MAIL">
+		<supports>Heavy Armor, ID_INTERNAL_ARMOR_GROUP_HEAVY</supports>
+	</element>
+	<element name="Armor Proficiency (Chain Mail)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_CHAIN_MAIL">
+		<supports>Heavy Armor, ID_INTERNAL_ARMOR_GROUP_HEAVY</supports>
+	</element>
+	<element name="Armor Proficiency (Splint)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SPLINT">
+		<supports>Heavy Armor, ID_INTERNAL_ARMOR_GROUP_HEAVY</supports>
+	</element>
+	<element name="Armor Proficiency (Plate)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_PLATE">
+		<supports>Heavy Armor, ID_INTERNAL_ARMOR_GROUP_HEAVY</supports>
+	</element>
+	<element name="Armor Proficiency (Shield)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELD">
+		<supports>Shield, ID_INTERNAL_ARMOR_GROUP_SHIELD</supports>
+	</element>
+</elements>

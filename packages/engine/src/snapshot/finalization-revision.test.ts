@@ -1,0 +1,35 @@
+/**
+ * Fast Start snapshots persist the FINALIZED library, so any change to what
+ * the library build produces (parsing, proxies, normalization, generated
+ * elements, ruleset classification) is invisible to users with a stored
+ * snapshot unless PARSER_VERSION is bumped alongside it.
+ *
+ * This pin fails whenever the finalized output changes without a version
+ * bump. On failure: bump PARSER_VERSION in codec.ts AND the client's
+ * FAST_START_PARSER_REVISION in apps/client/src/transport/fastStartSnapshot.js,
+ * then re-pin both values here.
+ */
+
+import { beforeAll, describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { buildLibrary, type ElementLibrary } from "../content/library.js";
+import { serializeContentLibrary, contentLibraryDigest } from "./content-graph.js";
+import { PARSER_VERSION } from "./codec.js";
+
+const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "third-party", "elements");
+
+let library: ElementLibrary;
+
+beforeAll(async () => {
+  library = await buildLibrary(CORPUS_ROOT);
+}, 120_000);
+
+describe("finalization revision tripwire", () => {
+  it("pins the finalized-library digest to the snapshot parser version", async () => {
+    const digest = await contentLibraryDigest(serializeContentLibrary(library));
+    expect(`${PARSER_VERSION}:${digest}`).toBe(
+      "8:36471dd73ae1ae9d39e2fda695ff2ad21eeb3b7e23aaa051edc86fa4b343a367",
+    );
+  });
+});

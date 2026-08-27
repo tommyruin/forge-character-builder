@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Bludgeoning" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING">
+		<description>
+			<p>Blunt force attacks—hammers, falling, constriction, and the like—deal bludgeoning damage.</p>
+		</description>
+	</element>
+	<element name="Piercing" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_PIERCING">
+		<description>
+			<p>Puncturing and impaling attacks, including spears and monsters’ bites, deal piercing damage.</p>
+		</description>
+	</element>
+	<element name="Slashing" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_SLASHING">
+		<description>
+			<p>Swords, axes, and monsters’ claws deal slashing damage.</p>
+		</description>
+	</element>
+	<element name="Acid" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_ACID">
+		<description>
+			<p>The corrosive spray of a black dragon’s breath and the dissolving enzymes secreted by a black pudding deal acid damage.</p>
+		</description>
+	</element>
+	<element name="Cold" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_COLD">
+		<description>
+			<p>The infernal chill radiating from an ice devil’s spear and the frigid blast of a white dragon’s breath deal cold damage.</p>
+		</description>
+	</element>
+	<element name="Fire" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_FIRE">
+		<description>
+			<p>Red dragons breathe fire, and many spells conjure flames to deal fire damage.</p>
+		</description>
+	</element>
+	<element name="Force" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_FORCE">
+		<description>
+			<p>Force is pure magical energy focused into a damaging form. Most effects that deal force damage are spells, including magic missile and spiritual weapon.</p>
+		</description>
+	</element>
+	<element name="Lightning" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_LIGHTNING">
+		<description>
+			<p>A lightning bolt spell and a blue dragon’s breath deal lightning damage.</p>
+		</description>
+	</element>
+	<element name="Necrotic" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_NECROTIC">
+		<description>
+			<p>Necrotic damage, dealt by certain undead and a spell such as chill touch, withers matter and even the soul.</p>
+		</description>
+	</element>
+	<element name="Poison" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_POISON">
+		<description>
+			<p>Venomous stings and the toxic gas of a green dragon’s breath deal poison damage.</p>
+		</description>
+	</element>
+	<element name="Psychic" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_PSYCHIC">
+		<description>
+			<p>Mental abilities such as a mind flayer’s psionic blast deal psychic damage.</p>
+		</description>
+	</element>
+	<element name="Radiant" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_RADIANT">
+		<description>
+			<p>Radiant damage, dealt by a cleric’s flame strike spell or an angel’s smiting weapon, sears the flesh like fire and overloads the spirit with power.</p>
+		</description>
+	</element>
+	<element name="Thunder" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_THUNDER">
+		<description>
+			<p>A concussive burst of sound, such as the effect of the thunderwave spell, deals thunder damage.</p>
+		</description>
+	</element>
+	<element name="Silver" type="Damage Type" source="Internal" id="ID_INTERNAL_DAMAGE_TYPE_SILVER">
+		<description>
+			<p>Some monsters that Immunity (have) or resistance to nonmagical weapons are susceptible to silver weapons.</p>
+		</description>
+	</element>
+</elements>

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Weapon Proficiency (Simple Weapons)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_MELEE_WEAPONS" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_RANGED_WEAPONS" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Simple Melee Weapons)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_MELEE_WEAPONS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CLUB" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DAGGER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATCLUB" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_HANDAXE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_JAVELIN" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LIGHT_HAMMER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MACE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_QUARTERSTAFF" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SICKLE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SPEAR" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_UNARMED_STRIKE" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Simple Ranged Weapons)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_RANGED_WEAPONS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_LIGHT" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DART" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTBOW" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SLING" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Martial Weapons)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_WEAPONS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_MELEE_WEAPONS" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_RANGED_WEAPONS" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Martial Melee Weapons)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_MELEE_WEAPONS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_BATTLEAXE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_FLAIL" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GLAIVE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATAXE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATSWORD" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_HALBERD" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LANCE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGSWORD" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MAUL" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MORNINGSTAR" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_PIKE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_RAPIER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SCIMITAR" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTSWORD" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_TRIDENT" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_WAR_PICK" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_WARHAMMER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_WHIP" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Martial Ranged Weapons)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_RANGED_WEAPONS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_BLOWGUN" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HAND" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HEAVY" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGBOW" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_NET" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Club)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CLUB">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_PROPERTY_LIGHT, ID_INTERNAL_WEAPON_GROUP_CLUBS</supports>
+	</element>
+	<element name="Weapon Proficiency (Dagger)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DAGGER">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_FINESSE, ID_INTERNAL_WEAPON_PROPERTY_LIGHT, ID_INTERNAL_WEAPON_PROPERTY_THROWN</supports>
+	</element>
+	<element name="Weapon Proficiency (Greatclub)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATCLUB">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_CLUBS</supports>
+	</element>
+	<element name="Weapon Proficiency (Handaxe)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_HANDAXE">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_LIGHT, ID_INTERNAL_WEAPON_PROPERTY_THROWN, ID_INTERNAL_WEAPON_GROUP_AXES</supports>
+	</element>
+	<element name="Weapon Proficiency (Javelin)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_JAVELIN">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_THROWN</supports>
+	</element>
+	<element name="Weapon Proficiency (Light Hammer)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LIGHT_HAMMER">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_PROPERTY_LIGHT, ID_INTERNAL_WEAPON_PROPERTY_THROWN, ID_INTERNAL_WEAPON_GROUP_HAMMERS</supports>
+	</element>
+	<element name="Weapon Proficiency (Mace)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MACE">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_GROUP_MACES</supports>
+	</element>
+	<element name="Weapon Proficiency (Quarterstaff)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_QUARTERSTAFF">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_PROPERTY_VERSATILE</supports>
+	</element>
+	<element name="Weapon Proficiency (Sickle)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SICKLE">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_LIGHT</supports>
+	</element>
+	<element name="Weapon Proficiency (Spear)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SPEAR">
+		<supports>Weapon, Simple, Melee, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_THROWN, ID_INTERNAL_WEAPON_PROPERTY_VERSATILE, ID_INTERNAL_WEAPON_GROUP_SPEARS</supports>
+	</element>
+	<element name="Weapon Proficiency (Unarmed Strike)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_UNARMED_STRIKE">
+		<supports>Weapon, Simple, Melee</supports>
+	</element>
+	<element name="Weapon Proficiency (Crossbow, Light)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_LIGHT">
+		<supports>Weapon, Simple, Ranged, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION, ID_INTERNAL_WEAPON_PROPERTY_LOADING, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_CROSSBOWS</supports>
+	</element>
+	<element name="Weapon Proficiency (Dart)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_DART">
+		<supports>Weapon, Simple, Ranged, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_FINESSE, ID_INTERNAL_WEAPON_PROPERTY_THROWN</supports>
+	</element>
+	<element name="Weapon Proficiency (Shortbow)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTBOW">
+		<supports>Weapon, Simple, Ranged, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_BOWS</supports>
+	</element>
+	<element name="Weapon Proficiency (Sling)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SLING">
+		<supports>Weapon, Simple, Ranged, ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION</supports>
+	</element>
+	<element name="Weapon Proficiency (Battleaxe)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_BATTLEAXE">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_VERSATILE, ID_INTERNAL_WEAPON_GROUP_AXES</supports>
+	</element>
+	<element name="Weapon Proficiency (Flail)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_FLAIL">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING</supports>
+	</element>
+	<element name="Weapon Proficiency (Glaive)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GLAIVE">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_REACH, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED</supports>
+	</element>
+	<element name="Weapon Proficiency (Greataxe)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATAXE">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_AXES</supports>
+	</element>
+	<element name="Weapon Proficiency (Greatsword)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATSWORD">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_SWORDS</supports>
+	</element>
+	<element name="Weapon Proficiency (Halberd)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_HALBERD">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_REACH, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED</supports>
+	</element>
+	<element name="Weapon Proficiency (Lance)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LANCE">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_REACH, ID_INTERNAL_WEAPON_PROPERTY_SPECIAL, ID_INTERNAL_WEAPON_PROPERTY_SPECIAL_LANCE</supports>
+	</element>
+	<element name="Weapon Proficiency (Longsword)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGSWORD">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_VERSATILE, ID_INTERNAL_WEAPON_GROUP_SWORDS</supports>
+	</element>
+	<element name="Weapon Proficiency (Maul)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MAUL">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_MAULS</supports>
+	</element>
+	<element name="Weapon Proficiency (Morningstar)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MORNINGSTAR">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING</supports>
+	</element>
+	<element name="Weapon Proficiency (Pike)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_PIKE">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_REACH, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED</supports>
+	</element>
+	<element name="Weapon Proficiency (Rapier)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_RAPIER">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_FINESSE</supports>
+	</element>
+	<element name="Weapon Proficiency (Scimitar)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SCIMITAR">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_FINESSE, ID_INTERNAL_WEAPON_PROPERTY_LIGHT</supports>
+	</element>
+	<element name="Weapon Proficiency (Shortsword)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTSWORD">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_FINESSE, ID_INTERNAL_WEAPON_PROPERTY_LIGHT, ID_INTERNAL_WEAPON_GROUP_SWORDS</supports>
+	</element>
+	<element name="Weapon Proficiency (Trident)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_TRIDENT">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_THROWN, ID_INTERNAL_WEAPON_PROPERTY_VERSATILE</supports>
+	</element>
+	<element name="Weapon Proficiency (War Pick)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_WAR_PICK">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING</supports>
+	</element>
+	<element name="Weapon Proficiency (Warhammer)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_WARHAMMER">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_BLUDGEONING, ID_INTERNAL_WEAPON_PROPERTY_VERSATILE, ID_INTERNAL_WEAPON_GROUP_HAMMERS</supports>
+	</element>
+	<element name="Weapon Proficiency (Whip)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_WHIP">
+		<supports>Weapon, Martial, Melee, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE, ID_INTERNAL_DAMAGE_TYPE_SLASHING, ID_INTERNAL_WEAPON_PROPERTY_FINESSE, ID_INTERNAL_WEAPON_PROPERTY_REACH</supports>
+	</element>
+	<element name="Weapon Proficiency (Blowgun)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_BLOWGUN">
+		<supports>Weapon, Martial, Ranged, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION, ID_INTERNAL_WEAPON_PROPERTY_LOADING</supports>
+	</element>
+	<element name="Weapon Proficiency (Crossbow, Hand)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HAND">
+		<supports>Weapon, Martial, Ranged, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED,ID_INTERNAL_DAMAGE_TYPE_PIERCING,ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION,ID_INTERNAL_WEAPON_PROPERTY_LIGHT,ID_INTERNAL_WEAPON_PROPERTY_LOADING, ID_INTERNAL_WEAPON_GROUP_CROSSBOWS</supports>
+		<sheet name="Crossbow (hand)" />
+	</element>
+	<element name="Weapon Proficiency (Crossbow, Heavy)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HEAVY">
+		<supports>Weapon, Martial, Ranged, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_LOADING, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_CROSSBOWS</supports>
+	</element>
+	<element name="Weapon Proficiency (Longbow)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGBOW">
+		<supports>Weapon, Martial, Ranged, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED, ID_INTERNAL_DAMAGE_TYPE_PIERCING, ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION, ID_INTERNAL_WEAPON_PROPERTY_HEAVY, ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED, ID_INTERNAL_WEAPON_GROUP_BOWS</supports>
+	</element>
+	<element name="Weapon Proficiency (Net)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_NET">
+		<supports>Weapon, Martial, Ranged, ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED, ID_INTERNAL_WEAPON_PROPERTY_SPECIAL, ID_INTERNAL_WEAPON_PROPERTY_SPECIAL_NET, ID_INTERNAL_WEAPON_PROPERTY_THROWN</supports>
+	</element>
+	<element name="Weapon Proficiency (Swords)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_SWORDS">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATSWORD" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGSWORD" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTSWORD" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Axes)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_AXES">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_HANDAXE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_BATTLEAXE" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATAXE" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Maces)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_MACES">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MACE" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Hammers)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_HAMMERS">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LIGHT_HAMMER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_WARHAMMER" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Mauls)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_MAULS">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MAUL" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Bows)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_BOWS">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SHORTBOW" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_LONGBOW" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Crossbows)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_CROSSBOWS">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_LIGHT" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HAND" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CROSSBOW_HEAVY" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Spears)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_SPEARS">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SPEAR" />
+		</rules>
+	</element>
+	<element name="Weapon Proficiency (Clubs)" type="Proficiency" source="Player’s Handbook" id="ID_INTERNAL_PROFICIENCY_GROUP_CLUBS">
+		<supports>ID_INTERNAL_PROFICIENCY_WEAPON, ID_INTERNAL_PROFICIENCY_GROUP</supports>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_CLUB" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_GREATCLUB" />
+		</rules>
+	</element>
+</elements>

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Publication audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/audit-public-tree.mjs --strict
+
+  build-and-test:
+    name: Build, lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+      - run: npm run sheets:check
+      - run: npm run client:lint
+      - run: npm run client:test
+      - run: npm run client:build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run verify:browser
+
+  corpus:
+    name: Corpus-backed checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: third-party/elements/testdata
+          key: corpus-${{ hashFiles('third-party/elements/testdata.manifest.sha256') }}
+      - run: npm run corpus:fetch
+      - run: npm run build
+      - run: npm run test:coverage
+      - run: npm run coverage:gate
+      - run: npm run content:check-srd

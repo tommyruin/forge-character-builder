@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Darkvision" type="Vision" source="Player’s Handbook" id="ID_VISION_DARKVISION">
+		<description>
+			<p>Many creatures in the worlds of D&amp;D, especially those that dwell underground, have darkvision. Within a specified range, a creature with darkvision can see in darkness as if the darkness were dim light, so areas of darkness are only lightly obscured as far as that creature is concerned. However, the creature can’t discern color in darkness, only shades of gray.</p>
+		</description>
+		<sheet>
+			<description>You can see in dim light within {{darkvision:range}} feet of you as if it were bright light, and in darkness as if it were dim light.</description>
+		</sheet>
+		<rules>
+			<stat name="darkvision:range" value="60" bonus="base" />
+		</rules>
+	</element>
+	<element name="Superior Darkvision" type="Vision" source="Player’s Handbook" id="ID_VISION_SUPERIORDARKVISION">
+		<description>
+			<p>Many creatures in the worlds of D&amp;D, especially those that dwell underground, have darkvision. Within a specified range, a creature with darkvision can see in darkness as if the darkness were dim light, so areas of darkness are only lightly obscured as far as that creature is concerned. However, the creature can’t discern color in darkness, only shades of gray.</p>
+		</description>
+		<sheet>
+			<description>You can see in dim light within {{superior darkvision:range}} feet of you as if it were bright light, and in darkness as if it were dim light.</description>
+		</sheet>
+		<rules>
+			<stat name="superior darkvision:range" value="120" bonus="base" />
+		</rules>
+	</element>
+	<element name="Blindsight" type="Vision" source="Player’s Handbook" id="ID_VISION_BLINDSIGHT">
+		<description>
+			<p>A creature with blindsight can perceive its surroundings without relying on sight, within a specific radius. Creatures without eyes, such as oozes, and creatures with echolocation or heightened senses, such as bats and true dragons, have this sense.</p>
+		</description>
+		<sheet>
+			<description>You perceive your surroundings without relying on sight, within a specific radius.</description>
+		</sheet>
+	</element>
+	<element name="Truesight" type="Vision" source="Player’s Handbook" id="ID_VISION_TRUESIGHT">
+		<description>
+			<p>A creature with truesight can, out to a specific range, see in normal and magical darkness, see invisible creatures and objects, automatically detect visual illusions and succeed on saving throws against them, and perceives the original form of a shapechanger or a creature that is transformed by magic. Furthermore, the creature can see into the Ethereal Plane.</p>
+		</description>
+		<sheet>
+			<description>You can, out to a specific range, see in normal and magical darkness, see invisible creatures and objects, automatically detect visual illusions and succeed on saving throws against them, and perceives the original form of a shapechanger or a creature that is transformed by magic. Furthermore, the creature can see into the Ethereal Plane.</description>
+		</sheet>
+	</element>
+</elements>

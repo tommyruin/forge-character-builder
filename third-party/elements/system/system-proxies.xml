@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Authored system elements: identities + descriptions. These elements are
+  ingest-generated; the subset referenced by saved characters is authored here
+  so those characters load without issues. Also carries the internal option
+  descriptions (public SRD text).
+  Ingest order: this file sorts after system-elements.xml, so its
+  definitions win for the same ids.
+-->
+<elements>
+	<element name="Average Hit Points" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_AVERAGE_HP">
+		<description>
+			<p>The character is awarded the average amount of hit points based on their hit dice.</p>
+		</description>
+	</element>
+	<element name="Feats" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_FEATS">
+		<description>
+			<p>A feat represents a talent or an area of expertise that gives a character special capabilities. It embodies training, experience, and abilities beyond what a class provides.</p>
+			<p class="indent">At certain levels, your class gives you the Ability Score Improvement feature. Using the optional feats rule, you can forgo taking that feature to take a feat of your choice instead. You can take each feat only once, unless the feat’s description says otherwise.</p>
+			<p class="indent">You must meet any prerequisite specified in a feat to take that feat. If you ever lose a feat’s prerequisite, you can’t use that feat until you regain the prerequisite. For example, the Grappler feat requires you to have a Strength of 13 or higher. If your Strength is reduced below 13 somehow—perhaps by a withering curse— you can’t benefit from the Grappler feat until your Strength is restored.</p>
+		</description>
+	</element>
+	<element name="Multiclassing" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_MULTICLASSING">
+		<description>
+			<p>Multiclassing allows you to gain levels in multiple classes. Doing so lets you mix the abilities of those classes to realize a character concept that might not be reflected in one of the standard class options.</p>
+			<p class="indent">With this rule, you have the option of gaining a level in a new class whenever you advance in level, instead of gaining a level in your current class. Your levels in all your classes are added together to determine your character level. For example, if you have three levels in wizard and two in fighter, you’re a 5th-level character.</p>
+			<p class="indent">As you advance in levels, you might primarily remain a member of your original class with just a few levels in another class, or you might change course entirely, never looking back at the class you left behind. You might even start progressing in a third or fourth class. Compared to a single-class character of the same level, you’ll sacrifice some focus in exchange for versatility.</p>
+			<p class="indent">To qualify for a new class, you must meet the ability score prerequisites for both your current class and your new one.</p>
+		</description>
+	</element>
+	<element name="Spell Points" type="Option" source="Internal" id="ID_INTERNAL_OPTION_ALLOW_SPELL_POINTS">
+		<description>
+			<p>Use one pool of spell points in place of the spell slots granted by the Spellcasting feature. Pact Magic remains separate and continues to use spell slots.</p>
+		</description>
+	</element>
+	<element name="Additional Proficiency, Weapon Proficiency (Pistol, Automatic)" type="Item" source="Dungeon Master’s Guide" id="ID_DMG_INTERNAL_ITEM_PROFICIENCY_PROXY_PROFICIENCY_WEAPON_MODERN_FIREARMS_PISTOL_AUTOMATIC">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+			<div class="reference">
+				<div element="ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_PISTOL_AUTOMATIC" />
+			</div>
+		</description>
+	
+		<rules>
+			<grant type="Proficiency" id="ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_PISTOL_AUTOMATIC" />
+		</rules>
+	</element>
+	<element name="Additional Proficiency, Weapon Proficiency (Shotgun)" type="Item" source="Dungeon Master’s Guide" id="ID_DMG_INTERNAL_ITEM_PROFICIENCY_PROXY_PROFICIENCY_WEAPON_MODERN_FIREARMS_SHOTGUN">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+			<div class="reference">
+				<div element="ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_SHOTGUN" />
+			</div>
+		</description>
+	
+		<rules>
+			<grant type="Proficiency" id="ID_WOTC_DMG_PROFICIENCY_WEAPON_MODERN_FIREARMS_SHOTGUN" />
+		</rules>
+	</element>
+	<element name="Additional Proficiency, Weapon Proficiency (Pistol)" type="Item" source="Dungeon Master’s Guide" id="ID_DMG_INTERNAL_ITEM_PROFICIENCY_PROXY_PROFICIENCY_WEAPON_RENAISSANCE_FIREARMS_PISTOL">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+			<div class="reference">
+				<div element="ID_WOTC_DMG_PROFICIENCY_WEAPON_RENAISSANCE_FIREARMS_PISTOL" />
+			</div>
+		</description>
+	
+		<rules>
+			<grant type="Proficiency" id="ID_WOTC_DMG_PROFICIENCY_WEAPON_RENAISSANCE_FIREARMS_PISTOL" />
+		</rules>
+	</element>
+	<element name="Additional Spell, Fog Cloud" type="Item" source="Player’s Handbook" id="ID_PHB_INTERNAL_ITEM__SPELL_PROXY_SPELL_FOG_CLOUD">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+			<div class="reference">
+				<div element="ID_PHB_SPELL_FOG_CLOUD" />
+			</div>
+		</description>
+	
+		<rules>
+			<grant type="Spell" id="ID_PHB_SPELL_FOG_CLOUD" />
+		</rules>
+	</element>
+	<element name="Additional Spell, Invisibility" type="Item" source="Player’s Handbook" id="ID_PHB_INTERNAL_ITEM__SPELL_PROXY_SPELL_INVISIBILITY">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+			<div class="reference">
+				<div element="ID_PHB_SPELL_INVISIBILITY" />
+			</div>
+		</description>
+	
+		<rules>
+			<grant type="Spell" id="ID_PHB_SPELL_INVISIBILITY" />
+		</rules>
+	</element>
+	<element name="Additional Spell, Pass without Trace" type="Item" source="Player’s Handbook" id="ID_PHB_INTERNAL_ITEM__SPELL_PROXY_SPELL_PASS_WITHOUT_TRACE">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+			<div class="reference">
+				<div element="ID_PHB_SPELL_PASS_WITHOUT_TRACE" />
+			</div>
+		</description>
+	
+		<rules>
+			<grant type="Spell" id="ID_PHB_SPELL_PASS_WITHOUT_TRACE" />
+		</rules>
+	</element>
+	<element name="Additional Feat, Fighting Initiate" type="Item" source="Unearthed Arcana: Feats (2020)" id="ID_UA20200713_INTERNAL_ITEM_FEAT_PROXY_FIGHTING_INITIATE">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+			<div class="reference">
+				<div element="ID_WOTC_UA20200713_FEAT_FIGHTING_INITIATE" />
+			</div>
+		</description>
+	
+		<rules>
+			<grant type="Feat" id="ID_WOTC_UA20200713_FEAT_FIGHTING_INITIATE" />
+		</rules>
+	</element>
+	<element name="Companion Selection" type="Item" source="Player’s Handbook" id="ID_INTERNAL_ITEM_PROXY_COMPANION_SELECTION">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+		</description>
+	</element>
+	<element name="Familiar Selection" type="Item" source="Player’s Handbook" id="ID_INTERNAL_ITEM_PROXY_FAMILIAR_SELECTION">
+		<description>
+			<p><em>You can equip this item to “enable” it. It remains hidden from the inventory on your character sheet.</em></p>
+		</description>
+	</element>
+</elements>

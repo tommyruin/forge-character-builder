@@ -1,0 +1,5228 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "title": "System Reference Document 5.2.1",
+    "url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf",
+    "sha256": "8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87",
+    "bytes": 6031375,
+    "pages": 364
+  },
+  "generator": "scripts/extract-srd-inventory.mjs",
+  "chapters": {
+    "classes": [
+      {
+        "name": "Barbarian",
+        "page": 28
+      },
+      {
+        "name": "Bard",
+        "page": 31
+      },
+      {
+        "name": "Cleric",
+        "page": 36
+      },
+      {
+        "name": "Druid",
+        "page": 40
+      },
+      {
+        "name": "Fighter",
+        "page": 47
+      },
+      {
+        "name": "Monk",
+        "page": 49
+      },
+      {
+        "name": "Paladin",
+        "page": 53
+      },
+      {
+        "name": "Ranger",
+        "page": 56
+      },
+      {
+        "name": "Rogue",
+        "page": 61
+      },
+      {
+        "name": "Sorcerer",
+        "page": 64
+      },
+      {
+        "name": "Warlock",
+        "page": 69
+      },
+      {
+        "name": "Wizard",
+        "page": 77
+      }
+    ],
+    "subclasses": [
+      {
+        "name": "Champion",
+        "class": "Fighter",
+        "page": 49
+      },
+      {
+        "name": "Circle of the Land",
+        "class": "Druid",
+        "page": 46
+      },
+      {
+        "name": "College of Lore",
+        "class": "Bard",
+        "page": 35
+      },
+      {
+        "name": "Draconic Sorcery",
+        "class": "Sorcerer",
+        "page": 69
+      },
+      {
+        "name": "Evoker",
+        "class": "Wizard",
+        "page": 82
+      },
+      {
+        "name": "Fiend Patron",
+        "class": "Warlock",
+        "page": 76
+      },
+      {
+        "name": "Hunter",
+        "class": "Ranger",
+        "page": 61
+      },
+      {
+        "name": "Life Domain",
+        "class": "Cleric",
+        "page": 40
+      },
+      {
+        "name": "Oath of Devotion",
+        "class": "Paladin",
+        "page": 56
+      },
+      {
+        "name": "Path of the Berserker",
+        "class": "Barbarian",
+        "page": 30
+      },
+      {
+        "name": "Thief",
+        "class": "Rogue",
+        "page": 64
+      },
+      {
+        "name": "Warrior of the Open Hand",
+        "class": "Monk",
+        "page": 52
+      }
+    ],
+    "backgrounds": [
+      {
+        "name": "Acolyte",
+        "page": 83
+      },
+      {
+        "name": "Criminal",
+        "page": 83
+      },
+      {
+        "name": "Sage",
+        "page": 83
+      },
+      {
+        "name": "Soldier",
+        "page": 83
+      }
+    ],
+    "species": [
+      {
+        "name": "Dragonborn",
+        "page": 84
+      },
+      {
+        "name": "Dwarf",
+        "page": 84
+      },
+      {
+        "name": "Elf",
+        "page": 84
+      },
+      {
+        "name": "Gnome",
+        "page": 85
+      },
+      {
+        "name": "Goliath",
+        "page": 85
+      },
+      {
+        "name": "Halfling",
+        "page": 86
+      },
+      {
+        "name": "Human",
+        "page": 86
+      },
+      {
+        "name": "Orc",
+        "page": 86
+      },
+      {
+        "name": "Tiefling",
+        "page": 86
+      }
+    ],
+    "feats": [
+      {
+        "name": "Ability Score Improvement",
+        "page": 87,
+        "subtitle": "General Feat (Prerequisite: Level 4+)"
+      },
+      {
+        "name": "Alert",
+        "page": 87,
+        "subtitle": "Origin Feat"
+      },
+      {
+        "name": "Archery",
+        "page": 87,
+        "subtitle": "Fighting Style Feat (Prerequisite: Fighting Style"
+      },
+      {
+        "name": "Boon of Combat Prowess",
+        "page": 88,
+        "subtitle": "Epic Boon Feat (Prerequisite: Level 19+)"
+      },
+      {
+        "name": "Boon of Dimensional Travel",
+        "page": 88,
+        "subtitle": "Epic Boon Feat (Prerequisite: Level 19+)"
+      },
+      {
+        "name": "Boon of Fate",
+        "page": 88,
+        "subtitle": "Epic Boon Feat (Prerequisite: Level 19+)"
+      },
+      {
+        "name": "Boon of Irresistible Offense",
+        "page": 88,
+        "subtitle": "Epic Boon Feat (Prerequisite: Level 19+)"
+      },
+      {
+        "name": "Boon of Spell Recall",
+        "page": 88,
+        "subtitle": "Epic Boon Feat (Prerequisite: Level 19+, Spellcasting"
+      },
+      {
+        "name": "Boon of the Night Spirit",
+        "page": 88,
+        "subtitle": "Epic Boon Feat (Prerequisite: Level 19+)"
+      },
+      {
+        "name": "Boon of Truesight",
+        "page": 88,
+        "subtitle": "Epic Boon Feat (Prerequisite: Level 19+)"
+      },
+      {
+        "name": "Defense",
+        "page": 88,
+        "subtitle": "Fighting Style Feat (Prerequisite: Fighting Style"
+      },
+      {
+        "name": "Grappler",
+        "page": 87,
+        "subtitle": "General Feat (Prerequisite: Level 4+, Strength or"
+      },
+      {
+        "name": "Great Weapon Fighting",
+        "page": 88,
+        "subtitle": "Fighting Style Feat (Prerequisite: Fighting Style"
+      },
+      {
+        "name": "Magic Initiate",
+        "page": 87,
+        "subtitle": "Origin Feat"
+      },
+      {
+        "name": "Savage Attacker",
+        "page": 87,
+        "subtitle": "Origin Feat"
+      },
+      {
+        "name": "Skilled",
+        "page": 87,
+        "subtitle": "Origin Feat"
+      },
+      {
+        "name": "Two-Weapon Fighting",
+        "page": 88,
+        "subtitle": "Fighting Style Feat (Prerequisite: Fighting Style"
+      }
+    ],
+    "metamagicOptions": [
+      {
+        "name": "Careful Spell",
+        "page": 66,
+        "subtitle": "Cost: 1 Sorcery Point"
+      },
+      {
+        "name": "Distant Spell",
+        "page": 67,
+        "subtitle": "Cost: 1 Sorcery Point"
+      },
+      {
+        "name": "Empowered Spell",
+        "page": 67,
+        "subtitle": "Cost: 1 Sorcery Point"
+      },
+      {
+        "name": "Extended Spell",
+        "page": 67,
+        "subtitle": "Cost: 1 Sorcery Point"
+      },
+      {
+        "name": "Heightened Spell",
+        "page": 67,
+        "subtitle": "Cost: 2 Sorcery Points"
+      },
+      {
+        "name": "Quickened Spell",
+        "page": 67,
+        "subtitle": "Cost: 2 Sorcery Points"
+      },
+      {
+        "name": "Seeking Spell",
+        "page": 67,
+        "subtitle": "Cost: 1 Sorcery Point"
+      },
+      {
+        "name": "Subtle Spell",
+        "page": 67,
+        "subtitle": "Cost: 1 Sorcery Point"
+      },
+      {
+        "name": "Transmuted Spell",
+        "page": 67,
+        "subtitle": "Cost: 1 Sorcery Point"
+      },
+      {
+        "name": "Twinned Spell",
+        "page": 67,
+        "subtitle": "Cost: 1 Sorcery Point"
+      }
+    ],
+    "eldritchInvocations": [
+      {
+        "name": "Agonizing Blast",
+        "page": 72,
+        "subtitle": "Prerequisite: Level 2+ Warlock, a Warlock Cantrip"
+      },
+      {
+        "name": "Armor of Shadows",
+        "page": 72,
+        "subtitle": "You can castMage Armoron yourself without ex-"
+      },
+      {
+        "name": "Ascendant Step",
+        "page": 72,
+        "subtitle": "Prerequisite: Level 5+ Warlock"
+      },
+      {
+        "name": "Devil’s Sight",
+        "page": 72,
+        "subtitle": "Prerequisite: Level 2+ Warlock"
+      },
+      {
+        "name": "Devouring Blade",
+        "page": 72,
+        "subtitle": "Prerequisite: Level 12+ Warlock, Thirsting Blade"
+      },
+      {
+        "name": "Eldritch Mind",
+        "page": 72,
+        "subtitle": "You have Advantage on Constitution saving throws"
+      },
+      {
+        "name": "Eldritch Smite",
+        "page": 72,
+        "subtitle": "Prerequisite: Level 5+ Warlock, Pact of the Blade"
+      },
+      {
+        "name": "Eldritch Spear",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 2+ Warlock, a Warlock Cantrip"
+      },
+      {
+        "name": "Fiendish Vigor",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 2+ Warlock"
+      },
+      {
+        "name": "Gaze of Two Minds",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 5+ Warlock"
+      },
+      {
+        "name": "Gift of the Depths",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 5+ Warlock"
+      },
+      {
+        "name": "Gift of the Protectors",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 9+ Warlock, Pact of the Tome"
+      },
+      {
+        "name": "Investment of the Chain Master",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 5+ Warlock, Pact of the Chain"
+      },
+      {
+        "name": "Lessons of the First Ones",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 2+ Warlock"
+      },
+      {
+        "name": "Lifedrinker",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 9+ Warlock, Pact of the Blade"
+      },
+      {
+        "name": "Mask of Many Faces",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 2+ Warlock"
+      },
+      {
+        "name": "Master of Myriad Forms",
+        "page": 73,
+        "subtitle": "Prerequisite: Level 5+ Warlock"
+      },
+      {
+        "name": "Misty Visions",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 2+ Warlock"
+      },
+      {
+        "name": "One with Shadows",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 5+ Warlock"
+      },
+      {
+        "name": "Otherworldly Leap",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 2+ Warlock"
+      },
+      {
+        "name": "Pact of the Blade",
+        "page": 74,
+        "subtitle": "As a Bonus Action, you can conjure a pact weapon"
+      },
+      {
+        "name": "Pact of the Chain",
+        "page": 74,
+        "subtitle": "You learn theFind Familiarspell and can cast it as a"
+      },
+      {
+        "name": "Pact of the Tome",
+        "page": 74,
+        "subtitle": "Stitching together strands of shadow, you conjure"
+      },
+      {
+        "name": "Repelling Blast",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 2+ Warlock, a Warlock Cantrip"
+      },
+      {
+        "name": "Thirsting Blade",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 5+ Warlock, Pact of the Blade"
+      },
+      {
+        "name": "Visions of Distant Realms",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 9+ Warlock"
+      },
+      {
+        "name": "Whispers of the Grave",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 7+ Warlock"
+      },
+      {
+        "name": "Witch Sight",
+        "page": 74,
+        "subtitle": "Prerequisite: Level 15+ Warlock"
+      }
+    ],
+    "weaponProperties": [
+      {
+        "name": "Ammunition",
+        "page": 89,
+        "subtitle": "You can use a weapon that has the Ammunition"
+      },
+      {
+        "name": "Finesse",
+        "page": 89,
+        "subtitle": "When making an attack with a Finesse weapon, use"
+      },
+      {
+        "name": "Heavy",
+        "page": 89,
+        "subtitle": "You have Disadvantage on attack rolls with a Heavy"
+      },
+      {
+        "name": "Light",
+        "page": 89,
+        "subtitle": "When you take the Attack action on your turn and"
+      },
+      {
+        "name": "Loading",
+        "page": 90,
+        "subtitle": "You can fire only one piece of ammunition from a"
+      },
+      {
+        "name": "Range",
+        "page": 90,
+        "subtitle": "A Range weapon has a range in parentheses after"
+      },
+      {
+        "name": "Reach",
+        "page": 90,
+        "subtitle": "A Reach weapon adds 5 feet to your reach when you"
+      },
+      {
+        "name": "Thrown",
+        "page": 90,
+        "subtitle": "If a weapon has the Thrown property, you can"
+      },
+      {
+        "name": "Two-Handed",
+        "page": 90,
+        "subtitle": "A Two-Handed weapon requires two hands when"
+      },
+      {
+        "name": "Versatile",
+        "page": 90,
+        "subtitle": "A Versatile weapon can be used with one or two"
+      }
+    ],
+    "masteryProperties": [
+      {
+        "name": "Cleave",
+        "page": 90,
+        "subtitle": "If you hit a creature with a melee attack roll using"
+      },
+      {
+        "name": "Graze",
+        "page": 90,
+        "subtitle": "If your attack roll with this weapon misses a crea-"
+      },
+      {
+        "name": "Nick",
+        "page": 90,
+        "subtitle": "When you make the extra attack of the Light prop-"
+      },
+      {
+        "name": "Push",
+        "page": 90,
+        "subtitle": "If you hit a creature with this weapon, you can push"
+      },
+      {
+        "name": "Sap",
+        "page": 90,
+        "subtitle": "If you hit a creature with this weapon, that creature"
+      },
+      {
+        "name": "Slow",
+        "page": 90,
+        "subtitle": "If you hit a creature with this weapon and deal"
+      },
+      {
+        "name": "Topple",
+        "page": 90,
+        "subtitle": "If you hit a creature with this weapon, you can force"
+      },
+      {
+        "name": "Vex",
+        "page": 90,
+        "subtitle": "If you hit a creature with this weapon and deal dam-"
+      }
+    ],
+    "equipment": [
+      {
+        "name": "Acid",
+        "page": 95,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Airship",
+        "page": 101,
+        "cost": "40,000 GP"
+      },
+      {
+        "name": "Alchemist’s Fire",
+        "page": 95,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Alchemist’s Supplies",
+        "page": 93,
+        "subtitle": "Ability:IntelligenceWeight:8 lb.",
+        "cost": "50 GP"
+      },
+      {
+        "name": "Amulet (worn or held)",
+        "page": 97,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Antitoxin",
+        "page": 95,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Arrows",
+        "page": 96,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Backpack",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Ball Bearings",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Barrel",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Basket",
+        "page": 95,
+        "cost": "4 SP"
+      },
+      {
+        "name": "Battleaxe",
+        "page": 91,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Bedroll",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Bell",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Blanket",
+        "page": 95,
+        "cost": "5 SP"
+      },
+      {
+        "name": "Block and Tackle",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Blowgun",
+        "page": 91,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Bolts",
+        "page": 96,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Book",
+        "page": 95,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Bottle, Glass",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Breastplate",
+        "page": 92,
+        "cost": "400 GP"
+      },
+      {
+        "name": "Brewer’s Supplies",
+        "page": 93,
+        "subtitle": "Ability:IntelligenceWeight:9 lb.",
+        "cost": "20 GP"
+      },
+      {
+        "name": "Bucket",
+        "page": 95,
+        "cost": "5 CP"
+      },
+      {
+        "name": "Bullets, Firearm",
+        "page": 96,
+        "cost": "3 GP"
+      },
+      {
+        "name": "Bullets, Sling",
+        "page": 96,
+        "cost": "4 CP"
+      },
+      {
+        "name": "Burglar’s Pack",
+        "page": 95,
+        "cost": "16 GP"
+      },
+      {
+        "name": "Calligrapher’s Supplies",
+        "page": 93,
+        "subtitle": "Ability:DexterityWeight:5 lb.",
+        "cost": "10 GP"
+      },
+      {
+        "name": "Caltrops",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Camel",
+        "page": 100,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Candle",
+        "page": 95,
+        "cost": "1 CP"
+      },
+      {
+        "name": "Carpenter’s Tools",
+        "page": 93,
+        "subtitle": "Ability:StrengthWeight:6 lb.",
+        "cost": "8 GP"
+      },
+      {
+        "name": "Carriage",
+        "page": 100,
+        "cost": "100 GP"
+      },
+      {
+        "name": "Cart",
+        "page": 100,
+        "cost": "15 GP"
+      },
+      {
+        "name": "Cartographer’s Tools",
+        "page": 93,
+        "subtitle": "Ability:WisdomWeight:6 lb.",
+        "cost": "15 GP"
+      },
+      {
+        "name": "Case, Crossbow Bolt",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Case, Map or Scroll",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Chain",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Chain Mail",
+        "page": 92,
+        "cost": "75 GP"
+      },
+      {
+        "name": "Chain Shirt",
+        "page": 92,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Chariot",
+        "page": 100,
+        "cost": "250 GP"
+      },
+      {
+        "name": "Chest",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Climber’s Kit",
+        "page": 95,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Clothes, Fine",
+        "page": 95,
+        "cost": "15 GP"
+      },
+      {
+        "name": "Clothes, Traveler’s",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Club",
+        "page": 91,
+        "cost": "1 SP"
+      },
+      {
+        "name": "Cobbler’s Tools",
+        "page": 93,
+        "subtitle": "Ability:DexterityWeight:5 lb.",
+        "cost": "5 GP"
+      },
+      {
+        "name": "Component Pouch",
+        "page": 95,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Cook’s Utensils",
+        "page": 93,
+        "subtitle": "Ability:WisdomWeight:8 lb.",
+        "cost": "1 GP"
+      },
+      {
+        "name": "Costume",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Crowbar",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Crystal",
+        "page": 96,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Dagger",
+        "page": 91,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Dart",
+        "page": 91,
+        "cost": "5 CP"
+      },
+      {
+        "name": "Diplomat’s Pack",
+        "page": 95,
+        "cost": "39 GP"
+      },
+      {
+        "name": "Disguise Kit",
+        "page": 94,
+        "subtitle": "Ability:CharismaWeight:3 lb.",
+        "cost": "25 GP"
+      },
+      {
+        "name": "Dungeoneer’s Pack",
+        "page": 95,
+        "cost": "12 GP"
+      },
+      {
+        "name": "Elephant",
+        "page": 100,
+        "cost": "200 GP"
+      },
+      {
+        "name": "Emblem (borne on fabric or a Shield)",
+        "page": 97,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Entertainer’s Pack",
+        "page": 95,
+        "cost": "40 GP"
+      },
+      {
+        "name": "Exotic",
+        "page": 100,
+        "cost": "60 GP"
+      },
+      {
+        "name": "Explorer’s Pack",
+        "page": 95,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Feed per day",
+        "page": 100,
+        "cost": "5 CP"
+      },
+      {
+        "name": "Flail",
+        "page": 91,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Flask",
+        "page": 95,
+        "cost": "2 CP"
+      },
+      {
+        "name": "Forgery Kit",
+        "page": 94,
+        "subtitle": "Ability:DexterityWeight:5 lb.",
+        "cost": "15 GP"
+      },
+      {
+        "name": "Galley",
+        "page": 101,
+        "cost": "30,000 GP"
+      },
+      {
+        "name": "Gaming Set",
+        "page": 94,
+        "subtitle": "Ability:WisdomWeight:—",
+        "cost": "Varies"
+      },
+      {
+        "name": "Glaive",
+        "page": 91,
+        "cost": "20 GP"
+      },
+      {
+        "name": "Glassblower’s Tools",
+        "page": 93,
+        "subtitle": "Ability:IntelligenceWeight:5 lb.",
+        "cost": "30 GP"
+      },
+      {
+        "name": "Grappling Hook",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Greataxe",
+        "page": 91,
+        "cost": "30 GP"
+      },
+      {
+        "name": "Greatclub",
+        "page": 91,
+        "cost": "2 SP"
+      },
+      {
+        "name": "Greatsword",
+        "page": 91,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Halberd",
+        "page": 91,
+        "cost": "20 GP"
+      },
+      {
+        "name": "Half Plate Armor",
+        "page": 92,
+        "cost": "750 GP"
+      },
+      {
+        "name": "Hand Crossbow",
+        "page": 91,
+        "cost": "75 GP"
+      },
+      {
+        "name": "Handaxe",
+        "page": 91,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Healer’s Kit",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Heavy Crossbow",
+        "page": 91,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Herbalism Kit",
+        "page": 94,
+        "subtitle": "Ability:IntelligenceWeight:3 lb.",
+        "cost": "5 GP"
+      },
+      {
+        "name": "Hide Armor",
+        "page": 92,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Holy Water",
+        "page": 95,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Horse, Draft",
+        "page": 100,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Horse, Riding",
+        "page": 100,
+        "cost": "75 GP"
+      },
+      {
+        "name": "Hunting Trap",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Ink",
+        "page": 95,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Ink Pen",
+        "page": 95,
+        "cost": "2 CP"
+      },
+      {
+        "name": "Javelin",
+        "page": 91,
+        "cost": "5 SP"
+      },
+      {
+        "name": "Jeweler’s Tools",
+        "page": 93,
+        "subtitle": "Ability:IntelligenceWeight:2 lb.",
+        "cost": "25 GP"
+      },
+      {
+        "name": "Jug",
+        "page": 95,
+        "cost": "2 CP"
+      },
+      {
+        "name": "Keelboat",
+        "page": 101,
+        "cost": "3,000 GP"
+      },
+      {
+        "name": "Ladder",
+        "page": 95,
+        "cost": "1 SP"
+      },
+      {
+        "name": "Lamp",
+        "page": 95,
+        "cost": "5 SP"
+      },
+      {
+        "name": "Lance",
+        "page": 91,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Lantern, Bullseye",
+        "page": 95,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Lantern, Hooded",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Leather Armor",
+        "page": 92,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Leatherworker’s Tools",
+        "page": 93,
+        "subtitle": "Ability:DexterityWeight:5 lb.",
+        "cost": "5 GP"
+      },
+      {
+        "name": "Light Crossbow",
+        "page": 91,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Light Hammer",
+        "page": 91,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Lock",
+        "page": 95,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Longbow",
+        "page": 91,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Longship",
+        "page": 101,
+        "cost": "10,000 GP"
+      },
+      {
+        "name": "Longsword",
+        "page": 91,
+        "cost": "15 GP"
+      },
+      {
+        "name": "Mace",
+        "page": 91,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Magnifying Glass",
+        "page": 95,
+        "cost": "100 GP"
+      },
+      {
+        "name": "Manacles",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Map",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Mason’s Tools",
+        "page": 93,
+        "subtitle": "Ability:StrengthWeight:8 lb.",
+        "cost": "10 GP"
+      },
+      {
+        "name": "Mastiff",
+        "page": 100,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Maul",
+        "page": 91,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Military",
+        "page": 100,
+        "cost": "20 GP"
+      },
+      {
+        "name": "Mirror",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Morningstar",
+        "page": 91,
+        "cost": "15 GP"
+      },
+      {
+        "name": "Mule",
+        "page": 100,
+        "cost": "8 GP"
+      },
+      {
+        "name": "Musical Instrument",
+        "page": 94,
+        "subtitle": "Ability:CharismaWeight:Varies",
+        "cost": "Varies"
+      },
+      {
+        "name": "Musket",
+        "page": 91,
+        "cost": "500 GP"
+      },
+      {
+        "name": "Navigator’s Tools",
+        "page": 94,
+        "subtitle": "Ability:WisdomWeight:2 lb.",
+        "cost": "25 GP"
+      },
+      {
+        "name": "Needles",
+        "page": 96,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Net",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Oil",
+        "page": 95,
+        "cost": "1 SP"
+      },
+      {
+        "name": "Orb",
+        "page": 96,
+        "cost": "20 GP"
+      },
+      {
+        "name": "Padded Armor",
+        "page": 92,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Painter’s Supplies",
+        "page": 93,
+        "subtitle": "Ability:WisdomWeight:5 lb.",
+        "cost": "10 GP"
+      },
+      {
+        "name": "Paper",
+        "page": 95,
+        "cost": "2 SP"
+      },
+      {
+        "name": "Parchment",
+        "page": 95,
+        "cost": "1 SP"
+      },
+      {
+        "name": "Perfume",
+        "page": 95,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Pike",
+        "page": 91,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Pistol",
+        "page": 91,
+        "cost": "250 GP"
+      },
+      {
+        "name": "Plate Armor",
+        "page": 92,
+        "cost": "1,500 GP"
+      },
+      {
+        "name": "Poison, Basic",
+        "page": 95,
+        "cost": "100 GP"
+      },
+      {
+        "name": "Poisoner’s Kit",
+        "page": 94,
+        "subtitle": "Ability:IntelligenceWeight:2 lb.",
+        "cost": "50 GP"
+      },
+      {
+        "name": "Pole",
+        "page": 95,
+        "cost": "5 CP"
+      },
+      {
+        "name": "Pony",
+        "page": 100,
+        "cost": "30 GP"
+      },
+      {
+        "name": "Pot, Iron",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Potion of Healing",
+        "page": 95,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Potter’s Tools",
+        "page": 93,
+        "subtitle": "Ability:IntelligenceWeight:3 lb.",
+        "cost": "10 GP"
+      },
+      {
+        "name": "Pouch",
+        "page": 95,
+        "cost": "5 SP"
+      },
+      {
+        "name": "Priest’s Pack",
+        "page": 95,
+        "cost": "33 GP"
+      },
+      {
+        "name": "Quarterstaff",
+        "page": 91,
+        "cost": "2 SP"
+      },
+      {
+        "name": "Quiver",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Ram, Portable",
+        "page": 95,
+        "cost": "4 GP"
+      },
+      {
+        "name": "Rapier",
+        "page": 91,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Rations",
+        "page": 95,
+        "cost": "5 SP"
+      },
+      {
+        "name": "Reliquary (held)",
+        "page": 97,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Riding",
+        "page": 100,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Ring Mail",
+        "page": 92,
+        "cost": "30 GP"
+      },
+      {
+        "name": "Robe",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Rod",
+        "page": 96,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Rope",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Rowboat",
+        "page": 101,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Sack",
+        "page": 95,
+        "cost": "1 CP"
+      },
+      {
+        "name": "Sailing Ship",
+        "page": 101,
+        "cost": "10,000 GP"
+      },
+      {
+        "name": "Scale Mail",
+        "page": 92,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Scholar’s Pack",
+        "page": 95,
+        "cost": "40 GP"
+      },
+      {
+        "name": "Scimitar",
+        "page": 91,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Shield",
+        "page": 92,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Shortbow",
+        "page": 91,
+        "cost": "25 GP"
+      },
+      {
+        "name": "Shortsword",
+        "page": 91,
+        "cost": "10 GP"
+      },
+      {
+        "name": "Shovel",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Sickle",
+        "page": 91,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Signal Whistle",
+        "page": 95,
+        "cost": "5 CP"
+      },
+      {
+        "name": "Sled",
+        "page": 100,
+        "cost": "20 GP"
+      },
+      {
+        "name": "Sling",
+        "page": 91,
+        "cost": "1 SP"
+      },
+      {
+        "name": "Smith’s Tools",
+        "page": 93,
+        "subtitle": "Ability:StrengthWeight:8 lb.",
+        "cost": "20 GP"
+      },
+      {
+        "name": "Spear",
+        "page": 91,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Spell Scroll(Cantrip)",
+        "page": 95,
+        "cost": "30 GP"
+      },
+      {
+        "name": "Spell Scroll(Level 1)",
+        "page": 95,
+        "cost": "50 GP"
+      },
+      {
+        "name": "Spikes, Iron",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Splint Armor",
+        "page": 92,
+        "cost": "200 GP"
+      },
+      {
+        "name": "Sprig of mistletoe",
+        "page": 97,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Spyglass",
+        "page": 95,
+        "cost": "1,000 GP"
+      },
+      {
+        "name": "Stabling per day",
+        "page": 100,
+        "cost": "5 SP"
+      },
+      {
+        "name": "Staff (also a Quarterstaff)",
+        "page": 96,
+        "cost": "5 GP"
+      },
+      {
+        "name": "String",
+        "page": 95,
+        "cost": "1 SP"
+      },
+      {
+        "name": "Studded Leather Armor",
+        "page": 92,
+        "cost": "45 GP"
+      },
+      {
+        "name": "Tent",
+        "page": 95,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Thieves’ Tools",
+        "page": 94,
+        "subtitle": "Ability:DexterityWeight:1 lb.",
+        "cost": "25 GP"
+      },
+      {
+        "name": "Tinderbox",
+        "page": 95,
+        "cost": "5 SP"
+      },
+      {
+        "name": "Tinker’s Tools",
+        "page": 94,
+        "subtitle": "Ability:DexterityWeight:10 lb.",
+        "cost": "50 GP"
+      },
+      {
+        "name": "Torch",
+        "page": 95,
+        "cost": "1 CP"
+      },
+      {
+        "name": "Trident",
+        "page": 91,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Vial",
+        "page": 95,
+        "cost": "1 GP"
+      },
+      {
+        "name": "Wagon",
+        "page": 100,
+        "cost": "35 GP"
+      },
+      {
+        "name": "Wand",
+        "page": 96,
+        "cost": "10 GP"
+      },
+      {
+        "name": "War Pick",
+        "page": 91,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Warhammer",
+        "page": 91,
+        "cost": "15 GP"
+      },
+      {
+        "name": "Warhorse",
+        "page": 100,
+        "cost": "400 GP"
+      },
+      {
+        "name": "Warship",
+        "page": 101,
+        "cost": "25,000 GP"
+      },
+      {
+        "name": "Waterskin",
+        "page": 95,
+        "cost": "2 SP"
+      },
+      {
+        "name": "Weaver’s Tools",
+        "page": 94,
+        "subtitle": "Ability:DexterityWeight:5 lb.",
+        "cost": "1 GP"
+      },
+      {
+        "name": "Whip",
+        "page": 91,
+        "cost": "2 GP"
+      },
+      {
+        "name": "Woodcarver’s Tools",
+        "page": 94,
+        "subtitle": "Ability:DexterityWeight:5 lb.",
+        "cost": "1 GP"
+      },
+      {
+        "name": "Wooden staff (also a Quarterstaff)",
+        "page": 97,
+        "cost": "5 GP"
+      },
+      {
+        "name": "Yew wand",
+        "page": 97,
+        "cost": "10 GP"
+      }
+    ],
+    "languages": {
+      "page": 20,
+      "names": [
+        "Common",
+        "Common Sign Language",
+        "Draconic",
+        "Dwarvish",
+        "Elvish",
+        "Giant",
+        "Gnomish",
+        "Goblin",
+        "Halfling",
+        "Orc"
+      ]
+    },
+    "spells": [
+      {
+        "name": "Acid Arrow",
+        "page": 107,
+        "subtitle": "Level 2 Evocation (Wizard)"
+      },
+      {
+        "name": "Acid Splash",
+        "page": 107,
+        "subtitle": "Evocation Cantrip (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Aid",
+        "page": 107,
+        "subtitle": "Level 2 Abjuration (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Alarm",
+        "page": 107,
+        "subtitle": "Level 1 Abjuration (Ranger, Wizard)"
+      },
+      {
+        "name": "Alter Self",
+        "page": 107,
+        "subtitle": "Level 2 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Animal Friendship",
+        "page": 107,
+        "subtitle": "Level 1 Enchantment (Bard, Druid, Ranger)"
+      },
+      {
+        "name": "Animal Messenger",
+        "page": 108,
+        "subtitle": "Level 2 Enchantment (Bard, Druid, Ranger)"
+      },
+      {
+        "name": "Animal Shapes",
+        "page": 108,
+        "subtitle": "Level 8 Transmutation (Druid)"
+      },
+      {
+        "name": "Animate Dead",
+        "page": 108,
+        "subtitle": "Level 3 Necromancy (Cleric, Wizard)"
+      },
+      {
+        "name": "Animate Objects",
+        "page": 108,
+        "subtitle": "Level 5 Transmutation (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Antilife Shell",
+        "page": 109,
+        "subtitle": "Level 5 Abjuration (Druid)"
+      },
+      {
+        "name": "Antimagic Field",
+        "page": 109,
+        "subtitle": "Level 8 Abjuration (Cleric, Wizard)"
+      },
+      {
+        "name": "Antipathy/Sympathy",
+        "page": 109,
+        "subtitle": "Level 8 Enchantment (Bard, Druid, Wizard)"
+      },
+      {
+        "name": "Arcane Eye",
+        "page": 110,
+        "subtitle": "Level 4 Divination (Wizard)"
+      },
+      {
+        "name": "Arcane Hand",
+        "page": 110,
+        "subtitle": "Level 5 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Arcane Lock",
+        "page": 110,
+        "subtitle": "Level 2 Abjuration (Wizard)"
+      },
+      {
+        "name": "Arcane Sword",
+        "page": 110,
+        "subtitle": "Level 7 Evocation (Bard, Wizard)"
+      },
+      {
+        "name": "Arcanist’s Magic Aura",
+        "page": 110,
+        "subtitle": "Level 2 Illusion (Wizard)"
+      },
+      {
+        "name": "Astral Projection",
+        "page": 111,
+        "subtitle": "Level 9 Necromancy (Cleric, Warlock, Wizard)"
+      },
+      {
+        "name": "Augury",
+        "page": 111,
+        "subtitle": "Level 2 Divination (Cleric, Druid, Wizard)"
+      },
+      {
+        "name": "Aura of Life",
+        "page": 111,
+        "subtitle": "Level 4 Abjuration (Cleric, Paladin)"
+      },
+      {
+        "name": "Awaken",
+        "page": 111,
+        "subtitle": "Level 5 Transmutation (Bard, Druid)"
+      },
+      {
+        "name": "Bane",
+        "page": 112,
+        "subtitle": "Level 1 Enchantment (Bard, Cleric, Warlock)"
+      },
+      {
+        "name": "Banishment",
+        "page": 112,
+        "subtitle": "Level 4 Abjuration (Cleric, Paladin, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Barkskin",
+        "page": 112,
+        "subtitle": "Level 2 Transmutation (Druid, Ranger)"
+      },
+      {
+        "name": "Beacon of Hope",
+        "page": 112,
+        "subtitle": "Level 3 Abjuration (Cleric)"
+      },
+      {
+        "name": "Befuddlement",
+        "page": 112,
+        "subtitle": "Level 8 Enchantment (Bard, Druid, Warlock, Wizard)"
+      },
+      {
+        "name": "Bestow Curse",
+        "page": 112,
+        "subtitle": "Level 3 Necromancy (Bard, Cleric, Wizard)"
+      },
+      {
+        "name": "Black Tentacles",
+        "page": 113,
+        "subtitle": "Level 4 Conjuration (Wizard)"
+      },
+      {
+        "name": "Blade Barrier",
+        "page": 113,
+        "subtitle": "Level 6 Evocation (Cleric)"
+      },
+      {
+        "name": "Bless",
+        "page": 113,
+        "subtitle": "Level 1 Enchantment (Cleric, Paladin)"
+      },
+      {
+        "name": "Blight",
+        "page": 113,
+        "subtitle": "Level 4 Necromancy (Druid, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Blindness/Deafness",
+        "page": 113,
+        "subtitle": "Level 2 Transmutation (Bard, Cleric, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Blink",
+        "page": 113,
+        "subtitle": "Level 3 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Blur",
+        "page": 114,
+        "subtitle": "Level 2 Illusion (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Burning Hands",
+        "page": 114,
+        "subtitle": "Level 1 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Call Lightning",
+        "page": 114,
+        "subtitle": "Level 3 Conjuration (Druid)"
+      },
+      {
+        "name": "Calm Emotions",
+        "page": 114,
+        "subtitle": "Level 2 Enchantment (Bard, Cleric)"
+      },
+      {
+        "name": "Chain Lightning",
+        "page": 114,
+        "subtitle": "Level 6 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Charm Monster",
+        "page": 114,
+        "subtitle": "Level 4 Enchantment (Bard, Druid, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Charm Person",
+        "page": 115,
+        "subtitle": "Level 1 Enchantment (Bard, Druid, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Chill Touch",
+        "page": 115,
+        "subtitle": "Necromancy Cantrip (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Chromatic Orb",
+        "page": 115,
+        "subtitle": "Level 1 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Circle of Death",
+        "page": 115,
+        "subtitle": "Level 6 Necromancy (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Clairvoyance",
+        "page": 115,
+        "subtitle": "Level 3 Divination (Bard, Cleric, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Clone",
+        "page": 115,
+        "subtitle": "Level 8 Necromancy (Wizard)"
+      },
+      {
+        "name": "Cloudkill",
+        "page": 116,
+        "subtitle": "Level 5 Conjuration (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Color Spray",
+        "page": 116,
+        "subtitle": "Level 1 Illusion (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Command",
+        "page": 116,
+        "subtitle": "Level 1 Enchantment (Bard, Cleric, Paladin)"
+      },
+      {
+        "name": "Commune",
+        "page": 116,
+        "subtitle": "Level 5 Divination (Cleric)"
+      },
+      {
+        "name": "Commune with Nature",
+        "page": 116,
+        "subtitle": "Level 5 Divination (Druid, Ranger)"
+      },
+      {
+        "name": "Comprehend Languages",
+        "page": 117,
+        "subtitle": "Level 1 Divination (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Compulsion",
+        "page": 117,
+        "subtitle": "Level 4 Enchantment (Bard)"
+      },
+      {
+        "name": "Cone of Cold",
+        "page": 117,
+        "subtitle": "Level 5 Evocation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Confusion",
+        "page": 117,
+        "subtitle": "Level 4 Enchantment (Bard, Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Conjure Animals",
+        "page": 117,
+        "subtitle": "Level 3 Conjuration (Druid, Ranger)"
+      },
+      {
+        "name": "Conjure Celestial",
+        "page": 118,
+        "subtitle": "Level 7 Conjuration (Cleric)"
+      },
+      {
+        "name": "Conjure Elemental",
+        "page": 118,
+        "subtitle": "Level 5 Conjuration (Druid, Wizard)"
+      },
+      {
+        "name": "Conjure Fey",
+        "page": 118,
+        "subtitle": "Level 6 Conjuration (Druid)"
+      },
+      {
+        "name": "Conjure Minor Elementals",
+        "page": 118,
+        "subtitle": "Level 4 Conjuration (Druid, Wizard)"
+      },
+      {
+        "name": "Conjure Woodland Beings",
+        "page": 118,
+        "subtitle": "Level 4 Conjuration (Druid, Ranger)"
+      },
+      {
+        "name": "Contact Other Plane",
+        "page": 119,
+        "subtitle": "Level 5 Divination (Warlock, Wizard)"
+      },
+      {
+        "name": "Contagion",
+        "page": 119,
+        "subtitle": "Level 5 Necromancy (Cleric, Druid)"
+      },
+      {
+        "name": "Contingency",
+        "page": 119,
+        "subtitle": "Level 6 Abjuration (Wizard)"
+      },
+      {
+        "name": "Continual Flame",
+        "page": 119,
+        "subtitle": "Level 2 Evocation (Cleric, Druid, Wizard)"
+      },
+      {
+        "name": "Control Water",
+        "page": 119,
+        "subtitle": "Level 4 Transmutation (Cleric, Druid, Wizard)"
+      },
+      {
+        "name": "Control Weather",
+        "page": 120,
+        "subtitle": "Level 8 Transmutation (Cleric, Druid, Wizard)"
+      },
+      {
+        "name": "Counterspell",
+        "page": 120,
+        "subtitle": "Level 3 Abjuration (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Create Food and Water",
+        "page": 120,
+        "subtitle": "Level 3 Conjuration (Cleric, Paladin)"
+      },
+      {
+        "name": "Create or Destroy Water",
+        "page": 121,
+        "subtitle": "Level 1 Transmutation (Cleric, Druid)"
+      },
+      {
+        "name": "Create Undead",
+        "page": 121,
+        "subtitle": "Level 6 Necromancy (Cleric, Warlock, Wizard)"
+      },
+      {
+        "name": "Creation",
+        "page": 121,
+        "subtitle": "Level 5 Illusion (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Cure Wounds",
+        "page": 121,
+        "subtitle": "Level 1 Abjuration (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Dancing Lights",
+        "page": 121,
+        "subtitle": "Illusion Cantrip (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Darkness",
+        "page": 122,
+        "subtitle": "Level 2 Evocation (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Darkvision",
+        "page": 122,
+        "subtitle": "Level 2 Transmutation (Druid, Ranger, Sorcerer,"
+      },
+      {
+        "name": "Daylight",
+        "page": 122,
+        "subtitle": "Level 3 Evocation (Cleric, Druid, Paladin, Ranger,"
+      },
+      {
+        "name": "Death Ward",
+        "page": 122,
+        "subtitle": "Level 4 Abjuration (Cleric, Paladin)"
+      },
+      {
+        "name": "Delayed Blast Fireball",
+        "page": 122,
+        "subtitle": "Level 7 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Demiplane",
+        "page": 122,
+        "subtitle": "Level 8 Conjuration (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Detect Evil and Good",
+        "page": 123,
+        "subtitle": "Level 1 Divination (Cleric, Paladin)"
+      },
+      {
+        "name": "Detect Magic",
+        "page": 123,
+        "subtitle": "Level 1 Divination (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Detect Poison and Disease",
+        "page": 123,
+        "subtitle": "Level 1 Divination (Cleric, Druid, Paladin, Ranger)"
+      },
+      {
+        "name": "Detect Thoughts",
+        "page": 123,
+        "subtitle": "Level 2 Divination (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Dimension Door",
+        "page": 123,
+        "subtitle": "Level 4 Conjuration (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Disguise Self",
+        "page": 124,
+        "subtitle": "Level 1 Illusion (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Disintegrate",
+        "page": 124,
+        "subtitle": "Level 6 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Dispel Evil and Good",
+        "page": 124,
+        "subtitle": "Level 5 Abjuration (Cleric, Paladin)"
+      },
+      {
+        "name": "Dispel Magic",
+        "page": 124,
+        "subtitle": "Level 3 Abjuration (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Dissonant Whispers",
+        "page": 124,
+        "subtitle": "Level 1 Enchantment (Bard)"
+      },
+      {
+        "name": "Divination",
+        "page": 125,
+        "subtitle": "Level 4 Divination (Cleric, Druid, Wizard)"
+      },
+      {
+        "name": "Divine Favor",
+        "page": 125,
+        "subtitle": "Level 1 Transmutation (Paladin)"
+      },
+      {
+        "name": "Divine Smite",
+        "page": 125,
+        "subtitle": "Level 1 Evocation (Paladin)"
+      },
+      {
+        "name": "Divine Word",
+        "page": 125,
+        "subtitle": "Level 7 Evocation (Cleric)"
+      },
+      {
+        "name": "Dominate Beast",
+        "page": 125,
+        "subtitle": "Level 4 Enchantment (Druid, Ranger, Sorcerer)"
+      },
+      {
+        "name": "Dominate Monster",
+        "page": 125,
+        "subtitle": "Level 8 Enchantment (Bard, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Dominate Person",
+        "page": 126,
+        "subtitle": "Level 5 Enchantment (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Dragon’s Breath",
+        "page": 126,
+        "subtitle": "Level 2 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Dream",
+        "page": 126,
+        "subtitle": "Level 5 Illusion (Bard, Warlock, Wizard)"
+      },
+      {
+        "name": "Druidcraft",
+        "page": 126,
+        "subtitle": "Transmutation Cantrip (Druid)"
+      },
+      {
+        "name": "Earthquake",
+        "page": 127,
+        "subtitle": "Level 8 Transmutation (Cleric, Druid, Sorcerer)"
+      },
+      {
+        "name": "Eldritch Blast",
+        "page": 127,
+        "subtitle": "Evocation Cantrip (Warlock)"
+      },
+      {
+        "name": "Elementalism",
+        "page": 127,
+        "subtitle": "Transmutation Cantrip (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Enhance Ability",
+        "page": 127,
+        "subtitle": "Level 2 Transmutation (Bard, Cleric, Druid, Ranger,"
+      },
+      {
+        "name": "Enlarge/Reduce",
+        "page": 127,
+        "subtitle": "Level 2 Transmutation (Bard, Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Ensnaring Strike",
+        "page": 128,
+        "subtitle": "Level 1 Conjuration (Ranger)"
+      },
+      {
+        "name": "Entangle",
+        "page": 128,
+        "subtitle": "Level 1 Conjuration (Druid, Ranger)"
+      },
+      {
+        "name": "Enthrall",
+        "page": 128,
+        "subtitle": "Level 2 Enchantment (Bard, Warlock)"
+      },
+      {
+        "name": "Etherealness",
+        "page": 128,
+        "subtitle": "Level 7 Conjuration (Bard, Cleric, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Expeditious Retreat",
+        "page": 129,
+        "subtitle": "Level 1 Transmutation (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Eyebite",
+        "page": 129,
+        "subtitle": "Level 6 Necromancy (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Fabricate",
+        "page": 129,
+        "subtitle": "Level 4 Transmutation (Wizard)"
+      },
+      {
+        "name": "Faerie Fire",
+        "page": 129,
+        "subtitle": "Level 1 Evocation (Bard, Druid)"
+      },
+      {
+        "name": "Faithful Hound",
+        "page": 129,
+        "subtitle": "Level 4 Conjuration (Wizard)"
+      },
+      {
+        "name": "False Life",
+        "page": 129,
+        "subtitle": "Level 1 Necromancy (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Fear",
+        "page": 130,
+        "subtitle": "Level 3 Illusion (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Feather Fall",
+        "page": 130,
+        "subtitle": "Level 1 Transmutation (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Find Familiar",
+        "page": 130,
+        "subtitle": "Level 1 Conjuration (Wizard)"
+      },
+      {
+        "name": "Find Steed",
+        "page": 130,
+        "subtitle": "Level 2 Conjuration (Paladin)"
+      },
+      {
+        "name": "Find the Path",
+        "page": 131,
+        "subtitle": "Level 6 Divination (Bard, Cleric, Druid)"
+      },
+      {
+        "name": "Find Traps",
+        "page": 131,
+        "subtitle": "Level 2 Divination (Cleric, Druid, Ranger)"
+      },
+      {
+        "name": "Finger of Death",
+        "page": 131,
+        "subtitle": "Level 7 Necromancy (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Fire Bolt",
+        "page": 132,
+        "subtitle": "Evocation Cantrip (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Fire Shield",
+        "page": 132,
+        "subtitle": "Level 4 Evocation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Fire Storm",
+        "page": 132,
+        "subtitle": "Level 7 Evocation (Cleric, Druid, Sorcerer)"
+      },
+      {
+        "name": "Fireball",
+        "page": 131,
+        "subtitle": "Level 3 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Flame Blade",
+        "page": 132,
+        "subtitle": "Level 2 Evocation (Druid, Sorcerer)"
+      },
+      {
+        "name": "Flame Strike",
+        "page": 132,
+        "subtitle": "Level 5 Evocation (Cleric)"
+      },
+      {
+        "name": "Flaming Sphere",
+        "page": 132,
+        "subtitle": "Level 2 Conjuration (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Flesh to Stone",
+        "page": 133,
+        "subtitle": "Level 6 Transmutation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Floating Disk",
+        "page": 133,
+        "subtitle": "Level 1 Conjuration (Wizard)"
+      },
+      {
+        "name": "Fly",
+        "page": 133,
+        "subtitle": "Level 3 Transmutation (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Fog Cloud",
+        "page": 133,
+        "subtitle": "Level 1 Conjuration (Druid, Ranger, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Forbiddance",
+        "page": 133,
+        "subtitle": "Level 6 Abjuration (Cleric)"
+      },
+      {
+        "name": "Forcecage",
+        "page": 134,
+        "subtitle": "Level 7 Evocation (Bard, Warlock, Wizard)"
+      },
+      {
+        "name": "Foresight",
+        "page": 134,
+        "subtitle": "Level 9 Divination (Bard, Druid, Warlock, Wizard)"
+      },
+      {
+        "name": "Freedom of Movement",
+        "page": 134,
+        "subtitle": "Level 4 Abjuration (Bard, Cleric, Druid, Ranger)"
+      },
+      {
+        "name": "Freezing Sphere",
+        "page": 134,
+        "subtitle": "Level 6 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Gaseous Form",
+        "page": 134,
+        "subtitle": "Level 3 Transmutation (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Gate",
+        "page": 135,
+        "subtitle": "Level 9 Conjuration (Cleric, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Geas",
+        "page": 135,
+        "subtitle": "Level 5 Enchantment (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Gentle Repose",
+        "page": 135,
+        "subtitle": "Level 2 Necromancy (Cleric, Paladin, Wizard)"
+      },
+      {
+        "name": "Giant Insect",
+        "page": 135,
+        "subtitle": "Level 4 Conjuration (Druid)"
+      },
+      {
+        "name": "Glibness",
+        "page": 136,
+        "subtitle": "Level 8 Enchantment (Bard, Warlock)"
+      },
+      {
+        "name": "Globe of Invulnerability",
+        "page": 136,
+        "subtitle": "Level 6 Abjuration (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Glyph of Warding",
+        "page": 136,
+        "subtitle": "Level 3 Abjuration (Bard, Cleric, Wizard)"
+      },
+      {
+        "name": "Goodberry",
+        "page": 137,
+        "subtitle": "Level 1 Conjuration (Druid, Ranger)"
+      },
+      {
+        "name": "Grease",
+        "page": 137,
+        "subtitle": "Level 1 Conjuration (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Greater Invisibility",
+        "page": 137,
+        "subtitle": "Level 4 Illusion (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Greater Restoration",
+        "page": 137,
+        "subtitle": "Level 5 Abjuration (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Guardian of Faith",
+        "page": 137,
+        "subtitle": "Level 4 Conjuration (Cleric)"
+      },
+      {
+        "name": "Guards and Wards",
+        "page": 137,
+        "subtitle": "Level 6 Abjuration (Bard, Wizard)"
+      },
+      {
+        "name": "Guidance",
+        "page": 138,
+        "subtitle": "Divination Cantrip (Cleric, Druid)"
+      },
+      {
+        "name": "Guiding Bolt",
+        "page": 138,
+        "subtitle": "Level 1 Evocation (Cleric)"
+      },
+      {
+        "name": "Gust of Wind",
+        "page": 138,
+        "subtitle": "Level 2 Evocation (Druid, Ranger, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Hallow",
+        "page": 138,
+        "subtitle": "Level 5 Abjuration (Cleric)"
+      },
+      {
+        "name": "Hallucinatory Terrain",
+        "page": 139,
+        "subtitle": "Level 4 Illusion (Bard, Druid, Warlock, Wizard)"
+      },
+      {
+        "name": "Harm",
+        "page": 139,
+        "subtitle": "Level 6 Necromancy (Cleric)"
+      },
+      {
+        "name": "Haste",
+        "page": 139,
+        "subtitle": "Level 3 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Heal",
+        "page": 139,
+        "subtitle": "Level 6 Abjuration (Cleric, Druid)"
+      },
+      {
+        "name": "Healing Word",
+        "page": 139,
+        "subtitle": "Level 1 Abjuration (Bard, Cleric, Druid)"
+      },
+      {
+        "name": "Heat Metal",
+        "page": 139,
+        "subtitle": "Level 2 Transmutation (Bard, Druid)"
+      },
+      {
+        "name": "Hellish Rebuke",
+        "page": 140,
+        "subtitle": "Level 1 Evocation (Warlock)"
+      },
+      {
+        "name": "Heroes’ Feast",
+        "page": 140,
+        "subtitle": "Level 6 Conjuration (Bard, Cleric, Druid)"
+      },
+      {
+        "name": "Heroism",
+        "page": 140,
+        "subtitle": "Level 1 Enchantment (Bard, Paladin)"
+      },
+      {
+        "name": "Hex",
+        "page": 140,
+        "subtitle": "Level 1 Enchantment (Warlock)"
+      },
+      {
+        "name": "Hideous Laughter",
+        "page": 140,
+        "subtitle": "Level 1 Enchantment (Bard, Warlock, Wizard)"
+      },
+      {
+        "name": "Hold Monster",
+        "page": 140,
+        "subtitle": "Level 5 Enchantment (Bard, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Hold Person",
+        "page": 141,
+        "subtitle": "Level 2 Enchantment (Bard, Cleric, Druid, Sorcerer,"
+      },
+      {
+        "name": "Holy Aura",
+        "page": 141,
+        "subtitle": "Level 8 Abjuration (Cleric)"
+      },
+      {
+        "name": "Hunter’s Mark",
+        "page": 141,
+        "subtitle": "Level 1 Divination (Ranger)"
+      },
+      {
+        "name": "Hypnotic Pattern",
+        "page": 141,
+        "subtitle": "Level 3 Illusion (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Ice Knife",
+        "page": 141,
+        "subtitle": "Level 1 Conjuration (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Ice Storm",
+        "page": 141,
+        "subtitle": "Level 4 Evocation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Identify",
+        "page": 142,
+        "subtitle": "Level 1 Divination (Bard, Wizard)"
+      },
+      {
+        "name": "Illusory Script",
+        "page": 142,
+        "subtitle": "Level 1 Illusion (Bard, Warlock, Wizard)"
+      },
+      {
+        "name": "Imprisonment",
+        "page": 142,
+        "subtitle": "Level 9 Abjuration (Warlock, Wizard)"
+      },
+      {
+        "name": "Incendiary Cloud",
+        "page": 142,
+        "subtitle": "Level 8 Conjuration (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Inflict Wounds",
+        "page": 143,
+        "subtitle": "Level 1 Necromancy (Cleric)"
+      },
+      {
+        "name": "Insect Plague",
+        "page": 143,
+        "subtitle": "Level 5 Conjuration (Cleric, Druid, Sorcerer)"
+      },
+      {
+        "name": "Instant Summons",
+        "page": 143,
+        "subtitle": "Level 6 Conjuration (Wizard)"
+      },
+      {
+        "name": "Invisibility",
+        "page": 143,
+        "subtitle": "Level 2 Illusion (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Irresistible Dance",
+        "page": 143,
+        "subtitle": "Level 6 Enchantment (Bard, Wizard)"
+      },
+      {
+        "name": "Jump",
+        "page": 143,
+        "subtitle": "Level 1 Transmutation (Druid, Ranger, Sorcerer,"
+      },
+      {
+        "name": "Knock",
+        "page": 143,
+        "subtitle": "Level 2 Transmutation (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Legend Lore",
+        "page": 144,
+        "subtitle": "Level 5 Divination (Bard, Cleric, Wizard)"
+      },
+      {
+        "name": "Lesser Restoration",
+        "page": 144,
+        "subtitle": "Level 2 Abjuration (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Levitate",
+        "page": 144,
+        "subtitle": "Level 2 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Light",
+        "page": 144,
+        "subtitle": "Evocation Cantrip (Bard, Cleric, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Lightning Bolt",
+        "page": 144,
+        "subtitle": "Level 3 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Locate Animals or Plants",
+        "page": 144,
+        "subtitle": "Level 2 Divination (Bard, Druid, Ranger)"
+      },
+      {
+        "name": "Locate Creature",
+        "page": 145,
+        "subtitle": "Level 4 Divination (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Locate Object",
+        "page": 145,
+        "subtitle": "Level 2 Divination (Bard, Cleric, Druid, Paladin,"
+      },
+      {
+        "name": "Longstrider",
+        "page": 145,
+        "subtitle": "Level 1 Transmutation (Bard, Druid, Ranger, Wizard)"
+      },
+      {
+        "name": "Mage Armor",
+        "page": 145,
+        "subtitle": "Level 1 Abjuration (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Mage Hand",
+        "page": 145,
+        "subtitle": "Conjuration Cantrip (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Magic Circle",
+        "page": 145,
+        "subtitle": "Level 3 Abjuration (Cleric, Paladin, Warlock, Wizard)"
+      },
+      {
+        "name": "Magic Jar",
+        "page": 146,
+        "subtitle": "Level 6 Necromancy (Wizard)"
+      },
+      {
+        "name": "Magic Missile",
+        "page": 146,
+        "subtitle": "Level 1 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Magic Mouth",
+        "page": 146,
+        "subtitle": "Level 2 Illusion (Bard, Wizard)"
+      },
+      {
+        "name": "Magic Weapon",
+        "page": 146,
+        "subtitle": "Level 2 Transmutation (Paladin, Ranger, Sorcerer,"
+      },
+      {
+        "name": "Magnificent Mansion",
+        "page": 147,
+        "subtitle": "Level 7 Conjuration (Bard, Wizard)"
+      },
+      {
+        "name": "Major Image",
+        "page": 147,
+        "subtitle": "Level 3 Illusion (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Mass Cure Wounds",
+        "page": 147,
+        "subtitle": "Level 5 Abjuration (Bard, Cleric, Druid)"
+      },
+      {
+        "name": "Mass Heal",
+        "page": 147,
+        "subtitle": "Level 9 Abjuration (Cleric)"
+      },
+      {
+        "name": "Mass Healing Word",
+        "page": 148,
+        "subtitle": "Level 3 Abjuration (Bard, Cleric)"
+      },
+      {
+        "name": "Mass Suggestion",
+        "page": 148,
+        "subtitle": "Level 6 Enchantment (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Maze",
+        "page": 148,
+        "subtitle": "Level 8 Conjuration (Wizard)"
+      },
+      {
+        "name": "Meld into Stone",
+        "page": 148,
+        "subtitle": "Level 3 Transmutation (Cleric, Druid, Ranger)"
+      },
+      {
+        "name": "Mending",
+        "page": 148,
+        "subtitle": "Transmutation Cantrip (Bard, Cleric, Druid, Sorcerer,"
+      },
+      {
+        "name": "Message",
+        "page": 148,
+        "subtitle": "Transmutation Cantrip (Bard, Druid, Sorcerer,"
+      },
+      {
+        "name": "Meteor Swarm",
+        "page": 149,
+        "subtitle": "Level 9 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Mind Blank",
+        "page": 149,
+        "subtitle": "Level 8 Abjuration (Bard, Wizard)"
+      },
+      {
+        "name": "Mind Spike",
+        "page": 149,
+        "subtitle": "Level 2 Divination (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Minor Illusion",
+        "page": 149,
+        "subtitle": "Illusion Cantrip (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Mirage Arcane",
+        "page": 149,
+        "subtitle": "Level 7 Illusion (Bard, Druid, Wizard)"
+      },
+      {
+        "name": "Mirror Image",
+        "page": 150,
+        "subtitle": "Level 2 Illusion (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Mislead",
+        "page": 150,
+        "subtitle": "Level 5 Illusion (Bard, Warlock, Wizard)"
+      },
+      {
+        "name": "Misty Step",
+        "page": 150,
+        "subtitle": "Level 2 Conjuration (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Modify Memory",
+        "page": 150,
+        "subtitle": "Level 5 Enchantment (Bard, Wizard)"
+      },
+      {
+        "name": "Moonbeam",
+        "page": 150,
+        "subtitle": "Level 2 Evocation (Druid)"
+      },
+      {
+        "name": "Move Earth",
+        "page": 151,
+        "subtitle": "Level 6 Transmutation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Nondetection",
+        "page": 151,
+        "subtitle": "Level 3 Abjuration (Bard, Ranger, Wizard)"
+      },
+      {
+        "name": "Pass without Trace",
+        "page": 151,
+        "subtitle": "Level 2 Abjuration (Druid, Ranger)"
+      },
+      {
+        "name": "Passwall",
+        "page": 151,
+        "subtitle": "Level 5 Transmutation (Wizard)"
+      },
+      {
+        "name": "Phantasmal Force",
+        "page": 151,
+        "subtitle": "Level 2 Illusion (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Phantasmal Killer",
+        "page": 152,
+        "subtitle": "Level 4 Illusion (Bard, Wizard)"
+      },
+      {
+        "name": "Phantom Steed",
+        "page": 152,
+        "subtitle": "Level 3 Illusion (Wizard)"
+      },
+      {
+        "name": "Planar Ally",
+        "page": 152,
+        "subtitle": "Level 6 Conjuration (Cleric)"
+      },
+      {
+        "name": "Planar Binding",
+        "page": 152,
+        "subtitle": "Level 5 Abjuration (Bard, Cleric, Druid, Warlock,"
+      },
+      {
+        "name": "Plane Shift",
+        "page": 153,
+        "subtitle": "Level 7 Conjuration (Cleric, Druid, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Plant Growth",
+        "page": 153,
+        "subtitle": "Level 3 Transmutation (Bard, Druid, Ranger)"
+      },
+      {
+        "name": "Poison Spray",
+        "page": 153,
+        "subtitle": "Necromancy Cantrip (Druid, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Polymorph",
+        "page": 153,
+        "subtitle": "Level 4 Transmutation (Bard, Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Power Word Heal",
+        "page": 154,
+        "subtitle": "Level 9 Enchantment (Bard, Cleric)"
+      },
+      {
+        "name": "Power Word Kill",
+        "page": 154,
+        "subtitle": "Level 9 Enchantment (Bard, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Power Word Stun",
+        "page": 154,
+        "subtitle": "Level 8 Enchantment (Bard, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Prayer of Healing",
+        "page": 154,
+        "subtitle": "Level 2 Abjuration (Cleric, Paladin)"
+      },
+      {
+        "name": "Prestidigitation",
+        "page": 154,
+        "subtitle": "Transmutation Cantrip (Bard, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Prismatic Spray",
+        "page": 154,
+        "subtitle": "Level 7 Evocation (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Prismatic Wall",
+        "page": 155,
+        "subtitle": "Level 9 Abjuration (Bard, Wizard)"
+      },
+      {
+        "name": "Private Sanctum",
+        "page": 156,
+        "subtitle": "Level 4 Abjuration (Wizard)"
+      },
+      {
+        "name": "Produce Flame",
+        "page": 156,
+        "subtitle": "Conjuration Cantrip (Druid)"
+      },
+      {
+        "name": "Programmed Illusion",
+        "page": 156,
+        "subtitle": "Level 6 Illusion (Bard, Wizard)"
+      },
+      {
+        "name": "Project Image",
+        "page": 156,
+        "subtitle": "Level 7 Illusion (Bard, Wizard)"
+      },
+      {
+        "name": "Protection from Energy",
+        "page": 157,
+        "subtitle": "Level 3 Abjuration (Cleric, Druid, Ranger, Sorcerer,"
+      },
+      {
+        "name": "Protection from Evil and Good",
+        "page": 157,
+        "subtitle": "Level 1 Abjuration (Cleric, Druid, Paladin, Warlock,"
+      },
+      {
+        "name": "Protection from Poison",
+        "page": 157,
+        "subtitle": "Level 2 Abjuration (Cleric, Druid, Paladin, Ranger)"
+      },
+      {
+        "name": "Purify Food and Drink",
+        "page": 157,
+        "subtitle": "Level 1 Transmutation (Cleric, Druid, Paladin)"
+      },
+      {
+        "name": "Raise Dead",
+        "page": 157,
+        "subtitle": "Level 5 Necromancy (Bard, Cleric, Paladin)"
+      },
+      {
+        "name": "Ray of Enfeeblement",
+        "page": 157,
+        "subtitle": "Level 2 Necromancy (Warlock, Wizard)"
+      },
+      {
+        "name": "Ray of Frost",
+        "page": 157,
+        "subtitle": "Evocation Cantrip (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Ray of Sickness",
+        "page": 158,
+        "subtitle": "Level 1 Necromancy (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Regenerate",
+        "page": 158,
+        "subtitle": "Level 7 Transmutation (Bard, Cleric, Druid)"
+      },
+      {
+        "name": "Reincarnate",
+        "page": 158,
+        "subtitle": "Level 5 Necromancy (Druid)"
+      },
+      {
+        "name": "Remove Curse",
+        "page": 158,
+        "subtitle": "Level 3 Abjuration (Cleric, Paladin, Warlock, Wizard)"
+      },
+      {
+        "name": "Resilient Sphere",
+        "page": 158,
+        "subtitle": "Level 4 Abjuration (Wizard)"
+      },
+      {
+        "name": "Resistance",
+        "page": 158,
+        "subtitle": "Abjuration Cantrip (Cleric, Druid)"
+      },
+      {
+        "name": "Resurrection",
+        "page": 158,
+        "subtitle": "Level 7 Necromancy (Bard, Cleric)"
+      },
+      {
+        "name": "Reverse Gravity",
+        "page": 159,
+        "subtitle": "Level 7 Transmutation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Revivify",
+        "page": 159,
+        "subtitle": "Level 3 Necromancy (Cleric, Druid, Paladin, Ranger)"
+      },
+      {
+        "name": "Rope Trick",
+        "page": 159,
+        "subtitle": "Level 2 Transmutation (Wizard)"
+      },
+      {
+        "name": "Sacred Flame",
+        "page": 159,
+        "subtitle": "Evocation Cantrip (Cleric)"
+      },
+      {
+        "name": "Sanctuary",
+        "page": 159,
+        "subtitle": "Level 1 Abjuration (Cleric)"
+      },
+      {
+        "name": "Scorching Ray",
+        "page": 159,
+        "subtitle": "Level 2 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Scrying",
+        "page": 160,
+        "subtitle": "Level 5 Divination (Bard, Cleric, Druid, Warlock,"
+      },
+      {
+        "name": "Searing Smite",
+        "page": 160,
+        "subtitle": "Level 1 Evocation (Paladin)"
+      },
+      {
+        "name": "Secret Chest",
+        "page": 160,
+        "subtitle": "Level 4 Conjuration (Wizard)"
+      },
+      {
+        "name": "See Invisibility",
+        "page": 160,
+        "subtitle": "Level 2 Divination (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Seeming",
+        "page": 160,
+        "subtitle": "Level 5 Illusion (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Sending",
+        "page": 161,
+        "subtitle": "Level 3 Divination (Bard, Cleric, Wizard)"
+      },
+      {
+        "name": "Sequester",
+        "page": 161,
+        "subtitle": "Level 7 Transmutation (Wizard)"
+      },
+      {
+        "name": "Shapechange",
+        "page": 161,
+        "subtitle": "Level 9 Transmutation (Druid, Wizard)"
+      },
+      {
+        "name": "Shatter",
+        "page": 161,
+        "subtitle": "Level 2 Evocation (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Shield",
+        "page": 161,
+        "subtitle": "Level 1 Abjuration (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Shield of Faith",
+        "page": 162,
+        "subtitle": "Level 1 Abjuration (Cleric, Paladin)"
+      },
+      {
+        "name": "Shillelagh",
+        "page": 162,
+        "subtitle": "Transmutation Cantrip (Druid)"
+      },
+      {
+        "name": "Shining Smite",
+        "page": 162,
+        "subtitle": "Level 2 Transmutation (Paladin)"
+      },
+      {
+        "name": "Shocking Grasp",
+        "page": 162,
+        "subtitle": "Evocation Cantrip (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Silence",
+        "page": 162,
+        "subtitle": "Level 2 Illusion (Bard, Cleric, Ranger)"
+      },
+      {
+        "name": "Silent Image",
+        "page": 162,
+        "subtitle": "Level 1 Illusion (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Simulacrum",
+        "page": 162,
+        "subtitle": "Level 7 Illusion (Wizard)"
+      },
+      {
+        "name": "Sleep",
+        "page": 163,
+        "subtitle": "Level 1 Enchantment (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Sleet Storm",
+        "page": 163,
+        "subtitle": "Level 3 Conjuration (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Slow",
+        "page": 163,
+        "subtitle": "Level 3 Transmutation (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Sorcerous Burst",
+        "page": 163,
+        "subtitle": "Evocation Cantrip (Sorcerer)"
+      },
+      {
+        "name": "Spare the Dying",
+        "page": 163,
+        "subtitle": "Necromancy Cantrip (Cleric, Druid)"
+      },
+      {
+        "name": "Speak with Animals",
+        "page": 164,
+        "subtitle": "Level 1 Divination (Bard, Druid, Ranger, Warlock)"
+      },
+      {
+        "name": "Speak with Dead",
+        "page": 164,
+        "subtitle": "Level 3 Necromancy (Bard, Cleric, Wizard)"
+      },
+      {
+        "name": "Speak with Plants",
+        "page": 164,
+        "subtitle": "Level 3 Transmutation (Bard, Druid, Ranger)"
+      },
+      {
+        "name": "Spider Climb",
+        "page": 164,
+        "subtitle": "Level 2 Transmutation (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Spike Growth",
+        "page": 164,
+        "subtitle": "Level 2 Transmutation (Druid, Ranger)"
+      },
+      {
+        "name": "Spirit Guardians",
+        "page": 164,
+        "subtitle": "Level 3 Conjuration (Cleric)"
+      },
+      {
+        "name": "Spiritual Weapon",
+        "page": 165,
+        "subtitle": "Level 2 Evocation (Cleric)"
+      },
+      {
+        "name": "Starry Wisp",
+        "page": 165,
+        "subtitle": "Evocation Cantrip (Bard, Druid)"
+      },
+      {
+        "name": "Stinking Cloud",
+        "page": 165,
+        "subtitle": "Level 3 Conjuration (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Stone Shape",
+        "page": 165,
+        "subtitle": "Level 4 Transmutation (Cleric, Druid, Wizard)"
+      },
+      {
+        "name": "Stoneskin",
+        "page": 165,
+        "subtitle": "Level 4 Transmutation (Druid, Ranger, Sorcerer,"
+      },
+      {
+        "name": "Storm of Vengeance",
+        "page": 165,
+        "subtitle": "Level 9 Conjuration (Druid)"
+      },
+      {
+        "name": "Suggestion",
+        "page": 166,
+        "subtitle": "Level 2 Enchantment (Bard, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Summon Dragon",
+        "page": 166,
+        "subtitle": "Level 5 Conjuration (Wizard)"
+      },
+      {
+        "name": "Sunbeam",
+        "page": 166,
+        "subtitle": "Level 6 Evocation (Cleric, Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Sunburst",
+        "page": 167,
+        "subtitle": "Level 8 Evocation (Cleric, Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Symbol",
+        "page": 167,
+        "subtitle": "Level 7 Abjuration (Bard, Cleric, Druid, Wizard)"
+      },
+      {
+        "name": "Telekinesis",
+        "page": 167,
+        "subtitle": "Level 5 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Telepathic Bond",
+        "page": 168,
+        "subtitle": "Level 5 Divination (Bard, Wizard)"
+      },
+      {
+        "name": "Teleport",
+        "page": 168,
+        "subtitle": "Level 7 Conjuration (Bard, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Teleportation Circle",
+        "page": 168,
+        "subtitle": "Level 5 Conjuration (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Thaumaturgy",
+        "page": 169,
+        "subtitle": "Transmutation Cantrip (Cleric)"
+      },
+      {
+        "name": "Thunderwave",
+        "page": 169,
+        "subtitle": "Level 1 Evocation (Bard, Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Time Stop",
+        "page": 169,
+        "subtitle": "Level 9 Transmutation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Tiny Hut",
+        "page": 169,
+        "subtitle": "Level 3 Evocation (Bard, Wizard)"
+      },
+      {
+        "name": "Tongues",
+        "page": 169,
+        "subtitle": "Level 3 Divination (Bard, Cleric, Sorcerer, Warlock,"
+      },
+      {
+        "name": "Transport via Plants",
+        "page": 170,
+        "subtitle": "Level 6 Conjuration (Druid)"
+      },
+      {
+        "name": "Tree Stride",
+        "page": 170,
+        "subtitle": "Level 5 Conjuration (Druid, Ranger)"
+      },
+      {
+        "name": "True Polymorph",
+        "page": 170,
+        "subtitle": "Level 9 Transmutation (Bard, Warlock, Wizard)"
+      },
+      {
+        "name": "True Resurrection",
+        "page": 170,
+        "subtitle": "Level 9 Necromancy (Cleric, Druid)"
+      },
+      {
+        "name": "True Seeing",
+        "page": 171,
+        "subtitle": "Level 6 Divination (Bard, Cleric, Sorcerer, Warlock,"
+      },
+      {
+        "name": "True Strike",
+        "page": 171,
+        "subtitle": "Divination Cantrip (Bard, Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Tsunami",
+        "page": 171,
+        "subtitle": "Level 8 Conjuration (Druid)"
+      },
+      {
+        "name": "Unseen Servant",
+        "page": 171,
+        "subtitle": "Level 1 Conjuration (Bard, Warlock, Wizard)"
+      },
+      {
+        "name": "Vampiric Touch",
+        "page": 171,
+        "subtitle": "Level 3 Necromancy (Sorcerer, Warlock, Wizard)"
+      },
+      {
+        "name": "Vicious Mockery",
+        "page": 171,
+        "subtitle": "Enchantment Cantrip (Bard)"
+      },
+      {
+        "name": "Vitriolic Sphere",
+        "page": 172,
+        "subtitle": "Level 4 Evocation (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Wall of Fire",
+        "page": 172,
+        "subtitle": "Level 4 Evocation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Wall of Force",
+        "page": 172,
+        "subtitle": "Level 5 Evocation (Wizard)"
+      },
+      {
+        "name": "Wall of Ice",
+        "page": 172,
+        "subtitle": "Level 6 Evocation (Wizard)"
+      },
+      {
+        "name": "Wall of Stone",
+        "page": 173,
+        "subtitle": "Level 5 Evocation (Druid, Sorcerer, Wizard)"
+      },
+      {
+        "name": "Wall of Thorns",
+        "page": 173,
+        "subtitle": "Level 6 Conjuration (Druid)"
+      },
+      {
+        "name": "Warding Bond",
+        "page": 173,
+        "subtitle": "Level 2 Abjuration (Cleric, Paladin)"
+      },
+      {
+        "name": "Water Breathing",
+        "page": 173,
+        "subtitle": "Level 3 Transmutation (Druid, Ranger, Sorcerer,"
+      },
+      {
+        "name": "Water Walk",
+        "page": 173,
+        "subtitle": "Level 3 Transmutation (Cleric, Druid, Ranger, Sorcerer)"
+      },
+      {
+        "name": "Web",
+        "page": 174,
+        "subtitle": "Level 2 Conjuration (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Weird",
+        "page": 174,
+        "subtitle": "Level 9 Illusion (Warlock, Wizard)"
+      },
+      {
+        "name": "Wind Walk",
+        "page": 174,
+        "subtitle": "Level 6 Transmutation (Druid)"
+      },
+      {
+        "name": "Wind Wall",
+        "page": 174,
+        "subtitle": "Level 3 Evocation (Druid, Ranger)"
+      },
+      {
+        "name": "Wish",
+        "page": 175,
+        "subtitle": "Level 9 Conjuration (Sorcerer, Wizard)"
+      },
+      {
+        "name": "Word of Recall",
+        "page": 175,
+        "subtitle": "Level 6 Conjuration (Cleric)"
+      },
+      {
+        "name": "Zone of Truth",
+        "page": 175,
+        "subtitle": "Level 2 Enchantment (Bard, Cleric, Paladin)"
+      }
+    ],
+    "magicItems": [
+      {
+        "name": "Adamantine Armor",
+        "page": 209,
+        "subtitle": "Armor (Any Medium or Heavy, Except Hide Armor),"
+      },
+      {
+        "name": "Ammunition of Slaying",
+        "page": 209,
+        "subtitle": "Weapon (Any Ammunition), Very Rare"
+      },
+      {
+        "name": "Ammunition, +1, +2, or +3",
+        "page": 209,
+        "subtitle": "Weapon (Any Ammunition), Uncommon (+1), Rare (+2),"
+      },
+      {
+        "name": "Amulet of Health",
+        "page": 209,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Amulet of the Planes",
+        "page": 209,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "and Location",
+        "page": 209,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Animated Shield",
+        "page": 209,
+        "subtitle": "Armor (Shield), Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Apparatus of the Crab",
+        "page": 210,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Armor of Invulnerability",
+        "page": 210,
+        "subtitle": "Armor (Plate Armor), Legendary (Requires"
+      },
+      {
+        "name": "Armor of Resistance",
+        "page": 210,
+        "subtitle": "Armor (Any Light, Medium, or Heavy), Rare (Requires"
+      },
+      {
+        "name": "Armor of Vulnerability",
+        "page": 211,
+        "subtitle": "Armor (Any Light, Medium, or Heavy), Rare (Requires"
+      },
+      {
+        "name": "Armor, +1, +2, or +3",
+        "page": 210,
+        "subtitle": "Armor (Any Light, Medium, or Heavy), Rare (+1), Very"
+      },
+      {
+        "name": "Arrow-Catching Shield",
+        "page": 211,
+        "subtitle": "Armor (Shield), Rare (Requires Attunement)"
+      },
+      {
+        "name": "Bag of Beans",
+        "page": 211,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Bag of Devouring",
+        "page": 212,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Bag of Holding",
+        "page": 212,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Bag of Tricks",
+        "page": 212,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Bead of Force",
+        "page": 212,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Bead of Nourishment",
+        "page": 213,
+        "subtitle": "Wondrous Item, Common"
+      },
+      {
+        "name": "Belt of Dwarvenkind",
+        "page": 213,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Belt of Giant Strength",
+        "page": 213,
+        "subtitle": "Wondrous Item, Rarity Varies (Requires Attunement)"
+      },
+      {
+        "name": "Berserker Axe",
+        "page": 213,
+        "subtitle": "Weapon (Battleaxe, Greataxe, or Halberd), Rare"
+      },
+      {
+        "name": "Boots of Elvenkind",
+        "page": 213,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Boots of Levitation",
+        "page": 213,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Boots of Speed",
+        "page": 214,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Boots of Striding and Springing",
+        "page": 214,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Boots of the Winterlands",
+        "page": 214,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Bowl of Commanding Water Elementals",
+        "page": 214,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Bracers of Archery",
+        "page": 214,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Bracers of Defense",
+        "page": 214,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Brazier of Commanding Fire Elementals",
+        "page": 214,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Brooch of Shielding",
+        "page": 214,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Broom of Flying",
+        "page": 214,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Candle of Invocation",
+        "page": 214,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Cape of the Mountebank",
+        "page": 215,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Carpet of Flying",
+        "page": 215,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Censer of Controlling Air Elementals",
+        "page": 215,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Chime of Opening",
+        "page": 215,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Circlet of Blasting",
+        "page": 215,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Cloak of Arachnida",
+        "page": 215,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Cloak of Displacement",
+        "page": 215,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Cloak of Elvenkind",
+        "page": 215,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Cloak of Invisibility",
+        "page": 215,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Cloak of Protection",
+        "page": 216,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Cloak of the Bat",
+        "page": 216,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Cloak of the Manta Ray",
+        "page": 216,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Crystal Ball",
+        "page": 216,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Crystal Ball of Mind Reading",
+        "page": 216,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Crystal Ball of Telepathy",
+        "page": 216,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Crystal Ball of True Seeing",
+        "page": 216,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Cube of Force",
+        "page": 216,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Cubic Gate",
+        "page": 216,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Dagger of Venom",
+        "page": 216,
+        "subtitle": "Weapon (Dagger), Rare"
+      },
+      {
+        "name": "Dancing Sword",
+        "page": 217,
+        "subtitle": "Weapon (Greatsword, Longsword, Rapier, Scimitar, or"
+      },
+      {
+        "name": "Decanter of Endless Water",
+        "page": 217,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Deck of Illusions",
+        "page": 217,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Defender",
+        "page": 218,
+        "subtitle": "Weapon (Any Melee Weapon), Legendary (Requires"
+      },
+      {
+        "name": "Demon Armor",
+        "page": 218,
+        "subtitle": "Armor (Any Light, Medium, or Heavy), Very Rare"
+      },
+      {
+        "name": "Dimensional Shackles",
+        "page": 218,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Dragon Orb",
+        "page": 218,
+        "subtitle": "Wondrous Item, Artifact (Requires Attunement)"
+      },
+      {
+        "name": "Dragon Scale Mail",
+        "page": 218,
+        "subtitle": "Armor (Scale Mail), Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Dragon Slayer",
+        "page": 219,
+        "subtitle": "Weapon (Any Simple or Martial), Rare"
+      },
+      {
+        "name": "Dust of Disappearance",
+        "page": 219,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Dust of Dryness",
+        "page": 219,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Dust of Sneezing and Choking",
+        "page": 219,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Dwarven Plate",
+        "page": 219,
+        "subtitle": "Armor (Half Plate Armor or Plate Armor), Very Rare"
+      },
+      {
+        "name": "Dwarven Thrower",
+        "page": 219,
+        "subtitle": "Weapon (Warhammer), Very Rare (Requires"
+      },
+      {
+        "name": "Efficient Quiver",
+        "page": 219,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Efreeti Bottle",
+        "page": 220,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Elemental Gem",
+        "page": 220,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Elixir of Health",
+        "page": 220,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Elven Chain",
+        "page": 220,
+        "subtitle": "Armor (Chain Mail or Chain Shirt), Rare"
+      },
+      {
+        "name": "Energy Bow",
+        "page": 220,
+        "subtitle": "Weapon (Longbow or Shortbow), Very Rare (Requires"
+      },
+      {
+        "name": "Eversmoking Bottle",
+        "page": 220,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Eyes of Charming",
+        "page": 221,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Eyes of Minute Seeing",
+        "page": 221,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Eyes of the Eagle",
+        "page": 221,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Feather Token",
+        "page": 221,
+        "subtitle": "Wondrous Item, Rarity Varies"
+      },
+      {
+        "name": "Figurine of Wondrous Power",
+        "page": 221,
+        "subtitle": "Wondrous Item, Rarity Varies"
+      },
+      {
+        "name": "Flame Tongue",
+        "page": 223,
+        "subtitle": "Weapon (Any Melee Weapon), Rare (Requires"
+      },
+      {
+        "name": "Folding Boat",
+        "page": 223,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Frost Brand",
+        "page": 223,
+        "subtitle": "Weapon (Glaive, Greatsword, Longsword, Rapier,"
+      },
+      {
+        "name": "Gauntlets of Ogre Power",
+        "page": 223,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Gem of Brightness",
+        "page": 223,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Gem of Seeing",
+        "page": 223,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Giant Slayer",
+        "page": 223,
+        "subtitle": "Weapon (Any Simple or Martial), Rare"
+      },
+      {
+        "name": "Glamoured Studded Leather",
+        "page": 223,
+        "subtitle": "Armor (Studded Leather Armor), Rare"
+      },
+      {
+        "name": "Gloves of Missile Snaring",
+        "page": 224,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Gloves of Swimming and Climbing",
+        "page": 224,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Gloves of Thievery",
+        "page": 224,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Goggles of Night",
+        "page": 224,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Hammer of Thunderbolts",
+        "page": 224,
+        "subtitle": "Weapon (Maul or Warhammer), Legendary (Requires"
+      },
+      {
+        "name": "Handy Haversack",
+        "page": 224,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Hat of Disguise",
+        "page": 224,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Hat of Many Spells",
+        "page": 224,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement by a"
+      },
+      {
+        "name": "Headband of Intellect",
+        "page": 225,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Helm of Brilliance",
+        "page": 225,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Helm of Comprehending Languages",
+        "page": 226,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Helm of Telepathy",
+        "page": 226,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Helm of Teleportation",
+        "page": 226,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Holy Avenger",
+        "page": 226,
+        "subtitle": "Weapon (Any Simple or Martial), Legendary (Requires"
+      },
+      {
+        "name": "Horn of Blasting",
+        "page": 226,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Horn of Valhalla",
+        "page": 226,
+        "subtitle": "Wondrous Item, Rare (Silver or Brass), Very Rare"
+      },
+      {
+        "name": "Horseshoes of a Zephyr",
+        "page": 226,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Horseshoes of Speed",
+        "page": 227,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Immovable Rod",
+        "page": 227,
+        "subtitle": "Rod, Uncommon"
+      },
+      {
+        "name": "Instant Fortress",
+        "page": 227,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ioun Stone",
+        "page": 227,
+        "subtitle": "Wondrous Item, Rarity Varies (Requires Attunement)"
+      },
+      {
+        "name": "Iron Bands",
+        "page": 228,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Iron Flask",
+        "page": 228,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Javelin of Lightning",
+        "page": 228,
+        "subtitle": "Weapon (Javelin), Uncommon"
+      },
+      {
+        "name": "Lantern of Revealing",
+        "page": 228,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Luck Blade",
+        "page": 229,
+        "subtitle": "Weapon (Glaive, Greatsword, Longsword, Rapier,"
+      },
+      {
+        "name": "Mace of Disruption",
+        "page": 229,
+        "subtitle": "Weapon (Mace), Rare (Requires Attunement)"
+      },
+      {
+        "name": "Mace of Smiting",
+        "page": 229,
+        "subtitle": "Weapon (Mace), Rare"
+      },
+      {
+        "name": "Mace of Terror",
+        "page": 229,
+        "subtitle": "Weapon (Mace), Rare (Requires Attunement)"
+      },
+      {
+        "name": "Mantle of Spell Resistance",
+        "page": 229,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Manual of Bodily Health",
+        "page": 229,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Manual of Gainful Exercise",
+        "page": 229,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Manual of Golems",
+        "page": 229,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Manual of Quickness of Action",
+        "page": 230,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Marvelous Pigments",
+        "page": 230,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Medallion of Thoughts",
+        "page": 230,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Mirror of Life Trapping",
+        "page": 230,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Mithral Armor",
+        "page": 231,
+        "subtitle": "Armor (Any Medium or Heavy, Except Hide Armor),"
+      },
+      {
+        "name": "Mysterious Deck",
+        "page": 231,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Necklace of Adaptation",
+        "page": 232,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Necklace of Fireballs",
+        "page": 233,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Necklace of Prayer Beads",
+        "page": 233,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement by a"
+      },
+      {
+        "name": "Nine Lives Stealer",
+        "page": 233,
+        "subtitle": "Weapon (Any Simple or Martial), Very Rare (Requires"
+      },
+      {
+        "name": "Oathbow",
+        "page": 233,
+        "subtitle": "Weapon (Longbow or Shortbow), Very Rare (Requires"
+      },
+      {
+        "name": "Oil of Etherealness",
+        "page": 233,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Oil of Sharpness",
+        "page": 233,
+        "subtitle": "Potion, Very Rare"
+      },
+      {
+        "name": "Oil of Slipperiness",
+        "page": 233,
+        "subtitle": "Potion, Uncommon"
+      },
+      {
+        "name": "Pearl of Power",
+        "page": 234,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement by"
+      },
+      {
+        "name": "Periapt of Health",
+        "page": 234,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Periapt of Proof against Poison",
+        "page": 234,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Periapt of Wound Closure",
+        "page": 234,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Philter of Love",
+        "page": 234,
+        "subtitle": "Potion, Uncommon"
+      },
+      {
+        "name": "Pipes of Haunting",
+        "page": 234,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Pipes of the Sewers",
+        "page": 234,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Plate Armor of Etherealness",
+        "page": 234,
+        "subtitle": "Armor (Half Plate Armor or Plate Armor), Legendary"
+      },
+      {
+        "name": "Portable Hole",
+        "page": 234,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Potion of Animal Friendship",
+        "page": 235,
+        "subtitle": "Potion, Uncommon"
+      },
+      {
+        "name": "Potion of Clairvoyance",
+        "page": 235,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Potion of Climbing",
+        "page": 235,
+        "subtitle": "Potion, Common"
+      },
+      {
+        "name": "Potion of Diminution",
+        "page": 235,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Potion of Flying",
+        "page": 235,
+        "subtitle": "Potion, Very Rare"
+      },
+      {
+        "name": "Potion of Gaseous Form",
+        "page": 235,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Potion of Giant Strength",
+        "page": 235,
+        "subtitle": "Potion, Rarity Varies"
+      },
+      {
+        "name": "Potion of Growth",
+        "page": 235,
+        "subtitle": "Potion, Uncommon"
+      },
+      {
+        "name": "Potion of Heroism",
+        "page": 236,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Potion of Invisibility",
+        "page": 236,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Potion of Invulnerability",
+        "page": 236,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Potion of Longevity",
+        "page": 236,
+        "subtitle": "Potion, Very Rare"
+      },
+      {
+        "name": "Potion of Mind Reading",
+        "page": 236,
+        "subtitle": "Potion, Rare"
+      },
+      {
+        "name": "Potion of Poison",
+        "page": 236,
+        "subtitle": "Potion, Uncommon"
+      },
+      {
+        "name": "Potion of Resistance",
+        "page": 236,
+        "subtitle": "Potion, Uncommon"
+      },
+      {
+        "name": "Potion of Speed",
+        "page": 236,
+        "subtitle": "Potion, Very Rare"
+      },
+      {
+        "name": "Potion of Vitality",
+        "page": 236,
+        "subtitle": "Potion, Very Rare"
+      },
+      {
+        "name": "Potion of Water Breathing",
+        "page": 236,
+        "subtitle": "Potion, Uncommon"
+      },
+      {
+        "name": "Potions of Healing",
+        "page": 236,
+        "subtitle": "Potion, Rarity Varies"
+      },
+      {
+        "name": "Quarterstaff of the Acrobat",
+        "page": 237,
+        "subtitle": "Weapon (Quarterstaff), Very Rare (Requires"
+      },
+      {
+        "name": "Ring of Animal Influence",
+        "page": 237,
+        "subtitle": "Ring, Rare"
+      },
+      {
+        "name": "Ring of Djinni Summoning",
+        "page": 237,
+        "subtitle": "Ring, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Elemental Command",
+        "page": 237,
+        "subtitle": "Ring, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Evasion",
+        "page": 238,
+        "subtitle": "Ring, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Feather Falling",
+        "page": 238,
+        "subtitle": "Ring, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Free Action",
+        "page": 238,
+        "subtitle": "Ring, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Invisibility",
+        "page": 238,
+        "subtitle": "Ring, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Jumping",
+        "page": 238,
+        "subtitle": "Ring, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Mind Shielding",
+        "page": 238,
+        "subtitle": "Ring, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Protection",
+        "page": 238,
+        "subtitle": "Ring, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Regeneration",
+        "page": 238,
+        "subtitle": "Ring, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Resistance",
+        "page": 238,
+        "subtitle": "Ring, Rare"
+      },
+      {
+        "name": "Ring of Shooting Stars",
+        "page": 238,
+        "subtitle": "Ring, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Spell Storing",
+        "page": 239,
+        "subtitle": "Ring, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Spell Turning",
+        "page": 239,
+        "subtitle": "Ring, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Swimming",
+        "page": 239,
+        "subtitle": "Ring, Uncommon"
+      },
+      {
+        "name": "Ring of Telekinesis",
+        "page": 239,
+        "subtitle": "Ring, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of the Ram",
+        "page": 239,
+        "subtitle": "Ring, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Three Wishes",
+        "page": 239,
+        "subtitle": "Ring, Legendary"
+      },
+      {
+        "name": "Ring of Warmth",
+        "page": 239,
+        "subtitle": "Ring, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Ring of Water Walking",
+        "page": 239,
+        "subtitle": "Ring, Uncommon"
+      },
+      {
+        "name": "Ring of X-ray Vision",
+        "page": 239,
+        "subtitle": "Ring, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Robe of Eyes",
+        "page": 240,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Robe of Scintillating Colors",
+        "page": 240,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Robe of Stars",
+        "page": 240,
+        "subtitle": "Wondrous Item, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Robe of the Archmagi",
+        "page": 240,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement by a"
+      },
+      {
+        "name": "Robe of Useful Items",
+        "page": 240,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Rod of Absorption",
+        "page": 241,
+        "subtitle": "Rod, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Rod of Alertness",
+        "page": 241,
+        "subtitle": "Rod, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Rod of Lordly Might",
+        "page": 241,
+        "subtitle": "Rod, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Rod of Resurrection",
+        "page": 242,
+        "subtitle": "Rod, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Rod of Rulership",
+        "page": 242,
+        "subtitle": "Rod, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Rod of Security",
+        "page": 242,
+        "subtitle": "Rod, Very Rare"
+      },
+      {
+        "name": "Rope of Climbing",
+        "page": 242,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Rope of Entanglement",
+        "page": 242,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Scarab of Protection",
+        "page": 243,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Scimitar of Speed",
+        "page": 243,
+        "subtitle": "Weapon (Scimitar), Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Sending Stones",
+        "page": 243,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Sentinel Shield",
+        "page": 243,
+        "subtitle": "Armor (Shield), Uncommon"
+      },
+      {
+        "name": "Shield of Missile Attraction",
+        "page": 243,
+        "subtitle": "Armor (Shield), Rare (Requires Attunement)"
+      },
+      {
+        "name": "Shield of the Cavalier",
+        "page": 243,
+        "subtitle": "Armor (Shield), Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Shield, +1, +2, or +3",
+        "page": 243,
+        "subtitle": "Armor (Shield), Uncommon (+1), Rare (+2), or Very"
+      },
+      {
+        "name": "Slippers of Spider Climbing",
+        "page": 244,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Sovereign Glue",
+        "page": 244,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Spell Scroll",
+        "page": 244,
+        "subtitle": "Scroll, Rarity Varies"
+      },
+      {
+        "name": "Spellguard Shield",
+        "page": 244,
+        "subtitle": "Armor (Shield), Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Sphere of Annihilation",
+        "page": 244,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Staff of Charming",
+        "page": 245,
+        "subtitle": "Staff, Rare (Requires Attunement by a Bard, Cleric,"
+      },
+      {
+        "name": "Staff of Fire",
+        "page": 245,
+        "subtitle": "Staff, Very Rare (Requires Attunement by a Druid,"
+      },
+      {
+        "name": "Staff of Frost",
+        "page": 245,
+        "subtitle": "Staff, Very Rare (Requires Attunement by a Druid,"
+      },
+      {
+        "name": "Staff of Healing",
+        "page": 245,
+        "subtitle": "Staff, Rare (Requires Attunement by a Bard, Cleric, or"
+      },
+      {
+        "name": "Staff of Power",
+        "page": 245,
+        "subtitle": "Staff, Very Rare (Requires Attunement by a Sorcerer,"
+      },
+      {
+        "name": "Staff of Striking",
+        "page": 246,
+        "subtitle": "Staff, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Staff of Swarming Insects",
+        "page": 246,
+        "subtitle": "Staff, Rare (Requires Attunement by a Bard, Cleric,"
+      },
+      {
+        "name": "Staff of the Magi",
+        "page": 246,
+        "subtitle": "Staff, Legendary (Requires Attunement by a Sorcerer,"
+      },
+      {
+        "name": "Staff of the Python",
+        "page": 247,
+        "subtitle": "Staff, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Staff of the Woodlands",
+        "page": 247,
+        "subtitle": "Staff, Rare (Requires Attunement by a Druid)"
+      },
+      {
+        "name": "Staff of Thunder and Lightning",
+        "page": 247,
+        "subtitle": "Staff, Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Staff of Withering",
+        "page": 248,
+        "subtitle": "Staff, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Stone of Controlling Earth Elementals",
+        "page": 248,
+        "subtitle": "Wondrous Item, Rare"
+      },
+      {
+        "name": "Stone of Good Luck (Luckstone)",
+        "page": 248,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Sun Blade",
+        "page": 248,
+        "subtitle": "Weapon (Longsword), Rare (Requires Attunement)"
+      },
+      {
+        "name": "Sword of Life Stealing",
+        "page": 248,
+        "subtitle": "Weapon (Glaive, Greatsword, Longsword, Rapier,"
+      },
+      {
+        "name": "Sword of Sharpness",
+        "page": 248,
+        "subtitle": "Weapon (Glaive, Greatsword, Longsword, or Scimitar),"
+      },
+      {
+        "name": "Sword of Wounding",
+        "page": 248,
+        "subtitle": "Weapon (Glaive, Greatsword, Longsword, Rapier,"
+      },
+      {
+        "name": "Talisman of Pure Good",
+        "page": 248,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement by a"
+      },
+      {
+        "name": "Talisman of the Sphere",
+        "page": 249,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Talisman of Ultimate Evil",
+        "page": 249,
+        "subtitle": "Wondrous Item, Legendary (Requires Attunement)"
+      },
+      {
+        "name": "Thunderous Greatclub",
+        "page": 249,
+        "subtitle": "Weapon (Greatclub), Very Rare (Requires Attunement)"
+      },
+      {
+        "name": "Tome of Clear Thought",
+        "page": 249,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Tome of Leadership and Influence",
+        "page": 249,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Tome of Understanding",
+        "page": 250,
+        "subtitle": "Wondrous Item, Very Rare"
+      },
+      {
+        "name": "Trident of Fish Command",
+        "page": 250,
+        "subtitle": "Weapon (Trident), Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Universal Solvent",
+        "page": 250,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Vicious Weapon",
+        "page": 250,
+        "subtitle": "Weapon (Any Simple or Martial), Rare"
+      },
+      {
+        "name": "Vorpal Sword",
+        "page": 250,
+        "subtitle": "Weapon (Glaive, Greatsword, Longsword, or Scimitar),"
+      },
+      {
+        "name": "Wand of Binding",
+        "page": 250,
+        "subtitle": "Wand, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Wand of Enemy Detection",
+        "page": 250,
+        "subtitle": "Wand, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Wand of Fear",
+        "page": 250,
+        "subtitle": "Wand, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Wand of Fireballs",
+        "page": 250,
+        "subtitle": "Wand, Rare (Requires Attunement by a Spellcaster)"
+      },
+      {
+        "name": "Wand of Lightning Bolts",
+        "page": 251,
+        "subtitle": "Wand, Rare (Requires Attunement by a Spellcaster)"
+      },
+      {
+        "name": "Wand of Magic Detection",
+        "page": 251,
+        "subtitle": "Wand, Uncommon"
+      },
+      {
+        "name": "Wand of Magic Missiles",
+        "page": 251,
+        "subtitle": "Wand, Uncommon"
+      },
+      {
+        "name": "Wand of Paralysis",
+        "page": 251,
+        "subtitle": "Wand, Rare (Requires Attunement by a Spellcaster)"
+      },
+      {
+        "name": "Wand of Polymorph",
+        "page": 251,
+        "subtitle": "Wand, Very Rare (Requires Attunement by a"
+      },
+      {
+        "name": "Wand of Secrets",
+        "page": 251,
+        "subtitle": "Wand, Uncommon"
+      },
+      {
+        "name": "Wand of the War Mage, +1, +2, or +3",
+        "page": 251,
+        "subtitle": "Wand, Uncommon (+1), Rare (+2), or Very Rare (+3)"
+      },
+      {
+        "name": "Wand of Web",
+        "page": 251,
+        "subtitle": "Wand, Uncommon (Requires Attunement by a"
+      },
+      {
+        "name": "Wand of Wonder",
+        "page": 251,
+        "subtitle": "Wand, Rare (Requires Attunement)"
+      },
+      {
+        "name": "Weapon of Warning",
+        "page": 253,
+        "subtitle": "Weapon (Any Simple or Martial), Uncommon (Requires"
+      },
+      {
+        "name": "Weapon, +1, +2, or +3",
+        "page": 253,
+        "subtitle": "Weapon (Any Simple or Martial), Uncommon (+1), Rare"
+      },
+      {
+        "name": "Well of Many Worlds",
+        "page": 253,
+        "subtitle": "Wondrous Item, Legendary"
+      },
+      {
+        "name": "Wind Fan",
+        "page": 253,
+        "subtitle": "Wondrous Item, Uncommon"
+      },
+      {
+        "name": "Winged Boots",
+        "page": 253,
+        "subtitle": "Wondrous Item, Uncommon (Requires Attunement)"
+      },
+      {
+        "name": "Wings of Flying",
+        "page": 253,
+        "subtitle": "Wondrous Item, Rare (Requires Attunement)"
+      }
+    ],
+    "animals": [
+      {
+        "name": "Allosaurus",
+        "page": 344,
+        "subtitle": "Large Beast (Dinosaur), Unaligned"
+      },
+      {
+        "name": "Ankylosaurus",
+        "page": 344,
+        "subtitle": "Huge Beast (Dinosaur), Unaligned"
+      },
+      {
+        "name": "Ape",
+        "page": 344,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Archelon",
+        "page": 344,
+        "subtitle": "Huge Beast (Dinosaur), Unaligned"
+      },
+      {
+        "name": "Baboon",
+        "page": 345,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Badger",
+        "page": 345,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Bat",
+        "page": 345,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Black Bear",
+        "page": 345,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Blood Hawk",
+        "page": 345,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Boar",
+        "page": 346,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Brown Bear",
+        "page": 346,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Camel",
+        "page": 346,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Cat",
+        "page": 346,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Constrictor Snake",
+        "page": 346,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Crab",
+        "page": 347,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Crocodile",
+        "page": 347,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Deer",
+        "page": 347,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Dire Wolf",
+        "page": 347,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Draft Horse",
+        "page": 347,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Eagle",
+        "page": 348,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Elephant",
+        "page": 348,
+        "subtitle": "Huge Beast, Unaligned"
+      },
+      {
+        "name": "Elk",
+        "page": 348,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Flying Snake",
+        "page": 348,
+        "subtitle": "Tiny Monstrosity, Unaligned"
+      },
+      {
+        "name": "Frog",
+        "page": 348,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Giant Ape",
+        "page": 349,
+        "subtitle": "Huge Beast, Unaligned"
+      },
+      {
+        "name": "Giant Badger",
+        "page": 349,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Giant Bat",
+        "page": 349,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Boar",
+        "page": 349,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Centipede",
+        "page": 349,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Giant Constrictor Snake",
+        "page": 350,
+        "subtitle": "Huge Beast, Unaligned"
+      },
+      {
+        "name": "Giant Crab",
+        "page": 350,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Giant Crocodile",
+        "page": 350,
+        "subtitle": "Huge Beast, Unaligned"
+      },
+      {
+        "name": "Giant Eagle",
+        "page": 350,
+        "subtitle": "Large Celestial, Neutral Good"
+      },
+      {
+        "name": "Giant Elk",
+        "page": 351,
+        "subtitle": "Huge Celestial, Neutral Good"
+      },
+      {
+        "name": "Giant Fire Beetle",
+        "page": 351,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Giant Frog",
+        "page": 351,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Giant Goat",
+        "page": 351,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Hyena",
+        "page": 352,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Lizard",
+        "page": 352,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Octopus",
+        "page": 352,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Owl",
+        "page": 352,
+        "subtitle": "Large Celestial, Neutral"
+      },
+      {
+        "name": "Giant Rat",
+        "page": 353,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Giant Scorpion",
+        "page": 353,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Seahorse",
+        "page": 353,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Shark",
+        "page": 353,
+        "subtitle": "Huge Beast, Unaligned"
+      },
+      {
+        "name": "Giant Spider",
+        "page": 353,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Toad",
+        "page": 354,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Giant Venomous Snake",
+        "page": 354,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Giant Vulture",
+        "page": 354,
+        "subtitle": "Large Monstrosity, Neutral Evil"
+      },
+      {
+        "name": "Giant Wasp",
+        "page": 354,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Giant Weasel",
+        "page": 355,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Giant Wolf Spider",
+        "page": 355,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Goat",
+        "page": 355,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Hawk",
+        "page": 355,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Hippopotamus",
+        "page": 355,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Hunter Shark",
+        "page": 356,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Hyena",
+        "page": 356,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Jackal",
+        "page": 356,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Killer Whale",
+        "page": 356,
+        "subtitle": "Huge Beast, Unaligned"
+      },
+      {
+        "name": "Lion",
+        "page": 356,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Lizard",
+        "page": 357,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Mammoth",
+        "page": 357,
+        "subtitle": "Huge Beast, Unaligned"
+      },
+      {
+        "name": "Mastiff",
+        "page": 357,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Mule",
+        "page": 357,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Octopus",
+        "page": 357,
+        "subtitle": "Small Beast, Unaligned"
+      },
+      {
+        "name": "Ogre Zombie",
+        "page": 344,
+        "subtitle": "Large Undead, Neutral Evil"
+      },
+      {
+        "name": "Owl",
+        "page": 358,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Panther",
+        "page": 358,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Piranha",
+        "page": 358,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Plesiosaurus",
+        "page": 358,
+        "subtitle": "Large Beast (Dinosaur), Unaligned"
+      },
+      {
+        "name": "Polar Bear",
+        "page": 359,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Pony",
+        "page": 359,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Pteranodon",
+        "page": 359,
+        "subtitle": "Medium Beast (Dinosaur), Unaligned"
+      },
+      {
+        "name": "Rat",
+        "page": 359,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Raven",
+        "page": 359,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Reef Shark",
+        "page": 360,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Rhinoceros",
+        "page": 360,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Riding Horse",
+        "page": 360,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Saber-Toothed Tiger",
+        "page": 360,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Scorpion",
+        "page": 360,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Seahorse",
+        "page": 361,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Spider",
+        "page": 361,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Swarm of Bats",
+        "page": 361,
+        "subtitle": "Large Swarm of Tiny Beasts, Unaligned"
+      },
+      {
+        "name": "Swarm of Insects",
+        "page": 361,
+        "subtitle": "Medium Swarm of Tiny Beasts, Unaligned"
+      },
+      {
+        "name": "Swarm of Piranhas",
+        "page": 362,
+        "subtitle": "Medium Swarm of Tiny Beasts, Unaligned"
+      },
+      {
+        "name": "Swarm of Rats",
+        "page": 362,
+        "subtitle": "Medium Swarm of Tiny Beasts, Unaligned"
+      },
+      {
+        "name": "Swarm of Ravens",
+        "page": 362,
+        "subtitle": "Medium Swarm of Tiny Beasts, Unaligned"
+      },
+      {
+        "name": "Swarm of Venomous Snakes",
+        "page": 362,
+        "subtitle": "Medium Swarm of Tiny Beasts, Unaligned"
+      },
+      {
+        "name": "Tiger",
+        "page": 363,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Triceratops",
+        "page": 363,
+        "subtitle": "Huge Beast (Dinosaur), Unaligned"
+      },
+      {
+        "name": "Tyrannosaurus Rex",
+        "page": 363,
+        "subtitle": "Huge Beast (Dinosaur), Unaligned"
+      },
+      {
+        "name": "Venomous Snake",
+        "page": 363,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Vulture",
+        "page": 363,
+        "subtitle": "Medium Beast, Unaligned"
+      },
+      {
+        "name": "Warhorse",
+        "page": 364,
+        "subtitle": "Large Beast, Unaligned"
+      },
+      {
+        "name": "Weasel",
+        "page": 364,
+        "subtitle": "Tiny Beast, Unaligned"
+      },
+      {
+        "name": "Wolf",
+        "page": 364,
+        "subtitle": "Medium Beast, Unaligned"
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "chapter": "Feats",
+      "page": 86,
+      "issue": "heading without a matching subtitle",
+      "text": "Halfling",
+      "next": "Creature Type:Humanoid"
+    },
+    {
+      "chapter": "Feats",
+      "page": 86,
+      "issue": "heading without a matching subtitle",
+      "text": "Human",
+      "next": "Creature Type:Humanoid"
+    },
+    {
+      "chapter": "Feats",
+      "page": 86,
+      "issue": "heading without a matching subtitle",
+      "text": "Orc",
+      "next": "Creature Type:Humanoid"
+    },
+    {
+      "chapter": "Feats",
+      "page": 86,
+      "issue": "heading without a matching subtitle",
+      "text": "Tiefling",
+      "next": "Creature Type:Humanoid"
+    },
+    {
+      "chapter": "Tools",
+      "page": 94,
+      "issue": "heading without a matching subtitle",
+      "text": "Acid (25 GP)",
+      "next": "When you take the Attack action, you can replace"
+    },
+    {
+      "chapter": "Tools",
+      "page": 94,
+      "issue": "heading without a matching subtitle",
+      "text": "Alchemist’s Fire (50 GP)",
+      "next": "When you take the Attack action, you can replace"
+    },
+    {
+      "chapter": "Tools",
+      "page": 94,
+      "issue": "heading without a matching subtitle",
+      "text": "Ammunition (Varies)",
+      "next": "Ammunition is required by a weapon that has the"
+    },
+    {
+      "chapter": "Spells",
+      "page": 176,
+      "issue": "heading without a matching subtitle",
+      "text": "Ability Check",
+      "next": "An ability check is a D20 Test that represents using"
+    },
+    {
+      "chapter": "Spells",
+      "page": 176,
+      "issue": "heading without a matching subtitle",
+      "text": "Ability Score and Modifier",
+      "next": "A creature has six ability scores—Strength, Dex-"
+    },
+    {
+      "chapter": "Spells",
+      "page": 176,
+      "issue": "heading without a matching subtitle",
+      "text": "Action",
+      "next": "On your turn, you can take one action. Choose which"
+    },
+    {
+      "chapter": "Spells",
+      "page": 176,
+      "issue": "heading without a matching subtitle",
+      "text": "Advantage",
+      "next": "If you have Advantage on a D20 Test, roll two d20s,"
+    },
+    {
+      "chapter": "Spells",
+      "page": 176,
+      "issue": "heading without a matching subtitle",
+      "text": "Adventure",
+      "next": "An adventure is a series of encounters. A"
+    },
+    {
+      "chapter": "Spells",
+      "page": 176,
+      "issue": "heading without a matching subtitle",
+      "text": "Alignment",
+      "next": "A creature’s alignment broadly describes its ethical"
+    },
+    {
+      "chapter": "Spells",
+      "page": 176,
+      "issue": "heading without a matching subtitle",
+      "text": "Ally",
+      "next": "A creature is your ally if it is a member of your ad-"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 209,
+      "issue": "heading without a matching subtitle",
+      "text": "Amulet of Proof against Detection",
+      "next": "and Location"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 254,
+      "issue": "heading without a matching subtitle",
+      "text": "Descriptive Tags",
+      "next": "A monster might have one or more tags in parenthe-"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 255,
+      "issue": "heading without a matching subtitle",
+      "text": "Ammunition and Ranged Attacks",
+      "next": "A monster that requires ammunition to make"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 255,
+      "issue": "heading without a matching subtitle",
+      "text": "Equipping a Monster with Other Items",
+      "next": "You may equip monsters with additional gear how-"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 256,
+      "issue": "heading without a matching subtitle",
+      "text": "Attack Notation",
+      "next": "The entry for a monster’s attack identifies whether"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 256,
+      "issue": "heading without a matching subtitle",
+      "text": "Experience Points",
+      "next": "The number of Experience Points (XP) a monster"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 256,
+      "issue": "heading without a matching subtitle",
+      "text": "Proficiency Bonus",
+      "next": "A monster’s Proficiency Bonus (PB) is determined"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 256,
+      "issue": "heading without a matching subtitle",
+      "text": "Saving Throw Effect Notation",
+      "next": "If an effect forces a saving throw, the effect identi-"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 256,
+      "issue": "heading without a matching subtitle",
+      "text": "Telepathy",
+      "next": "Telepathy is a magical ability that allows a creature"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 257,
+      "issue": "heading without a matching subtitle",
+      "text": "Damage Notation",
+      "next": "A stat block usually provides both a number and a"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 257,
+      "issue": "heading without a matching subtitle",
+      "text": "Multiattack",
+      "next": "Some creatures can make more than one attack"
+    },
+    {
+      "chapter": "Magic Items",
+      "page": 257,
+      "issue": "heading without a matching subtitle",
+      "text": "Spellcasting",
+      "next": "If a monster can cast any spells, its stat block lists"
+    }
+  ]
+}

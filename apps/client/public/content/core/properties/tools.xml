@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Artisan" type="Property" source="Internal" id="ID_INTERNAL_TOOL_PROPERTY_ARTISAN" />
+	<element name="Vehicle" type="Property" source="Internal" id="ID_INTERNAL_TOOL_PROPERTY_VEHILCE" />
+	<element name="Gaming Set" type="Property" source="Internal" id="ID_INTERNAL_TOOL_PROPERTY_GAMING_SET" />
+	<element name="Kit" type="Property" source="Internal" id="ID_INTERNAL_TOOL_PROPERTY_KIT" />
+	<element name="Thieves Tools" type="Property" source="Internal" id="ID_INTERNAL_TOOL_PROPERTY_THIEVES_TOOLS" />
+	<element name="Musical Instrument" type="Property" source="Internal" id="ID_INTERNAL_TOOL_PROPERTY_MUSICAL_INSTRUMENT" />
+</elements>

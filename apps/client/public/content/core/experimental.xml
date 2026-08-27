@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Companion Selection" type="Item" source="Player’s Handbook" id="ID_INTERNAL_ITEM_PROXY_COMPANION_SELECTION">
+		<compendium display="false" />
+		<description>
+			<p><em>Equipping this hidden item enables a companion choice for the character. It never appears in the inventory on the character sheet.</em></p>
+		</description>
+		<setters>
+			<set name="category">Additional Feature</set>
+			<set name="inventory-hidden">true</set>
+			<set name="slot">companion</set>
+		</setters>
+		<rules>
+			<select name="Companion" type="Companion" requirements="!ID_INTERNAL_ITEM_PROXY_FAMILIAR_SELECTION" />
+		</rules>
+	</element>
+	<element name="Familiar Selection" type="Item" source="Player’s Handbook" id="ID_INTERNAL_ITEM_PROXY_FAMILIAR_SELECTION">
+		<compendium display="false" />
+		<description>
+			<p><em>Equipping this hidden item enables a familiar choice for the character. It never appears in the inventory on the character sheet.</em></p>
+		</description>
+		<setters>
+			<set name="category">Additional Feature</set>
+			<set name="inventory-hidden">true</set>
+			<set name="slot">companion</set>
+		</setters>
+		<rules>
+			<select name="Companion" type="Companion" supports="Familiar" requirements="!ID_INTERNAL_ITEM_PROXY_COMPANION_SELECTION" />
+		</rules>
+	</element>
+</elements>

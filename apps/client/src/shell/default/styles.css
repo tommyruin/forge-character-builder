@@ -1,0 +1,258 @@
+/*
+ * Default shell stylesheet: the design tokens the client's own stylesheet
+ * consumes, plus the brand-mark and version-stamp rules the shell components
+ * render. A host shell replaces this file wholesale; the token names below are
+ * the contract it must satisfy for every theme.
+ */
+
+:root {
+  --dmf-background: #0b0f17;
+  --dmf-background-soft: #121826;
+  --dmf-surface: #1a2232;
+  --dmf-surface-strong: #232d40;
+  --dmf-border: #3a465c;
+  --dmf-border-soft: rgb(90 104 128 / 60%);
+  --dmf-text: #f4f6fa;
+  --dmf-text-muted: #9aa6ba;
+  --dmf-text-faint: #6b768a;
+  --dmf-primary: #4f8cff;
+  --dmf-primary-strong: #2f6fe0;
+  --dmf-on-primary: #ffffff;
+  --dmf-accent: #e06c9f;
+  --dmf-danger: #d9534f;
+  --dmf-success: #3fa45b;
+  --dmf-warning: #d99a2b;
+  --dmf-shadow-color: rgb(0 0 0 / 36%);
+  --dmf-page-background: linear-gradient(180deg, #121826 0%, #0b0f17 100%);
+  --dmf-header-background: #0b0f17;
+  --dmf-font-display: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --dmf-font-body: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --dmf-space-4: 0.25rem;
+  --dmf-space-8: 0.5rem;
+  --dmf-space-12: 0.75rem;
+  --dmf-space-16: 1rem;
+  --dmf-space-24: 1.5rem;
+  --dmf-space-32: 2rem;
+
+  --dmf-radius-sm: 6px;
+  --dmf-radius: 12px;
+  --dmf-radius-lg: 18px;
+
+  --dmf-transition: 160ms ease;
+
+  --dmf-page-gutter: 14px;
+  /* The bars and the page share one capped, centred column. */
+  --dmf-page-max-width: 3200px;
+  --dmf-control-min-height: 36px;
+  --dmf-control-height-lg: 44px;
+  --dmf-tool-nav-height: 44px;
+  --dmf-inspector-width: clamp(240px, 24vw, 288px);
+  --dmf-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  --dmf-shadow: 0 8px 24px var(--dmf-shadow-color);
+}
+
+:root[data-theme="light"],
+.light-mode {
+  --dmf-background: #ffffff;
+  --dmf-background-soft: #f4f6fa;
+  --dmf-surface: #ffffff;
+  --dmf-surface-strong: #e6eaf1;
+  --dmf-border: #b6c0cf;
+  --dmf-border-soft: rgb(148 160 184 / 48%);
+  --dmf-text: #14181f;
+  --dmf-text-muted: #4b5566;
+  --dmf-text-faint: #6b768a;
+  --dmf-primary: #2f6fe0;
+  --dmf-primary-strong: #1f56b8;
+  --dmf-on-primary: #ffffff;
+  --dmf-accent: #c94d84;
+  --dmf-danger: #c9302c;
+  --dmf-success: #2e8b47;
+  --dmf-warning: #b8801f;
+  --dmf-shadow-color: rgb(20 24 31 / 12%);
+  --dmf-page-background: linear-gradient(180deg, #ffffff 0%, #f4f6fa 100%);
+  --dmf-header-background: #ffffff;
+}
+
+:root[data-theme="retro"],
+.retro-mode {
+  --dmf-background: #241a12;
+  --dmf-background-soft: #2b1f15;
+  --dmf-surface: #322418;
+  --dmf-surface-strong: #3f2f21;
+  --dmf-border: #6a5238;
+  --dmf-border-soft: rgb(214 176 96 / 28%);
+  --dmf-text: #f3e8cf;
+  --dmf-text-muted: #cfc0a3;
+  --dmf-text-faint: #988a6e;
+  --dmf-primary: #d6b060;
+  --dmf-primary-strong: #ad8434;
+  --dmf-on-primary: #17100a;
+  --dmf-accent: #a8412f;
+  --dmf-danger: #a8412f;
+  --dmf-success: #6f8f3a;
+  --dmf-warning: #d6b060;
+  --dmf-shadow-color: rgb(10 7 5 / 40%);
+  --dmf-page-background: linear-gradient(180deg, #1d1610 0%, #0b0806 100%);
+  --dmf-header-background: #241a12;
+  --dmf-font-display: Georgia, "Book Antiqua", "Times New Roman", serif;
+  --dmf-font-body: Georgia, "Book Antiqua", "Times New Roman", serif;
+}
+
+@media (min-width: 461px) {
+  :root {
+    --dmf-page-gutter: 16px;
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --dmf-page-gutter: 24px;
+  }
+}
+
+@media (pointer: coarse) {
+  :root {
+    --dmf-control-min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dmf-transition: 0.01ms linear;
+  }
+}
+
+.dmf-logo {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--dmf-text);
+  text-decoration: none;
+}
+
+.dmf-logo__icon {
+  display: block;
+  flex: none;
+}
+
+.dmf-logo__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.05;
+}
+
+.dmf-logo__title {
+  overflow: hidden;
+  color: var(--dmf-text);
+  font-family: var(--dmf-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dmf-logo__subtitle {
+  overflow: hidden;
+  margin-top: 0.18rem;
+  color: var(--dmf-text-muted);
+  font-family: var(--dmf-font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The brand lockup: mark, wordmark, and the version stamp held underneath. */
+.dmf-versioned-brand {
+  --dmf-version-stamp-reserve: 0.85rem;
+  --dmf-version-stamp-drop: 0.9025rem;
+
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.dmf-versioned-brand .dmf-logo__copy {
+  padding-bottom: var(--dmf-version-stamp-reserve);
+}
+
+.dmf-versioned-brand__home {
+  display: inline-flex;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  transition: opacity var(--dmf-transition);
+}
+
+.dmf-versioned-brand__home:hover {
+  opacity: 0.8;
+}
+
+.dmf-versioned-brand__home:focus-visible {
+  border-radius: 0.2rem;
+  outline: 2px solid var(--dmf-primary);
+  outline-offset: 2px;
+}
+
+.dmf-version-stamp {
+  position: absolute;
+  top: 50%;
+  left: 3.25rem;
+  transform: translateY(calc(-50% + var(--dmf-version-stamp-drop)));
+  min-width: 3rem;
+  height: 1.625rem;
+  padding: 0 0 0.625rem;
+  border: 0;
+  background: transparent;
+  color: var(--dmf-text-muted);
+  font-family: var(--dmf-font-body);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  line-height: 1;
+}
+
+@media (max-width: 767px) {
+  .dmf-versioned-brand {
+    width: 2.5rem;
+    padding-bottom: 0.68rem;
+    justify-content: center;
+  }
+
+  .dmf-version-stamp {
+    top: auto;
+    bottom: 0;
+    left: 50%;
+    height: 1.5rem;
+    padding: 0.899rem 0 0;
+    font-size: 0.59rem;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 460px) {
+  .dmf-versioned-brand {
+    width: 2.25rem;
+  }
+}
+
+.dmf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

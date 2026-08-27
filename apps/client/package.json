@@ -1,0 +1,41 @@
+{
+  "name": "dm-forge-character-builder",
+  "private": true,
+  "version": "1.0.11",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run --config vitest.config.ts --maxWorkers=1 --no-file-parallelism",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@forge-cb/api": "file:../../packages/api",
+    "fflate": "^0.8.3",
+    "pdfjs-dist": "^6.1.200",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "eslint": "^10.8.1",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "globals": "^17.0.0",
+    "happy-dom": "^20.11.2",
+    "postcss": "^8.5.0",
+    "tailwindcss": "^4.1.0",
+    "vite": "^8.0.0",
+    "vitest": "^3.2.7"
+  },
+  "license": "AGPL-3.0-only"
+}

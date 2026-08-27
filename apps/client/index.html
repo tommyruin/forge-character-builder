@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="application-name" content="%VITE_FCB_APP_TITLE%" />
+    <meta name="description" content="%VITE_FCB_APP_DESCRIPTION%" />
+    <meta name="theme-color" content="%VITE_FCB_THEME_COLOR%" />
+    <script>
+      try {
+        const theme = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = ['dark', 'light', 'retro'].includes(theme)
+          ? theme
+          : '%VITE_FCB_DEFAULT_THEME%';
+      } catch {
+        document.documentElement.dataset.theme = '%VITE_FCB_DEFAULT_THEME%';
+      }
+    </script>
+    <title>%VITE_FCB_APP_TITLE%</title>
+  </head>
+  <body>
+    <!-- Static readiness anchor lets automation detect the app before React's first paint. -->
+    <span
+      class="fcb-engine-state-marker"
+      aria-hidden="true"
+      data-fcb-engine-ready="true"
+      data-fcb-engine-progress="100"
+    ></span>
+    <div id="root"></div>
+    <script type="module" src="./src/main.jsx"></script>
+  </body>
+</html>

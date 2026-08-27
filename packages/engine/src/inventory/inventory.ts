@@ -1,0 +1,985 @@
+/**
+ * Inventory operations: DTO construction and .dnd5e document edit planning.
+ *
+ * The rules this surface implements:
+ *  - adding a weapon/armor auto-equips it at its first equip location when
+ *    the slot is free (a two-handed weapon occupies both hands); adding a
+ *    magic item with an explicit baseElementId (or a name-valued weapon/armor
+ *    setter) adorns it onto the base; an unbased magic item is not equippable.
+ *  - equipping vacates the slot's occupants; unequipping also drops
+ *    attunement; the attune endpoint accepts non-attunable items (no count
+ *    change) and rejects attuning beyond the computed "attunement:max"
+ *    statistic (base 3, raised by content stat rules).
+ *  - equipped or attuned items register into the <sum> (base element, its
+ *    grants, and the adorner), armor items additionally register into the
+ *    <elements> tree, and registered-count increments by one per
+ *    equipped/attuned item.
+ *  - extracting a pack removes it and adds its <extract> contents as new
+ *    items; non-extractable items are rejected.
+ */
+
+import { randomUuid } from "../platform.js";
+import { getAttr, childElements, type Dnd5eDocument, type Dnd5eNode } from "../dnd5e/document.js";
+import { engineError } from "../errors.js";
+import { escapeXml } from "../selection/selection.js";
+import { elementById, type ElementLibrary } from "../content/library.js";
+import type { ParsedElement, Rule, Setter } from "../content/parser.js";
+import type { CharacterState, Coinage, InventoryItemState } from "../character/state.js";
+import { equipmentMetadata, isPhysicalEquipment, type EquipmentAttunementDto } from "../content/equipment/categories.js";
+
+export interface InventoryItemDto {
+  identifier: string;
+  itemId: string;
+  /**
+   * The element to show for this record: the adorner (Staff of Power) when
+   * adorned, else the base item. Inventory description lookups must use this
+   * — the base of an adorned record is the plain physical item (Quarterstaff).
+   */
+  displayElementId: string;
+  /** The record's free-text notes from the details card. */
+  notes: string;
+  name: string;
+  type: string;
+  amount: number;
+  isEquippable: boolean;
+  isEquipped: boolean;
+  equippedLocation: string | null;
+  /** The storage container name it is stowed in, or null when carried. */
+  storage: string | null;
+  isAttunable: boolean;
+  isAttuned: boolean;
+  displayPrice: string;
+  source: string;
+  equipLocations: string[];
+  weight: string | null;
+  category: string | null;
+  isPhysicalEquipment: boolean;
+  description: string;
+  rarity: string | null;
+  attunement: EquipmentAttunementDto;
+  isExtractable: boolean;
+  extractableContents: Array<{ itemId: string; name: string; amount: number }>;
+}
+
+export interface InventoryDto {
+  items: InventoryItemDto[];
+  coins: Coinage;
+  equipmentWeight: number;
+  attunedItemCount: number;
+  maxAttunedItemCount: number;
+  /** The two storage container names (`state.storages`, editable). */
+  storages: string[];
+}
+
+export interface ItemBaseOptionsDto {
+  slot: string | null;
+  options: Array<{ id: string; name: string }>;
+}
+
+export interface AddItemOptions {
+  itemId: string;
+  amount?: number;
+  baseElementId?: string | null;
+}
+
+export interface RawEdit {
+  start: number;
+  end: number;
+  replacement: string;
+}
+
+/** Equip location keys -> the display name stored in the document. */
+export const LOCATION_DISPLAY: Record<string, string> = {
+  primary: "Primary Hand",
+  secondary: "Secondary Hand",
+  armor: "Armor",
+  "primary-twohanded": "Two-Handed",
+};
+
+const DISPLAY_LOCATION: Record<string, string> = {
+  "Primary Hand": "primary",
+  "Secondary Hand": "secondary",
+  Armor: "armor",
+  "Two-Handed": "primary-twohanded",
+};
+
+const setterValue = (element: ParsedElement | undefined, name: string): string | undefined =>
+  element?.setters.find((s) => s.name === name)?.value;
+
+/** The equip location keys of an item's effective element (its base). */
+export function equipLocationsFor(element: ParsedElement | undefined): string[] {
+  if (!element) return [];
+  const slot = setterValue(element, "slot") ?? "";
+  if (element.identity.type === "Weapon") {
+    if (slot === "twohand") return ["primary-twohanded"];
+    return ["primary", "secondary"];
+  }
+  if (element.identity.type === "Armor") {
+    if (slot.includes("secondary")) return ["secondary"];
+    return ["armor"];
+  }
+  return [];
+}
+
+/** The magic-item base slot setter ("weapon" or "armor"), when present. */
+function baseSlotSetter(element: ParsedElement | undefined): Setter | undefined {
+  if (!element) return undefined;
+  return element.setters.find((s) => s.name === "weapon" || s.name === "armor");
+}
+
+/** Parses a corpus weight text ("3 lb.", "1/4 lb.", "½ lb.", "5 lb. (full)") to pounds. */
+export function parseWeight(value: string | null | undefined): number {
+  if (value === null || value === undefined || value.trim() === "" || value.trim() === "—") return 0;
+  const text = value.trim().replace(/\s*lb\.?.*$/, "").trim();
+  const FRACTIONS: Record<string, number> = { "½": 0.5, "¼": 0.25, "¾": 0.75 };
+  if (FRACTIONS[text] !== undefined) return FRACTIONS[text]!;
+  const fraction = /^(\d+)\/(\d+)$/.exec(text);
+  if (fraction) {
+    const numerator = Number(fraction[1]);
+    const denominator = Number(fraction[2]);
+    if (denominator > 0) return numerator / denominator;
+  }
+  const parsed = Number(text);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+interface ItemWeight {
+  pounds: number;
+  excluded: boolean;
+}
+
+/**
+ * The weight of a `<set name="weight">` setter: its `lb` attribute is the
+ * authoritative numeric value (the corpus keeps display text like "5 oz."
+ * that a text parse cannot recover); the display text is a fallback only
+ * for setters without `lb`. `excludeEncumbrance="true"` (towed vehicles)
+ * marks the weight as not contributing to carried weight.
+ */
+function weightFromSetter(setter: Setter | undefined): ItemWeight | null {
+  if (!setter) return null;
+  const lb = setter.attrs?.lb;
+  const pounds = lb !== undefined ? Number(lb) : parseWeight(setter.value);
+  return {
+    pounds: Number.isFinite(pounds) ? pounds : 0,
+    excluded: setter.attrs?.excludeEncumbrance === "true",
+  };
+}
+
+/**
+ * The element whose weight setter governs an inventory item: an adorner
+ * (magic-item overlay) with its own weight setter replaces the base item's
+ * weight entirely; otherwise the base item's weight applies.
+ */
+function weightElementOf(library: ElementLibrary, item: InventoryItemState): ParsedElement | undefined {
+  const adorner = item.adorners.length > 0 ? elementById(library, item.adorners[0]!) : undefined;
+  if (adorner?.setters.some((s) => s.name === "weight")) return adorner;
+  return baseElementOf(library, item);
+}
+
+/** An inventory item's own weight (its content-authored weight setter, stack-multiplied). */
+export function itemWeightPounds(library: ElementLibrary, item: InventoryItemState): number {
+  const element = weightElementOf(library, item);
+  const weight = weightFromSetter(element?.setters.find((s) => s.name === "weight"));
+  if (weight === null || weight.excluded) return 0;
+  const stackable = setterValue(element, "stackable")?.trim().toLowerCase() === "true";
+  return weight.pounds * (stackable ? item.amount : 1);
+}
+
+/**
+ * An inventory item's weight contribution to carried encumbrance: a stowed
+ * item (assigned to a storage container) is not on the character's person,
+ * so it contributes nothing to what they carry.
+ */
+function itemEncumbrance(library: ElementLibrary, item: InventoryItemState): number {
+  if (item.storage) return 0;
+  return itemWeightPounds(library, item);
+}
+
+/** Carried coins weigh in at fifty per pound, every denomination alike. */
+function coinWeightPounds(coins: CharacterState["coins"]): number {
+  return (coins.copper + coins.silver + coins.electrum + coins.gold + coins.platinum) / 50;
+}
+
+const PRICE_CURRENCY: Record<string, string> = { cp: "cp", sp: "sp", ep: "ep", gp: "gp", pp: "pp" };
+
+/** The display price text ("15 gp") or "—" for items without a cost setter. */
+function displayPrice(element: ParsedElement | undefined): string {
+  const cost = element?.setters.find((s) => s.name === "cost");
+  if (!cost) return "—";
+  const currency = PRICE_CURRENCY[String(cost.attrs?.currency ?? "")] ?? "";
+  return `${cost.value} ${currency}`.trim();
+}
+
+/** The resolved base element of an inventory item (its adorner target). */
+function baseElementOf(library: ElementLibrary, item: InventoryItemState): ParsedElement | undefined {
+  return elementById(library, item.itemId);
+}
+
+/** The element whose rules apply to an item (the adorner when adorned). */
+function effectiveElement(library: ElementLibrary, item: { itemId: string; adorners: string[] }): ParsedElement | undefined {
+  if (item.adorners.length > 0) {
+    const adorner = elementById(library, item.adorners[0]!);
+    if (adorner) return adorner;
+  }
+  return elementById(library, item.itemId);
+}
+
+function isAttunableElement(element: ParsedElement | undefined): boolean {
+  return setterValue(element, "attunement") === "true";
+}
+
+/**
+ * Whether an inventory item currently conveys its benefits: the item must be
+ * equipped (worn/held), and an attunement-requiring item must also be attuned.
+ * Attunement alone does not activate an item that is not in use, and an
+ * attunement-requiring item in hand stays inert until attuned. A slotless item
+ * (no equip location — a cloak, boots, a ring) has no held/worn toggle to
+ * satisfy: it is worn by carrying it, so attunement is its only gate. A stowed
+ * item (assigned to a storage container) is off the character's person and is
+ * always inert, regardless of its equipped/attuned flags.
+ */
+export function itemBenefitsActive(
+  library: ElementLibrary,
+  item: { itemId: string; adorners: string[]; equipped: boolean; attuned: boolean; storage?: string },
+): boolean {
+  if (item.storage) return false;
+  const slotless = equipLocationsFor(elementById(library, item.itemId)).length === 0;
+  if (!slotless && !item.equipped) return false;
+  return item.attuned || !isAttunableElement(effectiveElement(library, item));
+}
+
+/** The extract block contents of an item's effective element. */
+function extractOf(library: ElementLibrary, item: InventoryItemState): Array<{ itemId: string; name: string; amount: number }> {
+  const element = effectiveElement(library, item);
+  const entries = element?.extract ?? [];
+  return entries.map((entry) => ({
+    itemId: entry.id,
+    name: library.byId.get(entry.id)?.identity.name ?? "",
+    amount: entry.amount,
+  }));
+}
+
+/** The slots occupied by an equipped item (two-handed occupies both hands). */
+function occupiedSlots(item: InventoryItemState): string[] {
+  const key = DISPLAY_LOCATION[item.location ?? ""] ?? "";
+  if (key === "primary-twohanded") return ["primary", "secondary"];
+  return key === "" ? [] : [key];
+}
+
+/** The equipped items occupying the given slot key. */
+function occupants(state: CharacterState, key: string): InventoryItemState[] {
+  const out: InventoryItemState[] = [];
+  for (const item of state.items) {
+    if (!item.equipped) continue;
+    const slots = occupiedSlots(item);
+    if (slots.includes(key)) out.push(item);
+  }
+  return out;
+}
+
+/** True when the slot key is free (no occupant). */
+function isSlotFree(state: CharacterState, key: string): boolean {
+  const keys = key === "primary-twohanded" ? ["primary", "secondary"] : [key];
+  return keys.every((k) => occupants(state, k).length === 0);
+}
+
+/** The element of an item's base (for the sum registration type). */
+function sumEntryType(library: ElementLibrary, id: string): string {
+  return library.byId.get(id)?.identity.type ?? "";
+}
+
+// ---------------------------------------------------------------------------
+// DTO
+// ---------------------------------------------------------------------------
+
+/** The inventory DTO (pinned shape). */
+export function buildInventoryDto(
+  state: CharacterState,
+  library: ElementLibrary,
+  maxAttunedItemCount = 3,
+): InventoryDto {
+  const items = state.items.map((item) => {
+    const base = baseElementOf(library, item);
+    const element = effectiveElement(library, item);
+    const displayElement = element ?? base;
+    const metadata = equipmentMetadata(displayElement, (id) => library.byId.get(id));
+    const locations = equipLocationsFor(base);
+    const equipped = item.equipped;
+    return {
+      identifier: item.identifier,
+      itemId: item.itemId,
+      displayElementId: displayElement?.identity.id ?? item.itemId,
+      notes: item.notes ?? "",
+      name: displayElement?.identity.name ?? item.name,
+      type: base?.identity.type ?? "",
+      amount: item.amount,
+      isEquippable: locations.length > 0,
+      isEquipped: equipped,
+      equippedLocation: equipped ? (item.location ?? null) : null,
+      storage: item.storage ?? null,
+      isAttunable: isAttunableElement(displayElement),
+      isAttuned: item.attuned,
+      displayPrice: displayPrice(base),
+      source: base?.identity.source ?? "",
+      equipLocations: locations,
+      weight: setterValue(base, "weight") ?? null,
+      category: setterValue(base, "category") ?? null,
+      isPhysicalEquipment: base !== undefined && isPhysicalEquipment(base),
+      description: metadata.description,
+      rarity: metadata.rarity,
+      attunement: metadata.attunement,
+      isExtractable: (base?.extract ?? []).length > 0 || (element?.extract ?? []).length > 0,
+      extractableContents: extractOf(library, item),
+    };
+  });
+  const equipmentWeight =
+    state.items.reduce((sum, item) => sum + itemEncumbrance(library, item), 0) + coinWeightPounds(state.coins);
+  const attunedItemCount = state.items.filter(
+    (item) => isAttunableElement(effectiveElement(library, item)) && item.attuned,
+  ).length;
+  return {
+    items,
+    coins: { ...state.coins },
+    equipmentWeight,
+    attunedItemCount,
+    maxAttunedItemCount,
+    storages: [...state.storages],
+  };
+}
+
+/** The base-item options of a magic item (its weapon/armor setter targets). */
+export function itemBaseOptions(library: ElementLibrary, itemId: string): ItemBaseOptionsDto {
+  const element = elementById(library, itemId);
+  const setter = baseSlotSetter(element);
+  if (!element || !setter) return { slot: null, options: [] };
+  const candidates = library.byType.get(setter.name === "weapon" ? "Weapon" : "Armor") ?? [];
+  const value = setter.value;
+  const matched = /[|,]/.test(value) || value.includes("ID_")
+    ? candidates.filter((candidate) => matchesBaseSupports(value, candidate))
+    : candidates.find(
+        (candidate) =>
+          candidate.identity.id !== element.identity.id &&
+          candidate.identity.name.toLowerCase() === value.toLowerCase(),
+      );
+  const seen = new Set<string>();
+  const options = (Array.isArray(matched) ? matched : matched ? [matched] : [])
+    .filter((candidate) => {
+      const key = candidate.identity.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((candidate) => ({ id: candidate.identity.id, name: candidate.identity.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return { slot: setter.name, options };
+}
+
+/** Support-expression matching for base setters ("A||B" groups, "," tags). */
+function matchesBaseSupports(expression: string, candidate: ParsedElement): boolean {
+  const have = new Set(candidate.supports.map((tag) => tag.trim()));
+  return expression
+    .split("|")
+    .map((group) => group.trim())
+    .filter((group) => group !== "")
+    .some((group) => group.split(",").map((tag) => tag.trim()).every((tag) => have.has(tag)));
+}
+
+// ---------------------------------------------------------------------------
+// Edit planning
+// ---------------------------------------------------------------------------
+
+/** The node text of an item in the equipment section (observed layout). */
+function renderItemNode(item: {
+  identifier: string;
+  name: string;
+  id: string;
+  amount: number;
+  equippedLocation: string | null;
+  attuned: boolean;
+  adorner: { name: string; id: string } | null;
+  detailsName: string;
+  notes: string;
+}): string {
+  const lines: string[] = [];
+  lines.push(
+    `<item identifier="${item.identifier}" name="${escapeXml(item.name)}" id="${escapeXml(item.id)}"` +
+      (item.amount > 1 ? ` amount="${item.amount}"` : "") +
+      ">",
+  );
+  if (item.equippedLocation !== null) {
+    lines.push(`\t\t\t\t<equipped location="${escapeXml(item.equippedLocation)}">true</equipped>`);
+  }
+  if (item.attuned) {
+    lines.push("\t\t\t\t<attunement>true</attunement>");
+  }
+  if (item.adorner) {
+    lines.push("\t\t\t\t<items>");
+    lines.push(`\t\t\t\t\t<adorner name="${escapeXml(item.adorner.name)}" id="${escapeXml(item.adorner.id)}" />`);
+    lines.push("\t\t\t\t</items>");
+  }
+  lines.push('\t\t\t\t<details card="true">');
+  lines.push("\t\t\t\t\t<name>");
+  if (item.detailsName !== "") lines.push(escapeXml(item.detailsName));
+  lines.push("\t\t\t\t\t</name>");
+  lines.push("\t\t\t\t\t<notes>");
+  if (item.notes !== "") lines.push(escapeXml(item.notes));
+  lines.push("\t\t\t\t\t</notes>");
+  lines.push("\t\t\t\t</details>");
+  lines.push("\t\t\t</item>");
+  return lines.join("\r\n");
+}
+
+function equipmentNode(document: Dnd5eDocument): Dnd5eNode {
+  const node = document.root.build.equipment?.node;
+  if (!node) throw engineError("not-found", "equipment section not found");
+  return node;
+}
+
+function appendItemEdit(document: Dnd5eDocument, itemNode: string): RawEdit {
+  const node = equipmentNode(document);
+  const at = node.closeStart ?? node.end;
+  return { start: at, end: at, replacement: `\r\n\t\t\t${itemNode}` };
+}
+
+function removeNodeEdit(raw: string, node: Dnd5eNode): RawEdit {
+  let start = node.start;
+  while (start > 0 && (raw[start - 1] === "\t" || raw[start - 1] === " ")) start--;
+  if (start > 0 && raw[start - 1] === "\n") start -= 1;
+  if (start > 0 && raw[start - 1] === "\r") start -= 1;
+  return { start, end: node.end, replacement: "" };
+}
+
+function attrValueRange(raw: string, node: Dnd5eNode, name: string): { start: number; end: number } | null {
+  const openEnd = node.openEnd;
+  const open = raw.slice(node.start, openEnd);
+  const match = new RegExp(`\\b${name}="([^"]*)"`).exec(open);
+  if (!match) return null;
+  return { start: node.start + match.index + match[0].indexOf('"') + 1, end: node.start + match.index + match[0].length - 1 };
+}
+
+/** Sum entries of an item registration: base, its grants, and the adorner. */
+function sumEntriesFor(
+  library: ElementLibrary,
+  base: ParsedElement,
+  adornerId: string | null,
+): Array<{ type: string; id: string }> {
+  const entries: Array<{ type: string; id: string }> = [];
+  entries.push({ type: base.identity.type, id: base.identity.id });
+  for (const rule of base.rules) {
+    if (rule.kind === "grant" && rule.id !== undefined && rule.id !== "") {
+      entries.push({ type: sumEntryType(library, rule.id), id: rule.id });
+    }
+  }
+  if (adornerId !== null && adornerId !== "") {
+    entries.push({ type: sumEntryType(library, adornerId), id: adornerId });
+  }
+  return entries;
+}
+
+function treeEntriesFor(
+  library: ElementLibrary,
+  base: ParsedElement,
+): Array<{ type: string; name: string; id: string; children: Array<{ type: string; name: string; id: string }> }> {
+  const children = base.rules
+    .filter((rule): rule is Extract<Rule, { kind: "grant"; id?: string }> => rule.kind === "grant" && rule.id !== undefined && rule.id !== "")
+    .map((rule) => {
+      const child = library.byId.get(rule.id!);
+      return { type: child?.identity.type ?? "Grants", name: child?.identity.name ?? "", id: rule.id! };
+    });
+  return [{ type: base.identity.type, name: base.identity.name, id: base.identity.id, children }];
+}
+
+/** Edits that insert sum entries after the last Level entry (observed position). */
+function planSumInsertEdits(document: Dnd5eDocument, entries: Array<{ type: string; id: string }>): RawEdit[] {
+  return planSumReplaceInsertEdits(document, null, entries);
+}
+
+/** Replaces the sum with `current` (or the document's) plus inserted entries. */
+function planSumReplaceInsertEdits(
+  document: Dnd5eDocument,
+  current: Array<{ type: string; id: string }> | null,
+  entries: Array<{ type: string; id: string }>,
+): RawEdit[] {
+  const sumView = document.root.build.sum;
+  if (!sumView) return [];
+  const sumNode = sumView.node;
+  const base = current ?? sumView.elements().map((e) => ({ type: e.type ?? "", id: e.id ?? "" }));
+  let insertAt = -1;
+  base.forEach((entry, index) => {
+    if (entry.type === "Level") insertAt = index;
+  });
+  while (insertAt + 1 < base.length && base[insertAt + 1]!.type !== "Class" && base[insertAt + 1]!.type !== "Multiclass") {
+    insertAt++;
+  }
+  const all = [...base.slice(0, insertAt + 1), ...entries, ...base.slice(insertAt + 1)];
+  const inner = `\r\n${all.map((entry) => `\t\t\t<element type="${escapeXml(entry.type)}" id="${escapeXml(entry.id)}" />`).join("\r\n")}\r\n\t\t`;
+  const edits: RawEdit[] = [{ start: sumNode.openEnd, end: sumNode.closeStart ?? sumNode.openEnd, replacement: inner }];
+  const count = attrValueRange(document.raw, sumNode, "element-count");
+  if (count) edits.push({ start: count.start, end: count.end, replacement: String(all.length) });
+  return edits;
+}
+
+/** Edits that replace the sum entries and update the element-count. */
+function planSumReplaceEdits(document: Dnd5eDocument, remaining: Array<{ type: string; id: string }>): RawEdit[] {
+  const sumView = document.root.build.sum;
+  if (!sumView) return [];
+  const sumNode = sumView.node;
+  const inner = `\r\n${remaining.map((entry) => `\t\t\t<element type="${escapeXml(entry.type)}" id="${escapeXml(entry.id)}" />`).join("\r\n")}\r\n\t\t`;
+  const edits: RawEdit[] = [{ start: sumNode.openEnd, end: sumNode.closeStart ?? sumNode.openEnd, replacement: inner }];
+  const count = attrValueRange(document.raw, sumNode, "element-count");
+  if (count) edits.push({ start: count.start, end: count.end, replacement: String(remaining.length) });
+  return edits;
+}
+
+/** The registered-count delta of an item registration (adorners count extra). */
+function countDeltaOf(adorners: string[]): number {
+  return adorners.length > 0 ? 2 : 1;
+}
+
+/** Edits that update the elements registered-count by a delta. */
+function planRegisteredCountEdit(document: Dnd5eDocument, state: CharacterState, delta: number): RawEdit[] {
+  const elementsNode = document.root.build.elements?.node;
+  if (!elementsNode) return [];
+  const value = state.registeredCount + delta;
+  const range = attrValueRange(document.raw, elementsNode, "registered-count");
+  return range ? [{ start: range.start, end: range.end, replacement: String(value) }] : [];
+}
+
+/** Edits that append an armor item's element node into the elements tree. */
+function planTreeAppendEdits(
+  document: Dnd5eDocument,
+  state: CharacterState,
+  library: ElementLibrary,
+  base: ParsedElement,
+): RawEdit[] {
+  if (base.identity.type !== "Armor") return [];
+  const elementsNode = document.root.build.elements?.node;
+  if (!elementsNode) return [];
+  const existing = childElements(elementsNode, "element").find((node) => getAttr(node, "id") === base.identity.id);
+  if (existing) return [];
+  const [entry] = treeEntriesFor(library, base);
+  if (!entry) return [];
+  const children = entry.children
+    .map((child) => `\t\t\t\t<element type="${escapeXml(child.type)}" name="${escapeXml(child.name)}" id="${escapeXml(child.id)}" />`)
+    .join("\r\n");
+  const open = `<element type="${escapeXml(entry.type)}" name="${escapeXml(entry.name)}" id="${escapeXml(entry.id)}"`;
+  const nodeText = children === "" ? `${open} />` : `${open}>\r\n${children}\r\n\t\t\t</element>`;
+  const at = elementsNode.closeStart ?? elementsNode.end;
+  return [{ start: at, end: at, replacement: `\r\n\t\t\t${nodeText}` }];
+}
+
+/** Edits that remove an armor item's element node from the elements tree. */
+function planTreeRemoveEdits(document: Dnd5eDocument, id: string): RawEdit[] {
+  const elementsNode = document.root.build.elements?.node;
+  if (!elementsNode) return [];
+  const node = childElements(elementsNode, "element").find((n) => getAttr(n, "id") === id);
+  if (!node) return [];
+  return [removeNodeEdit(document.raw, node)];
+}
+
+/** The item document node of an inventory item. */
+function itemNodeOf(document: Dnd5eDocument, identifier: string): Dnd5eNode {
+  const node = equipmentNode(document);
+  const item = childElements(node, "item").find((n) => getAttr(n, "identifier") === identifier);
+  if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
+  return item;
+}
+
+const indentOf = (raw: string, node: Dnd5eNode): string => {
+  let lineStart = node.start;
+  while (lineStart > 0 && (raw[lineStart - 1] === "\t" || raw[lineStart - 1] === " ")) lineStart--;
+  return raw.slice(lineStart, node.start);
+};
+
+/** The element name of a child node xml snippet ("<equipped ...>" -> equipped). */
+const childName = (childXml: string): string => childXml.match(/^<([^\s>]+)/)?.[1] ?? "";
+
+/**
+ * Adds, removes, or replaces a child node of an item (equipped/attunement/
+ * storage). `insertSkip` names siblings to insert past (land after) for
+ * "add": a caller planning a same-batch removal of those siblings passes
+ * them here so the new child's insertion point falls outside the sibling's
+ * (whitespace-trimmed) removal range -- applyRawEdits applies raw offsets
+ * computed against the same unedited document, so an insertion point inside
+ * another edit's removed range corrupts the result.
+ */
+function planItemChildEdit(
+  document: Dnd5eDocument,
+  identifier: string,
+  childXml: string,
+  mode: "add" | "remove" | "replace",
+  insertSkip: readonly string[] = [],
+): RawEdit[] {
+  const node = itemNodeOf(document, identifier);
+  const raw = document.raw;
+  const children = childElements(node);
+  const existing = children.find((child) => child.name === childName(childXml));
+  if (mode === "remove") {
+    if (!existing) return [];
+    return [removeNodeEdit(raw, existing)];
+  }
+  if (existing) {
+    if (mode === "replace") {
+      return [{ start: existing.start, end: existing.end, replacement: childXml }];
+    }
+    return [];
+  }
+  const skip = new Set(insertSkip);
+  const target = children.find((child) => !skip.has(child.name));
+  const insertAt = target ? target.start : (node.closeStart ?? node.openEnd);
+  const pad = indentOf(raw, node) + "\t";
+  return [{ start: insertAt, end: insertAt, replacement: `\r\n${pad}${childXml}` }];
+}
+
+// ---------------------------------------------------------------------------
+// Operations
+// ---------------------------------------------------------------------------
+
+export interface AddItemPlan {
+  edits: RawEdit[];
+  identifier: string;
+  baseId: string;
+  adornerId: string | null;
+  equippedLocation: string | null;
+  amount: number;
+  registers: boolean;
+}
+
+/** The auto-equip decision for a newly added item (first free location). */
+function autoEquipLocation(state: CharacterState, locations: string[]): string | null {
+  if (locations.length === 0) return null;
+  const first = locations[0]!;
+  return isSlotFree(state, first) ? first : null;
+}
+
+/**
+ * Plans adding an item. Resolves the base (explicit baseElementId, or the
+ * magic item's single-name weapon/armor setter), decides the auto-equip,
+ * and returns the edits plus the new item's identity.
+ */
+export function planAddItemEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  options: AddItemOptions,
+): AddItemPlan {
+  const element = library.byId.get(options.itemId);
+  if (!element) throw engineError("not-found", `item '${options.itemId}' not found`);
+  const amount = options.amount ?? 1;
+  let base = element;
+  let adornerId: string | null = null;
+  if (options.baseElementId) {
+    const given = library.byId.get(options.baseElementId);
+    if (!given) throw engineError("not-found", `base item '${options.baseElementId}' not found`);
+    base = given;
+    adornerId = element.identity.id;
+  } else {
+    const setter = baseSlotSetter(element);
+    if (setter && !/[|,]/.test(setter.value)) {
+      const candidates = library.byType.get(setter.name === "weapon" ? "Weapon" : "Armor") ?? [];
+      const match = candidates.find((candidate) => candidate.identity.name.toLowerCase() === setter.value.toLowerCase());
+      if (match) {
+        base = match;
+        adornerId = element.identity.id;
+      }
+    }
+  }
+  const identifier = randomUuid();
+  const locations = equipLocationsFor(base);
+  const equippedKey = autoEquipLocation(state, locations);
+  const equippedLocation = equippedKey === null ? null : LOCATION_DISPLAY[equippedKey]!;
+  const adorner = adornerId !== null ? library.byId.get(adornerId) : undefined;
+  const node = renderItemNode({
+    identifier,
+    name: base.identity.name,
+    id: base.identity.id,
+    amount,
+    equippedLocation,
+    attuned: false,
+    adorner: adorner ? { name: adorner.identity.name, id: adorner.identity.id } : null,
+    detailsName: "",
+    notes: "",
+  });
+  const edits: RawEdit[] = [appendItemEdit(document, node)];
+  const registers = equippedLocation !== null;
+  if (registers) {
+    edits.push(...planSumInsertEdits(document, sumEntriesFor(library, base, adornerId)));
+    edits.push(...planTreeAppendEdits(document, state, library, base));
+    edits.push(...planRegisteredCountEdit(document, state, adornerId === null ? 1 : 2));
+  }
+  return { edits, identifier, baseId: base.identity.id, adornerId, equippedLocation, amount, registers };
+}
+
+/**
+ * Plans dropping a control record from the equipment section, node only.
+ *
+ * Control items (the corpus's on/off switches) are never equipped or attuned
+ * in the engine's own writes, so removing the record cannot strand a sum
+ * entry the way removing worn gear would. The caller owns whatever
+ * registration the element also carries in the elements tree.
+ */
+export function planRemoveControlRecordEdits(document: Dnd5eDocument, identifier: string): RawEdit[] {
+  return [removeNodeEdit(document.raw, itemNodeOf(document, identifier))];
+}
+
+/** Plans removing an item (partial amounts decrement; zero removes). */
+export function planRemoveItemEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  identifier: string,
+  amount?: number,
+): RawEdit[] {
+  const item = state.items.find((i) => i.identifier === identifier);
+  if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
+  const node = itemNodeOf(document, identifier);
+  const raw = document.raw;
+  const removeAmount = amount ?? item.amount;
+  if (removeAmount < item.amount) {
+    const range = attrValueRange(raw, node, "amount");
+    if (range) return [{ start: range.start, end: range.end, replacement: String(item.amount - removeAmount) }];
+    return [];
+  }
+  const edits: RawEdit[] = [removeNodeEdit(raw, node)];
+  if (item.equipped || item.attuned) {
+    const base = baseElementOf(library, item);
+    if (base) {
+      const sum = document.root.build.sum?.elements() ?? [];
+      const removed = new Set(sumEntriesFor(library, base, item.adorners[0] ?? null).map((e) => e.id));
+      const remaining = sum
+        .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
+        .filter((e) => !removed.has(e.id));
+      edits.push(...planSumReplaceEdits(document, remaining));
+      edits.push(...planTreeRemoveEdits(document, item.itemId));
+      edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
+    }
+  }
+  return edits;
+}
+
+/** Plans equipping/unequipping an item at a location key ("none" unequips). */
+export function planEquipItemEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  identifier: string,
+  location: string,
+): RawEdit[] {
+  const item = state.items.find((i) => i.identifier === identifier);
+  if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
+  const base = baseElementOf(library, item);
+  if (!base) throw engineError("not-found", `item '${item.itemId}' not found`);
+  const edits: RawEdit[] = [];
+  const removedIds = new Set<string>();
+  const appendedEntries: Array<{ type: string; id: string }> = [];
+  let countDelta = 0;
+  const unregister = (target: InventoryItemState): void => {
+    const targetBase = baseElementOf(library, target);
+    if (targetBase) {
+      for (const entry of sumEntriesFor(library, targetBase, target.adorners[0] ?? null)) removedIds.add(entry.id);
+      edits.push(...planTreeRemoveEdits(document, target.itemId));
+      countDelta -= countDeltaOf(target.adorners);
+    }
+  };
+  if (location === "none") {
+    if (item.equipped || item.attuned) {
+      edits.push(...planItemChildEdit(document, identifier, "<equipped>true</equipped>", "remove"));
+      edits.push(...planItemChildEdit(document, identifier, "<attunement>true</attunement>", "remove"));
+      unregister(item);
+    }
+  } else {
+    const display = LOCATION_DISPLAY[location];
+    if (!display) throw engineError("invalid-argument", `unknown equip location '${location}'`);
+    // Single location principle: equipping an item clears its storage assignment.
+    if (item.storage) {
+      edits.push(...planItemChildEdit(document, identifier, "<storage>", "remove"));
+    }
+    const vacateKeys = location === "primary-twohanded" ? ["primary", "secondary"] : [location];
+    for (const key of vacateKeys) {
+      for (const other of occupants(state, key)) {
+        if (other.identifier === identifier) continue;
+        edits.push(...planItemChildEdit(document, other.identifier, "<equipped>true</equipped>", "remove"));
+        edits.push(...planItemChildEdit(document, other.identifier, "<attunement>true</attunement>", "remove"));
+        unregister(other);
+      }
+    }
+    if (!(item.equipped && item.location === display)) {
+      if (item.equipped) {
+        edits.push(...planItemChildEdit(document, identifier, `<equipped location="${escapeXml(display)}">true</equipped>`, "replace"));
+      } else {
+        edits.push(...planItemChildEdit(document, identifier, `<equipped location="${escapeXml(display)}">true</equipped>`, "add", ["storage"]));
+        appendedEntries.push(...sumEntriesFor(library, base, item.adorners[0] ?? null));
+        edits.push(...planTreeAppendEdits(document, state, library, base));
+        countDelta += countDeltaOf(item.adorners);
+      }
+    }
+  }
+  if (removedIds.size > 0 || appendedEntries.length > 0) {
+    const sum = document.root.build.sum?.elements() ?? [];
+    const remaining = sum
+      .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
+      .filter((e) => !removedIds.has(e.id));
+    edits.push(...planSumReplaceInsertEdits(document, remaining, appendedEntries));
+  }
+  if (countDelta !== 0) edits.push(...planRegisteredCountEdit(document, state, countDelta));
+  return edits;
+}
+
+/**
+ * Plans assigning/clearing an item's storage container (a vehicle/cargo slot
+ * named in `state.storages`). `storage` null or "" carries the item on the
+ * character again. Single location principle: stowing an equipped item
+ * unequips it (equipping a stowed item likewise clears its storage; see
+ * `planEquipItemEdits`). Attunement is a magical bond, not physical
+ * possession, so it persists through stowage -- `itemBenefitsActive` already
+ * keeps a stowed item's benefits inert regardless of its attuned flag.
+ */
+export function planSetItemStorageEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  identifier: string,
+  storage: string | null,
+): RawEdit[] {
+  const item = state.items.find((i) => i.identifier === identifier);
+  if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
+  const next = storage ?? "";
+  const current = item.storage ?? "";
+  if (next === current) return [];
+  const edits: RawEdit[] = [];
+  if (next === "") {
+    edits.push(...planItemChildEdit(document, identifier, "<storage>", "remove"));
+    return edits;
+  }
+  edits.push(
+    ...planItemChildEdit(
+      document,
+      identifier,
+      `<storage><location>${escapeXml(next)}</location></storage>`,
+      current === "" ? "add" : "replace",
+      ["equipped", "attunement"],
+    ),
+  );
+  if (item.equipped) {
+    edits.push(...planItemChildEdit(document, identifier, "<equipped>true</equipped>", "remove"));
+    // Registration (sum/tree/registered-count) exists while equipped OR
+    // attuned; only unregister when this clears the last of those two.
+    if (!item.attuned) {
+      const base = baseElementOf(library, item);
+      if (base) {
+        const sum = document.root.build.sum?.elements() ?? [];
+        const removed = new Set(sumEntriesFor(library, base, item.adorners[0] ?? null).map((e) => e.id));
+        const remaining = sum
+          .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
+          .filter((e) => !removed.has(e.id));
+        edits.push(...planSumReplaceEdits(document, remaining));
+        edits.push(...planTreeRemoveEdits(document, item.itemId));
+        edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
+      }
+    }
+  }
+  return edits;
+}
+
+/** Plans attuning/un-attuning an item (bounded by the computed attunement:max). */
+export function planAttuneItemEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  identifier: string,
+  attuned: boolean,
+  maxAttunedItemCount = 3,
+): RawEdit[] {
+  const item = state.items.find((i) => i.identifier === identifier);
+  if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
+  const base = baseElementOf(library, item);
+  if (!base) throw engineError("not-found", `item '${item.itemId}' not found`);
+  const edits: RawEdit[] = [];
+  if (attuned && !item.attuned) {
+    const attunable = isAttunableElement(effectiveElement(library, item));
+    const current = state.items.filter(
+      (i) => i.attuned && i.identifier !== identifier && isAttunableElement(effectiveElement(library, i)),
+    ).length;
+    if (attunable && current >= maxAttunedItemCount) {
+      throw engineError("conflict", "Maximum number of attuned items reached.");
+    }
+    edits.push(...planItemChildEdit(document, identifier, "<attunement>true</attunement>", "add"));
+    if (!item.equipped) {
+      edits.push(...planSumInsertEdits(document, sumEntriesFor(library, base, item.adorners[0] ?? null)));
+      edits.push(...planTreeAppendEdits(document, state, library, base));
+      edits.push(...planRegisteredCountEdit(document, state, countDeltaOf(item.adorners)));
+    }
+  } else if (!attuned && item.attuned) {
+    edits.push(...planItemChildEdit(document, identifier, "<attunement>true</attunement>", "remove"));
+    if (!item.equipped) {
+      const sum = document.root.build.sum?.elements() ?? [];
+      const removed = new Set(sumEntriesFor(library, base, item.adorners[0] ?? null).map((e) => e.id));
+      edits.push(
+        ...planSumReplaceEdits(
+          document,
+          sum.map((e) => ({ type: e.type ?? "", id: e.id ?? "" })).filter((e) => !removed.has(e.id)),
+        ),
+      );
+      edits.push(...planTreeRemoveEdits(document, item.itemId));
+      edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
+    }
+  }
+  return edits;
+}
+
+/** Plans replacing the character's coinage. */
+export function planSetCoinsEdits(document: Dnd5eDocument, coins: Coinage): RawEdit[] {
+  const currency = document.root.build.input?.currency?.();
+  const node = currency?.node;
+  if (!node) throw engineError("not-found", "currency section not found");
+  const edits: RawEdit[] = [];
+  const values: Record<string, number> = {
+    copper: coins.copper,
+    silver: coins.silver,
+    electrum: coins.electrum,
+    gold: coins.gold,
+    platinum: coins.platinum,
+  };
+  for (const name of ["copper", "silver", "electrum", "gold", "platinum"]) {
+    const child = childElements(node).find((n) => n.name === name);
+    if (!child) continue;
+    edits.push({ start: child.openEnd, end: child.closeStart ?? child.openEnd, replacement: String(values[name]!) });
+  }
+  return edits;
+}
+
+/** Plans extracting an item's contents (packs): removes it, adds contents. */
+export function planExtractItemEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  identifier: string,
+): RawEdit[] {
+  const item = state.items.find((i) => i.identifier === identifier);
+  if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
+  const element = effectiveElement(library, item);
+  const extract = element?.extract ?? [];
+  if (extract.length === 0) {
+    throw engineError("conflict", `Inventory item '${item.name}' cannot be extracted.`);
+  }
+  const edits: RawEdit[] = [];
+  for (const entry of extract) {
+    const content = library.byId.get(entry.id);
+    if (!content) continue;
+    const node = renderItemNode({
+      identifier: randomUuid(),
+      name: content.identity.name,
+      id: content.identity.id,
+      amount: entry.amount,
+      equippedLocation: null,
+      attuned: false,
+      adorner: null,
+      detailsName: "",
+      notes: "",
+    });
+    edits.push(appendItemEdit(document, node));
+  }
+  const node = itemNodeOf(document, identifier);
+  edits.push(removeNodeEdit(document.raw, node));
+  return edits;
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@forge-cb/engine",
+  "version": "1.0.11",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    },
+    "./sheet-contract": {
+      "types": "./dist/sheet/template-contract.d.ts",
+      "default": "./dist/sheet/template-contract.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "@pdf-lib/standard-fonts": "^1.0.0",
+    "@forge-cb/api": "*",
+    "pdf-lib": "^1.17.1"
+  },
+  "license": "AGPL-3.0-only"
+}

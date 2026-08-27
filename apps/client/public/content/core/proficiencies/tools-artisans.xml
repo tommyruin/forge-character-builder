@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Tool Proficiency (Artisan’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_ARTISANS_TOOLS">
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan’s tools requires a separate proficiency.</p>
+		</description>
+		<rules>
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_ALCHEMISTS_SUPPLIES" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_BREWERS_SUPPLIES" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_CALLIGRAPHERS_SUPPLIES" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_CARPENTERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_CARTOGRAPHERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_COBBLERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_COOKS_UTENSILS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_GLASSBLOWERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_JEWELERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_LEATHERWORKERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_MASONS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_PAINTERS_SUPPLIES" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_POTTERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_SMITHS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_TINKERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_WEAVERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_WOODCARVERS_TOOLS" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_DISGUISE_KIT" type="Proficiency" />
+			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_FORGERY_KIT" type="Proficiency" />
+		</rules>
+	</element>
+	<element name="Tool Proficiency (Alchemist’s supplies)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_ALCHEMISTS_SUPPLIES">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Brewer’s supplies)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_BREWERS_SUPPLIES">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Calligrapher's supplies)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_CALLIGRAPHERS_SUPPLIES">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Carpenter’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_CARPENTERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Cartographer’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_CARTOGRAPHERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Cobbler’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_COBBLERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Cook’s utensils)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_COOKS_UTENSILS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Glassblower’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_GLASSBLOWERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Jeweler’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_JEWELERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Leatherworker’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_LEATHERWORKERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Mason’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_MASONS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Painter’s supplies)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_PAINTERS_SUPPLIES">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Potter’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_POTTERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Smith’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_SMITHS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Tinker’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_TINKERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Weaver’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_WEAVERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+	<element name="Tool Proficiency (Woodcarver’s tools)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_WOODCARVERS_TOOLS">
+		<supports>Tool, Artisan tools</supports>
+		<description>
+			<p>These special tools include the items needed to pursue a craft or trade. Proficiency with a set of artisan’s tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft.</p>
+		</description>
+	</element>
+</elements>

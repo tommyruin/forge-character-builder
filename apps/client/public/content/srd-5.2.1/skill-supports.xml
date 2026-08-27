@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Authored support patch for the shipped baseline. Kept apart from
+	`...core.proficiency.proficiency-skills.xml`, which is an upstream Aurora
+	resource and should stay byte-identical so it can be re-synced.
+
+	Three of the 2024 classes — Fighter, Rogue and Wizard — pick their skills
+	with `<select type="Proficiency" supports="Skill,PHB24 Fighter">` and so
+	on, because their 2024 skill lists differ from the 2014 ones. The vendored
+	corpus carries those `PHB24 <Class>` tags on its own copies of the skill
+	elements (core/ALE.xml); the shipped skill elements do not, so every one of
+	those selects offered "No options available" against the bundled content.
+
+	Each block below appends only the tag strings. The skill lists are the
+	ones printed in System Reference Document 5.2.1 for each class.
+-->
+<elements>
+	<append id="ID_PROFICIENCY_SKILL_ACROBATICS"><supports>PHB24 Fighter, PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_ANIMALHANDLING"><supports>PHB24 Fighter</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_ARCANA"><supports>PHB24 Wizard</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_ATHLETICS"><supports>PHB24 Fighter, PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_DECEPTION"><supports>PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_HISTORY"><supports>PHB24 Fighter, PHB24 Wizard</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_INSIGHT"><supports>PHB24 Rogue, PHB24 Wizard</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_INTIMIDATION"><supports>PHB24 Fighter, PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_INVESTIGATION"><supports>PHB24 Rogue, PHB24 Wizard</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_MEDICINE"><supports>PHB24 Wizard</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_NATURE"><supports>PHB24 Wizard</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_PERCEPTION"><supports>PHB24 Fighter, PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_PERSUASION"><supports>PHB24 Fighter, PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_RELIGION"><supports>PHB24 Wizard</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_SLEIGHTOFHAND"><supports>PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_STEALTH"><supports>PHB24 Rogue</supports></append>
+	<append id="ID_PROFICIENCY_SKILL_SURVIVAL"><supports>PHB24 Fighter</supports></append>
+</elements>

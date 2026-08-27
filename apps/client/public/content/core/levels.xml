@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="1" type="Level" source="Internal" id="ID_LEVEL_1">
+		<setters>
+			<set name="Level">1</set>
+			<set name="Experience">0</set>
+		</setters>
+		<rules>
+			<stat name="proficiency" value="2" alt="Level 1" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_CHARACTER_BASE" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_SPELLCASTING_BASE" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER" />
+			<select name="Race" type="Race" />
+			<select name="Class" type="Class" />
+			<select name="Background" type="Background" />
+			<select name="Alignment" type="Alignment" />
+			<select name="Deity" type="Deity" optional="true" />
+		</rules>
+	</element>
+	<element name="Base" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_CHARACTER_BASE">
+		<rules>
+			<stat name="strength:max" value="20" />
+			<stat name="dexterity:max" value="20" />
+			<stat name="constitution:max" value="20" />
+			<stat name="intelligence:max" value="20" />
+			<stat name="wisdom:max" value="20" />
+			<stat name="charisma:max" value="20" />
+			<stat name="attunement:max" value="3" bonus="base" />
+			<stat name="ac:unarmored:base" value="10" alt="Base" />
+			<stat name="ac:unarmored:dexterity" value="dexterity:modifier" alt="Dexterity Modifier" />
+			<stat name="ac:unarmored" value="ac:unarmored:base" alt="Initial" />
+			<stat name="ac:unarmored" value="ac:unarmored:dexterity" alt="Dexterity Modifier" />
+			<stat name="ac:calculation" value="ac:unarmored" bonus="calculation" equipped="[armor:none]" alt="Unarmored" merge="true" />
+			<stat name="ac:armored:dexterity:cap" value="2" bonus="base" />
+			<stat name="ac:armored:misc" value="0" />
+			<stat name="ac:armored:enhancement" value="0" />
+			<stat name="ac:armored:dexterity" value="dexterity:modifier" bonus="modifier" equipped="[armor:light]" />
+			<stat name="ac:armored:dexterity" value="dexterity:modifier" bonus="modifier" equipped="[armor:medium]" maximum="ac:armored:dexterity:cap" />
+			<stat name="ac:armored:dexterity" value="0" bonus="modifier" equipped="[armor:heavy]" />
+			<stat name="ac:armored" value="ac:armored:armor" equipped="[armor:any]" />
+			<stat name="ac:armored" value="ac:armored:dexterity" equipped="[armor:any]" />
+			<stat name="ac:armored" value="ac:armored:enhancement" equipped="[armor:any]" />
+			<stat name="ac:armored" value="ac:armored:misc" equipped="[armor:any]" />
+			<stat name="ac:calculation" value="ac:armored" bonus="calculation" equipped="[armor:any]" alt="Armored" merge="true" />
+			<stat name="ac:dexterity" value="dexterity:modifier" bonus="base:modifier" equipped="[armor:none]" />
+			<stat name="ac:dexterity" value="dexterity:modifier" bonus="base:modifier" equipped="[armor:light]" />
+			<stat name="ac:dexterity" value="dexterity:modifier" bonus="base:modifier" equipped="[armor:medium]" maximum="ac:armored:dexterity:cap" />
+			<stat name="ac:dexterity" value="0" bonus="base:modifier" equipped="[armor:heavy]" />
+			<stat name="innate speed:calculation" value="innate speed" merge="true" />
+			<stat name="innate speed:calculation" value="innate speed:misc" merge="true" />
+			<stat name="innate speed:climb:calculation" value="innate speed:climb" merge="true" />
+			<stat name="innate speed:climb:calculation" value="innate speed:climb:misc" merge="true" />
+			<stat name="innate speed:fly:calculation" value="innate speed:fly" merge="true" />
+			<stat name="innate speed:fly:calculation" value="innate speed:fly:misc" merge="true" />
+			<stat name="innate speed:swim:calculation" value="innate speed:swim" merge="true" />
+			<stat name="innate speed:swim:calculation" value="innate speed:swim:misc" merge="true" />
+			<stat name="innate speed:burrow:calculation" value="innate speed:burrow" merge="true" />
+			<stat name="innate speed:burrow:calculation" value="innate speed:burrow:misc" merge="true" />
+			<stat name="speed" value="innate speed:calculation" bonus="base" merge="true" alt="Innate" />
+			<stat name="speed" value="speed:misc" merge="true" alt="Misc" />
+			<stat name="speed:climb" value="innate speed:climb:calculation" bonus="base" merge="true" alt="Innate" />
+			<stat name="speed:climb" value="speed:climb:misc" merge="true" alt="Misc" />
+			<stat name="speed:fly" value="innate speed:fly:calculation" bonus="base" merge="true" alt="Innate" />
+			<stat name="speed:fly" value="speed:fly:misc" merge="true" alt="Misc" />
+			<stat name="speed:swim" value="innate speed:swim:calculation" bonus="base" merge="true" alt="Innate" />
+			<stat name="speed:swim" value="speed:swim:misc" merge="true" alt="Misc" />
+			<stat name="speed:burrow" value="innate speed:burrow:calculation" bonus="base" merge="true" alt="Innate" />
+			<stat name="speed:burrow" value="speed:burrow:misc" merge="true" alt="Misc" />
+		</rules>
+	</element>
+	<element name="Base Armor Class" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE" />
+	<element name="Spellcasting Base" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_SPELLCASTING_BASE">
+		<rules>
+			<stat name="spellcasting:attack:proficiency" value="proficiency" bonus="proficiency" />
+			<stat name="spellcasting:dc:base" value="8" bonus="base" />
+			<stat name="spellcasting:dc:proficiency" value="proficiency" bonus="proficiency" />
+			<stat name="spellcasting:attack" value="spellcasting:attack:proficiency" alt="Proficiency" />
+			<stat name="spellcasting:dc" value="spellcasting:dc:base" alt="Base" />
+			<stat name="spellcasting:dc" value="spellcasting:dc:proficiency" alt="Proficiency" />
+			<stat name="spellcasting:attack:misc" value="0" />
+			<stat name="spellcasting:dc:misc" value="0" />
+			<stat name="spellcasting:attack" value="spellcasting:attack:misc" />
+			<stat name="spellcasting:dc" value="spellcasting:dc:misc" />
+			<stat name="spellcasting:attack:str:misc" value="0" />
+			<stat name="spellcasting:attack:dex:misc" value="0" />
+			<stat name="spellcasting:attack:con:misc" value="0" />
+			<stat name="spellcasting:attack:int:misc" value="0" />
+			<stat name="spellcasting:attack:wis:misc" value="0" />
+			<stat name="spellcasting:attack:cha:misc" value="0" />
+			<stat name="spellcasting:attack:str" value="spellcasting:attack" />
+			<stat name="spellcasting:attack:str" value="strength:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:attack:str" value="spellcasting:attack:str:misc" />
+			<stat name="spellcasting:attack:dex" value="spellcasting:attack" />
+			<stat name="spellcasting:attack:dex" value="dexterity:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:attack:dex" value="spellcasting:attack:dex:misc" />
+			<stat name="spellcasting:attack:con" value="spellcasting:attack" />
+			<stat name="spellcasting:attack:con" value="constitution:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:attack:con" value="spellcasting:attack:con:misc" />
+			<stat name="spellcasting:attack:int" value="spellcasting:attack" />
+			<stat name="spellcasting:attack:int" value="intelligence:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:attack:int" value="spellcasting:attack:int:misc" />
+			<stat name="spellcasting:attack:wis" value="spellcasting:attack" />
+			<stat name="spellcasting:attack:wis" value="wisdom:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:attack:wis" value="spellcasting:attack:wis:misc" />
+			<stat name="spellcasting:attack:cha" value="spellcasting:attack" />
+			<stat name="spellcasting:attack:cha" value="charisma:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:attack:cha" value="spellcasting:attack:cha:misc" />
+			<stat name="spellcasting:dc:str:misc" value="0" />
+			<stat name="spellcasting:dc:dex:misc" value="0" />
+			<stat name="spellcasting:dc:con:misc" value="0" />
+			<stat name="spellcasting:dc:int:misc" value="0" />
+			<stat name="spellcasting:dc:wis:misc" value="0" />
+			<stat name="spellcasting:dc:cha:misc" value="0" />
+			<stat name="spellcasting:dc:str" value="spellcasting:dc" />
+			<stat name="spellcasting:dc:str" value="strength:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:dc:str" value="spellcasting:dc:str:misc" />
+			<stat name="spellcasting:dc:dex" value="spellcasting:dc" />
+			<stat name="spellcasting:dc:dex" value="dexterity:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:dc:dex" value="spellcasting:dc:dex:misc" />
+			<stat name="spellcasting:dc:con" value="spellcasting:dc" />
+			<stat name="spellcasting:dc:con" value="constitution:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:dc:con" value="spellcasting:dc:con:misc" />
+			<stat name="spellcasting:dc:int" value="spellcasting:dc" />
+			<stat name="spellcasting:dc:int" value="intelligence:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:dc:int" value="spellcasting:dc:int:misc" />
+			<stat name="spellcasting:dc:wis" value="spellcasting:dc" />
+			<stat name="spellcasting:dc:wis" value="wisdom:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:dc:wis" value="spellcasting:dc:wis:misc" />
+			<stat name="spellcasting:dc:cha" value="spellcasting:dc" />
+			<stat name="spellcasting:dc:cha" value="charisma:modifier" bonus="ability" alt="Ability Modifier" />
+			<stat name="spellcasting:dc:cha" value="spellcasting:dc:cha:misc" />
+		</rules>
+	</element>
+	<element name="Dexterity Modifier" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER">
+		<rules>
+			<stat name="initiative" value="dexterity:modifier" bonus="ability" />
+		</rules>
+	</element>
+	<element name="Constitution Modifier" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER">
+		<rules>
+			<stat name="hp" value="constitution:modifier" level="1" />
+			<stat name="hp" value="constitution:modifier" level="2" />
+			<stat name="hp" value="constitution:modifier" level="3" />
+			<stat name="hp" value="constitution:modifier" level="4" />
+			<stat name="hp" value="constitution:modifier" level="5" />
+			<stat name="hp" value="constitution:modifier" level="6" />
+			<stat name="hp" value="constitution:modifier" level="7" />
+			<stat name="hp" value="constitution:modifier" level="8" />
+			<stat name="hp" value="constitution:modifier" level="9" />
+			<stat name="hp" value="constitution:modifier" level="10" />
+			<stat name="hp" value="constitution:modifier" level="11" />
+			<stat name="hp" value="constitution:modifier" level="12" />
+			<stat name="hp" value="constitution:modifier" level="13" />
+			<stat name="hp" value="constitution:modifier" level="14" />
+			<stat name="hp" value="constitution:modifier" level="15" />
+			<stat name="hp" value="constitution:modifier" level="16" />
+			<stat name="hp" value="constitution:modifier" level="17" />
+			<stat name="hp" value="constitution:modifier" level="18" />
+			<stat name="hp" value="constitution:modifier" level="19" />
+			<stat name="hp" value="constitution:modifier" level="20" />
+		</rules>
+	</element>
+	<element name="Ignore ac:dexterity" type="Ignore" source="Internal" id="ID_INTERNAL_IGNORE_AC_DEXTERITY_MODIFIER" />
+	<element name="2" type="Level" source="Internal" id="ID_LEVEL_2">
+		<setters>
+			<set name="Level">2</set>
+			<set name="Experience">300</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 2)" type="Multiclass" level="2" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_2" />
+		</rules>
+	</element>
+	<element name="3" type="Level" source="Internal" id="ID_LEVEL_3">
+		<setters>
+			<set name="Level">3</set>
+			<set name="Experience">900</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 3)" type="Multiclass" level="3" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_3" />
+		</rules>
+	</element>
+	<element name="4" type="Level" source="Internal" id="ID_LEVEL_4">
+		<setters>
+			<set name="Level">4</set>
+			<set name="Experience">2700</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 4)" type="Multiclass" level="4" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_4" />
+		</rules>
+	</element>
+	<element name="5" type="Level" source="Internal" id="ID_LEVEL_5">
+		<setters>
+			<set name="Level">5</set>
+			<set name="Experience">6500</set>
+		</setters>
+		<rules>
+			<stat name="Proficiency" value="+1" alt="Level 5" />
+			<select name="Multiclass (Level 5)" type="Multiclass" level="5" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_5" />
+		</rules>
+	</element>
+	<element name="6" type="Level" source="Internal" id="ID_LEVEL_6">
+		<setters>
+			<set name="Level">6</set>
+			<set name="Experience">14000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 6)" type="Multiclass" level="6" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_6" />
+		</rules>
+	</element>
+	<element name="7" type="Level" source="Internal" id="ID_LEVEL_7">
+		<setters>
+			<set name="Level">7</set>
+			<set name="Experience">23000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 7)" type="Multiclass" level="7" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_7" />
+		</rules>
+	</element>
+	<element name="8" type="Level" source="Internal" id="ID_LEVEL_8">
+		<setters>
+			<set name="Level">8</set>
+			<set name="Experience">34000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 8)" type="Multiclass" level="8" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_8" />
+		</rules>
+	</element>
+	<element name="9" type="Level" source="Internal" id="ID_LEVEL_9">
+		<setters>
+			<set name="Level">9</set>
+			<set name="Experience">48000</set>
+		</setters>
+		<rules>
+			<stat name="Proficiency" value="+1" alt="Level 9" />
+			<select name="Multiclass (Level 9)" type="Multiclass" level="9" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_9" />
+		</rules>
+	</element>
+	<element name="10" type="Level" source="Internal" id="ID_LEVEL_10">
+		<setters>
+			<set name="Level">10</set>
+			<set name="Experience">64000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 10)" type="Multiclass" level="10" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_10" />
+		</rules>
+	</element>
+	<element name="11" type="Level" source="Internal" id="ID_LEVEL_11">
+		<setters>
+			<set name="Level">11</set>
+			<set name="Experience">85000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 11)" type="Multiclass" level="11" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_11" />
+		</rules>
+	</element>
+	<element name="12" type="Level" source="Internal" id="ID_LEVEL_12">
+		<setters>
+			<set name="Level">12</set>
+			<set name="Experience">100000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 12)" type="Multiclass" level="12" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_12" />
+		</rules>
+	</element>
+	<element name="13" type="Level" source="Internal" id="ID_LEVEL_13">
+		<setters>
+			<set name="Level">13</set>
+			<set name="Experience">120000</set>
+		</setters>
+		<rules>
+			<stat name="Proficiency" value="+1" alt="Level 13" />
+			<select name="Multiclass (Level 13)" type="Multiclass" level="13" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_13" />
+		</rules>
+	</element>
+	<element name="14" type="Level" source="Internal" id="ID_LEVEL_14">
+		<setters>
+			<set name="Level">14</set>
+			<set name="Experience">140000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 14)" type="Multiclass" level="14" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_14" />
+		</rules>
+	</element>
+	<element name="15" type="Level" source="Internal" id="ID_LEVEL_15">
+		<setters>
+			<set name="Level">15</set>
+			<set name="Experience">165000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 15)" type="Multiclass" level="15" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_15" />
+		</rules>
+	</element>
+	<element name="16" type="Level" source="Internal" id="ID_LEVEL_16">
+		<setters>
+			<set name="Level">16</set>
+			<set name="Experience">195000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 16)" type="Multiclass" level="16" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_16" />
+		</rules>
+	</element>
+	<element name="17" type="Level" source="Internal" id="ID_LEVEL_17">
+		<setters>
+			<set name="Level">17</set>
+			<set name="Experience">225000</set>
+		</setters>
+		<rules>
+			<stat name="Proficiency" value="+1" alt="Level 17" />
+			<select name="Multiclass (Level 17)" type="Multiclass" level="17" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_17" />
+		</rules>
+	</element>
+	<element name="18" type="Level" source="Internal" id="ID_LEVEL_18">
+		<setters>
+			<set name="Level">18</set>
+			<set name="Experience">265000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 18)" type="Multiclass" level="18" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_18" />
+		</rules>
+	</element>
+	<element name="19" type="Level" source="Internal" id="ID_LEVEL_19">
+		<setters>
+			<set name="Level">19</set>
+			<set name="Experience">305000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 19)" type="Multiclass" level="19" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_19" />
+		</rules>
+	</element>
+	<element name="20" type="Level" source="Internal" id="ID_LEVEL_20">
+		<setters>
+			<set name="Level">20</set>
+			<set name="Experience">355000</set>
+		</setters>
+		<rules>
+			<select name="Multiclass (Level 20)" type="Multiclass" level="20" requirements="ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE&amp;&amp;ID_INTERNAL_MULTICLASS_LEVEL_20" />
+		</rules>
+	</element>
+</elements>

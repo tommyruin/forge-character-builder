@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Tiny" type="Size" source="Player’s Handbook" id="ID_SIZE_TINY" />
+	<element name="Small" type="Size" source="Player’s Handbook" id="ID_SIZE_SMALL" />
+	<element name="Medium" type="Size" source="Player’s Handbook" id="ID_SIZE_MEDIUM" />
+	<element name="Large" type="Size" source="Player’s Handbook" id="ID_SIZE_LARGE" />
+	<element name="Huge" type="Size" source="Player’s Handbook" id="ID_SIZE_HUGE" />
+	<element name="Gargantuan" type="Size" source="Player’s Handbook" id="ID_SIZE_GARGANTUAN" />
+	<element name="Colossal" type="Size" source="Player’s Handbook" id="ID_SIZE_COLOSSAL" />
+</elements>

@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<elements>
+	<element name="Acrobatics Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_ACROBATICS">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ACROBATICS" requirements="!ID_PROFICIENCY_SKILL_ACROBATICS" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ACROBATICS_DOUBLE" requirements="ID_PROFICIENCY_SKILL_ACROBATICS" />
+		</rules>
+	</element>
+	<element name="Acrobatics Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ACROBATICS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ACROBATICS" />
+		</rules>
+	</element>
+	<element name="Acrobatics Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ACROBATICS_DOUBLE">
+		<rules>
+			<stat name="acrobatics:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ACROBATICS" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Animal Handling Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_ANIMALHANDLING">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ANIMALHANDLING" requirements="!ID_PROFICIENCY_SKILL_ANIMALHANDLING" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ANIMALHANDLING_DOUBLE" requirements="ID_PROFICIENCY_SKILL_ANIMALHANDLING" />
+		</rules>
+	</element>
+	<element name="Animal Handling Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ANIMALHANDLING">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ANIMALHANDLING" />
+		</rules>
+	</element>
+	<element name="Animal Handling Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ANIMALHANDLING_DOUBLE">
+		<rules>
+			<stat name="animal handling:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ANIMALHANDLING" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Arcana Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_ARCANA">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ARCANA" requirements="!ID_PROFICIENCY_SKILL_ARCANA" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ARCANA_DOUBLE" requirements="ID_PROFICIENCY_SKILL_ARCANA" />
+		</rules>
+	</element>
+	<element name="Arcana Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ARCANA">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ARCANA" />
+		</rules>
+	</element>
+	<element name="Arcana Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ARCANA_DOUBLE">
+		<rules>
+			<stat name="arcana:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ARCANA" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Athletics Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_ATHLETICS">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ATHLETICS" requirements="!ID_PROFICIENCY_SKILL_ATHLETICS" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ATHLETICS_DOUBLE" requirements="ID_PROFICIENCY_SKILL_ATHLETICS" />
+		</rules>
+	</element>
+	<element name="Athletics Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ATHLETICS">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ATHLETICS" />
+		</rules>
+	</element>
+	<element name="Athletics Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ATHLETICS_DOUBLE">
+		<rules>
+			<stat name="athletics:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_ATHLETICS" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Deception Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_DECEPTION">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_DECEPTION" requirements="!ID_PROFICIENCY_SKILL_DECEPTION" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_DECEPTION_DOUBLE" requirements="ID_PROFICIENCY_SKILL_DECEPTION" />
+		</rules>
+	</element>
+	<element name="Deception Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_DECEPTION">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_DECEPTION" />
+		</rules>
+	</element>
+	<element name="Deception Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_DECEPTION_DOUBLE">
+		<rules>
+			<stat name="deception:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_DECEPTION" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="History Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_HISTORY">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_HISTORY" requirements="!ID_PROFICIENCY_SKILL_HISTORY" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_HISTORY_DOUBLE" requirements="ID_PROFICIENCY_SKILL_HISTORY" />
+		</rules>
+	</element>
+	<element name="History Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_HISTORY">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_HISTORY" />
+		</rules>
+	</element>
+	<element name="History Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_HISTORY_DOUBLE">
+		<rules>
+			<stat name="history:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_HISTORY" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Insight Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_INSIGHT">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INSIGHT" requirements="!ID_PROFICIENCY_SKILL_INSIGHT" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INSIGHT_DOUBLE" requirements="ID_PROFICIENCY_SKILL_INSIGHT" />
+		</rules>
+	</element>
+	<element name="Insight Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INSIGHT">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_INSIGHT" />
+		</rules>
+	</element>
+	<element name="Insight Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INSIGHT_DOUBLE">
+		<rules>
+			<stat name="insight:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INSIGHT" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Intimidation Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_INTIMIDATION">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INTIMIDATION" requirements="!ID_PROFICIENCY_SKILL_INTIMIDATION" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INTIMIDATION_DOUBLE" requirements="ID_PROFICIENCY_SKILL_INTIMIDATION" />
+		</rules>
+	</element>
+	<element name="Intimidation Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INTIMIDATION">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_INTIMIDATION" />
+		</rules>
+	</element>
+	<element name="Intimidation Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INTIMIDATION_DOUBLE">
+		<rules>
+			<stat name="intimidation:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INTIMIDATION" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Investigation Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_INVESTIGATION">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INVESTIGATION" requirements="!ID_PROFICIENCY_SKILL_INVESTIGATION" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INVESTIGATION_DOUBLE" requirements="ID_PROFICIENCY_SKILL_INVESTIGATION" />
+		</rules>
+	</element>
+	<element name="Investigation Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INVESTIGATION">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_INVESTIGATION" />
+		</rules>
+	</element>
+	<element name="Investigation Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INVESTIGATION_DOUBLE">
+		<rules>
+			<stat name="investigation:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_INVESTIGATION" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Medicine Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_MEDICINE">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_MEDICINE" requirements="!ID_PROFICIENCY_SKILL_MEDICINE" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_MEDICINE_DOUBLE" requirements="ID_PROFICIENCY_SKILL_MEDICINE" />
+		</rules>
+	</element>
+	<element name="Medicine Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_MEDICINE">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_MEDICINE" />
+		</rules>
+	</element>
+	<element name="Medicine Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_MEDICINE_DOUBLE">
+		<rules>
+			<stat name="medicine:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_MEDICINE" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Nature Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_NATURE">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_NATURE" requirements="!ID_PROFICIENCY_SKILL_NATURE" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_NATURE_DOUBLE" requirements="ID_PROFICIENCY_SKILL_NATURE" />
+		</rules>
+	</element>
+	<element name="Nature Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_NATURE">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_NATURE" />
+		</rules>
+	</element>
+	<element name="Nature Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_NATURE_DOUBLE">
+		<rules>
+			<stat name="nature:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_NATURE" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Perception Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_PERCEPTION">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERCEPTION" requirements="!ID_PROFICIENCY_SKILL_PERCEPTION" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERCEPTION_DOUBLE" requirements="ID_PROFICIENCY_SKILL_PERCEPTION" />
+		</rules>
+	</element>
+	<element name="Perception Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERCEPTION">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_PERCEPTION" />
+		</rules>
+	</element>
+	<element name="Perception Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERCEPTION_DOUBLE">
+		<rules>
+			<stat name="perception:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERCEPTION" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Performance Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_PERFORMANCE">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERFORMANCE" requirements="!ID_PROFICIENCY_SKILL_PERFORMANCE" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERFORMANCE_DOUBLE" requirements="ID_PROFICIENCY_SKILL_PERFORMANCE" />
+		</rules>
+	</element>
+	<element name="Performance Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERFORMANCE">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_PERFORMANCE" />
+		</rules>
+	</element>
+	<element name="Performance Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERFORMANCE_DOUBLE">
+		<rules>
+			<stat name="performance:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERFORMANCE" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Persuasion Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_PERSUASION">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERSUASION" requirements="!ID_PROFICIENCY_SKILL_PERSUASION" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERSUASION_DOUBLE" requirements="ID_PROFICIENCY_SKILL_PERSUASION" />
+		</rules>
+	</element>
+	<element name="Persuasion Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERSUASION">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_PERSUASION" />
+		</rules>
+	</element>
+	<element name="Persuasion Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERSUASION_DOUBLE">
+		<rules>
+			<stat name="persuasion:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_PERSUASION" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Religion Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_RELIGION">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_RELIGION" requirements="!ID_PROFICIENCY_SKILL_RELIGION" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_RELIGION_DOUBLE" requirements="ID_PROFICIENCY_SKILL_RELIGION" />
+		</rules>
+	</element>
+	<element name="Religion Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_RELIGION">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_RELIGION" />
+		</rules>
+	</element>
+	<element name="Religion Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_RELIGION_DOUBLE">
+		<rules>
+			<stat name="religion:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_RELIGION" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Sleight of Hand Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_SLEIGHTOFHAND">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SLEIGHTOFHAND" requirements="!ID_PROFICIENCY_SKILL_SLEIGHTOFHAND" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SLEIGHTOFHAND_DOUBLE" requirements="ID_PROFICIENCY_SKILL_SLEIGHTOFHAND" />
+		</rules>
+	</element>
+	<element name="Sleight of Hand Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SLEIGHTOFHAND">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_SLEIGHTOFHAND" />
+		</rules>
+	</element>
+	<element name="Sleight of Hand Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SLEIGHTOFHAND_DOUBLE">
+		<rules>
+			<stat name="sleight of hand:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SLEIGHTOFHAND" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Stealth Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_STEALTH">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_STEALTH" requirements="!ID_PROFICIENCY_SKILL_STEALTH" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_STEALTH_DOUBLE" requirements="ID_PROFICIENCY_SKILL_STEALTH" />
+		</rules>
+	</element>
+	<element name="Stealth Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_STEALTH">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_STEALTH" />
+		</rules>
+	</element>
+	<element name="Stealth Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_STEALTH_DOUBLE">
+		<rules>
+			<stat name="stealth:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_STEALTH" alt="Double Proficiency" />
+		</rules>
+	</element>
+	<element name="Survival Proficiency or Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_OR_DOUBLE_SURVIVAL">
+		<rules>
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SURVIVAL" requirements="!ID_PROFICIENCY_SKILL_SURVIVAL" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SURVIVAL_DOUBLE" requirements="ID_PROFICIENCY_SKILL_SURVIVAL" />
+		</rules>
+	</element>
+	<element name="Survival Proficiency" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SURVIVAL">
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_SURVIVAL" />
+		</rules>
+	</element>
+	<element name="Survival Proficiency Double" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SURVIVAL_DOUBLE">
+		<rules>
+			<stat name="survival:proficiency" value="proficiency" bonus="double" requirements="!ID_INTERNAL_GRANTS_PROFICIENCY_SKILL_SURVIVAL" alt="Double Proficiency" />
+		</rules>
+	</element>
+</elements>

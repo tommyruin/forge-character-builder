@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Authored Source element for the shipped 2024 baseline.
+
+	The vendored corpus file (core/players-handbook-2024/source.xml) carries
+	the publisher's product description, which is not System Reference
+	Document text, so it is not published. This element keeps the corpus's
+	identity, name and abbreviation so that every shipped 2024 element still
+	belongs to it, characters exported from Aurora that restrict this source
+	keep working, and a later upload of the full Player's Handbook (2024)
+	replaces it in place. It mirrors how the 2014 core books are declared in
+	...core.internal.internal-sources.xml: a required core source, marked
+	`incomplete` because only the content published in the System Reference
+	Document ships.
+-->
+<elements>
+	<element name="Player’s Handbook (2024)" type="Source" source="Core" id="ID_WOTC_SOURCE_PLAYERS_HANDBOOK_2024">
+		<description>
+			<p><strong>The 2024 rules for character creation: classes, subclasses, backgrounds, species, feats, equipment and spells.</strong></p>
+			<p>This source contains only the content published in System Reference Document 5.2.1, which Wizards of the Coast LLC makes available under the Creative Commons Attribution 4.0 International License. Magic items and monsters from the 2024 rules are not included. Import the full book from your own content to add the rest.</p>
+		</description>
+		<setters>
+			<set name="abbreviation">PHB24</set>
+			<set name="url">https://www.dndbeyond.com/srd</set>
+			<set name="author" abbreviation="WOTC" url="http://dnd.wizards.com">Wizards of the Coast</set>
+			<set name="information">D&amp;D 5.5e. This source contains only the content published in System Reference Document 5.2.1, licensed under CC BY 4.0.</set>
+			<set name="official">true</set>
+			<set name="core">true</set>
+			<set name="release">20240917</set>
+			<set name="incomplete">true</set>
+		</setters>
+	</element>
+</elements>

@@ -1,0 +1,23 @@
+{
+  "description": "Case-insensitive patterns that must not appear in the public tree outside the allowlisted interoperability tokens.",
+  "patterns": [
+    "aurora",
+    "oracle",
+    "decompil",
+    "\\bC#\\b",
+    "\\bdotnet\\b",
+    "\\.NET\\b",
+    "\\bWPF\\b",
+    "borealis",
+    "Builder\\.Presentation",
+    "tommyruin3w",
+    "dmforge\\.net",
+    "buymeacoffee",
+    "\\bclaude\\b",
+    "\\bcodex\\b",
+    "agent_docs",
+    "AGENTS\\.md",
+    "\\bsession notes?\\b"
+  ],
+  "fileNamePatterns": ["\\.cs$", "\\.csproj$", "\\.sln$", "\\.xaml$", "Builder\\.Presentation"]
+}
