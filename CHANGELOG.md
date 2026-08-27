@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-27
+
 ### Changed
 
 - The engine's system elements ship from `content/system` alongside the rest
