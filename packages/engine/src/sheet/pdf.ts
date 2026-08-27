@@ -348,6 +348,8 @@ export interface CharacterSheetWriteOptions {
   footerText?: string;
   /** The scheme the templates were recoloured to; labels and values follow it. */
   colours?: SheetColours;
+  /** A host's logo, base64 PNG or JPEG, painted over the masthead's die badge. */
+  brandImage?: string;
 }
 
 interface SheetFonts {
@@ -1088,6 +1090,22 @@ function drawCenteredInBox(
  * A portrait is decoration: an unreadable or unsupported image is skipped so a
  * character with a bad one still exports a complete sheet.
  */
+/**
+ * Paints a host's logo over the masthead badge. The template's own die mark is
+ * covered first, so a logo with transparent edges does not show it through.
+ */
+async function drawBrandImage(
+  output: PDFDocument,
+  page: PDFPage,
+  fieldRects: Map<string, FieldRect>,
+  base64: string,
+): Promise<void> {
+  const rect = fieldRects.get(SHEET_TEMPLATE_CONTRACT.masthead.field);
+  if (rect === undefined || base64 === "") return;
+  page.drawRectangle({ x: rect.x - 1, y: rect.y - 1, width: rect.width + 2, height: rect.height + 2, color: rgb(1, 1, 1) });
+  await drawFieldImage(output, page, fieldRects, SHEET_TEMPLATE_CONTRACT.masthead.field, base64);
+}
+
 async function drawFieldImage(
   output: PDFDocument,
   page: PDFPage,
@@ -1263,6 +1281,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   if (!bundleIsComplete(bundle)) return writeCharacterSheetPdf(model);
   const footerText = options.footerText ?? DEFAULT_SHEET_FOOTER_TEXT;
   const colours = options.colours ?? DEFAULT_SHEET_COLOURS;
+  const brandImage = options.brandImage ?? "";
   const labelInk = labelColours(colours);
   const files = SHEET_TEMPLATE_CONTRACT.files;
   const fill = (template: Uint8Array, pageValues: Readonly<Record<string, string>>) =>
@@ -1282,16 +1301,18 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         details_proficiencies_languages: "",
       });
       drawTemplateText(page, bundle.labels[files.details], fonts, labelInk);
+      await drawBrandImage(output, page, fieldRects, brandImage);
       drawSheetFooter(page, fonts, footerText);
       const continuations = drawDetailsRichText(page, modelPage, fonts, fieldRects);
       for (let index = 0; index < continuations.length; index += 1) {
         const continuation = continuations[index]!;
-        const { page: continuationPage } = await fill(bundle.details, {
+        const { page: continuationPage, fieldRects: continuationRects } = await fill(bundle.details, {
           ...values,
           details_features: "",
           details_proficiencies_languages: "",
         });
         drawTemplateText(continuationPage, bundle.labels[files.details], fonts, labelInk);
+        await drawBrandImage(output, continuationPage, continuationRects, brandImage);
         drawSheetFooter(continuationPage, fonts, footerText);
         const next = drawFeatureFlow(
           continuationPage,
@@ -1311,6 +1332,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
     if (modelPage.templateKind === "background") {
       const { page, fieldRects } = await fill(bundle.background, values);
       drawTemplateText(page, bundle.labels[files.background], fonts, labelInk);
+      await drawBrandImage(output, page, fieldRects, brandImage);
       await drawFieldImage(output, page, fieldRects, "background_portrait_image", images["background_portrait_image"] ?? "");
       drawSheetFooter(page, fonts, footerText);
       continue;
@@ -1321,6 +1343,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         companion_features: "",
       });
       drawTemplateText(page, bundle.labels[files.companion], fonts, labelInk);
+      await drawBrandImage(output, page, fieldRects, brandImage);
       await drawFieldImage(output, page, fieldRects, "companion_portrait_image", images["companion_portrait_image"] ?? "");
       drawCompanionRichText(page, modelPage, fonts, fieldRects);
       drawSheetFooter(page, fonts, footerText);

@@ -45,6 +45,8 @@ export interface SheetRenderRequest {
   colours?: Partial<SheetColours>;
   /** The typeface names per role; the defaults for any role omitted. */
   fonts?: Partial<SheetFonts>;
+  /** A host logo (base64 PNG or JPEG) painted over the sheet's brand badge. */
+  brandImage?: string;
   /** The line signed at the foot of every page; the writer's default when omitted. */
   footerText?: string;
 }
@@ -114,7 +116,11 @@ export function startSheetRenderWorker(scope: SheetRenderWorkerScope): void {
         }
         const bytes = template === null
           ? writeCharacterSheetPdf(request.model)
-          : await writeCharacterSheetPdfWithTemplateBundle(request.model, template, { footerText: request.footerText, colours });
+          : await writeCharacterSheetPdfWithTemplateBundle(request.model, template, {
+            footerText: request.footerText,
+            colours,
+            brandImage: typeof request.brandImage === "string" ? request.brandImage : undefined,
+          });
         const response: SheetRenderResponse = { id: request.id, ok: true, bytes };
         scope.postMessage(response, [bytes]);
       } catch (cause) {

@@ -274,6 +274,7 @@ export interface SheetRenderOptions {
   templateSet?: "2014" | "2024";
   colours?: { accent?: string; lines?: string; text?: string };
   fonts?: { titles?: string; captions?: string; body?: string; numbers?: string };
+  brandImage?: string;
   footerText?: string;
 }
 
@@ -802,6 +803,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         templateSet: render.templateSet,
         colours: render.colours,
         fonts: render.fonts,
+        brandImage: render.brandImage,
         footerText: render.footerText,
       };
       sheetRenderWorker!.postMessage(request);
@@ -1361,6 +1363,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         templateSet: typeof opts.templateSet === "string" ? (opts.templateSet as SheetRenderOptions["templateSet"]) : undefined,
         colours: typeof opts.colours === "object" && opts.colours !== null ? (opts.colours as SheetRenderOptions["colours"]) : undefined,
         fonts: typeof opts.fonts === "object" && opts.fonts !== null ? (opts.fonts as SheetRenderOptions["fonts"]) : undefined,
+        brandImage: typeof opts.brandImage === "string" ? opts.brandImage : undefined,
         footerText: typeof opts.footerText === "string" ? opts.footerText : undefined,
       });
     },

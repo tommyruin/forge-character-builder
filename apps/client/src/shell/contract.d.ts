@@ -63,6 +63,16 @@ export interface ShellStorage {
   readonly legacyPackageTokens?: readonly string[];
 }
 
+/** Host branding for the generated character sheets. */
+export interface ShellSheet {
+  /**
+   * A logo painted over the sheet's brand badge: a URL the client fetches, or
+   * a `data:` URL. PNG or JPEG; anything else is ignored. Omitted, the
+   * templates' own die mark shows.
+   */
+  readonly logo?: string;
+}
+
 export interface LogoProps {
   size?: number;
   title?: string;
@@ -76,6 +86,8 @@ export interface HostShell {
   readonly appName: string;
   /** Browser persistence names; omitted for the builder's defaults. */
   readonly storage?: ShellStorage;
+  /** Branding for the generated character sheets. */
+  readonly sheet?: ShellSheet;
   readonly Logo: ComponentType<LogoProps>;
   /** Ambient page background; may render nothing. */
   readonly Background: ComponentType;

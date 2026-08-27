@@ -254,6 +254,11 @@ export const SHEET_TEMPLATE_CONTRACT = {
     footerDrop: 233.5,
     footerInset: 6,
   },
+  /**
+   * The masthead's brand badge. The templates draw a die mark there; a host
+   * may supply its own logo, which the writer paints over it.
+   */
+  masthead: { badgeCenterX: 48, badgeCenterY: 748, badgeSize: 34, field: "sheet_brand_image" },
   /** The equipment page's notes column; item descriptions flow inside it. */
   equipmentNotes: { x: 410, y: 192, width: 172, height: 570 },
 } as const;

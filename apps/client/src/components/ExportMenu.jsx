@@ -4,6 +4,7 @@ import { api } from "../api";
 import useSheetTemplateSetting from "../hooks/useSheetTemplateSetting";
 import useSheetColoursSetting from "../hooks/useSheetColoursSetting";
 import useSheetFontsSetting from "../hooks/useSheetFontsSetting";
+import { loadSheetBrandImage } from "../sheetBrandImage.js";
 import { downloadBlob } from "../vtt/download.js";
 import Icon from './Icon';
 
@@ -68,7 +69,8 @@ export default function ExportMenu({
 
   const downloadSheet = () =>
     runAction("sheet", async () => {
-      const url = await api.characters.sheet(id, { templateSet, colours, fonts, footerText: `Generated with ${shell.appName}.` });
+      const brandImage = await loadSheetBrandImage();
+      const url = await api.characters.sheet(id, { templateSet, colours, fonts, brandImage, footerText: `Generated with ${shell.appName}.` });
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = `${id}.pdf`;

@@ -68,7 +68,7 @@ const CREAM = rgb(0.985, 0.955, 0.89);
 const WHITE = rgb(1, 1, 1);
 const BAND = ACCENT;
 const SHADOW = rgb(0.45, 0.42, 0.38);
-const PANEL_GREY = rgb(0.9, 0.89, 0.87);
+const PANEL_GREY = rgb(0.935, 0.921, 0.897);
 const LABEL_FONT = { display: "titles", caption: "captions", captionLight: "notes" };
 
 const EDITION = {
@@ -77,7 +77,7 @@ const EDITION = {
     inspiration: "INSPIRATION",
     traits: "RACIAL TRAITS",
     origin: "RACE & BACKGROUND",
-    titleStyle: "ribbon",
+    titleStyle: "caption",
     titleAt: "bottom",
     marker: "square",
   },
@@ -134,6 +134,12 @@ const roughRectPath = (w, h, r, rough, seed) => {
     return `${index === 0 ? "M" : "L"} ${(x + (dx / length) * offset).toFixed(2)} ${(y + (dy / length) * offset).toFixed(2)}`;
   }).join(" ") + " Z";
 };
+/** A rectangle with its corners cut at 45 degrees, as the printed sheets' panels are. */
+const chamferRectPath = (w, h, c) =>
+  `M ${c} 0 H ${w - c} L ${w} ${c} V ${h - c} L ${w - c} ${h} H ${c} L 0 ${h - c} V ${c} Z`;
+/** A pointy-top hexagon inscribed in w x h. */
+const hexPath = (w, h) =>
+  `M ${w / 2} 0 L ${w} ${h * 0.25} L ${w} ${h * 0.75} L ${w / 2} ${h} L 0 ${h * 0.75} L 0 ${h * 0.25} Z`;
 const roundedRectPath = (w, h, r) =>
   `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
 const ribbonPath = (w, h) => `M 4 0 H ${w - 4} L ${w} ${h / 2} L ${w - 4} ${h} H 4 L 0 ${h / 2} Z`;
@@ -246,13 +252,21 @@ class Sheet {
 
   // --- ornament ---------------------------------------------------------------
 
-  /** A crimson frame with a gold inner line and corner diamonds. */
+  /** A chamfered panel with an inner hairline, the printed sheets' box idiom. */
   frame(x, y, width, height, { radius = 4, fill = FILL, lineWidth = 0.9 } = {}) {
-    this.rounded(x, y, width, height, radius, { fill, stroke: ACCENT, lineWidth });
-    this.rounded(x + 2.2, y + 2.2, width - 4.4, height - 4.4, Math.max(1, radius - 2), { stroke: GOLD, lineWidth: 0.35 });
-    for (const [cx, cy] of [[x + 2.2, y + 2.2], [x + width - 2.2, y + 2.2], [x + 2.2, y + height - 2.2], [x + width - 2.2, y + height - 2.2]]) {
-      this.diamond(cx, cy, 1.7);
-    }
+    const cut = Math.min(radius + 2, width / 3, height / 3);
+    this.path(chamferRectPath(width, height, cut), x, y + height, { fill, stroke: ACCENT, lineWidth });
+    this.path(chamferRectPath(width - 4.4, height - 4.4, Math.max(1, cut - 2)), x + 2.2, y + height - 2.2, { stroke: GOLD, lineWidth: 0.35 });
+  }
+  /** The brand badge: a die mark the writer may paint a host logo over. */
+  dieBadge(name, cx, cy, size) {
+    const x = cx - size / 2;
+    const top = cy + size / 2;
+    this.path(hexPath(size, size), x, top, { fill: FILL, stroke: ACCENT, lineWidth: size * 0.07 });
+    this.path(hexPath(size * 0.56, size * 0.5), cx - size * 0.28, cy + size * 0.2, { stroke: GOLD, lineWidth: size * 0.045 });
+    this.draw("20", x, cy - size * 0.17, { font: "display", size: size * 0.36, color: "accent", align: "center", width: size });
+    const field = this.form.createButton(name);
+    field.addToPage("", this.page, { x, y: cy - size / 2, width: size, height: size, borderWidth: 0, backgroundColor: undefined, borderColor: undefined, font: this.fonts.field });
   }
   /** A pill-shaped frame. */
   pill(x, y, width, height, { fill = FILL } = {}) {
@@ -278,6 +292,11 @@ class Sheet {
       }
       this.ribbon(title, x + width / 2, y + height, { size: fitted });
       return { x: x + 4, y: y + 4, width: width - 8, height: height - 12 };
+    }
+    if (style === "caption") {
+      // The printed sheets label a panel inside its lower edge, centred.
+      this.label(title, x, y + 5, { size: Math.min(size - 1.2, (width - 12) / (title.length * 0.62)), align: "center", width, color: "text" });
+      return { x: x + 4, y: y + 13, width: width - 8, height: height - 17 };
     }
     this.display(title, x, y + height - 11, { size, align: "center", width });
     this.ornamentRule(x + 8, x + width - 8, y + height - 15);
@@ -316,7 +335,7 @@ class Sheet {
 
   /** A text field; the widget itself is invisible, the art beneath is ours. */
   text(name, x, y, width, height, { multiline = false, align = "left", size = 8, box = "underline" } = {}) {
-    if (box === "underline") this.rule(x, y - 1.5, x + width, y - 1.5, RULE, 0.5);
+    if (box === "underline") this.rule(x, y - 2.5, x + width, y - 2.5, RULE, 0.5);
     else if (box === "frame") this.rounded(x, y, width, height, 2, { fill: WHITE, stroke: RULE, lineWidth: 0.5 });
     const field = this.form.createTextField(name);
     if (multiline) field.enableMultiline();
@@ -333,7 +352,7 @@ class Sheet {
   /** A captioned entry: the caption above the field, as the classic sheet has it. */
   captioned(name, caption, x, y, width, height, options = {}) {
     this.text(name, x, y, width, height, options);
-    this.label(caption, x, y + height + 2, { size: 3.8, color: "lines", align: options.captionAlign ?? "left", width });
+    this.label(caption, x, y + height + 2, { size: options.captionSize ?? 3.8, color: "lines", align: options.captionAlign ?? "left", width });
   }
   /** A checkbox: the empty marker is page art; the widget adds only the check. */
   check(name, x, y, size = 7, { marker = this.style.marker } = {}) {
@@ -345,7 +364,7 @@ class Sheet {
   }
   /** An image frame the writer paints a portrait into. */
   image(name, x, y, width, height) {
-    this.frame(x, y, width, height, { fill: WHITE });
+    this.frame(x, y, width, height);
     const field = this.form.createButton(name);
     field.addToPage("", this.page, { x, y, width, height, borderWidth: 0, backgroundColor: undefined, borderColor: undefined, font: this.fonts.field });
     return field;
@@ -390,7 +409,7 @@ const SKILLS = [
 const ABILITY_NAME = Object.fromEntries(ABILITIES.map(([key, name]) => [key, name[0] + name.slice(1).toLowerCase()]));
 
 /** The page title band: a centred display title between ornamented rules. */
-function pageChrome(s, title, edition) {
+function pageChrome(s, title, _edition) {
   const size = 10.5;
   // The rules flank the widest title face the writer may pick; the title itself centres in whatever face is chosen.
   const width = s.textWidth(title, "display", size) * 1.25;
@@ -398,7 +417,27 @@ function pageChrome(s, title, edition) {
   s.display(title, 0, 768, { size, align: "center", width: C.pageWidth });
   s.ornamentRule(30, cx - width / 2 - 8, 771.5, ACCENT);
   s.ornamentRule(cx + width / 2 + 8, 582, 771.5, ACCENT);
-  s.label(EDITION[edition].rules, 482, 763, { size: 4.4, color: "lines", align: "right", width: 100 });
+}
+
+/**
+ * The printed sheets' masthead: a brand badge and page title over a rule, the
+ * character's name on a plate at the left, and the identity grid beside it.
+ */
+function masthead(s, edition, title, nameField, nameCaption, fields) {
+  const M = C.masthead;
+  s.dieBadge("sheet_brand_image", M.badgeCenterX, M.badgeCenterY, M.badgeSize);
+  s.display(title, M.badgeCenterX + M.badgeSize / 2 + 10, 742, { size: 11 });
+  s.label(EDITION[edition].rules, 486, 744, { size: 4.4, color: "lines", align: "right", width: 100 });
+  s.ornamentRule(30, 586, 734, ACCENT);
+  if (nameField !== null) {
+    const plate = s.section(nameCaption, 27, 690, 246, 40, { style: "caption", size: 5 });
+    s.text(nameField, plate.x + 6, plate.y + 4, plate.width - 12, 18, { size: 12, box: "none" });
+  }
+  if (fields.length > 0) s.frame(nameField === null ? 27 : 281, 690, nameField === null ? 559 : 305, 40);
+  for (const [name, caption, x, width, row] of fields) {
+    // Each caption sits above its rule; the upper row must clear the plate's inner hairline.
+    s.captioned(name, caption, x, row === 0 ? 714 : 697, width, 8, { size: 6.5, captionSize: 3.4 });
+  }
 }
 
 /** The full-width header bar: a name field on the left, a captioned grid on the right. */
@@ -434,18 +473,26 @@ function deathSaves(s, prefix, x, y) {
  * current total, with the death saves in a tab on the lower edge.
  */
 function hitPointBox(s, prefix, x, y, width, height) {
-  const inner = s.section("CURRENT HIT POINTS", x, y, width, height, { style: "ribbon", at: "bottom" });
-  const top = y + height;
-  [[`${prefix}_hp_max`, "MAXIMUM", x + 10, 35], [`${prefix}_hd`, "HIT DICE", x + 64, 55], [`${prefix}_hp_temp`, "TEMPORARY", x + width - 45, 35]].forEach(([name, caption, fx, fw]) => {
-    s.captioned(name, caption, fx, top - 22, fw, 10, { align: "center", captionAlign: "center", size: 7 });
+  // The printed sheets carry the running total in one panel, with hit dice and
+  // the death saves in two smaller panels beneath it.
+  const tallyHeight = 32;
+  const mainY = y + tallyHeight + 5;
+  const mainHeight = height - tallyHeight - 5;
+  s.section("CURRENT HIT POINTS", x, mainY, width, mainHeight);
+  [[`${prefix}_hp_max`, "MAXIMUM", x + 12, 46], [`${prefix}_hp_temp`, "TEMPORARY", x + width - 58, 46]].forEach(([name, caption, fx, fw]) => {
+    s.captioned(name, caption, fx, mainY + mainHeight - 20, fw, 9, { align: "center", captionAlign: "center", size: 7, captionSize: 3.4 });
   });
-  s.text(`${prefix}_hp_current`, x + 10, inner.y + 4, width - 20, 32, { align: "center", size: 14, box: "none" });
+  s.text(`${prefix}_hp_current`, x + 12, mainY + 16, width - 24, 16, { align: "center", size: 14, box: "none" });
+  const half = (width - 6) / 2;
+  const dice = s.section("HIT DICE", x, y, half, tallyHeight);
+  s.text(`${prefix}_hd`, dice.x + 4, y + 16, dice.width - 8, 11, { align: "center", size: 8, box: "none" });
+  const saves = s.section("DEATH SAVES", x + half + 6, y, half, tallyHeight);
   for (let index = 1; index <= 3; index += 1) {
-    s.check(`${prefix}_death_save_fail_${index}`, x + 16 + (index - 1) * 10, y - 10, 6.5);
-    s.check(`${prefix}_death_save_success_${index}`, x + width - 39 + (index - 1) * 10, y - 10, 6.5);
+    s.check(`${prefix}_death_save_success_${index}`, saves.x + 38 + (index - 1) * 9, y + 21, 6);
+    s.check(`${prefix}_death_save_fail_${index}`, saves.x + 38 + (index - 1) * 9, y + 13, 6);
   }
-  s.label("FAILURES", x + 16, y - 14.5, { size: 3.4, color: "lines", align: "center", width: 26.5 });
-  s.label("SUCCESSES", x + width - 39, y - 14.5, { size: 3.4, color: "lines", align: "center", width: 26.5 });
+  s.label("SUCCESSES", saves.x + 4, y + 22.5, { size: 3.2, color: "lines" });
+  s.label("FAILURES", saves.x + 4, y + 14.5, { size: 3.2, color: "lines" });
 }
 
 // ---------------------------------------------------------------------------
@@ -455,16 +502,14 @@ function hitPointBox(s, prefix, x, y, width, height) {
 async function details2014(edition) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
-  pageChrome(s, "CHARACTER", edition);
-
-  // Header: the name on the left, the build grid framed on the right.
-  headerBar(s, "details_character_name", "CHARACTER NAME");
-  s.captioned("details_build", "CHARACTER LEVEL, RACE & CLASS", 266, 728, 250, 11.4, { size: 7 });
-  s.captioned("details_xp", "EXPERIENCE", 523, 728, 55, 11.4, { align: "right", captionAlign: "right", size: 7 });
-  s.captioned("details_background", "BACKGROUND", 266, 702, 104, 11.4, { size: 7 });
-  s.captioned("details_alignment", "ALIGNMENT", 374, 702, 48, 11.4, { size: 7 });
-  s.captioned("details_deity", "DEITY", 426, 702, 66, 11.4, { size: 7 });
-  s.captioned("details_player", "PLAYER NAME", 499, 702, 79, 11.4, { align: "right", captionAlign: "right", size: 7 });
+  masthead(s, edition, "CHARACTER", "details_character_name", "CHARACTER NAME", [
+    ["details_build", "CLASS & LEVEL", 289, 196, 0],
+    ["details_xp", "EXPERIENCE POINTS", 493, 87, 0],
+    ["details_background", "BACKGROUND", 289, 92, 1],
+    ["details_alignment", "ALIGNMENT", 389, 92, 1],
+    ["details_deity", "DEITY", 489, 44, 1],
+    ["details_player", "PLAYER", 541, 39, 1],
+  ]);
 
   // Column A: the six ability shields on a grey backing panel.
   s.panel(27, 230, 67, 440);
@@ -487,10 +532,10 @@ async function details2014(edition) {
   s.text("details_saving_throws", 100, 504, 97, 34, { multiline: true, size: 5.5, box: "none" });
   s.section("SKILLS", 96, 262, 105, 228);
   SKILLS.forEach(([key, caption, ability], index) => {
-    const y = 476.4 - index * 12;
-    s.check(`details_${key}_proficiency`, 99, y, 6);
-    s.check(`details_${key}_expertise`, 106, y, 6);
-    s.text(`details_${key}_total`, 113, y - 1, 16, 9, { align: "center", size: 7 });
+    const y = 476.4 - index * 11.2;
+    s.check(`details_${key}_proficiency`, 101, y, 6);
+    s.check(`details_${key}_expertise`, 108, y, 6);
+    s.text(`details_${key}_total`, 115, y - 1, 15, 9, { align: "center", size: 7 });
     s.note(caption, 131, y + 0.5, { size: 5.2 });
     s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, 131 + s.textWidth(caption, "captionLight", 5.2) + 2, y + 0.5, { size: 4.2, color: "lines" });
   });
@@ -503,7 +548,7 @@ async function details2014(edition) {
   s.frame(31, 194, 170, 34);
   s.circle(52, 214, 10.5, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
   s.text("details_initiative", 39, 207, 26, 14, { align: "center", size: 10, box: "none" });
-  s.label("INITIATIVE", 34, 198, { size: 3.8, align: "center", width: 36 });
+  s.label("INITIATIVE", 40, 199, { size: 3.8, align: "center", width: 36 });
   s.check("details_initiative_advantage", 74, 210.5, 6.5);
   s.label("ADVANTAGE", 70, 203, { size: 3.4, color: "lines", align: "center", width: 26 });
   s.text("details_encounter_box", 104, 206, 92, 10, { size: 7 });
@@ -517,19 +562,19 @@ async function details2014(edition) {
   s.check("details_armor_stealth_disadvantage", 306, 654.5, 6.5);
   s.label("STEALTH DISADV.", 270, 655.6, { size: 3.4, color: "lines" });
   s.shield("details_armor_class", "AC", 355, 674, 44, 48);
-  hitPointBox(s, "details", 213, 513, 182, 60);
-  s.section("SPEED, SENSES & CONDITIONS", 213, 392, 182, 104);
+  hitPointBox(s, "details", 213, 492, 182, 86);
+  s.section("SPEED, SENSES & CONDITIONS", 213, 392, 182, 96);
   [["details_speed_walking", "SPEED", 224], ["details_speed_fly", "FLY", 267], ["details_speed_climb", "CLIMB", 310], ["details_speed_swim", "SWIM", 353]].forEach(([name, caption, x]) => {
-    s.captioned(name, caption, x, 475.7, 35, 10, { align: "center", captionAlign: "center", size: 7 });
+    s.captioned(name, caption, x, 470, 35, 10, { align: "center", captionAlign: "center", size: 7 });
   });
-  s.captioned("details_vision", "VISION", 224, 454.5, 78, 10, { size: 7 });
-  s.captioned("details_inspiration", style.inspiration, 310, 454.5, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-  s.captioned("details_exhaustion", "EXHAUSTION", 353, 454.5, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-  s.text("details_resistances", 224, 398, 164, 51, { multiline: true, size: 6, box: "none" });
+  s.captioned("details_vision", "VISION", 224, 448, 78, 10, { size: 7 });
+  s.captioned("details_inspiration", style.inspiration, 310, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
+  s.captioned("details_exhaustion", "EXHAUSTION", 353, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
+  s.text("details_resistances", 224, 404, 164, 38, { multiline: true, size: 6, box: "none" });
   s.block(style.traits, "details_additional_notes", 213, 196, 182, 188);
 
   // Bottom: attacks and spellcasting across columns A–C.
-  s.section("ATTACKS & SPELLCASTING", 31, 27, 364, 162);
+  s.section("ATTACKS & SPELLCASTING", 29, 27, 366, 162);
   [["NAME", 34], ["RANGE", 173], ["ATTACK", 222], ["DAMAGE / TYPE", 273]].forEach(([caption, x]) => s.label(caption, x, 178, { size: 3.8, color: "lines" }));
   for (let row = 1; row <= 4; row += 1) {
     const y = 166.7 - (row - 1) * 22;
@@ -715,32 +760,32 @@ async function details2024(edition) {
 async function backgroundTemplate(edition) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
-  pageChrome(s, edition === "2024" ? "APPEARANCE & BACKSTORY" : "BACKGROUND", edition);
-  headerBar(s, "background_character_name", "CHARACTER NAME");
-  [["background_gender", "GENDER", 265, 83], ["background_age", "AGE", 349, 68], ["background_height", "HEIGHT", 418, 74], ["background_weight", "WEIGHT", 493, 80]].forEach(([name, caption, x, width]) => {
-    s.captioned(name, caption, x, 725, width, 14, { size: 8 });
-  });
-  [["background_eyes", "EYES", 265], ["background_skin", "SKIN", 368], ["background_hair", "HAIR", 471]].forEach(([name, caption, x]) => {
-    s.captioned(name, caption, x, 699, 101, 14, { size: 8 });
-  });
-  const bottom = { style: "ribbon", at: "bottom" };
-  s.section("CHARACTER PORTRAIT", 27, 477, 182, 188, bottom);
+  masthead(s, edition, edition === "2024" ? "APPEARANCE" : "BACKGROUND", "background_character_name", "CHARACTER NAME", [
+    ["background_age", "AGE", 289, 66, 0],
+    ["background_height", "HEIGHT", 363, 72, 0],
+    ["background_weight", "WEIGHT", 443, 72, 0],
+    ["background_gender", "GENDER", 523, 57, 0],
+    ["background_eyes", "EYES", 289, 66, 1],
+    ["background_skin", "SKIN", 363, 72, 1],
+    ["background_hair", "HAIR", 443, 137, 1],
+  ]);
+  s.section("CHARACTER PORTRAIT", 27, 477, 182, 188);
   s.image("background_portrait_image", 32, 486, 171, 174);
-  s.section("ALLIES & ORGANIZATIONS", 214, 477, 372, 188, bottom);
+  s.section("ALLIES & ORGANIZATIONS", 214, 477, 372, 188);
   s.text("background_allies", 223, 486, 182, 175, { multiline: true, size: 6.5, box: "none" });
-  s.frame(416, 496, 152, 148, { fill: WHITE });
-  s.captioned("background_organization_name", "NAME", 425, 622, 135, 14, { size: 8 });
-  s.label("SYMBOL", 416, 500, { size: 3.8, color: "lines", align: "center", width: 152 });
+  s.frame(416, 496, 152, 148);
+  s.captioned("background_organization_name", "NAME", 425, 617, 135, 14, { size: 8 });
+  s.label("SYMBOL", 416, 502, { size: 3.8, color: "lines", align: "center", width: 152 });
   [["background_traits", "PERSONALITY TRAITS", 380, 73], ["background_ideals", "IDEAL", 327, 46], ["background_bonds", "BOND", 270, 47], ["background_flaws", "FLAW", 215, 46]].forEach(([name, caption, y, height]) => {
-    s.block(caption, name, 27, y, 182, height, { size: 6.5, ...bottom });
+    s.block(caption, name, 27, y, 182, height, { size: 6.5 });
   });
-  s.section("BACKGROUND FEATURE", 27, 88, 182, 118, bottom);
-  s.text("background_feature_name", 45, 183.5, 144, 13, { size: 8, align: "center" });
+  s.section("BACKGROUND FEATURE", 27, 88, 182, 118);
+  s.text("background_feature_name", 45, 183.5, 144, 13, { size: 8, align: "center", box: "none" });
   s.text("background_feature", 42, 96, 151, 84, { multiline: true, size: 6.5, box: "none" });
-  s.block("TRINKET", "background_trinket", 27, 34, 182, 46, { size: 6.5, ...bottom });
-  s.section(edition === "2024" ? "BACKSTORY & PERSONALITY" : "BACKGROUND STORY", 214, 215, 372, 250, bottom);
+  s.block("TRINKET", "background_trinket", 27, 34, 182, 46, { size: 6.5 });
+  s.section(edition === "2024" ? "BACKSTORY & PERSONALITY" : "BACKGROUND STORY", 214, 215, 372, 250);
   s.text("background_story", 224, 222, 354, 240, { multiline: true, size: 6.5, box: "none" });
-  s.section("ADDITIONAL FEATURES", 214, 27, 372, 180, bottom);
+  s.section("ADDITIONAL FEATURES", 214, 27, 372, 180);
   s.text("background_additional_features", 222, 35, 358, 162, { multiline: true, size: 6.5, box: "none" });
   return finish(doc, s);
 }
@@ -748,37 +793,42 @@ async function backgroundTemplate(edition) {
 async function companionTemplate(edition) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
-  pageChrome(s, "COMPANION", edition);
-  headerBar(s, "companion_name", "COMPANION NAME");
-  s.captioned("companion_kind", "CREATURE", 271, 729, 200, 11.4, { size: 7 });
-  s.captioned("companion_owner", "OWNER", 474, 729, 98, 11.4, { align: "right", captionAlign: "right", size: 7 });
-  s.captioned("companion_build", "SIZE, TYPE & ALIGNMENT", 271, 703, 200, 11.4, { size: 7 });
-  s.captioned("companion_challenge", "CHALLENGE", 474, 703, 98, 11.4, { align: "right", captionAlign: "right", size: 7 });
+  masthead(s, edition, "COMPANION", "companion_name", "COMPANION NAME", [
+    ["companion_kind", "CREATURE", 289, 196, 0],
+    ["companion_challenge", "CHALLENGE", 493, 87, 0],
+    ["companion_build", "SIZE, TYPE & ALIGNMENT", 289, 196, 1],
+    ["companion_owner", "GRANTED BY", 493, 87, 1],
+  ]);
 
   // The creature panel: portrait over two rows of ability shields.
   s.panel(27, 392, 182, 273);
-  s.image("companion_portrait_image", 63, 548, 108, 106);
-  s.label("COMPANION", 63, 541, { size: 4.2, color: "lines", align: "center", width: 108 });
+  s.section("PORTRAIT", 55, 538, 126, 126);
+  s.image("companion_portrait_image", 62, 551, 112, 104);
   ABILITIES.forEach(([key, caption], index) => {
     const cx = 57 + (index % 3) * 59.3;
     s.abilityShield("companion", key, caption, cx, index < 3 ? 532 : 465, { width: 52, height: 62 });
   });
 
-  hitPointBox(s, "companion", 214, 604, 180, 61);
-  s.section("CREATURE STATISTICS", 214, 392, 180, 190, { style: "ribbon", at: "bottom" });
-  s.captioned("companion_proficiency", "PROFICIENCY", 224, 560, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-  s.captioned("companion_initiative", "INITIATIVE", 266, 560, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-  s.shield("companion_armor_class", "AC", 350, 578, 44, 46, { size: 12 });
-  s.captioned("companion_speed", "SPEED", 223, 540, 122, 10, { size: 7 });
-  s.text("companion_stats", 223, 401, 164, 136, { multiline: true, size: 6.5, box: "none" });
-  s.section("TRAITS & ACTIONS", 404, 392, 182, 273, { style: "ribbon", at: "bottom" });
-  s.text("companion_features", 410, 403, 170, 259, { multiline: true, size: 6.5, box: "none" });
+  // Vitals across the top of the two right-hand columns, then the creature's
+  // senses under its portrait and its traits filling the rest of the page.
+  hitPointBox(s, "companion", 214, 582, 180, 83);
+  s.section("VITALS", 404, 582, 182, 83);
+  s.captioned("companion_proficiency", "PROFICIENCY", 414, 638, 48, 10, { align: "center", captionAlign: "center", size: 7 });
+  s.captioned("companion_initiative", "INITIATIVE", 468, 638, 48, 10, { align: "center", captionAlign: "center", size: 7 });
+  s.shield("companion_armor_class", "AC", 534, 664, 42, 44, { size: 12 });
+  s.captioned("companion_speed", "SPEED", 414, 610, 102, 10, { size: 7 });
+  s.section("SENSES, SKILLS & DEFENCES", 27, 27, 182, 357);
+  s.text("companion_stats", 34, 42, 168, 320, { multiline: true, size: 6.5, box: "none" });
+  s.section("TRAITS & ACTIONS", 214, 27, 372, 545);
+  s.text("companion_features", 222, 42, 356, 508, { multiline: true, size: 6.5, box: "none" });
   return finish(doc, s);
 }
 
 async function equipmentTemplate(edition) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
+  // The inventory tables run to the top of the page, so this one keeps the
+  // slim title line rather than the masthead.
   pageChrome(s, "INVENTORY", edition);
   const ROW = 10;
   // A two-column item table: name, then quantity and weight in narrow cells.
@@ -795,8 +845,7 @@ async function equipmentTemplate(edition) {
     }
     return top - rows * ROW;
   };
-  const bottom = { style: "ribbon", at: "bottom" };
-  s.section("INVENTORY — ADVENTURING GEAR, ARMS, ARMOR & OTHER EQUIPMENT", 27, 332, 367, 429, bottom);
+  s.section("INVENTORY — ADVENTURING GEAR, ARMS, ARMOR & OTHER EQUIPMENT", 27, 332, 367, 429);
   table("equipment_page_gear", "ADVENTURING GEAR", 35, 751, 40);
   table("equipment_page_magic_gear", "MAGIC ITEMS", 215, 751, 20);
   s.label("ATTUNED MAGIC ITEMS", 246, 537, { size: 3.8, color: "lines" });
@@ -816,17 +865,17 @@ async function equipmentTemplate(edition) {
     s.text(name, x, 351, 45, 12.8, { size: 8, align: "center", box: "frame" });
   });
   s.note("/", 263.5, 354, { size: 8 });
-  s.block("ADDITIONAL TREASURE", "equipment_page_additional_treasure", 27, 180, 367, 143, { size: 6.5, ...bottom });
-  s.section("STORED ITEMS", 27, 27, 367, 146, bottom);
+  s.block("ADDITIONAL TREASURE", "equipment_page_additional_treasure", 27, 180, 367, 143, { size: 6.5 });
+  s.section("STORED ITEMS", 27, 27, 367, 146);
   for (let vehicle = 1; vehicle <= 2; vehicle += 1) {
     const x = vehicle === 1 ? 36 : 216;
     s.text(`equipment_page_vehicle_${vehicle}_name`, x, 149, 171, 13.5, { size: 8, align: "center", box: "frame" });
     table(`equipment_page_vehicle_${vehicle}_cargo`, "STORED ITEM", x - 1, 139, 10);
   }
   const notes = C.equipmentNotes;
-  s.section("INVENTORY — ITEM DESCRIPTIONS & NOTES", notes.x - 6, notes.y - 7, notes.width + 12, notes.height + 12, bottom);
+  s.section("INVENTORY — ITEM DESCRIPTIONS & NOTES", notes.x - 6, notes.y - 7, notes.width + 12, notes.height + 12);
   s.text("equipment_page_magic_items", notes.x, notes.y, notes.width, notes.height, { multiline: true, size: 6.5, box: "none" });
-  s.block("QUEST ITEMS & TRINKETS", "equipment_page_quest_items", 404, 27, 182, 146, { size: 6.5, ...bottom });
+  s.block("QUEST ITEMS & TRINKETS", "equipment_page_quest_items", 404, 27, 182, 146, { size: 6.5 });
   return finish(doc, s);
 }
 
@@ -838,10 +887,10 @@ async function spellHeaderTemplate(edition) {
   s.display("SPELLCASTING", 30, H.height - 14, { size: 7.5 });
   s.ornamentRule(30 + s.textWidth("SPELLCASTING", "display", 7.5) + 8, 582, H.height - 11.5, ACCENT);
   s.frame(30, H.bannerMiddle - 14, 240, 28);
-  s.label("CLASS", 35, H.bannerMiddle - 9, { size: 3.6, color: "lines" });
+  s.label("CLASS", 30, H.bannerMiddle - 10, { size: 3.6, color: "lines", align: "center", width: 240 });
   H.statCenters.forEach((center, index) => {
     s.frame(center - 32, H.statMiddle - 13, 64, 26);
-    s.label(H.statLabels[index], center - 32, H.statMiddle - 20, { size: 3.6, align: "center", width: 64 });
+    s.label(H.statLabels[index], center - 32, H.statMiddle - 9, { size: 3.4, align: "center", width: 64 });
   });
   return finish(doc, s);
 }

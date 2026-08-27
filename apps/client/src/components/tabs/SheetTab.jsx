@@ -4,6 +4,7 @@ import { api } from '../../api';
 import useSheetTemplateSetting from '../../hooks/useSheetTemplateSetting';
 import useSheetColoursSetting from '../../hooks/useSheetColoursSetting';
 import useSheetFontsSetting from '../../hooks/useSheetFontsSetting';
+import { loadSheetBrandImage } from '../../sheetBrandImage.js';
 import { useWorkspace } from '../WorkspaceContext';
 import PdfCanvasViewer from '../PdfCanvasViewer';
 import WorkspaceTabLayout from '../WorkspaceTabLayout';
@@ -79,7 +80,8 @@ export default function SheetTab() {
     // same promise (keyed by runKey, incl. the manual-refresh nonce), and each sets state only
     // if its own cleanup hasn't cancelled it — so the surviving mount always renders.
     sharedSheetGeneration(runKey, () =>
-      api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, footerText: `Generated with ${shell.appName}.` }),
+      loadSheetBrandImage().then((brandImage) =>
+        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, brandImage, footerText: `Generated with ${shell.appName}.` })),
     )
       .then((bytes) => {
         putCachedSheet(cacheKey, bytes);

@@ -4,6 +4,7 @@ import { api } from '../api';
 import useSheetTemplateSetting from '../hooks/useSheetTemplateSetting';
 import useSheetColoursSetting from '../hooks/useSheetColoursSetting';
 import useSheetFontsSetting from '../hooks/useSheetFontsSetting';
+import { loadSheetBrandImage } from '../sheetBrandImage.js';
 import { useWorkspace } from './WorkspaceContext';
 import PdfCanvasViewer from './PdfCanvasViewer';
 import { sheetCacheKey, getCachedSheet, putCachedSheet } from './sheetCache';
@@ -100,6 +101,7 @@ export default function SheetPreviewPanel() {
               templateSet: run.templateSet,
               colours: run.colours,
               fonts: run.fonts,
+              brandImage: await loadSheetBrandImage(),
               footerText,
             });
             if (!alive.current) return;

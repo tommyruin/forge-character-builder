@@ -6,6 +6,19 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A host logo slot for the generated sheets: a shell may supply `sheet.logo`,
+  which the writer paints over the masthead's die badge.
+
+### Changed
+
+- The 2014 sheets follow the printed idiom more closely: a masthead carrying
+  the brand badge, the character's name and the identity grid; chamfered
+  panels; captions printed inside each panel's lower edge instead of on
+  hanging ribbons; hit dice and death saves as their own panels beneath the
+  hit points; and a companion page that fills the sheet.
+
 ## [2.0.0] - 2026-08-27
 
 ### Changed

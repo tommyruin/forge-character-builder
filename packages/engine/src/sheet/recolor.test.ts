@@ -44,11 +44,14 @@ describe("sheet template recolouring", () => {
     const theme = SHEET_THEMES.ocean;
     const recoloured = await recolorSheetTemplate(template, theme);
     const after = await pageContent(recoloured);
-    // The artwork carries the accent and line colours; text lives in the
-    // label sheet and the fields' default appearances, not the page content.
+    // The artwork carries the accent and line colours as fills or strokes;
+    // text lives in the label sheet and the fields' default appearances.
+    const uses = (content: string, part: "accent" | "lines", name: keyof typeof SHEET_PALETTE) =>
+      new RegExp(`(^|\\s)${rgb(part, name).replaceAll(".", "\\.")} (rg|RG)(\\s|$)`).test(content);
     for (const part of ["accent", "lines"] as const) {
-      expect(after).not.toContain(`${rgb(part, DEFAULT_SHEET_COLOURS[part])} rg`);
-      expect(after).toContain(`${rgb(part, theme[part])} rg`);
+      expect(uses(before, part, DEFAULT_SHEET_COLOURS[part])).toBe(true);
+      expect(uses(after, part, DEFAULT_SHEET_COLOURS[part])).toBe(false);
+      expect(uses(after, part, theme[part])).toBe(true);
     }
     const original = await PDFDocument.load(template);
     const document = await PDFDocument.load(recoloured);
