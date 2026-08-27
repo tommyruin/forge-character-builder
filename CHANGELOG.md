@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-08-27
+
 ### Added
 
 - A host logo slot for the generated sheets: a shell may supply `sheet.logo`,
