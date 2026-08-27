@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-27
+
 ### Changed
 
 - The project's own code is now under the MIT licence instead of AGPL-3.0.
