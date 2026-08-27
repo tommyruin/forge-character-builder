@@ -6,6 +6,10 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The corpus coverage gate reads the system elements from `content/system`.
+
 ## [1.1.1] - 2026-08-27
 
 ### Changed

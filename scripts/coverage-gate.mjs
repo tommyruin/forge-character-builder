@@ -61,8 +61,9 @@ async function main() {
   }
 
   const corpusIds = new Set();
-  for (const sub of ["testdata", "system"]) {
-    for (const id of await collectIds(join(CORPUS, sub), /\.xml$/i)) corpusIds.add(id);
+  // The corpus plus the engine's own system elements, which ship with the client.
+  for (const root of [corpusRoot, join(ROOT, "apps", "client", "public", "content", "system")]) {
+    for (const id of await collectIds(root, /\.xml$/i)) corpusIds.add(id);
   }
 
   const files = (await readdir(FIXTURES)).filter((name) => name.endsWith(".dnd5e"));
