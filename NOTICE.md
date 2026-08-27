@@ -1,8 +1,8 @@
 # Notices
 
-Forge Character Builder is licensed under the GNU Affero General Public
-License, version 3 (see `LICENSE`). The following third-party material is
-included under its own terms.
+Forge Character Builder's own code is licensed under the MIT licence (see
+`LICENSE`). The MIT licence covers the code only: the following third-party
+material is included under its own terms, which travel with it.
 
 ## Rules content
 

@@ -6,6 +6,12 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The project's own code is now under the MIT licence instead of AGPL-3.0.
+  The bundled System Reference Document content and the third-party fonts,
+  ornaments and libraries are unaffected and keep their own licences.
+
 ## [1.2.0] - 2026-08-27
 
 ### Changed

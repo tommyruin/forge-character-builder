@@ -3,7 +3,7 @@
   "version": "1.2.0",
   "private": true,
   "description": "Forge Character Builder: a TypeScript rules engine and browser client for D&D 5e — .dnd5e import/export, content XML ingestion, leveling, statistics, character sheet PDFs, and VTT export.",
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "repository": "https://github.com/tommyruin/forge-character-builder",
   "type": "module",
   "engines": {

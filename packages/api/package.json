@@ -12,5 +12,5 @@
   "scripts": {
     "build": "tsc -b"
   },
-  "license": "AGPL-3.0-only"
+  "license": "MIT"
 }
