@@ -653,8 +653,10 @@ async function addFilledTemplatePage(
   output: PDFDocument,
   template: Uint8Array,
   values: Readonly<Record<string, string>>,
-  faces: SheetFaces = DEFAULT_SHEET_FACES,
-  colours: SheetColours = DEFAULT_SHEET_COLOURS,
+  faces: SheetFaces,
+  colours: SheetColours,
+  /** The output document's own faces, embedded once for the whole sheet. */
+  outputFonts: SheetFonts,
 ): Promise<FilledTemplatePage> {
   const source = await PDFDocument.load(template, { updateMetadata: false });
   const form = source.getForm();
@@ -745,14 +747,12 @@ async function addFilledTemplatePage(
       color: rgb(textColour[0], textColour[1], textColour[2]),
     });
   }
-  // The page copied out of the source document is the one now in the output,
-  // so the numbers are drawn over the flattened artwork here.
-  const outputFaces = {
-    numbers: await embedFace(output, faces.numbers, "FCB-Numbers"),
-    regular: await embedFace(output, faces.body.regular, "FCB-Body"),
-  };
+  // The page copied out of the source document is the one now in the output, so
+  // the numbers are drawn over the flattened artwork here — in the sheet's own
+  // faces. Re-embedding them per page would subset the same bytes again and
+  // write another pair of font objects into the output for every page.
   for (const item of drawnNumbers) {
-    drawFieldValue(page!, item, item.numbers ? outputFaces.numbers : outputFaces.regular, textColour);
+    drawFieldValue(page!, item, item.numbers ? outputFonts.numbers : outputFonts.regular, textColour);
   }
   return { page: page!, fieldRects };
 }
@@ -1427,7 +1427,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const files = SHEET_TEMPLATE_CONTRACT.files;
   const timed = phaseTimer(options.trace);
   const fill = (phase: string, template: Uint8Array, pageValues: Readonly<Record<string, string>>) =>
-    timed(`fill:${phase}`, () => addFilledTemplatePage(output, template, pageValues, bundle.faces, colours));
+    timed(`fill:${phase}`, () => addFilledTemplatePage(output, template, pageValues, bundle.faces, colours, fonts));
 
   const output = await PDFDocument.create();
   const fonts = await timed("embedFonts", () => embedSheetFonts(output, bundle.faces));
