@@ -45,11 +45,23 @@ const LINE_HEIGHT = 10;
 const SECTION_GAP = 9;
 
 /**
- * Yields to the host event loop so queued worker messages can run between
- * page renders of a long sheet generation. scheduler.yield is a macrotask
- * boundary when available; setTimeout is the portable fallback.
+ * Yields to the host event loop so queued worker messages can run during a long
+ * sheet generation. scheduler.yield is a macrotask boundary when available;
+ * setTimeout is the portable fallback.
+ *
+ * The fallback is why this is time-based rather than once per page. Timers
+ * scheduled from a timer callback are clamped to 4ms once nested, so a sheet
+ * that yielded on every page spent tens of milliseconds asleep on the browsers
+ * without scheduler.yield. Yielding only when the last one has aged out keeps
+ * the worker just as answerable on a slow page and free on a fast one.
  */
-async function yieldToEventLoop(): Promise<void> {
+const YIELD_INTERVAL_MS = 16;
+let lastYield = 0;
+
+async function yieldToEventLoop(force = false): Promise<void> {
+  const now = performance.now();
+  if (!force && now - lastYield < YIELD_INTERVAL_MS) return;
+  lastYield = now;
   const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler;
   if (typeof scheduler?.yield === "function") return scheduler.yield();
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -1539,6 +1551,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const values = model.formValues ?? {};
   const images = model.images ?? {};
   const fragments: FragmentCache = new Map();
+  await yieldToEventLoop(true);
   for (const modelPage of model.pages) {
     await yieldToEventLoop();
     if (modelPage.templateKind === "details") {
