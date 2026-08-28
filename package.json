@@ -26,6 +26,7 @@
     "client:build": "npm run build --workspace dm-forge-character-builder",
     "client:test": "npm run test --workspace dm-forge-character-builder",
     "perf:choice": "node scripts/perf-choice-latency.mjs",
+    "perf:sheet": "node scripts/perf-sheet-render.mjs",
     "verify:compression": "node scripts/verify-compression.mjs",
     "verify:browser": "node scripts/verify-browser.mjs",
     "corpus:fetch": "node scripts/fetch-corpus.mjs",

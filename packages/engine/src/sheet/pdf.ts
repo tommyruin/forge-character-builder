@@ -351,7 +351,15 @@ export interface CharacterSheetWriteOptions {
   colours?: SheetColours;
   /** A host's logo, base64 PNG or JPEG, painted over the masthead's die badge. */
   brandImage?: string;
+  /**
+   * Phase timings, for the render benchmark. Production callers omit it, so
+   * the writer resolves the hook once and pays a single branch per phase.
+   */
+  trace?: SheetRenderTrace;
 }
+
+/** Reports how long one named phase of a render took. */
+export type SheetRenderTrace = (phase: string, ms: number, detail?: Record<string, unknown>) => void;
 
 interface SheetFonts {
   regular: PDFFont;
@@ -1147,6 +1155,27 @@ async function addCardPage(
   return page;
 }
 
+/**
+ * Times a named phase when the caller supplied a trace hook. Without one the
+ * writer runs the phase directly, so an untraced render pays a single branch.
+ */
+function phaseTimer(trace: SheetRenderTrace | undefined) {
+  if (trace === undefined) return <T>(_phase: string, run: () => T): T => run();
+  return <T>(phase: string, run: () => T, detail?: Record<string, unknown>): T => {
+    const started = performance.now();
+    const result = run();
+    // A phase is usually async; the cast keeps one signature for both kinds.
+    if (result instanceof Promise) {
+      return result.then((value: unknown) => {
+        trace(phase, performance.now() - started, detail);
+        return value;
+      }) as T;
+    }
+    trace(phase, performance.now() - started, detail);
+    return result;
+  };
+}
+
 type FragmentCache = Map<Uint8Array, Awaited<ReturnType<PDFDocument["embedPdf"]>>[number]>;
 
 // Each template fragment is embedded at most once per output document; repeated
@@ -1396,37 +1425,38 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const brandImage = options.brandImage ?? "";
   const labelInk = labelColours(colours);
   const files = SHEET_TEMPLATE_CONTRACT.files;
-  const fill = (template: Uint8Array, pageValues: Readonly<Record<string, string>>) =>
-    addFilledTemplatePage(output, template, pageValues, bundle.faces, colours);
+  const timed = phaseTimer(options.trace);
+  const fill = (phase: string, template: Uint8Array, pageValues: Readonly<Record<string, string>>) =>
+    timed(`fill:${phase}`, () => addFilledTemplatePage(output, template, pageValues, bundle.faces, colours));
 
   const output = await PDFDocument.create();
-  const fonts = await embedSheetFonts(output, bundle.faces);
+  const fonts = await timed("embedFonts", () => embedSheetFonts(output, bundle.faces));
   const values = model.formValues ?? {};
   const images = model.images ?? {};
   const fragments: FragmentCache = new Map();
   for (const modelPage of model.pages) {
     await yieldToEventLoop();
     if (modelPage.templateKind === "details") {
-      const { page, fieldRects } = await fill(bundle.details, {
+      const { page, fieldRects } = await fill("details", bundle.details, {
         ...values,
         details_features: "",
         details_proficiencies_languages: "",
       });
       drawTemplateText(page, bundle.labels[files.details], fonts, labelInk);
-      await drawBrandImage(output, page, fieldRects, brandImage);
+      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage));
       drawSheetFooter(page, fonts, footerText);
-      const continuations = drawDetailsRichText(page, modelPage, fonts, fieldRects);
+      const continuations = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects));
       for (let index = 0; index < continuations.length; index += 1) {
         const continuation = continuations[index]!;
-        const { page: continuationPage, fieldRects: continuationRects } = await fill(bundle.details, {
+        const { page: continuationPage, fieldRects: continuationRects } = await fill("details-continuation", bundle.details, {
           ...values,
           details_features: "",
           details_proficiencies_languages: "",
         });
         drawTemplateText(continuationPage, bundle.labels[files.details], fonts, labelInk);
-        await drawBrandImage(output, continuationPage, continuationRects, brandImage);
+        await timed("brandImage", () => drawBrandImage(output, continuationPage, continuationRects, brandImage));
         drawSheetFooter(continuationPage, fonts, footerText);
-        const next = drawFeatureFlow(
+        const next = timed("richText:details", () => drawFeatureFlow(
           continuationPage,
           continuation.lines,
           fonts,
@@ -1436,28 +1466,28 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           continuation.bottom,
           continuation.fontSize,
           continuation.lineHeight,
-        );
+        ));
         if (next !== undefined) continuations.push(next);
       }
       continue;
     }
     if (modelPage.templateKind === "background") {
-      const { page, fieldRects } = await fill(bundle.background, values);
+      const { page, fieldRects } = await fill("background", bundle.background, values);
       drawTemplateText(page, bundle.labels[files.background], fonts, labelInk);
-      await drawBrandImage(output, page, fieldRects, brandImage);
-      await drawFieldImage(output, page, fieldRects, "background_portrait_image", images["background_portrait_image"] ?? "");
+      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage));
+      await timed("portrait", () => drawFieldImage(output, page, fieldRects, "background_portrait_image", images["background_portrait_image"] ?? ""));
       drawSheetFooter(page, fonts, footerText);
       continue;
     }
     if (modelPage.templateKind === "companion") {
-      const { page, fieldRects } = await fill(bundle.companion, {
+      const { page, fieldRects } = await fill("companion", bundle.companion, {
         ...values,
         companion_features: "",
       });
       drawTemplateText(page, bundle.labels[files.companion], fonts, labelInk);
-      await drawBrandImage(output, page, fieldRects, brandImage);
-      await drawFieldImage(output, page, fieldRects, "companion_portrait_image", images["companion_portrait_image"] ?? "");
-      drawCompanionRichText(page, modelPage, fonts, fieldRects);
+      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage));
+      await timed("portrait", () => drawFieldImage(output, page, fieldRects, "companion_portrait_image", images["companion_portrait_image"] ?? ""));
+      timed("richText:companion", () => drawCompanionRichText(page, modelPage, fonts, fieldRects));
       drawSheetFooter(page, fonts, footerText);
       continue;
     }
@@ -1469,7 +1499,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         // A continuation carries only the overflowing notes column: repeating
         // the gear, treasure and quest tables would print the same inventory
         // twice.
-        const { page } = await fill(bundle.equipment, {
+        const { page } = await fill("equipment", bundle.equipment, {
           ...(equipmentPage === 0
             ? values
             : Object.fromEntries(Object.entries(values).map(([key, value]) =>
@@ -1477,13 +1507,13 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           equipment_page_magic_items: "",
         });
         drawTemplateText(page, bundle.labels[files.equipment], fonts, labelInk);
-        drawEquipmentRichText(page, modelPage, fonts, equipmentPage);
+        timed("richText:equipment", () => drawEquipmentRichText(page, modelPage, fonts, equipmentPage));
         drawSheetFooter(page, fonts, footerText);
       }
       continue;
     }
     if (modelPage.templateKind === "spell-list") {
-      await addSpellListPage(output, modelPage, bundle, fonts, fragments, labelInk);
+      await timed("spell-list", () => addSpellListPage(output, modelPage, bundle, fonts, fragments, labelInk));
       continue;
     }
     if (modelPage.templateKind === "spell-cards" || modelPage.templateKind === "item-cards") {
@@ -1491,7 +1521,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       const lastPage = positionedRuns.reduce((highest, run) => Math.max(highest, run.page ?? 0), 0);
       for (let cardPage = 0; cardPage <= lastPage; cardPage += 1) {
         await yieldToEventLoop();
-        const page = await addCardPage(
+        const page = await timed("cards:page", () => addCardPage(
           output,
           modelPage.templateKind === "spell-cards" ? bundle.spellCard : bundle.genericCard,
           bundle.labels[modelPage.templateKind === "spell-cards" ? files.spellCard : files.genericCard],
@@ -1503,12 +1533,12 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
               .map((run) => (run.card ?? 0) + 1)),
           fonts,
           labelInk,
-        );
-        drawPositionedRuns(
+        ));
+        timed("cards:runs", () => drawPositionedRuns(
           page,
           positionedRuns.filter((run) => (run.page ?? 0) === cardPage),
           fonts,
-        );
+        ));
       }
       continue;
     }
@@ -1521,6 +1551,10 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
     output.addPage(page!);
   }
   for (const page of output.getPages()) page.node.delete(PDFName.of("Annots"));
-  const bytes = await output.save({ useObjectStreams: true, addDefaultPage: false });
+  const bytes = await timed(
+    "save",
+    () => output.save({ useObjectStreams: true, addDefaultPage: false }),
+    { pages: output.getPageCount() },
+  );
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }

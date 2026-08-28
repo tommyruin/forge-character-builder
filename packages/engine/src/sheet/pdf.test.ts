@@ -18,8 +18,8 @@ import {
   type CharacterSheetTemplateBundle,
 } from "./pdf.js";
 import { DEFAULT_SHEET_FONTS, SHEET_TEMPLATE_CONTRACT, type SheetFonts } from "./template-contract.js";
-import { sheetFaces } from "./templates.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
+import { localTemplateBundle } from "../testing/sheet-bundle.js";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "../../../..");
 const PUBLIC = join(ROOT, "apps", "client", "public", "sheets", "2014");
@@ -29,25 +29,9 @@ function template(name: string): Uint8Array {
   return new Uint8Array(readFileSync(join(PUBLIC, name)));
 }
 
-const FONTS_DIR = join(ROOT, "apps", "client", "public", "sheets", SHEET_TEMPLATE_CONTRACT.fontsDirectory);
-
+/** The 2014 set, loaded from the client's public tree. */
 export function fullTemplateBundle(fonts: SheetFonts = DEFAULT_SHEET_FONTS): CharacterSheetTemplateBundle {
-  return {
-    labels: JSON.parse(readFileSync(join(PUBLIC, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")),
-    faces: sheetFaces(fonts, (file) => new Uint8Array(readFileSync(join(FONTS_DIR, file)))),
-    details: template(SHEET_TEMPLATE_CONTRACT.files.details),
-    background: template(SHEET_TEMPLATE_CONTRACT.files.background),
-    companion: template(SHEET_TEMPLATE_CONTRACT.files.companion),
-    equipment: template(SHEET_TEMPLATE_CONTRACT.files.equipment),
-    spellcastingHeader: template(SHEET_TEMPLATE_CONTRACT.files.spellcastingHeader),
-    spellcastingSectionTops: Array.from({ length: 10 }, (_, level) =>
-      template(SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[level]!)
-    ),
-    spellcastingSectionCenter: template(SHEET_TEMPLATE_CONTRACT.files.spellcastingSectionCenter),
-    spellcastingSectionBottom: template(SHEET_TEMPLATE_CONTRACT.files.spellcastingSectionBottom),
-    spellCard: template(SHEET_TEMPLATE_CONTRACT.files.spellCard),
-    genericCard: template(SHEET_TEMPLATE_CONTRACT.files.genericCard),
-  };
+  return localTemplateBundle("2014", fonts);
 }
 
 describe("character sheet PDF writer", () => {
