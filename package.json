@@ -1,6 +1,6 @@
 {
   "name": "dm-forge-character-builder-dev",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "description": "Forge Character Builder: a TypeScript rules engine and browser client for D&D 5e — .dnd5e import/export, content XML ingestion, leveling, statistics, character sheet PDFs, and VTT export.",
   "license": "MIT",

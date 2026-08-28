@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-28
+
 ### Fixed
 
 - On the 2024 set, the inventory, companion and appearance pages printed each
