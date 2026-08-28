@@ -13,13 +13,20 @@ import {
 import {
   PDFCheckBox,
   PDFDocument,
+  type PDFEmbeddedPage,
   type PDFForm,
   PDFName,
   type PDFRef,
-  PDFString,
   TextAlignment,
   PDFTextField,
   StandardFonts,
+  clip,
+  closePath,
+  endPath,
+  lineTo,
+  moveTo,
+  popGraphicsState,
+  pushGraphicsState,
   rgb,
   type PDFFont,
   type PDFPage,
@@ -626,9 +633,10 @@ interface FieldRect {
 
 interface FilledTemplatePage {
   page: PDFPage;
-  /** Widget rectangles by field name, captured before the form is flattened
-   *  so hand-drawn rich text can bound itself to the template's own boxes. */
-  fieldRects: Map<string, FieldRect>;
+  /** Widget rectangles by field name, captured before the form was flattened
+   *  so hand-drawn rich text can bound itself to the template's own boxes.
+   *  Shared with every page drawn from the same template, so it is read-only. */
+  fieldRects: ReadonlyMap<string, FieldRect>;
 }
 
 /** Drops a field and its widgets from every page so flattening cannot draw it. */
@@ -649,112 +657,208 @@ function removeFieldFromPages(source: PDFDocument, form: PDFForm, field: unknown
   );
 }
 
+/**
+ * A template's artwork, parsed and baked once.
+ *
+ * Every page drawn from a template produced byte-identical artwork: the same
+ * parse of the same bytes, the same fields dropped, the same flatten. Only the
+ * values differ, and the writer draws those itself. So the bake happens once
+ * and each page stamps the result, instead of re-parsing a 191 KB details or
+ * 313 KB equipment template per page.
+ */
+interface TemplateArtwork {
+  /**
+   * The donor document, baked once and never mutated afterwards. It is kept
+   * parsed rather than re-serialized: embedding from bytes would make every
+   * render parse the baked page again, which measured 30ms slower on a sheet
+   * for no saving in output size.
+   */
+  source: PDFDocument;
+  width: number;
+  height: number;
+  /** Widget geometry and typography, captured before the fields were dropped. */
+  fields: ReadonlyMap<string, TemplateField>;
+  /** The same widget rectangles, for callers that place art against them. */
+  rects: ReadonlyMap<string, FieldRect>;
+}
+
+interface TemplateField {
+  rect: FieldRect;
+  kind: "text" | "check" | "other";
+  multiline: boolean;
+  align: TextAlignment;
+  /** The size the template asked for; its own default appearance is the authority. */
+  base: number;
+}
+
+// Keyed on the recoloured template bytes, which the render worker caches per
+// template set, colour scheme and typeface — so the entry lives exactly as long
+// as the bundle it belongs to. The promise is cached, not the result, so two
+// renders in flight cannot both parse the same template.
+const templateArtwork = new WeakMap<Uint8Array, Promise<TemplateArtwork>>();
+
+function artworkFor(template: Uint8Array): Promise<TemplateArtwork> {
+  let cached = templateArtwork.get(template);
+  if (cached === undefined) {
+    cached = buildTemplateArtwork(template);
+    templateArtwork.set(template, cached);
+  }
+  return cached;
+}
+
+async function buildTemplateArtwork(template: Uint8Array): Promise<TemplateArtwork> {
+  const source = await PDFDocument.load(template, { updateMetadata: false });
+  const form = source.getForm();
+  const fields = new Map<string, TemplateField>();
+  const rects = new Map<string, FieldRect>();
+  const dropped: unknown[] = [];
+  for (const field of form.getFields()) {
+    const name = field.getName();
+    const rect = field.acroField.getWidgets()[0]?.getRectangle();
+    const text = field instanceof PDFTextField;
+    const multiline = text && field.isMultiline();
+    if (rect !== undefined) {
+      rects.set(name, rect);
+      fields.set(name, {
+        rect,
+        kind: text ? "text" : field instanceof PDFCheckBox ? "check" : "other",
+        multiline,
+        align: text ? field.getAlignment() : TextAlignment.Left,
+        base: (text ? templateFontSize(field.acroField.getDefaultAppearance()) : undefined) ?? fieldFontSize(name),
+      });
+    }
+    // A multiline box keeps its own appearance, which is the box the template
+    // drew; flattening bakes it into the artwork. Every other widget would have
+    // pdf-lib synthesize a border the template never drew, so it goes, and the
+    // writer draws its value and its check mark instead.
+    if (!multiline) {
+      if (field instanceof PDFCheckBox) field.uncheck();
+      dropped.push(field);
+    }
+  }
+  for (const field of dropped) removeFieldFromPages(source, form, field);
+  form.flatten({ updateFieldAppearances: false });
+  const { width, height } = source.getPage(0).getSize();
+  return { source, width, height, fields, rects };
+}
+
+/** Each template's artwork is embedded at most once per output document. */
+async function embedArtwork(
+  output: PDFDocument,
+  template: Uint8Array,
+  artwork: TemplateArtwork,
+  cache: ArtworkCache,
+): Promise<PDFEmbeddedPage> {
+  const cached = cache.get(template);
+  if (cached !== undefined) return cached;
+  // embedPage copies the donor's objects into this document before normalising
+  // them, so the cached artwork is never mutated and serves every later render.
+  const embedded = await output.embedPage(artwork.source.getPage(0));
+  cache.set(template, embedded);
+  return embedded;
+}
+
+type ArtworkCache = Map<Uint8Array, PDFEmbeddedPage>;
+
 async function addFilledTemplatePage(
   output: PDFDocument,
   template: Uint8Array,
   values: Readonly<Record<string, string>>,
-  faces: SheetFaces,
   colours: SheetColours,
   /** The output document's own faces, embedded once for the whole sheet. */
   outputFonts: SheetFonts,
+  artwork: ArtworkCache,
 ): Promise<FilledTemplatePage> {
-  const source = await PDFDocument.load(template, { updateMetadata: false });
-  const form = source.getForm();
-  // The values render in the body face (large numbers in the numbers face)
-  // and the scheme's text colour, embedded in this page's own document so its
-  // appearance streams can reference them.
-  source.registerFontkit(await loadFontkit());
-  const regular = await embedFace(source, faces.body.regular, "FCB-Body");
-  const numbers = await embedFace(source, faces.numbers, "FCB-Numbers");
+  const art = await artworkFor(template);
+  const embedded = await embedArtwork(output, template, art, artwork);
+  const page = output.addPage([art.width, art.height]);
+  page.drawPage(embedded, { x: 0, y: 0, width: art.width, height: art.height });
   const textColour = SHEET_PALETTE[colours.text].rgb;
-  const defaultAppearance = (size: number) => PDFString.of(`${textColour.join(" ")} rg /Helv ${size} Tf`);
-  const fieldRects = new Map<string, FieldRect>();
-  const checkedRects: FieldRect[] = [];
-  const drawnNumbers: DrawnValue[] = [];
-  for (const field of form.getFields()) {
-    const name = field.getName();
-    const widgetRect = field.acroField.getWidgets()[0]?.getRectangle();
-    if (widgetRect !== undefined) fieldRects.set(name, widgetRect);
-    // Field values render through WinAnsi Helvetica at flatten time, so they
-    // get the same encoding fallback as drawn text — an unencodable glyph in
-    // third-party content must not abort the whole build.
+  for (const [name, field] of art.fields) {
+    // Values render through WinAnsi, so an unencodable glyph in third-party
+    // content degrades rather than aborting the whole build.
     const value = winAnsiText(values[name] ?? "");
-    if (field instanceof PDFTextField) {
-      // The template sized the field when it drew the box around it, so its own
-      // default appearance is the authority; the name table is the fallback.
-      const base = templateFontSize(field.acroField.getDefaultAppearance()) ?? fieldFontSize(name);
-      // Single-line values are drawn rather than filled, so they sit optically
-      // centred in their box whatever face the reader chose — pdf-lib centres a
-      // field's line on the font's ascender, which drops a large-ascender face
-      // onto the rule beneath it. A value too long for its box falls through to
-      // the field, whose appearance clips instead of spilling.
-      const valueFace = isNumbersField(name) ? numbers : regular;
-      if (!field.isMultiline() && widgetRect !== undefined) {
-        const size = drawnNumberSize(value, widgetRect, base, valueFace);
-        if (size > 0) {
-          if (value !== "") {
-            drawnNumbers.push({ rect: widgetRect, value, size, align: field.getAlignment(), numbers: isNumbersField(name) });
-          }
-          removeFieldFromPages(source, form, field);
-          continue;
-        }
+    if (field.kind === "check") {
+      // Both template sets' markers (squares and circles) carry the same mark.
+      if (value === "true") {
+        page.drawCircle({
+          x: field.rect.x + field.rect.width / 2,
+          y: field.rect.y + field.rect.height / 2,
+          size: Math.min(field.rect.width, field.rect.height) * 0.28,
+          color: rgb(textColour[0], textColour[1], textColour[2]),
+        });
       }
-      // The default appearance carries the value's colour; the font size is
-      // set below. /Helv is declared in every bundle template.
-      field.acroField.dict.set(PDFName.of("DA"), defaultAppearance(base));
-      let current: string | undefined;
-      try {
-        current = field.getText() ?? "";
-      } catch {
-        // Rich-text fields cannot be read; always rewrite them.
-      }
-      if (current === value) continue;
-      let size = base;
-      const valueFont = isNumbersField(name) ? numbers : regular;
-      const rect = field.acroField.getWidgets()[0]?.getRectangle();
-      if (field.isMultiline() && value !== "" && rect !== undefined) {
-        size = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) => valueFont.widthOfTextAtSize(winAnsiText(text), fontSize));
-      } else if (value !== "" && rect !== undefined) {
-        size = fitSingleLineFontSize(value, rect.width, base, valueFont);
-      }
-      field.setFontSize(size);
-      field.setText(value);
-      field.updateAppearances(valueFont);
       continue;
     }
-    if (field instanceof PDFCheckBox) {
-      // The mark is drawn by the writer as a disc in the text colour, so both
-      // template sets' markers (squares and circles) carry the same mark; the
-      // widget itself is never flattened.
-      if (value === "true" && widgetRect !== undefined) checkedRects.push(widgetRect);
-      // Flattening a widget would make pdf-lib synthesize an appearance from
-      // its border and background, printing a square the template never
-      // drew — so every box is removed rather than flattened.
-      field.uncheck();
-      removeFieldFromPages(source, form, field);
-      continue;
+    if (field.kind !== "text" || value === "") continue;
+    const font = isNumbersField(name) ? outputFonts.numbers : outputFonts.regular;
+    if (!field.multiline) {
+      // A single line sits optically centred in its box whatever face the
+      // reader chose, because it is drawn rather than filled through the form.
+      const size = drawnNumberSize(value, field.rect, field.base, font);
+      if (size > 0) {
+        drawFieldValue(
+          page,
+          { rect: field.rect, value, size, align: field.align, numbers: isNumbersField(name) },
+          font,
+          textColour,
+        );
+        continue;
+      }
     }
-    removeFieldFromPages(source, form, field);
+    drawBoxedValue(page, field.rect, value, font, field.base, textColour);
   }
-  form.flatten({ updateFieldAppearances: false });
-  const [page] = await output.copyPages(source, [0]);
-  output.addPage(page!);
-  for (const rect of checkedRects) {
-    page!.drawCircle({
-      x: rect.x + rect.width / 2,
-      y: rect.y + rect.height / 2,
-      size: Math.min(rect.width, rect.height) * 0.28,
-      color: rgb(textColour[0], textColour[1], textColour[2]),
-    });
+  return { page, fieldRects: art.rects };
+}
+
+/**
+ * Draws a value that will not sit on one line in its box: wrapped, shrunk to
+ * fit, and clipped to the widget rectangle the way the form's own appearance
+ * clipped it. Only a prose box reaches this — every other value is one line.
+ */
+function drawBoxedValue(
+  page: PDFPage,
+  rect: FieldRect,
+  value: string,
+  font: PDFFont,
+  base: number,
+  colour: PdfColor,
+): void {
+  const size = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) =>
+    font.widthOfTextAtSize(winAnsiText(text), fontSize));
+  const usable = rect.width - 4;
+  const lines: string[] = [];
+  for (const paragraph of value.split(/\r?\n/)) {
+    let line = "";
+    for (const word of paragraph.split(/[ \t]+/).filter((part) => part !== "")) {
+      const candidate = line === "" ? word : `${line} ${word}`;
+      if (line !== "" && font.widthOfTextAtSize(candidate, size) > usable) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    lines.push(line);
   }
-  // The page copied out of the source document is the one now in the output, so
-  // the numbers are drawn over the flattened artwork here — in the sheet's own
-  // faces. Re-embedding them per page would subset the same bytes again and
-  // write another pair of font objects into the output for every page.
-  for (const item of drawnNumbers) {
-    drawFieldValue(page!, item, item.numbers ? outputFonts.numbers : outputFonts.regular, textColour);
+  page.pushOperators(
+    pushGraphicsState(),
+    moveTo(rect.x, rect.y),
+    lineTo(rect.x + rect.width, rect.y),
+    lineTo(rect.x + rect.width, rect.y + rect.height),
+    lineTo(rect.x, rect.y + rect.height),
+    closePath(),
+    clip(),
+    endPath(),
+  );
+  let y = rect.y + rect.height - 2 - size;
+  for (const line of lines) {
+    if (line !== "") {
+      page.drawText(line, { x: rect.x + 2, y, size, font, color: rgb(colour[0], colour[1], colour[2]) });
+    }
+    y -= size * 1.2;
   }
-  return { page: page!, fieldRects };
+  page.pushOperators(popGraphicsState());
 }
 
 interface DrawnValue {
@@ -1238,7 +1342,7 @@ function drawCenteredInBox(
 async function drawBrandImage(
   output: PDFDocument,
   page: PDFPage,
-  fieldRects: Map<string, FieldRect>,
+  fieldRects: ReadonlyMap<string, FieldRect>,
   base64: string,
 ): Promise<void> {
   const rect = fieldRects.get(SHEET_TEMPLATE_CONTRACT.masthead.field);
@@ -1250,7 +1354,7 @@ async function drawBrandImage(
 async function drawFieldImage(
   output: PDFDocument,
   page: PDFPage,
-  fieldRects: Map<string, FieldRect>,
+  fieldRects: ReadonlyMap<string, FieldRect>,
   fieldName: string,
   base64: string,
 ): Promise<void> {
@@ -1426,8 +1530,9 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const labelInk = labelColours(colours);
   const files = SHEET_TEMPLATE_CONTRACT.files;
   const timed = phaseTimer(options.trace);
+  const artwork: ArtworkCache = new Map();
   const fill = (phase: string, template: Uint8Array, pageValues: Readonly<Record<string, string>>) =>
-    timed(`fill:${phase}`, () => addFilledTemplatePage(output, template, pageValues, bundle.faces, colours, fonts));
+    timed(`fill:${phase}`, () => addFilledTemplatePage(output, template, pageValues, colours, fonts, artwork));
 
   const output = await PDFDocument.create();
   const fonts = await timed("embedFonts", () => embedSheetFonts(output, bundle.faces));

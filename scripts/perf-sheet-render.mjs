@@ -36,6 +36,9 @@ const EXTRA_SPELLS = Number(args.get("spells") ?? 60);
 // fontkit. `--body=spectral` renders in a real TTF instead, which is what a
 // reader who changed the typeface pays: every embed subsets the face.
 const BODY = args.get("body");
+// Inventory drives equipment continuation pages, which is where one template
+// is drawn several times in a sheet — the case the artwork cache targets.
+const EXTRA_ITEMS = Number(args.get("items") ?? 0);
 
 if (!["2014", "2024"].includes(SET)) {
   console.error(`[perf:sheet] unknown template set "${SET}" — expected 2014 or 2024`);
@@ -87,6 +90,16 @@ function withExtraSpells(state, count) {
   return state;
 }
 
+/** Repeats the character's first item until the inventory spills onto more pages. */
+function withExtraItems(state, count) {
+  const template = state.items[0];
+  if (template === undefined) return state;
+  for (let index = 0; index < count; index += 1) {
+    state.items.push({ ...template, adorners: [], amount: 1, equipped: false, attuned: false });
+  }
+  return state;
+}
+
 const fixtures = [
   {
     name: "rogue5 (lite)",
@@ -95,6 +108,14 @@ const fixtures = [
   {
     name: "full sheet",
     model: () => buildCharacterSheetModel(buildFullSheetCharacter(library, "perf-full").state, library, { mode: "full" }),
+  },
+  {
+    name: "full sheet +120 items",
+    model: () => buildCharacterSheetModel(
+      withExtraItems(buildFullSheetCharacter(library, "perf-items").state, 120),
+      library,
+      { mode: "full" },
+    ),
   },
   {
     name: `full sheet +${EXTRA_SPELLS} spells`,

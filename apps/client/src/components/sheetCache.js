@@ -13,7 +13,7 @@
 const cache = new Map(); // key -> Uint8Array
 let order = [];
 const MAX_ENTRIES = 4;
-export const SHEET_RENDERER_REVISION = 'pdf-canvas-v2';
+export const SHEET_RENDERER_REVISION = 'pdf-canvas-v3';
 
 export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica') {
   return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${lite ? 'lite' : 'full'}`;
