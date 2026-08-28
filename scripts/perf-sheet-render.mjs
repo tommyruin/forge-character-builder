@@ -32,6 +32,10 @@ const RUNS = Number(args.get("runs") ?? process.env.PERF_SHEET_RUNS ?? 5);
 // The slowest fixture's median is what a budget gates on; unset means report only.
 const BUDGET_MS = Number(process.env.PERF_SHEET_BUDGET_MS ?? 0);
 const EXTRA_SPELLS = Number(args.get("spells") ?? 60);
+// The default body face is standard Helvetica, which pdf-lib embeds without
+// fontkit. `--body=spectral` renders in a real TTF instead, which is what a
+// reader who changed the typeface pays: every embed subsets the face.
+const BODY = args.get("body");
 
 if (!["2014", "2024"].includes(SET)) {
   console.error(`[perf:sheet] unknown template set "${SET}" — expected 2014 or 2024`);
@@ -45,7 +49,11 @@ const { buildCharacterSheetModel } = await import(join(DIST, "sheet", "model.js"
 const { writeCharacterSheetPdfWithTemplateBundle } = await import(join(DIST, "sheet", "pdf.js"));
 
 const library = await buildCorpusLibrary();
-const bundle = localTemplateBundle(SET);
+const { DEFAULT_SHEET_FONTS } = await import(join(DIST, "sheet", "template-contract.js"));
+const fonts = BODY === undefined
+  ? DEFAULT_SHEET_FONTS
+  : { ...DEFAULT_SHEET_FONTS, body: BODY, numbers: BODY };
+const bundle = localTemplateBundle(SET, fonts);
 
 /**
  * Spell ids the corpus knows. Library elements carry their type in the id
@@ -138,7 +146,7 @@ async function benchmark(fixture) {
 const results = [];
 for (const fixture of fixtures) results.push(await benchmark(fixture));
 
-console.log(`[perf:sheet] set ${SET}, ${RUNS} timed runs each (first discarded)\n`);
+console.log(`[perf:sheet] set ${SET}, body ${fonts.body}, ${RUNS} timed runs each (first discarded)\n`);
 for (const result of results) {
   console.log(`  ${result.name} — ${ms(result.median)} median, ${result.pages} pages, ${(result.bytes / 1024).toFixed(0)} KB`);
   const rows = [...result.phases.entries()].sort((left, right) => right[1].ms - left[1].ms);
