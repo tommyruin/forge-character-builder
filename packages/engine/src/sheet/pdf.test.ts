@@ -714,7 +714,11 @@ describe("character sheet PDF writer", () => {
     const first = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
     const second = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
     expect(second).toEqual(first);
-    expect(second.byteLength).toBeGreaterThan(100_000);
+    // A floor, not a target: single-line values are drawn rather than flattened
+    // from form widgets, so a full sheet no longer carries an appearance stream
+    // per field. "bakes every provided form value" is what proves the content
+    // is all there.
+    expect(second.byteLength).toBeGreaterThan(30_000);
   }, 120_000);
 
   it("bakes every provided form value into the flattened bundle output", async () => {

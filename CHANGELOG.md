@@ -6,6 +6,22 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- On the 2024 set, the inventory, companion and appearance pages printed each
+  panel's title over its own contents. Those pages now label a panel inside its
+  lower edge, as the 2014 set does.
+- Numbers are sized by the template that drew the box around them, instead of a
+  fixed table in the writer that left the companion sheet, hit dice, hit points
+  and the 2024 vitals row rendering at 8pt whatever their box.
+- Values sit optically centred in their box for any chosen typeface. They are
+  drawn rather than filled through the form, because a form field centres a line
+  on the font's ascender — which dropped a tall-ascender face onto the rule
+  beneath it. Sheets are also markedly smaller, having lost an appearance stream
+  per field.
+- The ability score's box is derived from the shield it sits in, so the
+  character and companion pages centre their scores alike.
+
 ## [2.1.0] - 2026-08-27
 
 ### Added

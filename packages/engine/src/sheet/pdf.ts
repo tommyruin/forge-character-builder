@@ -17,6 +17,7 @@ import {
   PDFName,
   type PDFRef,
   PDFString,
+  TextAlignment,
   PDFTextField,
   StandardFonts,
   rgb,
@@ -472,6 +473,63 @@ function bundleIsComplete(bundle: CharacterSheetTemplateBundle | null): bundle i
     );
 }
 
+// A field's default appearance ends in `/<font> <size> Tf`; the size is the one
+// the template asked for when it drew the box, which knows the box's geometry.
+const DEFAULT_APPEARANCE_SIZE = /\/[^\0\t\n\f\r ]+[\0\t\n\f\r ]*(\d*\.\d+|\d+)[\0\t\n\f\r ]+Tf/g;
+
+/** The size a template asked for, or undefined when it left the size to the viewer. */
+export function templateFontSize(appearance: string | undefined): number | undefined {
+  if (appearance === undefined) return undefined;
+  DEFAULT_APPEARANCE_SIZE.lastIndex = 0;
+  let size: number | undefined;
+  for (const match of appearance.matchAll(DEFAULT_APPEARANCE_SIZE)) {
+    const candidate = Number(match[1]);
+    // A zero size means "fit the widget", which is the viewer's job, not ours.
+    if (Number.isFinite(candidate) && candidate > 0) size = candidate;
+  }
+  return size;
+}
+
+/**
+ * The face's cap height as a fraction of the em, for optically centring a line
+ * of digits in a box.
+ *
+ * pdf-lib centres a line by centring the font's *ascender* box, which only
+ * looks right when the ascender equals the cap height (as it happens to for
+ * Helvetica). Its `heightOfFontAtSize` is also unusable here: for a face whose
+ * em is not 1000 units it subtracts an unscaled descender. So the ratio is read
+ * from the embedded face directly, and rejected when it is implausible —
+ * several of the display faces report a cap height that is nothing of the sort.
+ */
+const CAP_HEIGHT_FALLBACK = 0.7;
+const capHeightRatios = new WeakMap<PDFFont, number>();
+
+function capHeightRatio(font: PDFFont): number {
+  const cached = capHeightRatios.get(font);
+  if (cached !== undefined) return cached;
+  const embedder = (font as unknown as { embedder?: Record<string, unknown> }).embedder;
+  const face = embedder?.font as { CapHeight?: number; capHeight?: number; unitsPerEm?: number } | undefined;
+  const units = typeof face?.unitsPerEm === "number" && face.unitsPerEm > 0 ? face.unitsPerEm : 1000;
+  const capHeight = typeof face?.CapHeight === "number" ? face.CapHeight : face?.capHeight;
+  const ratio = typeof capHeight === "number" ? capHeight / units : Number.NaN;
+  const usable = Number.isFinite(ratio) && ratio >= 0.45 && ratio <= 0.85 ? ratio : CAP_HEIGHT_FALLBACK;
+  capHeightRatios.set(font, usable);
+  return usable;
+}
+
+/**
+ * The size the template asked for, capped so the value's cap height fits the
+ * box and its width fits too. Zero when even the floor overflows, which sends
+ * the value back to the form field, whose appearance clips instead of spilling.
+ */
+function drawnNumberSize(value: string, rect: FieldRect, base: number, font: PDFFont): number {
+  if (value === "") return base;
+  const byHeight = (rect.height - 2) / capHeightRatio(font);
+  const size = fitSingleLineFontSize(value, rect.width, Math.min(base, byHeight), font);
+  return font.widthOfTextAtSize(value, size) <= rect.width - 4 ? size : 0;
+}
+
+/** Used only when a template field carries no size of its own. */
 function fieldFontSize(name: string): number {
   if (/details_attack\d_(weapon|range|attack|damage)$/.test(name)) return 7.16;
   if (/details_attack\d_description$/.test(name) || name === "details_attack_description") return 6;
@@ -602,6 +660,7 @@ async function addFilledTemplatePage(
   const defaultAppearance = (size: number) => PDFString.of(`${textColour.join(" ")} rg /Helv ${size} Tf`);
   const fieldRects = new Map<string, FieldRect>();
   const checkedRects: FieldRect[] = [];
+  const drawnNumbers: DrawnValue[] = [];
   for (const field of form.getFields()) {
     const name = field.getName();
     const widgetRect = field.acroField.getWidgets()[0]?.getRectangle();
@@ -611,9 +670,28 @@ async function addFilledTemplatePage(
     // third-party content must not abort the whole build.
     const value = winAnsiText(values[name] ?? "");
     if (field instanceof PDFTextField) {
+      // The template sized the field when it drew the box around it, so its own
+      // default appearance is the authority; the name table is the fallback.
+      const base = templateFontSize(field.acroField.getDefaultAppearance()) ?? fieldFontSize(name);
+      // Single-line values are drawn rather than filled, so they sit optically
+      // centred in their box whatever face the reader chose — pdf-lib centres a
+      // field's line on the font's ascender, which drops a large-ascender face
+      // onto the rule beneath it. A value too long for its box falls through to
+      // the field, whose appearance clips instead of spilling.
+      const valueFace = isNumbersField(name) ? numbers : regular;
+      if (!field.isMultiline() && widgetRect !== undefined) {
+        const size = drawnNumberSize(value, widgetRect, base, valueFace);
+        if (size > 0) {
+          if (value !== "") {
+            drawnNumbers.push({ rect: widgetRect, value, size, align: field.getAlignment(), numbers: isNumbersField(name) });
+          }
+          removeFieldFromPages(source, form, field);
+          continue;
+        }
+      }
       // The default appearance carries the value's colour; the font size is
       // set below. /Helv is declared in every bundle template.
-      field.acroField.dict.set(PDFName.of("DA"), defaultAppearance(fieldFontSize(name)));
+      field.acroField.dict.set(PDFName.of("DA"), defaultAppearance(base));
       let current: string | undefined;
       try {
         current = field.getText() ?? "";
@@ -621,18 +699,17 @@ async function addFilledTemplatePage(
         // Rich-text fields cannot be read; always rewrite them.
       }
       if (current === value) continue;
-      const base = fieldFontSize(name);
       let size = base;
+      const valueFont = isNumbersField(name) ? numbers : regular;
       const rect = field.acroField.getWidgets()[0]?.getRectangle();
       if (field.isMultiline() && value !== "" && rect !== undefined) {
-        const valueFont = isNumbersField(name) ? numbers : regular;
         size = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) => valueFont.widthOfTextAtSize(winAnsiText(text), fontSize));
       } else if (value !== "" && rect !== undefined) {
-        size = fitSingleLineFontSize(value, rect.width, base, regular);
+        size = fitSingleLineFontSize(value, rect.width, base, valueFont);
       }
       field.setFontSize(size);
       field.setText(value);
-      field.updateAppearances(isNumbersField(name) ? numbers : regular);
+      field.updateAppearances(valueFont);
       continue;
     }
     if (field instanceof PDFCheckBox) {
@@ -660,7 +737,42 @@ async function addFilledTemplatePage(
       color: rgb(textColour[0], textColour[1], textColour[2]),
     });
   }
+  // The page copied out of the source document is the one now in the output,
+  // so the numbers are drawn over the flattened artwork here.
+  const outputFaces = {
+    numbers: await embedFace(output, faces.numbers, "FCB-Numbers"),
+    regular: await embedFace(output, faces.body.regular, "FCB-Body"),
+  };
+  for (const item of drawnNumbers) {
+    drawFieldValue(page!, item, item.numbers ? outputFaces.numbers : outputFaces.regular, textColour);
+  }
   return { page: page!, fieldRects };
+}
+
+interface DrawnValue {
+  rect: FieldRect;
+  value: string;
+  size: number;
+  align: TextAlignment;
+  /** Numeric values take the numbers face; everything else the body face. */
+  numbers: boolean;
+}
+
+/** Draws a value centred on its box's middle by cap height, not by ascender. */
+function drawFieldValue(page: PDFPage, item: DrawnValue, font: PDFFont, colour: PdfColor): void {
+  const width = font.widthOfTextAtSize(item.value, item.size);
+  const x = item.align === TextAlignment.Center
+    ? item.rect.x + (item.rect.width - width) / 2
+    : item.align === TextAlignment.Right
+      ? item.rect.x + item.rect.width - 1 - width
+      : item.rect.x + 1;
+  page.drawText(item.value, {
+    x,
+    y: item.rect.y + item.rect.height / 2 - (capHeightRatio(font) * item.size) / 2,
+    size: item.size,
+    font,
+    color: rgb(colour[0], colour[1], colour[2]),
+  });
 }
 
 function runFont(fonts: SheetFonts, style: LayoutRun["style"]): PDFFont {
@@ -1078,7 +1190,7 @@ function drawCenteredInBox(
   font: PDFFont,
   size: number,
 ): void {
-  drawCentered(page, textValue, center, middle - font.heightAtSize(size, { descender: false }) / 2, font, size);
+  drawCentered(page, textValue, center, middle - (capHeightRatio(font) * size) / 2, font, size);
 }
 
 /**

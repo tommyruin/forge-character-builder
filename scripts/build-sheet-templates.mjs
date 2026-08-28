@@ -324,7 +324,12 @@ class Sheet {
     this.path(shieldPath(width, height), x, top, { fill: FILL, stroke: ACCENT, lineWidth: 1 });
     this.path(shieldPath(width - 5.2, height - 5), x + 2.6, top - 2.5, { stroke: GOLD, lineWidth: 0.35 });
     this.display(caption, x, top - 10, { size: 4.2, align: "center", width });
-    this.text(`${prefix}_${key}_score`, x + 6, top - 44, width - 12, 30, { align: "center", size: 15, box: "none" });
+    // A heater shield's optical centre sits above its bounding box's, and the
+    // writer centres the digits on this rectangle, so it is derived from the
+    // height rather than pinned — the 65pt and 62pt shields then agree.
+    const scoreHeight = height * 0.46;
+    const scoreMiddle = top - height * 0.45;
+    this.text(`${prefix}_${key}_score`, x + 6, scoreMiddle - scoreHeight / 2, width - 12, scoreHeight, { align: "center", size: 18, box: "none" });
     const roundel = top - height + 6;
     this.circle(cx, roundel, 9, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
     this.circle(cx, roundel, 7, { stroke: GOLD, lineWidth: 0.3 });
@@ -478,15 +483,15 @@ function hitPointBox(s, prefix, x, y, width, height) {
   const tallyHeight = 32;
   const mainY = y + tallyHeight + 5;
   const mainHeight = height - tallyHeight - 5;
-  s.section("CURRENT HIT POINTS", x, mainY, width, mainHeight);
+  s.section("CURRENT HIT POINTS", x, mainY, width, mainHeight, { style: "caption" });
   [[`${prefix}_hp_max`, "MAXIMUM", x + 12, 46], [`${prefix}_hp_temp`, "TEMPORARY", x + width - 58, 46]].forEach(([name, caption, fx, fw]) => {
-    s.captioned(name, caption, fx, mainY + mainHeight - 20, fw, 9, { align: "center", captionAlign: "center", size: 7, captionSize: 3.4 });
+    s.captioned(name, caption, fx, mainY + mainHeight - 20, fw, 9, { align: "center", captionAlign: "center", size: 8, captionSize: 3.4 });
   });
   s.text(`${prefix}_hp_current`, x + 12, mainY + 16, width - 24, 16, { align: "center", size: 14, box: "none" });
   const half = (width - 6) / 2;
-  const dice = s.section("HIT DICE", x, y, half, tallyHeight);
-  s.text(`${prefix}_hd`, dice.x + 4, y + 16, dice.width - 8, 11, { align: "center", size: 8, box: "none" });
-  const saves = s.section("DEATH SAVES", x + half + 6, y, half, tallyHeight);
+  const dice = s.section("HIT DICE", x, y, half, tallyHeight, { style: "caption" });
+  s.text(`${prefix}_hd`, dice.x + 4, y + 13, dice.width - 8, 15, { align: "center", size: 12, box: "none" });
+  const saves = s.section("DEATH SAVES", x + half + 6, y, half, tallyHeight, { style: "caption" });
   for (let index = 1; index <= 3; index += 1) {
     s.check(`${prefix}_death_save_success_${index}`, saves.x + 38 + (index - 1) * 9, y + 21, 6);
     s.check(`${prefix}_death_save_fail_${index}`, saves.x + 38 + (index - 1) * 9, y + 13, 6);
@@ -526,7 +531,7 @@ async function details2014(edition) {
   ABILITIES.forEach(([key], index) => {
     const y = 605.6 - index * 12;
     s.check(`details_${key}_save_proficiency`, 102, y, 6.7);
-    s.text(`details_${key}_save_total`, 111, y - 1, 17, 9, { align: "center", size: 7 });
+    s.text(`details_${key}_save_total`, 111, y - 1, 17, 9, { align: "center", size: 8 });
     s.note(ABILITY_NAME[key], 131, y + 1, { size: 5.6 });
   });
   s.text("details_saving_throws", 100, 504, 97, 34, { multiline: true, size: 5.5, box: "none" });
@@ -535,7 +540,7 @@ async function details2014(edition) {
     const y = 476.4 - index * 11.2;
     s.check(`details_${key}_proficiency`, 101, y, 6);
     s.check(`details_${key}_expertise`, 108, y, 6);
-    s.text(`details_${key}_total`, 115, y - 1, 15, 9, { align: "center", size: 7 });
+    s.text(`details_${key}_total`, 115, y - 1, 15, 9, { align: "center", size: 8 });
     s.note(caption, 131, y + 0.5, { size: 5.2 });
     s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, 131 + s.textWidth(caption, "captionLight", 5.2) + 2, y + 0.5, { size: 4.2, color: "lines" });
   });
@@ -613,7 +618,7 @@ function abilityPanel2024(s, key, caption, x, y, width, height, extra) {
   let rowY = top - 68;
   s.rule(x + 6, rowY + 9, x + width - 6, rowY + 9, RULE, 0.4);
   s.check(`details_${key}_save_proficiency`, x + 8, rowY - 1, 6.5);
-  s.text(`details_${key}_save_total`, x + 18, rowY - 2, 22, 9, { align: "center", size: 7 });
+  s.text(`details_${key}_save_total`, x + 18, rowY - 2, 22, 9, { align: "center", size: 8 });
   s.label("SAVING THROW", x + 44, rowY, { size: 4.4 });
   rowY -= 11;
   s.rule(x + 6, rowY + 9, x + width - 6, rowY + 9, RULE, 0.4);
@@ -646,13 +651,13 @@ async function details2024(edition) {
   });
   s.circle(376, 730, 24, { fill: FILL, stroke: ACCENT, lineWidth: 1 });
   s.circle(376, 730, 21, { stroke: GOLD, lineWidth: 0.35 });
-  s.text("details_xp", 356, 725, 40, 12, { align: "center", size: 7, box: "none" });
+  s.text("details_xp", 356, 722, 40, 16, { align: "center", size: 12, box: "none" });
   s.label("XP", 356, 715.5, { size: 3.8, align: "center", width: 40 });
   s.shield("details_armor_class", "ARMOR CLASS", 406, 762, 52, 46);
   s.text("details_equipped_shield", 406, 705, 52, 9, { align: "center", size: 5, box: "none" });
   s.label("SHIELD", 406, 699, { size: 3.4, align: "center", width: 52 });
   const hp = s.section("HIT POINTS", 466, 700, 120, 60, { style: "plate", at: "top", size: 5.8 });
-  s.text("details_hp_current", hp.x + 2, hp.y + 8, 52, 26, { align: "center", size: 12, box: "none" });
+  s.text("details_hp_current", hp.x + 2, hp.y + 8, 52, 26, { align: "center", size: 20, box: "none" });
   s.rounded(hp.x + 2, hp.y + 8, 52, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
   s.label("CURRENT", hp.x + 2, hp.y + 2, { size: 3.8, align: "center", width: 52 });
   s.label("TEMP", hp.x + 58, hp.y + 24, { size: 3.8, color: "lines" });
@@ -664,19 +669,19 @@ async function details2024(edition) {
   const vitalY = 640;
   const vitalW = 76;
   const vitalX = (index) => 26 + index * 82;
-  s.stat("details_proficiency_bonus", "PROFICIENCY BONUS", vitalX(0), vitalY, vitalW, 52, { size: 12 });
-  s.stat("details_initiative", "INITIATIVE", vitalX(1), vitalY, vitalW, 52, { size: 12 });
+  s.stat("details_proficiency_bonus", "PROFICIENCY BONUS", vitalX(0), vitalY, vitalW, 52, { size: 20 });
+  s.stat("details_initiative", "INITIATIVE", vitalX(1), vitalY, vitalW, 52, { size: 20 });
   s.check("details_initiative_advantage", vitalX(1) + 6, vitalY + 39, 6);
   s.label("ADV", vitalX(1) + 14, vitalY + 40, { size: 3.6 });
   s.frame(vitalX(2), vitalY, vitalW, 52);
-  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 30, vitalW - 6, 18, { align: "center", size: 12, box: "none" });
+  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 30, vitalW - 6, 18, { align: "center", size: 16, box: "none" });
   s.label("SPEED", vitalX(2), vitalY + 24, { size: 4.4, align: "center", width: vitalW });
   [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, caption], index) => {
     const x = vitalX(2) + 5 + index * 22;
     s.text(name, x, vitalY + 12, 20, 9, { align: "center", size: 6 });
     s.label(caption, x, vitalY + 5.5, { size: 3.4, align: "center", width: 20 });
   });
-  s.stat("details_hd", "HIT DICE", vitalX(3), vitalY, vitalW, 52, { size: 9 });
+  s.stat("details_hd", "HIT DICE", vitalX(3), vitalY, vitalW, 52, { size: 18 });
   s.frame(vitalX(4), vitalY, vitalW, 52);
   s.label("SUCCESSES", vitalX(4) + 6, vitalY + 35, { size: 3.4, color: "lines" });
   s.label("FAILURES", vitalX(4) + 6, vitalY + 22.5, { size: 3.4, color: "lines" });
@@ -685,12 +690,12 @@ async function details2024(edition) {
     s.check(`details_death_save_fail_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 21, 7);
   }
   s.label("DEATH SAVES", vitalX(4), vitalY + 4.5, { size: 4.6, align: "center", width: vitalW });
-  s.stat("details_passive_perception_total", "PASSIVE PERCEPTION", vitalX(5), vitalY, vitalW, 52, { size: 12 });
+  s.stat("details_passive_perception_total", "PASSIVE PERCEPTION", vitalX(5), vitalY, vitalW, 52, { size: 20 });
   const inspirationW = 586 - vitalX(6);
   s.frame(vitalX(6), vitalY, inspirationW, 52);
   s.diamond(vitalX(6) + inspirationW / 2, vitalY + 32, 10, GOLD);
   s.diamond(vitalX(6) + inspirationW / 2, vitalY + 32, 8, WHITE);
-  s.text("details_inspiration", vitalX(6) + inspirationW / 2 - 16, vitalY + 26, 32, 12, { align: "center", size: 8, box: "none" });
+  s.text("details_inspiration", vitalX(6) + inspirationW / 2 - 16, vitalY + 26, 32, 12, { align: "center", size: 12, box: "none" });
   s.label("HEROIC INSPIRATION", vitalX(6), vitalY + 4.5, { size: Math.min(4.6, inspirationW / 16), align: "center", width: inspirationW });
 
   // Two columns of ability panels, each on a grey backing panel.
@@ -701,7 +706,7 @@ async function details2024(edition) {
   let top = 632;
   for (const key of ["str", "dex", "con"]) {
     abilityPanel2024(s, key, ABILITY_NAME[key].toUpperCase(), 26, top - heights[key], panelW, heights[key], key === "con" ? (rowY, x, width) => {
-      s.label("SAVING THROW NOTES", x + 8, rowY + 3, { size: 3.6, color: "lines" });
+      s.label("SAVING THROW NOTES", x + 8, rowY + 1, { size: 3.6, color: "lines" });
       s.text("details_saving_throws", x + 8, rowY - 7, width - 16, 9, { size: 5.5, box: "none" });
     } : undefined);
     top -= heights[key] + 8;
@@ -769,23 +774,23 @@ async function backgroundTemplate(edition) {
     ["background_skin", "SKIN", 363, 72, 1],
     ["background_hair", "HAIR", 443, 137, 1],
   ]);
-  s.section("CHARACTER PORTRAIT", 27, 477, 182, 188);
+  s.section("CHARACTER PORTRAIT", 27, 477, 182, 188, { style: "caption" });
   s.image("background_portrait_image", 32, 486, 171, 174);
-  s.section("ALLIES & ORGANIZATIONS", 214, 477, 372, 188);
+  s.section("ALLIES & ORGANIZATIONS", 214, 477, 372, 188, { style: "caption" });
   s.text("background_allies", 223, 486, 182, 175, { multiline: true, size: 6.5, box: "none" });
   s.frame(416, 496, 152, 148);
   s.captioned("background_organization_name", "NAME", 425, 617, 135, 14, { size: 8 });
   s.label("SYMBOL", 416, 502, { size: 3.8, color: "lines", align: "center", width: 152 });
   [["background_traits", "PERSONALITY TRAITS", 380, 73], ["background_ideals", "IDEAL", 327, 46], ["background_bonds", "BOND", 270, 47], ["background_flaws", "FLAW", 215, 46]].forEach(([name, caption, y, height]) => {
-    s.block(caption, name, 27, y, 182, height, { size: 6.5 });
+    s.block(caption, name, 27, y, 182, height, { size: 6.5, style: "caption" });
   });
-  s.section("BACKGROUND FEATURE", 27, 88, 182, 118);
+  s.section("BACKGROUND FEATURE", 27, 88, 182, 118, { style: "caption" });
   s.text("background_feature_name", 45, 183.5, 144, 13, { size: 8, align: "center", box: "none" });
   s.text("background_feature", 42, 96, 151, 84, { multiline: true, size: 6.5, box: "none" });
-  s.block("TRINKET", "background_trinket", 27, 34, 182, 46, { size: 6.5 });
-  s.section(edition === "2024" ? "BACKSTORY & PERSONALITY" : "BACKGROUND STORY", 214, 215, 372, 250);
+  s.block("TRINKET", "background_trinket", 27, 34, 182, 46, { size: 6.5, style: "caption" });
+  s.section(edition === "2024" ? "BACKSTORY & PERSONALITY" : "BACKGROUND STORY", 214, 215, 372, 250, { style: "caption" });
   s.text("background_story", 224, 222, 354, 240, { multiline: true, size: 6.5, box: "none" });
-  s.section("ADDITIONAL FEATURES", 214, 27, 372, 180);
+  s.section("ADDITIONAL FEATURES", 214, 27, 372, 180, { style: "caption" });
   s.text("background_additional_features", 222, 35, 358, 162, { multiline: true, size: 6.5, box: "none" });
   return finish(doc, s);
 }
@@ -802,7 +807,7 @@ async function companionTemplate(edition) {
 
   // The creature panel: portrait over two rows of ability shields.
   s.panel(27, 392, 182, 273);
-  s.section("PORTRAIT", 55, 538, 126, 126);
+  s.section("PORTRAIT", 55, 538, 126, 126, { style: "caption" });
   s.image("companion_portrait_image", 62, 551, 112, 104);
   ABILITIES.forEach(([key, caption], index) => {
     const cx = 57 + (index % 3) * 59.3;
@@ -812,14 +817,14 @@ async function companionTemplate(edition) {
   // Vitals across the top of the two right-hand columns, then the creature's
   // senses under its portrait and its traits filling the rest of the page.
   hitPointBox(s, "companion", 214, 582, 180, 83);
-  s.section("VITALS", 404, 582, 182, 83);
-  s.captioned("companion_proficiency", "PROFICIENCY", 414, 638, 48, 10, { align: "center", captionAlign: "center", size: 7 });
-  s.captioned("companion_initiative", "INITIATIVE", 468, 638, 48, 10, { align: "center", captionAlign: "center", size: 7 });
+  s.section("VITALS", 404, 582, 182, 83, { style: "caption" });
+  s.captioned("companion_proficiency", "PROFICIENCY", 414, 636, 48, 14, { align: "center", captionAlign: "center", size: 12 });
+  s.captioned("companion_initiative", "INITIATIVE", 468, 636, 48, 14, { align: "center", captionAlign: "center", size: 12 });
   s.shield("companion_armor_class", "AC", 534, 664, 42, 44, { size: 12 });
-  s.captioned("companion_speed", "SPEED", 414, 610, 102, 10, { size: 7 });
-  s.section("SENSES, SKILLS & DEFENCES", 27, 27, 182, 357);
+  s.captioned("companion_speed", "SPEED", 414, 606, 102, 12, { size: 9 });
+  s.section("SENSES, SKILLS & DEFENCES", 27, 27, 182, 357, { style: "caption" });
   s.text("companion_stats", 34, 42, 168, 320, { multiline: true, size: 6.5, box: "none" });
-  s.section("TRAITS & ACTIONS", 214, 27, 372, 545);
+  s.section("TRAITS & ACTIONS", 214, 27, 372, 545, { style: "caption" });
   s.text("companion_features", 222, 42, 356, 508, { multiline: true, size: 6.5, box: "none" });
   return finish(doc, s);
 }
@@ -845,7 +850,7 @@ async function equipmentTemplate(edition) {
     }
     return top - rows * ROW;
   };
-  s.section("INVENTORY — ADVENTURING GEAR, ARMS, ARMOR & OTHER EQUIPMENT", 27, 332, 367, 429);
+  s.section("INVENTORY — ADVENTURING GEAR, ARMS, ARMOR & OTHER EQUIPMENT", 27, 332, 367, 429, { style: "caption" });
   table("equipment_page_gear", "ADVENTURING GEAR", 35, 751, 40);
   table("equipment_page_magic_gear", "MAGIC ITEMS", 215, 751, 20);
   s.label("ATTUNED MAGIC ITEMS", 246, 537, { size: 3.8, color: "lines" });
@@ -865,17 +870,17 @@ async function equipmentTemplate(edition) {
     s.text(name, x, 351, 45, 12.8, { size: 8, align: "center", box: "frame" });
   });
   s.note("/", 263.5, 354, { size: 8 });
-  s.block("ADDITIONAL TREASURE", "equipment_page_additional_treasure", 27, 180, 367, 143, { size: 6.5 });
-  s.section("STORED ITEMS", 27, 27, 367, 146);
+  s.block("ADDITIONAL TREASURE", "equipment_page_additional_treasure", 27, 180, 367, 143, { size: 6.5, style: "caption" });
+  s.section("STORED ITEMS", 27, 27, 367, 146, { style: "caption" });
   for (let vehicle = 1; vehicle <= 2; vehicle += 1) {
     const x = vehicle === 1 ? 36 : 216;
     s.text(`equipment_page_vehicle_${vehicle}_name`, x, 149, 171, 13.5, { size: 8, align: "center", box: "frame" });
     table(`equipment_page_vehicle_${vehicle}_cargo`, "STORED ITEM", x - 1, 139, 10);
   }
   const notes = C.equipmentNotes;
-  s.section("INVENTORY — ITEM DESCRIPTIONS & NOTES", notes.x - 6, notes.y - 7, notes.width + 12, notes.height + 12);
+  s.section("INVENTORY — ITEM DESCRIPTIONS & NOTES", notes.x - 6, notes.y - 7, notes.width + 12, notes.height + 12, { style: "caption" });
   s.text("equipment_page_magic_items", notes.x, notes.y, notes.width, notes.height, { multiline: true, size: 6.5, box: "none" });
-  s.block("QUEST ITEMS & TRINKETS", "equipment_page_quest_items", 404, 27, 182, 146, { size: 6.5 });
+  s.block("QUEST ITEMS & TRINKETS", "equipment_page_quest_items", 404, 27, 182, 146, { size: 6.5, style: "caption" });
   return finish(doc, s);
 }
 
