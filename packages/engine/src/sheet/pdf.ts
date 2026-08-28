@@ -915,9 +915,21 @@ function fontMeasure(fonts: SheetFonts): TextMeasure {
 
 function drawPositionedRuns(page: PDFPage, runs: readonly LayoutRun[], fonts: SheetFonts): void {
   const measure = fontMeasure(fonts);
+  const ink = rgb(0.08, 0.08, 0.08);
   let previousFlow:
     | { card: number | undefined; role: LayoutRun["role"]; y: number; endX: number; space: number }
     | undefined;
+  // Card prose arrives one word per run. Consecutive words on the same line in
+  // the body face are drawn as one string: the space that joins them is the
+  // body face's, which is the width the layout advances by, so the merged run
+  // lands exactly where the words would have. A bold or italic word, a new
+  // line, or a gap breaks the run.
+  let pending: { x: number; y: number; size: number; text: string; endX: number } | undefined;
+  const flush = (): void => {
+    if (pending === undefined) return;
+    page.drawText(pending.text, { x: pending.x, y: pending.y, size: pending.size, font: fonts.regular, color: ink });
+    pending = undefined;
+  };
   for (const run of runs) {
     if (run.role === "metadata") continue;
     const value = winAnsiText(run.text);
@@ -940,23 +952,30 @@ function drawPositionedRuns(page: PDFPage, runs: readonly LayoutRun[], fonts: Sh
     ) {
       x = Math.max(x, previousFlow.endX + previousFlow.space);
     }
-    page.drawText(isFlow ? `${value} ` : value, {
-      x,
-      y: run.y,
-      size,
-      font,
-      color: rgb(0.08, 0.08, 0.08),
-    });
+    const space = measure(" ", size);
+    const mergeable = isFlow && font === fonts.regular;
+    if (
+      mergeable &&
+      pending !== undefined &&
+      pending.y === run.y &&
+      pending.size === size &&
+      Math.abs(pending.endX - x) < 0.001
+    ) {
+      pending.text += `${value} `;
+      pending.endX = x + textWidth + space;
+    } else {
+      flush();
+      if (mergeable) {
+        pending = { x, y: run.y, size, text: `${value} `, endX: x + textWidth + space };
+      } else {
+        page.drawText(isFlow ? `${value} ` : value, { x, y: run.y, size, font, color: ink });
+      }
+    }
     previousFlow = isFlow
-      ? {
-          card: run.card,
-          role: run.role,
-          y: run.y,
-          endX: x + textWidth,
-          space: measure(" ", size),
-        }
+      ? { card: run.card, role: run.role, y: run.y, endX: x + textWidth, space }
       : undefined;
   }
+  flush();
 }
 
 interface StyledWord {
@@ -1069,18 +1088,39 @@ function drawFeatureFlow(
 ): FeatureContinuation | undefined {
   let y = top;
   let lineIndex = 0;
+  // The space between words is the body face's at this size whatever face the
+  // word itself is in, so it is measured once rather than per word.
+  const spaceWidth = fonts.regular.widthOfTextAtSize(" ", fontSize);
+  const ink = rgb(0.05, 0.05, 0.05);
   for (; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex]!;
     if (y < bottom) break;
     let cursor = x + line.indent;
+    // Consecutive words in the body face are drawn as one string. pdf-lib sums
+    // glyph advances without kerning, and the space that joins them is the body
+    // face's — the same width the cursor advances by — so a merged run lands
+    // exactly where the words would have landed one at a time. A bold or italic
+    // word breaks the run, because its own space is a different width.
+    let pending: { font: PDFFont; text: string; x: number } | undefined;
+    const flush = (): void => {
+      if (pending === undefined) return;
+      page.drawText(pending.text, { x: pending.x, y, size: fontSize, font: pending.font, color: ink });
+      pending = undefined;
+    };
     for (const word of line.words) {
       const font = runFont(fonts, word.style);
       const value = winAnsiText(word.text);
-      const wordWidth = font.widthOfTextAtSize(value, fontSize);
-      const spaceWidth = fonts.regular.widthOfTextAtSize(" ", fontSize);
-      page.drawText(value, { x: cursor, y, size: fontSize, font, color: rgb(0.05, 0.05, 0.05) });
-      cursor += wordWidth + spaceWidth;
+      if (pending !== undefined && font === fonts.regular) pending.text += ` ${value}`;
+      else {
+        flush();
+        pending = font === fonts.regular ? { font, text: value, x: cursor } : undefined;
+        if (pending === undefined) {
+          page.drawText(value, { x: cursor, y, size: fontSize, font, color: ink });
+        }
+      }
+      cursor += font.widthOfTextAtSize(value, fontSize) + spaceWidth;
     }
+    flush();
     y -= lineHeight;
     if (line.gapAfter) y -= FEATURE_PARAGRAPH_GAP;
   }
