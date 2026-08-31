@@ -221,9 +221,10 @@ class Sheet {
   }
   /** A thin rule with a diamond at each end. */
   ornamentRule(x1, x2, y, color = GOLD) {
-    this.rule(x1 + 3, y, x2 - 3, y, color, 0.4);
-    this.diamond(x1 + 1.5, y, 1.5, color);
-    this.diamond(x2 - 1.5, y, 1.5, color);
+    const { thickness, capRadius } = C.ornament;
+    this.rule(x1 + capRadius * 2, y, x2 - capRadius * 2, y, color, thickness);
+    this.diamond(x1 + capRadius, y, capRadius, color);
+    this.diamond(x2 - capRadius, y, capRadius, color);
   }
 
   // --- type ------------------------------------------------------------------
@@ -262,7 +263,12 @@ class Sheet {
   dieBadge(name, cx, cy, size) {
     const x = cx - size / 2;
     const top = cy + size / 2;
-    this.path(hexPath(size, size), x, top, { fill: FILL, stroke: ACCENT, lineWidth: size * 0.07 });
+    // The hex is inset by a full stroke so the mark — mitred vertices and all —
+    // stays inside the badge's box. The writer knocks that box out to paint a
+    // host logo over the mark, and anything reaching past it survives beside
+    // the logo as a hairline.
+    const stroke = size * C.masthead.badgeStroke;
+    this.path(hexPath(size - stroke * 2, size - stroke * 2), x + stroke, top - stroke, { fill: FILL, stroke: ACCENT, lineWidth: stroke });
     this.path(hexPath(size * 0.56, size * 0.5), cx - size * 0.28, cy + size * 0.2, { stroke: GOLD, lineWidth: size * 0.045 });
     this.draw("20", x, cy - size * 0.17, { font: "display", size: size * 0.36, color: "accent", align: "center", width: size });
     const field = this.form.createButton(name);
@@ -433,7 +439,7 @@ function masthead(s, edition, title, nameField, nameCaption, fields) {
   s.dieBadge("sheet_brand_image", M.badgeCenterX, M.badgeCenterY, M.badgeSize);
   s.display(title, M.badgeCenterX + M.badgeSize / 2 + 10, 742, { size: 11 });
   s.label(EDITION[edition].rules, 486, 744, { size: 4.4, color: "lines", align: "right", width: 100 });
-  s.ornamentRule(30, 586, 734, ACCENT);
+  s.ornamentRule(M.rule.x1, M.rule.x2, M.rule.y, ACCENT);
   if (nameField !== null) {
     const plate = s.section(nameCaption, 27, 690, 246, 40, { style: "caption", size: 5 });
     s.text(nameField, plate.x + 6, plate.y + 4, plate.width - 12, 18, { size: 12, box: "none" });

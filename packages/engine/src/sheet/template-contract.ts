@@ -254,11 +254,24 @@ export const SHEET_TEMPLATE_CONTRACT = {
     footerDrop: 233.5,
     footerInset: 6,
   },
+  /** A thin rule's end caps: a diamond of this radius at each end, the line inset by its width. */
+  ornament: { thickness: 0.4, capRadius: 1.5 },
   /**
    * The masthead's brand badge. The templates draw a die mark there; a host
    * may supply its own logo, which the writer paints over it.
+   *
+   * `rule` is the ornamented rule under the title. It is drawn across the
+   * badge's box, so the writer repaints the slice its knockout takes out.
    */
-  masthead: { badgeCenterX: 48, badgeCenterY: 748, badgeSize: 34, field: "sheet_brand_image" },
+  masthead: {
+    badgeCenterX: 48,
+    badgeCenterY: 748,
+    badgeSize: 34,
+    /** The die mark's outer stroke, as a fraction of `badgeSize`; the mark is inset by it so it stays inside the box. */
+    badgeStroke: 0.07,
+    field: "sheet_brand_image",
+    rule: { x1: 30, x2: 586, y: 734 },
+  },
   /** The equipment page's notes column; item descriptions flow inside it. */
   equipmentNotes: { x: 410, y: 192, width: 172, height: 570 },
 } as const;

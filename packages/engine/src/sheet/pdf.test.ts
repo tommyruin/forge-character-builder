@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { SpellResourceDto } from "@forge-cb/api";
-import { PDFDocument, PDFName } from "pdf-lib";
+import { PDFArray, PDFDocument, PDFName, PDFStream, decodePDFRawStream } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { encodeBase64 } from "../platform.js";
@@ -32,6 +32,21 @@ function template(name: string): Uint8Array {
 /** The 2014 set, loaded from the client's public tree. */
 export function fullTemplateBundle(fonts: SheetFonts = DEFAULT_SHEET_FONTS): CharacterSheetTemplateBundle {
   return localTemplateBundle("2014", fonts);
+}
+
+/** A 1x1 transparent PNG: the writer only needs an embeddable image. */
+const PIXEL_PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+/** The operators the writer appended to a rendered page's content stream. */
+async function pageOperators(pdf: ArrayBuffer, index = 0): Promise<string> {
+  const document = await PDFDocument.load(pdf);
+  const page = document.getPages()[index]!;
+  const contents = page.node.Contents();
+  const streams = contents instanceof PDFArray
+    ? contents.asArray().map((ref) => document.context.lookup(ref, PDFStream))
+    : [contents as PDFStream];
+  return streams.map((stream) => new TextDecoder("latin1").decode(decodePDFRawStream(stream as never).decode())).join("\n");
 }
 
 describe("character sheet PDF writer", () => {
@@ -704,6 +719,48 @@ describe("character sheet PDF writer", () => {
     // is all there.
     expect(second.byteLength).toBeGreaterThan(30_000);
   }, 120_000);
+
+  // A host logo is painted over the template's die mark by knocking the badge
+  // out in white. The masthead rule runs across that box and the name plate
+  // sits just below it, so a knockout that grows past the badge erases sheet
+  // artwork — which is what broke the header rule under the DM Forge mark.
+  it("keeps a host logo's knockout inside the masthead badge and repaints the rule", async () => {
+    const model = {
+      characterId: "Ada",
+      mode: "full" as const,
+      pageCount: 1,
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
+      formValues: { details_character_name: "Ada" },
+    };
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle(), { brandImage: PIXEL_PNG });
+    const operators = await pageOperators(pdf);
+
+    const badge = SHEET_TEMPLATE_CONTRACT.masthead;
+    const box = {
+      left: badge.badgeCenterX - badge.badgeSize / 2,
+      bottom: badge.badgeCenterY - badge.badgeSize / 2,
+      size: badge.badgeSize,
+    };
+    const origin = /1 1 1 rg[\s\S]*?1 0 0 1 ([\d.]+) ([\d.]+) cm/.exec(operators);
+    const extent = /1 1 1 rg[\s\S]*?0 ([\d.]+) l\s+([\d.]+) \1 l/.exec(operators);
+    expect(origin).not.toBeNull();
+    expect(extent).not.toBeNull();
+    const left = Number(origin![1]);
+    const bottom = Number(origin![2]);
+    const height = Number(extent![1]);
+    const width = Number(extent![2]);
+    // A hair of bleed covers antialiasing; more than that reaches the name plate.
+    expect(left).toBeGreaterThanOrEqual(box.left - 1);
+    expect(bottom).toBeGreaterThanOrEqual(box.bottom - 1);
+    expect(left + width).toBeLessThanOrEqual(box.left + box.size + 1);
+    expect(bottom + height).toBeLessThanOrEqual(box.bottom + box.size + 1);
+
+    // The slice of the masthead rule the knockout took is painted back.
+    const repaint = new RegExp(`([\\d.]+) ${badge.rule.y} m\\s+(?:[\\d.]+ ${badge.rule.y} m\\s+)?([\\d.]+) ${badge.rule.y} l`).exec(operators);
+    expect(repaint).not.toBeNull();
+    expect(Number(repaint![1])).toBeLessThanOrEqual(left + SHEET_TEMPLATE_CONTRACT.ornament.capRadius * 2);
+    expect(Number(repaint![2])).toBeGreaterThanOrEqual(left + width);
+  }, 60_000);
 
   it("bakes every provided form value into the flattened bundle output", async () => {
     const library = await libraryPromise;

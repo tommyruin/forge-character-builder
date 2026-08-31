@@ -6,6 +6,14 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A host logo painted over the sheet's brand badge no longer punches a white
+  block through the masthead. Covering the template's die mark took the header
+  rule's left end and the name plate's top corner with it; the mark now stays
+  inside its own badge box, and the slice of rule the knockout crosses is
+  painted back.
+
 ## [2.2.0] - 2026-08-28
 
 ### Changed

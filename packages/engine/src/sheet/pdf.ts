@@ -1390,17 +1390,60 @@ function drawCenteredInBox(
 /**
  * Paints a host's logo over the masthead badge. The template's own die mark is
  * covered first, so a logo with transparent edges does not show it through.
+ *
+ * The template draws the masthead rule across the badge's box, so the knockout
+ * takes the rule's left end with it; that slice is repainted before the logo
+ * goes down, leaving the header rule unbroken behind a transparent mark.
  */
 async function drawBrandImage(
   output: PDFDocument,
   page: PDFPage,
   fieldRects: ReadonlyMap<string, FieldRect>,
   base64: string,
+  colours: SheetColours,
 ): Promise<void> {
   const rect = fieldRects.get(SHEET_TEMPLATE_CONTRACT.masthead.field);
   if (rect === undefined || base64 === "") return;
-  page.drawRectangle({ x: rect.x - 1, y: rect.y - 1, width: rect.width + 2, height: rect.height + 2, color: rgb(1, 1, 1) });
+  // The template keeps the die mark inside the badge's box, so the box plus a
+  // hair for antialiasing clears it without reaching the name plate below.
+  const bleed = 0.5;
+  const left = rect.x - bleed;
+  const bottom = rect.y - bleed;
+  const width = rect.width + bleed * 2;
+  const height = rect.height + bleed * 2;
+  page.drawRectangle({ x: left, y: bottom, width, height, color: rgb(1, 1, 1) });
+  drawMastheadRule(page, left, left + width, bottom, bottom + height, colours);
   await drawFieldImage(output, page, fieldRects, SHEET_TEMPLATE_CONTRACT.masthead.field, base64);
+}
+
+/** Redraws the part of the masthead rule that falls inside the badge knockout. */
+function drawMastheadRule(
+  page: PDFPage,
+  left: number,
+  right: number,
+  bottom: number,
+  top: number,
+  colours: SheetColours,
+): void {
+  const { rule } = SHEET_TEMPLATE_CONTRACT.masthead;
+  const { thickness, capRadius } = SHEET_TEMPLATE_CONTRACT.ornament;
+  if (rule.y + capRadius < bottom || rule.y - capRadius > top) return;
+  const [red, green, blue] = SHEET_PALETTE[colours.accent].rgb;
+  const colour = rgb(red, green, blue);
+  const from = Math.max(left, rule.x1 + capRadius * 2);
+  const to = Math.min(right, rule.x2 - capRadius * 2);
+  if (to > from) {
+    page.drawLine({ start: { x: from, y: rule.y }, end: { x: to, y: rule.y }, thickness, color: colour });
+  }
+  for (const capX of [rule.x1 + capRadius, rule.x2 - capRadius]) {
+    if (capX < left - capRadius || capX > right + capRadius) continue;
+    page.drawSvgPath(`M 0 ${-capRadius} L ${capRadius} 0 L 0 ${capRadius} L ${-capRadius} 0 Z`, {
+      x: capX,
+      y: rule.y,
+      color: colour,
+      borderWidth: 0,
+    });
+  }
 }
 
 async function drawFieldImage(
@@ -1601,7 +1644,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         details_proficiencies_languages: "",
       });
       drawTemplateText(page, bundle.labels[files.details], fonts, labelInk);
-      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage));
+      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       drawSheetFooter(page, fonts, footerText);
       const continuations = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects));
       for (let index = 0; index < continuations.length; index += 1) {
@@ -1612,7 +1655,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           details_proficiencies_languages: "",
         });
         drawTemplateText(continuationPage, bundle.labels[files.details], fonts, labelInk);
-        await timed("brandImage", () => drawBrandImage(output, continuationPage, continuationRects, brandImage));
+        await timed("brandImage", () => drawBrandImage(output, continuationPage, continuationRects, brandImage, colours));
         drawSheetFooter(continuationPage, fonts, footerText);
         const next = timed("richText:details", () => drawFeatureFlow(
           continuationPage,
@@ -1632,7 +1675,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
     if (modelPage.templateKind === "background") {
       const { page, fieldRects } = await fill("background", bundle.background, values);
       drawTemplateText(page, bundle.labels[files.background], fonts, labelInk);
-      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage));
+      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       await timed("portrait", () => drawFieldImage(output, page, fieldRects, "background_portrait_image", images["background_portrait_image"] ?? ""));
       drawSheetFooter(page, fonts, footerText);
       continue;
@@ -1643,7 +1686,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         companion_features: "",
       });
       drawTemplateText(page, bundle.labels[files.companion], fonts, labelInk);
-      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage));
+      await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       await timed("portrait", () => drawFieldImage(output, page, fieldRects, "companion_portrait_image", images["companion_portrait_image"] ?? ""));
       timed("richText:companion", () => drawCompanionRichText(page, modelPage, fonts, fieldRects));
       drawSheetFooter(page, fonts, footerText);
