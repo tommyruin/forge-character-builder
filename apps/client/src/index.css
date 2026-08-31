@@ -1009,6 +1009,52 @@ button:disabled {
   min-width: 3.5rem;
 }
 
+/* Sheet layout set (Manage → Sheet): a segmented toggle in the import-mode
+   idiom. The chosen set carries the builder's selected tint — the same primary
+   wash the workspace tabs and spell level pills use — because two bare buttons
+   labelled "2014" and "2024" gave no sign of which one the sheet is drawn
+   from. */
+.fcb-sheet-set-toggle {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 3px;
+  max-width: 17rem;
+  padding: 3px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface-2);
+}
+
+.fcb-sheet-set-option {
+  min-height: var(--dmf-control-min-height);
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--fcb-radius) - 3px);
+  background: transparent;
+  color: var(--fcb-text-muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  transition:
+    border-color var(--fcb-transition),
+    background var(--fcb-transition),
+    color var(--fcb-transition);
+}
+
+.fcb-sheet-set-option:hover {
+  background: color-mix(in srgb, var(--fcb-text) 8%, transparent);
+  color: var(--fcb-text);
+}
+
+/* Hovering the chosen set must not read as choosing the other one. */
+.fcb-sheet-set-option.is-active,
+.fcb-sheet-set-option.is-active:hover {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  color: var(--fcb-text);
+}
+
 /* Sheet accent swatches (Manage → Sheet): a ring of the accent colour around
    a filled disc; the chosen one carries a heavier ring. */
 .fcb-sheet-accent-swatches {

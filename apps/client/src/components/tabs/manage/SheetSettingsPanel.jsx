@@ -74,12 +74,12 @@ export default function SheetSettingsPanel() {
           <h2 className="fcb-panel-title">Sheet layout</h2>
         </header>
         <div className="fcb-panel-body space-y-3">
-          <div className="fcb-sheet-zoom" role="group" aria-label="Sheet layout">
+          <div className="fcb-sheet-set-toggle" role="group" aria-label="Sheet layout">
             {templateSets.map((candidate) => (
               <button
                 key={candidate}
                 type="button"
-                className={`fcb-button fcb-sheet-zoom-value${candidate === templateSet ? ' is-active' : ''}`}
+                className={`fcb-sheet-set-option${candidate === templateSet ? ' is-active' : ''}`}
                 onClick={() => setTemplateSet(candidate)}
                 aria-pressed={candidate === templateSet}
               >

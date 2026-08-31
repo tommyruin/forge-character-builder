@@ -6,6 +6,12 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Manage → Sheet shows which sheet layout is live. The 2014/2024 choice is a
+  segmented toggle now, and the chosen set carries the same tint the workspace
+  tabs and spell level pills use, instead of two identical buttons.
+
 ### Fixed
 
 - A host logo painted over the sheet's brand badge no longer punches a white
