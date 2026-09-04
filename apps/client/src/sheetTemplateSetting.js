@@ -14,6 +14,17 @@ export function readStoredSheetTemplateSet(storage = globalThis.localStorage) {
   }
 }
 
+// Whether the reader has ever chosen a set. Without a choice the workspace
+// follows the character's ruleset (see hooks/useFollowRulesetTemplate.js), so
+// "no choice" must stay distinguishable from "chose the default".
+export function hasStoredSheetTemplateSet(storage = globalThis.localStorage) {
+  try {
+    return SHEET_TEMPLATE_SETS.includes(storage?.getItem(SHEET_TEMPLATE_STORAGE_KEY));
+  } catch {
+    return false;
+  }
+}
+
 export function storeSheetTemplateSet(value, storage = globalThis.localStorage) {
   try {
     storage?.setItem(SHEET_TEMPLATE_STORAGE_KEY, value);
@@ -26,14 +37,26 @@ export function storeSheetTemplateSet(value, storage = globalThis.localStorage) 
 // menu, so every render agrees on the set.
 export function createSheetTemplateSettingStore({ storage = globalThis.localStorage } = {}) {
   let current = readStoredSheetTemplateSet(storage);
+  let explicit = hasStoredSheetTemplateSet(storage);
   const listeners = new Set();
   const notify = () => {
     for (const listener of listeners) listener();
   };
+  // A reader's own choice: persisted, and it stops the set following the
+  // character's ruleset from here on — even when it names the current set.
   const set = (next) => {
-    if (!SHEET_TEMPLATE_SETS.includes(next) || next === current) return;
+    if (!SHEET_TEMPLATE_SETS.includes(next)) return;
+    const changed = next !== current || !explicit;
     current = next;
+    explicit = true;
     storeSheetTemplateSet(current, storage);
+    if (changed) notify();
+  };
+  // Following a character's ruleset. It moves the session's set without
+  // persisting, so opening a 2014 character next still follows that one.
+  const follow = (next) => {
+    if (explicit || !SHEET_TEMPLATE_SETS.includes(next) || next === current) return;
+    current = next;
     notify();
   };
   return {
@@ -42,11 +65,15 @@ export function createSheetTemplateSettingStore({ storage = globalThis.localStor
       return () => listeners.delete(listener);
     },
     getSnapshot: () => current,
+    getExplicitSnapshot: () => explicit,
     set,
+    follow,
     syncFromStorage() {
       const value = readStoredSheetTemplateSet(storage);
-      if (value === current) return;
+      const stored = hasStoredSheetTemplateSet(storage);
+      if (value === current && stored === explicit) return;
       current = value;
+      explicit = stored;
       notify();
     },
   };

@@ -111,6 +111,23 @@ export interface CharacterSheetModel {
   images?: Readonly<Record<string, string>>;
 }
 
+/**
+ * The pages a reader can do without. Each flag defaults to `true`; setting one
+ * to `false` drops that page from the build (and, with it, the work of laying
+ * it out). The remaining pages renumber 1..n, so a sheet without spell cards
+ * has no gap in its page numbers.
+ *
+ * `background` is the appearance/portrait page. `notes`, `spellCards` and
+ * `itemCards` only ever appear in the full sheet anyway; excluding one in lite
+ * mode is a no-op.
+ */
+export interface SheetPageInclusions {
+  background?: boolean;
+  notes?: boolean;
+  spellCards?: boolean;
+  itemCards?: boolean;
+}
+
 export interface BuildSheetOptions {
   mode: SheetMode;
   /**
@@ -119,6 +136,8 @@ export interface BuildSheetOptions {
    * nothing in the PDF writer consumes it.
    */
   canonical?: boolean;
+  /** Optional pages to leave out. Absent or `true` keeps the page. */
+  include?: SheetPageInclusions;
 }
 
 const ABILITY_KEYS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
@@ -267,26 +286,32 @@ export function buildCharacterSheetModel(
 ): CharacterSheetModel {
   const values = computeStatistics(state, library);
   const inline = computeInlineValues(state, library);
+  // Absent means included: a caller that says nothing gets the whole sheet.
+  const wants = (page: keyof SheetPageInclusions): boolean => options.include?.[page] !== false;
   const pages: SheetPage[] = [];
   pages.push(buildPage1(state, library, values, inline));
-  pages.push(buildPage2(state, library));
+  if (wants("background")) pages.push(buildPage2(state, library));
   const companion = buildCompanionDto(state, library, values);
   if (companion !== null) pages.push(buildCompanionPage(companion, pages.length + 1));
   pages.push(buildInventoryPage(state, library, values, options.canonical === true));
-  if (options.mode === "full" && notesFitDedicatedPage(state)) {
+  if (options.mode === "full" && wants("notes") && notesFitDedicatedPage(state)) {
     pages.push(buildNotesPage(state));
   }
   const spellcasters = buildSpellcastingDto(state, library, values, state.magicCasterIds);
   if (spellcasters.length > 0) {
     pages.push(...buildSpellListPages(state, library, spellcasters));
   }
-  if (options.mode === "full") {
+  if (options.mode === "full" && wants("spellCards")) {
     pages.push(...buildSpellDescriptionPages(state, library, spellcasters, options.canonical === true));
   }
-  if (options.mode === "full") {
+  if (options.mode === "full" && wants("itemCards")) {
     const itemPage = buildItemDescriptionPage(state, library, options.canonical === true);
     if (itemPage !== null) pages.push(itemPage);
   }
+  // The page builders each carry their own idea of where they sit (the
+  // companion and card pages count, the fixed ones hardcode). Renumbering here
+  // is what keeps the numbers contiguous once a page is left out.
+  const numbered: SheetPage[] = pages.map((page, index) => ({ ...page, page: index + 1 }));
   const formValues = {
     ...buildFormValues(state, library, values, spellcasters, inline),
     ...(companion !== null ? companionFormValues(companion) : {}),
@@ -301,8 +326,8 @@ export function buildCharacterSheetModel(
   return {
     characterId: state.id,
     mode: options.mode,
-    pageCount: pages.length,
-    pages,
+    pageCount: numbered.length,
+    pages: numbered,
     formValues,
     images,
   };

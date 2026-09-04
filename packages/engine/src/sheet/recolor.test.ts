@@ -4,7 +4,15 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { PDFArray, PDFDocument, PDFName, type PDFRawStream, type PDFString, decodePDFRawStream } from "pdf-lib";
 import { recolorContent, recolorSheetTemplate } from "./recolor.js";
-import { DEFAULT_SHEET_COLOURS, SHEET_PALETTE, SHEET_TEMPLATE_CONTRACT, SHEET_THEMES } from "./template-contract.js";
+import {
+  DEFAULT_SHEET_COLOURS,
+  SHEET_FIXED_COLOURS,
+  SHEET_FIXED_COLOUR_NAMES,
+  SHEET_PALETTE,
+  SHEET_PRINT_COLOURS,
+  SHEET_TEMPLATE_CONTRACT,
+  SHEET_THEMES,
+} from "./template-contract.js";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "../../../..");
 const DETAILS = join(ROOT, "apps", "client", "public", SHEET_TEMPLATE_CONTRACT.directory, "2014", SHEET_TEMPLATE_CONTRACT.files.details);
@@ -34,6 +42,27 @@ describe("sheet template recolouring", () => {
   it("returns the shipped bytes untouched for the default colours", async () => {
     const template = readFileSync(DETAILS);
     expect(await recolorSheetTemplate(template, DEFAULT_SHEET_COLOURS)).toBe(template);
+  });
+
+  it("rewrites the artwork's fixed colours for the print theme and no other", () => {
+    const fixed = (name: keyof typeof SHEET_FIXED_COLOURS) => SHEET_FIXED_COLOURS[name].join(" ");
+    const printed = (name: keyof typeof SHEET_FIXED_COLOURS) => SHEET_PRINT_COLOURS[name].join(" ");
+    const content = `${fixed("fill")} rg ${fixed("rule")} RG ${fixed("panelGrey")} rg`;
+    expect(recolorContent(content, SHEET_THEMES.monochrome))
+      .toBe(`${printed("fill")} rg ${printed("rule")} RG ${printed("panelGrey")} rg`);
+    expect(recolorContent(content, SHEET_THEMES.ocean)).toBe(content);
+  });
+
+  it("leaves a print-themed shipped template no parchment or warm grey", async () => {
+    const template = readFileSync(DETAILS);
+    const uses = (content: string, operand: string) =>
+      new RegExp(`(^|\\s)${operand.replaceAll(".", "\\.")} (rg|RG)(\\s|$)`).test(content);
+    const before = await pageContent(template);
+    expect(uses(before, SHEET_FIXED_COLOURS.rule.join(" "))).toBe(true);
+    expect(uses(before, SHEET_FIXED_COLOURS.fill.join(" "))).toBe(true);
+    const after = await pageContent(await recolorSheetTemplate(template, SHEET_THEMES.monochrome));
+    for (const name of SHEET_FIXED_COLOUR_NAMES) expect(uses(after, SHEET_FIXED_COLOURS[name].join(" "))).toBe(false);
+    expect(uses(after, SHEET_PRINT_COLOURS.fill.join(" "))).toBe(true);
   });
 
   it("recolours a shipped template's artwork and field appearances and keeps its fields", async () => {

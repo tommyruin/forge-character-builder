@@ -4,6 +4,7 @@ import { api } from "../api";
 import useSheetTemplateSetting from "../hooks/useSheetTemplateSetting";
 import useSheetColoursSetting from "../hooks/useSheetColoursSetting";
 import useSheetFontsSetting from "../hooks/useSheetFontsSetting";
+import useSheetPagesSetting from "../hooks/useSheetPagesSetting";
 import { loadSheetBrandImage } from "../sheetBrandImage.js";
 import { downloadBlob } from "../vtt/download.js";
 import Icon from './Icon';
@@ -25,6 +26,7 @@ export default function ExportMenu({
   const { templateSet } = useSheetTemplateSetting();
   const { colours } = useSheetColoursSetting();
   const { fonts } = useSheetFontsSetting();
+  const { pages } = useSheetPagesSetting();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(null); // which item is running
   const rootRef = useRef(null);
@@ -70,7 +72,7 @@ export default function ExportMenu({
   const downloadSheet = () =>
     runAction("sheet", async () => {
       const brandImage = await loadSheetBrandImage();
-      const url = await api.characters.sheet(id, { templateSet, colours, fonts, brandImage, footerText: `Generated with ${shell.appName}.` });
+      const url = await api.characters.sheet(id, { templateSet, colours, fonts, include: pages, brandImage, footerText: `Generated with ${shell.appName}.` });
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = `${id}.pdf`;

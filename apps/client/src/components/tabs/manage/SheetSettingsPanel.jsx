@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import useSheetTemplateSetting from '../../../hooks/useSheetTemplateSetting';
 import useSheetColoursSetting from '../../../hooks/useSheetColoursSetting';
 import useSheetFontsSetting from '../../../hooks/useSheetFontsSetting';
+import useSheetPagesSetting from '../../../hooks/useSheetPagesSetting';
 import FilterSelect from '../../FilterSelect';
 import Icon from '../../Icon';
 import { ensureSheetFontFaces, sheetFaceFontFamily } from '../../../sheetFontFaces.js';
+import { useWorkspace } from '../../WorkspaceContext';
 
 const TEMPLATE_SET_LABELS = {
   2014: 'Classic layout for the 2014 rules: ability scores, saving throws and skills in their own columns.',
@@ -62,7 +64,13 @@ function TipHeading({ label, tip }) {
  */
 export default function SheetSettingsPanel() {
   const { templateSet, setTemplateSet, templateSets } = useSheetTemplateSetting();
+  // The panel also renders outside a workspace (settings, tests), where there
+  // is no character to compare the layout against.
+  const workspace = useWorkspace();
+  const rulesetMode = workspace?.detail?.rulesetMode;
+  const mismatchedEdition = (rulesetMode === '2014' || rulesetMode === '2024') && rulesetMode !== templateSet;
   const { colours, theme, setColours, setTheme, palette, themes, themeNames } = useSheetColoursSetting();
+  const { pages, togglePage, pageNames, pageLabels, pageTips } = useSheetPagesSetting();
   const { fonts, setFonts, faces, faceNames, roles } = useSheetFontsSetting();
   useEffect(() => {
     ensureSheetFontFaces();
@@ -88,6 +96,48 @@ export default function SheetSettingsPanel() {
             ))}
           </div>
           <p className="fcb-muted-copy text-sm">{TEMPLATE_SET_LABELS[templateSet]}</p>
+          {mismatchedEdition && (
+            <div className="fcb-sheet-set-mismatch space-y-2">
+              <p className="fcb-muted-copy text-sm">
+                {`This character is built on the ${rulesetMode} rules, but the sheet prints the ${templateSet} layout.`}
+              </p>
+              <button
+                type="button"
+                className="fcb-button"
+                aria-label={`Match the sheet layout to the ${rulesetMode} ruleset`}
+                onClick={() => setTemplateSet(rulesetMode)}
+              >
+                Match ruleset
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+      <section className="fcb-panel">
+        <header className="fcb-panel-header">
+          <h2 className="fcb-panel-title">Sheet pages</h2>
+        </header>
+        <div className="fcb-panel-body space-y-3">
+          <p className="fcb-muted-copy text-sm">
+            Untick a page to leave it out of the sheet, the split-view preview and every
+            export. The remaining pages keep their numbering.
+          </p>
+          <div className="fcb-sheet-page-toggles space-y-2" role="group" aria-label="Sheet pages">
+            {pageNames.map((name) => (
+              <label key={name} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={pages[name]}
+                  onChange={() => togglePage(name)}
+                  aria-label={pageLabels[name]}
+                />
+                <span>{pageLabels[name]}</span>
+                <span className="fcb-info-tip" title={pageTips[name]} aria-label={pageTips[name]} role="img">
+                  <Icon name="info" className="fcb-info-tip-icon" />
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
       </section>
       <section className="fcb-panel">

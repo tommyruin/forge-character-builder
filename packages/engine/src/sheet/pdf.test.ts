@@ -17,7 +17,7 @@ import {
   writeCharacterSheetPdfWithTemplateBundle,
   type CharacterSheetTemplateBundle,
 } from "./pdf.js";
-import { DEFAULT_SHEET_FONTS, SHEET_TEMPLATE_CONTRACT, type SheetFonts } from "./template-contract.js";
+import { DEFAULT_SHEET_FONTS, SHEET_TEMPLATE_CONTRACT, type SheetFontFaceName, type SheetFonts } from "./template-contract.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 
@@ -445,10 +445,20 @@ describe("character sheet PDF writer", () => {
       pages: [{
         page: 1,
         templateKind: "details" as const,
-        sections: [{
-          title: "features",
-          rows: [{ kind: "lines" as const, lines: [`Short Feature. ${shortBody}`, `Long Feature. ${longBody}`] }],
-        }],
+        sections: [
+          {
+            title: "features",
+            rows: [{ kind: "lines" as const, lines: [`Short Feature. ${shortBody}`, `Long Feature. ${longBody}`] }],
+          },
+          {
+            // Two short features, each one line, so the drop from the first to
+            // the second is exactly one line plus the between-feature gap.
+            title: "racial-traits",
+            rows: [{ kind: "lines" as const, lines: ["Alpha Trait. alphatok", "Bravo Trait. bravotok"] }],
+          },
+          { title: "proficiencies", rows: [{ kind: "lines" as const, lines: ["Proficiencies. proftok"] }] },
+          { title: "languages", rows: [{ kind: "lines" as const, lines: ["Languages. langtok"] }] },
+        ],
       }],
     };
 
@@ -465,6 +475,20 @@ describe("character sheet PDF writer", () => {
     const shortItem = items.find((item) => item.str.includes("Short"));
     expect(shortItem).toBeDefined();
     expect(Math.hypot(shortItem!.transform[2], shortItem!.transform[3])).toBeCloseTo(8, 1);
+
+    const baselineOf = (token: string): number => {
+      const item = items.find((candidate) => candidate.str.includes(token));
+      expect(item, token).toBeDefined();
+      return item!.transform[5] as number;
+    };
+    // One feature is separated from the next by a whole line plus 45% of the
+    // type size, not by the 1.2pt breath that separates paragraphs within one.
+    const featureDrop = baselineOf("alphatok") - baselineOf("bravotok");
+    expect(featureDrop).toBeCloseTo(8 + 8 * 0.45, 2);
+    expect(featureDrop).toBeGreaterThan(8 + 1.2);
+    // The proficiencies and languages box is a list, not a run of features, so
+    // its rows keep the paragraph rhythm (9.2pt line, 1.2pt gap).
+    expect(baselineOf("proftok") - baselineOf("langtok")).toBeCloseTo(9.2 + 1.2, 2);
   }, 120_000);
 
   it("keeps drawn details text inside the template's widget rectangles", async () => {
@@ -550,6 +574,165 @@ describe("character sheet PDF writer", () => {
       expect(line.transform[4]).toBeGreaterThanOrEqual(rect.x - 0.5);
       expect(line.transform[5]).toBeGreaterThanOrEqual(rect.y - 0.5);
       expect(line.transform[5]).toBeLessThanOrEqual(rect.y + rect.height);
+    }
+  }, 120_000);
+
+  // The reported bug: a 2024 weapon whose property list carries a
+  // "Mastery: <Name>" suffix wrapped to two lines in the NOTES column, and the
+  // single-line cell clipped the second line through its middle. The cell that
+  // fixed it was then sized to the panel's whole spare budget — 86pt wide over
+  // the row's full 21pt pitch — so the longest list the 2024 weapons produce
+  // prints at the full 6pt instead of shrinking to 4.75pt to wrap.
+  it("prints a long 2024 weapon note in full inside its notes cell", async () => {
+    const long = "Heavy, Reach, Two-Handed, Mastery: Cleave";
+    const longest = "Ammunition, Heavy, Loading, Two-Handed, Mastery: Push";
+    // The longest property list in the 2024 weapon table, the Lance's.
+    const lance = "Reach, Special, Special Lance, Heavy, Mastery: Topple";
+    const short = "Versatile, Mastery: Sap";
+    const model = {
+      characterId: "Cleaver",
+      mode: "full" as const,
+      pageCount: 1,
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
+      formValues: {
+        details_attack1_weapon: "Glaive",
+        details_attack1_damage: "1d10+4 Slashing",
+        details_attack1_description: long,
+        details_attack2_description: longest,
+        details_attack3_damage: "1d8+2 Piercing",
+        details_attack3_description: short,
+        details_attack4_description: lance,
+      },
+    };
+
+    // The template's own widget rectangles are the authority for each cell.
+    const bundle = localTemplateBundle("2024");
+    const source = await PDFDocument.load(bundle.details);
+    const rectOf = (name: string): { x: number; y: number; width: number; height: number } =>
+      source.getForm().getTextField(name).acroField.getWidgets()[0]!.getRectangle();
+
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
+    const browserPdf = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+    const content = await (await browserPdf.getPage(1)).getTextContent();
+    // pdfjs coalesces each drawn line into one item; a clipped line is still
+    // reported, with a baseline outside the widget, which is what this catches.
+    const items = content.items
+      .filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item)
+      .filter((item) => item.str.trim() !== "");
+
+    // The cell is the one the generator lays out: the NOTES column's full width
+    // over the row's full pitch.
+    for (let row = 1; row <= 4; row += 1) {
+      const rect = rectOf(`details_attack${row}_description`);
+      expect({ width: rect.width, height: rect.height }, `row ${row} cell`).toEqual({ width: 86, height: 21 });
+    }
+    // A note's lines are the drawn items inside its own cell; picking them by
+    // text alone would catch a weapon name that reads as part of a note.
+    const linesOf = (row: number, note: string): typeof items => {
+      const rect = rectOf(`details_attack${row}_description`);
+      return items.filter((item) => note.includes(item.str.trim()) && item.str.trim().length > 1 &&
+        item.transform[4] >= rect.x - 0.5 && item.transform[5] >= rect.y - 0.5 && item.transform[5] <= rect.y + rect.height);
+    };
+    for (const [row, note] of [[1, long], [2, longest], [3, short], [4, lance]] as const) {
+      const rect = rectOf(`details_attack${row}_description`);
+      const lines = linesOf(row, note);
+      // Every word of the note is drawn, and drawn inside the cell.
+      expect(lines.flatMap((item) => item.str.trim().split(" ")), note).toEqual(note.split(" "));
+      for (const line of lines) {
+        expect(line.transform[5], `${note} baseline`).toBeGreaterThanOrEqual(rect.y - 0.5);
+        expect(line.transform[5], `${note} baseline`).toBeLessThanOrEqual(rect.y + rect.height);
+        expect(line.transform[4], `${note} left`).toBeGreaterThanOrEqual(rect.x - 0.5);
+        expect(line.transform[4] + line.width, `${note} right`).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
+        // The cell is wide and tall enough that no 2024 property list has to
+        // shrink: every line of every one of them is drawn at the full 6pt.
+        expect(Math.hypot(line.transform[2], line.transform[3]), `${note} size`).toBeCloseTo(6, 5);
+      }
+    }
+    // The long notes wrapped rather than shrinking to an unreadable single line.
+    expect(linesOf(1, long).length).toBeGreaterThan(1);
+    expect(linesOf(2, longest).length).toBeGreaterThan(1);
+    expect(linesOf(4, lance).length).toBeGreaterThan(1);
+    // Two lines, not three: the wrapped note reads as a pair of full lines.
+    expect(linesOf(4, lance).length).toBe(2);
+    // A one-line note still sits level with the rest of its row.
+    const baselineOf = (value: string): number => items.find((item) => item.str.trim() === value)!.transform[5] as number;
+    expect(Math.abs(baselineOf(short) - baselineOf("1d8+2 Piercing"))).toBeLessThanOrEqual(0.6);
+  }, 120_000);
+
+  // The reported defect behind the notes cell's 0.9pt lift: the note read as
+  // sitting under the rest of its row. The writer places the two kinds of line
+  // by different rules — a single-line value is centred on its box by cap
+  // height, a wrapped cell's first baseline is a fixed `top - 2 - size` inset —
+  // so sharing the row's top left the 6pt note half a point under the 7pt
+  // values' baseline and more than a point under their cap top. The cell's top
+  // is now 604.9 rather than 604, which is the one number that holds both
+  // errors inside half a point for every body face: the value baseline moves
+  // with the face's cap height and the note's does not, so the two cannot be
+  // made to coincide, only balanced.
+  it("sets a 2024 weapon note's first line level with its row in every body face", async () => {
+    const model = {
+      characterId: "Level",
+      mode: "full" as const,
+      pageCount: 1,
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
+      formValues: {
+        details_attack1_weapon: "Glaive",
+        details_attack1_range: "10 ft",
+        details_attack1_attack: "+7",
+        details_attack1_damage: "1d10+4 Slashing",
+        details_attack1_description: "Heavy, Reach, Two-Handed, Mastery: Cleave",
+        details_attack2_weapon: "Dagger",
+        details_attack2_range: "20/60",
+        details_attack2_attack: "+9",
+        details_attack2_damage: "1d4+4 Piercing",
+        details_attack2_description: "Versatile, Mastery: Sap",
+      },
+    };
+    // Every face the sheet offers for body text, since the values' baseline
+    // depends on the face's cap height and the note's does not.
+    for (const body of ["helvetica", "spectral", "alegreyaSans"] as SheetFontFaceName[]) {
+      const bundle = localTemplateBundle("2024", { ...DEFAULT_SHEET_FONTS, body });
+      const source = await PDFDocument.load(bundle.details);
+      const rectOf = (name: string): { x: number; y: number; width: number; height: number } =>
+        source.getForm().getTextField(name).acroField.getWidgets()[0]!.getRectangle();
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
+      const browserPdf = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+      const content = await (await browserPdf.getPage(1)).getTextContent();
+      const items = content.items
+        .filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item)
+        .filter((item) => item.str.trim() !== "");
+      const sizeOf = (item: (typeof items)[number]): number => Math.hypot(item.transform[2], item.transform[3]);
+
+      for (const row of [1, 2]) {
+        const values = model.formValues as Record<string, string>;
+        const box = rectOf(`details_attack${row}_weapon`);
+        const cell = rectOf(`details_attack${row}_description`);
+        const drawn = (value: string): (typeof items)[number] => items.find((item) => item.str.trim() === value)!;
+        // The face's cap-height ratio, read back from how the writer centred
+        // the row's own values on their box rather than from the font file.
+        const value = drawn(values[`details_attack${row}_weapon`]!);
+        const ratio = (box.y + box.height / 2 - (value.transform[5] as number)) * 2 / sizeOf(value);
+        expect(ratio, `${body} row ${row} cap ratio`).toBeGreaterThan(0.45);
+        // The note's first line is its topmost line inside its own cell; the
+        // NOTES caption sits above the cell, on its own baseline at y 605.
+        const first = items
+          .filter((item) => item.transform[4] >= cell.x - 0.5 && item.transform[4] < cell.x + cell.width &&
+            (item.transform[5] as number) >= cell.y && (item.transform[5] as number) < cell.y + cell.height)
+          .sort((a, b) => (b.transform[5] as number) - (a.transform[5] as number))[0]!;
+        expect(sizeOf(first), `${body} row ${row} note size`).toBeCloseTo(6, 5);
+        const noteBaseline = first.transform[5] as number;
+        const noteCapTop = noteBaseline + ratio * sizeOf(first);
+        // Every value on the row shares one baseline, and the note agrees with
+        // it — and with the cap top the reader's eye actually follows — to
+        // inside 0.6pt, which is what reads as level at this size.
+        for (const field of ["weapon", "range", "attack", "damage"] as const) {
+          const item = drawn(values[`details_attack${row}_${field}`]!);
+          const baseline = item.transform[5] as number;
+          expect(Math.abs(noteBaseline - baseline), `${body} row ${row} ${field} baseline`).toBeLessThanOrEqual(0.6);
+          expect(Math.abs(noteCapTop - (baseline + ratio * sizeOf(item))), `${body} row ${row} ${field} cap top`)
+            .toBeLessThanOrEqual(0.6);
+        }
+      }
     }
   }, 120_000);
 

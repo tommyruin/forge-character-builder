@@ -34,6 +34,7 @@ import UndoButton from "./UndoButton";
 import useAutosaveSetting from "../hooks/useAutosaveSetting";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import useUndoAvailable from "../hooks/useUndoAvailable";
+import useFollowRulesetTemplate from "../hooks/useFollowRulesetTemplate";
 import { isMobileViewport } from "../layoutBreakpoints";
 import { SPLIT_VIEW_STORAGE_KEY } from "../storageNames.js";
 
@@ -537,6 +538,9 @@ export default function CharacterWorkspace({
   // Content-update migration: persists the engine's first-load `loadIssues`
   // (IndexedDB) until every affected choice is re-picked or dismissed, and
   // drives the drawer + warning banner below.
+  // Until the reader picks a sheet layout, it follows this character's ruleset.
+  useFollowRulesetTemplate(detail);
+
   const migration = useMigrationIssues({ id, detail, notify });
   const closeMigrationDrawer = migration.closeDrawer;
 

@@ -327,8 +327,23 @@ export interface EngineMethodMap {
   >;
   moveAttack: MethodContract<[id: string, attackId: string, request: { direction: "up" | "down" }], WireList>;
   deleteAttack: MethodContract<[id: string, attackId: string], WireList>;
-  generateSheet: MethodContract<[id: string, request: { lite: boolean }], WireObject>;
+  generateSheet: MethodContract<
+    [id: string, request: { lite: boolean; include?: SheetPageInclusionsDto }],
+    WireObject
+  >;
   ensureHostFile: MethodContract<[path: string, base64: string], { path: string }>;
+}
+
+/**
+ * The optional sheet pages a `generateSheet` caller can leave out. Each flag
+ * defaults to `true`; `background` is the appearance/portrait page, and the
+ * remaining pages renumber 1..n so the numbering stays contiguous.
+ */
+export interface SheetPageInclusionsDto {
+  background?: boolean;
+  notes?: boolean;
+  spellCards?: boolean;
+  itemCards?: boolean;
 }
 
 export const ENGINE_METHOD_NAMES = [

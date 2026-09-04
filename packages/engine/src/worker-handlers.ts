@@ -412,6 +412,7 @@ export function createEngineMethodHandlers(
       // its own thread, so choices and reads never queue behind a render.
       return objectResult(buildCharacterSheetModel(service.getCharacter(id), library, {
         mode: request.lite ? "lite" : "full",
+        ...(request.include ? { include: request.include } : {}),
       }));
     },
     getSpellcasting: (id) => service.getSpellcasting(id),

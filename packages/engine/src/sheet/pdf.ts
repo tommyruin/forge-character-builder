@@ -5,6 +5,7 @@ import { measuredTextWidth, winAnsiText } from "./text.js";
 import { decodeBase64 } from "../platform.js";
 import {
   DEFAULT_SHEET_COLOURS,
+  SHEET_FIXED_COLOURS,
   SHEET_PALETTE,
   SHEET_TEMPLATE_CONTRACT,
   type SheetColours,
@@ -398,7 +399,7 @@ interface SheetLabelColours {
   cream: PdfColor;
 }
 
-const CREAM: PdfColor = [0.985, 0.955, 0.89];
+const CREAM: PdfColor = [...SHEET_FIXED_COLOURS.cream];
 
 function labelColours(colours: SheetColours): SheetLabelColours {
   const pick = (name: keyof typeof SHEET_PALETTE): PdfColor => [...SHEET_PALETTE[name].rgb] as PdfColor;
@@ -1000,10 +1001,14 @@ function featureWords(line: string): StyledWord[][] {
   });
 }
 
+/** The break that follows a flowed line: none, a paragraph break inside one
+ * feature, or the end of a whole feature. */
+type FeatureFlowGap = "paragraph" | "feature" | null;
+
 interface FeatureFlowLine {
   words: readonly StyledWord[];
   indent: number;
-  gapAfter: boolean;
+  gapAfter: FeatureFlowGap;
 }
 
 interface FeatureContinuation {
@@ -1022,12 +1027,24 @@ const DEFAULT_FEATURE_FONT_SIZE = 8;
 // page rather than printed illegibly.
 const MIN_FEATURE_FONT_SIZE = 4.4;
 const FEATURE_PARAGRAPH_GAP = 1.2;
+// One feature is set off from the next by rather more than the breath between
+// its own paragraphs, so the eye finds the boundaries. It is a fraction of the
+// type size so it shrinks along with the adaptive fit rather than eating the
+// space that fit just bought.
+const FEATURE_GAP_RATIO = 0.45;
+
+function featureGapFor(gap: FeatureFlowGap, fontSize: number): number {
+  if (gap === "feature") return fontSize * FEATURE_GAP_RATIO;
+  if (gap === "paragraph") return FEATURE_PARAGRAPH_GAP;
+  return 0;
+}
 
 function featureFlowLines(
   section: SheetSection,
   width: number,
   fontSize: number,
   measure: TextMeasure,
+  featureGap = true,
 ): FeatureFlowLine[] {
   const output: FeatureFlowLine[] = [];
   const rows = (section.renderRows ?? section.rows)
@@ -1036,6 +1053,9 @@ function featureFlowLines(
     const paragraphs = featureWords(row);
     for (const [paragraphIndex, words] of paragraphs.entries()) {
       const indent = paragraphIndex > 0 ? 8 : 0;
+      // One row is one feature (model.ts collectFeatures), so its last
+      // paragraph is where a feature ends.
+      const endsFeature = featureGap && paragraphIndex === paragraphs.length - 1;
       const availableWidth = width - indent;
       const spaceWidth = measure(" ", fontSize);
       let line: StyledWord[] = [];
@@ -1045,15 +1065,15 @@ function featureFlowLines(
         const wordWidth = measure(word.text, fontSize, word.style ?? "regular");
         const candidateWidth = line.length === 0 ? wordWidth : lineWidth + spaceWidth + wordWidth;
         if (line.length > 0 && candidateWidth > availableWidth) {
-          wrapped.push({ words: line, indent, gapAfter: false });
+          wrapped.push({ words: line, indent, gapAfter: null });
           line = [];
           lineWidth = 0;
         }
         line.push(word);
         lineWidth = line.length === 1 ? wordWidth : lineWidth + spaceWidth + wordWidth;
       }
-      if (line.length > 0) wrapped.push({ words: line, indent, gapAfter: false });
-      if (wrapped.length > 0) wrapped[wrapped.length - 1]!.gapAfter = true;
+      if (line.length > 0) wrapped.push({ words: line, indent, gapAfter: null });
+      if (wrapped.length > 0) wrapped[wrapped.length - 1]!.gapAfter = endsFeature ? "feature" : "paragraph";
       output.push(...wrapped);
     }
   }
@@ -1065,12 +1085,12 @@ function featureFlowFits(
   top: number,
   bottom: number,
   lineHeight: number,
+  fontSize: number,
 ): boolean {
   let y = top;
   for (const line of lines) {
     if (y < bottom) return false;
-    y -= lineHeight;
-    if (line.gapAfter) y -= FEATURE_PARAGRAPH_GAP;
+    y -= lineHeight + featureGapFor(line.gapAfter, fontSize);
   }
   return true;
 }
@@ -1121,8 +1141,7 @@ function drawFeatureFlow(
       cursor += font.widthOfTextAtSize(value, fontSize) + spaceWidth;
     }
     flush();
-    y -= lineHeight;
-    if (line.gapAfter) y -= FEATURE_PARAGRAPH_GAP;
+    y -= lineHeight + featureGapFor(line.gapAfter, fontSize);
   }
   if (lineIndex >= lines.length) return undefined;
   return { lines: lines.slice(lineIndex), x, top, width, bottom, fontSize, lineHeight };
@@ -1138,30 +1157,34 @@ function drawRichFeatureSection(
   bottom: number,
   fontSize = DEFAULT_FEATURE_FONT_SIZE,
   lineHeight = fontSize,
+  options: { featureGap?: boolean } = {},
 ): FeatureContinuation | undefined {
   if (section === undefined) return undefined;
+  // A list box — proficiencies and languages — is one run of like items, not a
+  // sequence of features, so it keeps the plain paragraph rhythm.
+  const featureGap = options.featureGap ?? true;
   const lineHeightAt = (size: number): number => lineHeight * size / fontSize;
   const measure = fontMeasure(fonts);
-  const normalLines = featureFlowLines(section, width, fontSize, measure);
+  const normalLines = featureFlowLines(section, width, fontSize, measure, featureGap);
   let chosenFontSize = fontSize;
   let chosenLines = normalLines;
   let chosenLineHeight = lineHeightAt(chosenFontSize);
-  if (!featureFlowFits(normalLines, top, bottom, chosenLineHeight)) {
-    const floorLines = featureFlowLines(section, width, MIN_FEATURE_FONT_SIZE, measure);
+  if (!featureFlowFits(normalLines, top, bottom, chosenLineHeight, chosenFontSize)) {
+    const floorLines = featureFlowLines(section, width, MIN_FEATURE_FONT_SIZE, measure, featureGap);
     const floorLineHeight = lineHeightAt(MIN_FEATURE_FONT_SIZE);
-    if (featureFlowFits(floorLines, top, bottom, floorLineHeight)) {
+    if (featureFlowFits(floorLines, top, bottom, floorLineHeight, MIN_FEATURE_FONT_SIZE)) {
       // Take the largest size that still fits, so the text shrinks only as far
       // as the page demands.
       let low = MIN_FEATURE_FONT_SIZE;
       let high = fontSize;
       for (let pass = 0; pass < 10; pass += 1) {
         const candidate = (low + high) / 2;
-        const candidateLines = featureFlowLines(section, width, candidate, measure);
-        if (featureFlowFits(candidateLines, top, bottom, lineHeightAt(candidate))) low = candidate;
+        const candidateLines = featureFlowLines(section, width, candidate, measure, featureGap);
+        if (featureFlowFits(candidateLines, top, bottom, lineHeightAt(candidate), candidate)) low = candidate;
         else high = candidate;
       }
       chosenFontSize = low;
-      chosenLines = featureFlowLines(section, width, chosenFontSize, measure);
+      chosenLines = featureFlowLines(section, width, chosenFontSize, measure, featureGap);
       chosenLineHeight = lineHeightAt(chosenFontSize);
     } else {
       // Prose that cannot fit even at the smallest legible size is continued
@@ -1240,6 +1263,7 @@ function drawDetailsRichText(
     proficiencyBox.bottom,
     7.4,
     9.2,
+    { featureGap: false },
   );
   if (proficiencyContinuation !== undefined) continuations.push(proficiencyContinuation);
   return continuations;

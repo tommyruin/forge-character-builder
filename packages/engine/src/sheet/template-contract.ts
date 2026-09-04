@@ -58,7 +58,7 @@ export const SHEET_THEMES = {
   royal: { label: "Royal & Gold", accent: "royal", lines: "gold", text: "ink" },
   ember: { label: "Ember & Bronze", accent: "ember", lines: "bronze", text: "sepia" },
   slate: { label: "Slate & Steel", accent: "slate", lines: "silver", text: "black" },
-  monochrome: { label: "Monochrome", accent: "black", lines: "charcoal", text: "black" },
+  monochrome: { label: "Print (black & white)", accent: "black", lines: "charcoal", text: "black" },
 } as const satisfies Record<string, SheetColours & { label: string }>;
 export type SheetThemeName = keyof typeof SHEET_THEMES;
 export const SHEET_THEME_NAMES = Object.keys(SHEET_THEMES) as SheetThemeName[];
@@ -68,6 +68,35 @@ export const DEFAULT_SHEET_COLOURS: SheetColours = {
   lines: SHEET_THEMES[DEFAULT_SHEET_THEME].lines,
   text: SHEET_THEMES[DEFAULT_SHEET_THEME].text,
 };
+
+/**
+ * The colours the artwork uses beside the three recoloured parts: the hairline
+ * rule inside frames, the parchment fill and its warmer cream, the plate
+ * shadow and the grey panel. `scripts/build-sheet-templates.mjs` draws with
+ * these, so they are as much a part of the templates as the geometry above.
+ */
+export const SHEET_FIXED_COLOURS = {
+  rule: [0.76, 0.68, 0.58],
+  fill: [0.992, 0.985, 0.965],
+  cream: [0.985, 0.955, 0.89],
+  shadow: [0.45, 0.42, 0.38],
+  panelGrey: [0.935, 0.921, 0.897],
+} as const satisfies Record<string, readonly [number, number, number]>;
+export type SheetFixedColourName = keyof typeof SHEET_FIXED_COLOURS;
+export const SHEET_FIXED_COLOUR_NAMES = Object.keys(SHEET_FIXED_COLOURS) as SheetFixedColourName[];
+
+/**
+ * What the fixed colours become on the print theme: white paper instead of
+ * parchment and greys instead of the warm tints, so a page costs no colour ink
+ * and every fill stays distinct in greyscale.
+ */
+export const SHEET_PRINT_COLOURS = {
+  rule: [0.55, 0.55, 0.55],
+  fill: [1, 1, 1],
+  cream: [1, 1, 1],
+  shadow: [0.35, 0.35, 0.35],
+  panelGrey: [0.9, 0.9, 0.9],
+} as const satisfies Record<SheetFixedColourName, readonly [number, number, number]>;
 
 export function isSheetColourName(value: unknown): value is SheetColourName {
   return typeof value === "string" && Object.hasOwn(SHEET_PALETTE, value);
@@ -90,6 +119,14 @@ export function sheetThemeOf(colours: SheetColours): SheetThemeName | null {
     return theme.accent === colours.accent && theme.lines === colours.lines && theme.text === colours.text;
   });
   return match ?? null;
+}
+
+/**
+ * Whether `colours` is the print theme, which drops the artwork's parchment
+ * and warm greys as well as recolouring the three named parts.
+ */
+export function isPrintTheme(colours: SheetColours): boolean {
+  return sheetThemeOf(colours) === "monochrome";
 }
 
 /** A stable identity for `colours`, for cache keys. */

@@ -11,7 +11,11 @@ import { PDFArray, PDFDocument, PDFName, PDFRawStream, PDFStream, PDFString, dec
 import {
   DEFAULT_SHEET_COLOURS,
   SHEET_COLOUR_PARTS,
+  SHEET_FIXED_COLOURS,
+  SHEET_FIXED_COLOUR_NAMES,
   SHEET_PALETTE,
+  SHEET_PRINT_COLOURS,
+  isPrintTheme,
   type SheetColourName,
   type SheetColours,
 } from "./template-contract.js";
@@ -29,12 +33,21 @@ function paletteRgb(name: SheetColourName): readonly [number, number, number] {
   return SHEET_PALETTE[name].rgb;
 }
 
-/** Default-operand → chosen-operand for every part that differs from the default. */
+/**
+ * Default-operand → chosen-operand for every part that differs from the
+ * default. The print theme also replaces the artwork's fixed colours — the
+ * parchment fills and warm greys — so nothing but black ink is left.
+ */
 function substitutions(colours: SheetColours): Map<string, string> {
   const map = new Map<string, string>();
   for (const part of SHEET_COLOUR_PARTS) {
     if (colours[part] === DEFAULT_SHEET_COLOURS[part]) continue;
     map.set(operand(paletteRgb(DEFAULT_SHEET_COLOURS[part])), operand(paletteRgb(colours[part])));
+  }
+  if (isPrintTheme(colours)) {
+    for (const name of SHEET_FIXED_COLOUR_NAMES) {
+      map.set(operand(SHEET_FIXED_COLOURS[name]), operand(SHEET_PRINT_COLOURS[name]));
+    }
   }
   return map;
 }

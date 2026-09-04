@@ -12,6 +12,16 @@
     "width": 612
    },
    {
+    "text": "2024 RULES",
+    "x": 486,
+    "y": 776,
+    "size": 4.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "right",
+    "width": 100
+   },
+   {
     "text": "CHARACTER NAME",
     "x": 32,
     "y": 733.5,
@@ -687,7 +697,7 @@
    },
    {
     "text": "RANGE",
-    "x": 372,
+    "x": 364,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -695,7 +705,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 402,
+    "x": 394,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -703,7 +713,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 438,
+    "x": 430,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -711,7 +721,7 @@
    },
    {
     "text": "NOTES",
-    "x": 516,
+    "x": 496,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -1275,6 +1285,16 @@
     "color": "accent",
     "align": "center",
     "width": 612
+   },
+   {
+    "text": "2024 RULES",
+    "x": 486,
+    "y": 776,
+    "size": 4.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "right",
+    "width": 100
    },
    {
     "text": "INVENTORY — ADVENTURING GEAR, ARMS, ARMOR & OTHER EQUIPMENT",

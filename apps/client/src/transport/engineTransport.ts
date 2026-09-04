@@ -3,6 +3,7 @@ import {
   type ClientWorkerPort,
   type EngineClient,
   type EngineWorkerMessage,
+  type SheetPageInclusionsDto,
 } from "@forge-cb/api";
 import { CHARACTER_LOAD_MANIFEST, FAST_START_MANIFEST } from "@forge-cb/api";
 import { localStore as defaultStore } from "./localStore.js";
@@ -1367,7 +1368,13 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     appearanceSuggestions: (id: string, seed?: number) => invoke(getClient(), "getAppearanceSuggestions", id, seed ?? 0),
     sheetBytes: async (id: string, opts: AnyRecord = {}) => {
       await ensureLoaded(id);
-      const model = await invoke(getClient(), "generateSheet", id, { lite: Boolean(opts.lite) });
+      // Page choices ride with the model build: a page left out is never laid
+      // out, so the saving is the engine's, not just the renderer's.
+      const include = typeof opts.include === "object" && opts.include !== null ? (opts.include as SheetPageInclusionsDto) : null;
+      const model = await invoke(getClient(), "generateSheet", id, {
+        lite: Boolean(opts.lite),
+        ...(include ? { include } : {}),
+      });
       return renderSheetBytes(model, {
         templateSet: typeof opts.templateSet === "string" ? (opts.templateSet as SheetRenderOptions["templateSet"]) : undefined,
         colours: typeof opts.colours === "object" && opts.colours !== null ? (opts.colours as SheetRenderOptions["colours"]) : undefined,

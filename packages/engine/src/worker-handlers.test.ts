@@ -15,6 +15,7 @@ import { CHARACTER_LOAD_MANIFEST, FAST_START_MANIFEST } from "./snapshot/identit
 import { buildCorpusLibrary } from "./testing/corpus.js";
 import {
   buildFighter3,
+  buildFullSheetCharacter,
   buildPaladin3,
   buildRogue5,
   buildWizard4,
@@ -483,6 +484,37 @@ describe("engine worker handlers", () => {
       expect(model.mode).toBe("full");
       expect(model.pageCount).toBeGreaterThan(0);
     }
+  });
+
+  it("leaves out the sheet pages the request excludes, renumbering the rest", async () => {
+    const service = new CharacterService(undefined, library);
+    importBuilt(service, "page-picks", buildFullSheetCharacter(library, "page-picks"));
+    const dispatcher = createEngineDispatcher(createEngineMethodHandlers(service, library));
+
+    const pagesOf = async (request: Record<string, unknown>): Promise<{ kinds: string[]; numbers: number[]; count: number }> => {
+      const response = await dispatcher.dispatch({ id: 1, method: "generateSheet", args: ["page-picks", request] });
+      expect(response).toMatchObject({ ok: true });
+      const model = (response as unknown as { result: { pageCount: number; pages: { page: number; templateKind: string }[] } }).result;
+      return {
+        kinds: model.pages.map((page) => page.templateKind),
+        numbers: model.pages.map((page) => page.page),
+        count: model.pageCount,
+      };
+    };
+
+    const all = await pagesOf({ lite: false });
+    expect(all.kinds).toContain("spell-cards");
+    expect(all.kinds).toContain("background");
+
+    const withoutCards = await pagesOf({ lite: false, include: { spellCards: false } });
+    expect(withoutCards.kinds).not.toContain("spell-cards");
+    expect(withoutCards.count).toBeLessThan(all.count);
+    // No gap where the cards were: the survivors number 1..n in order.
+    expect(withoutCards.numbers).toEqual(withoutCards.kinds.map((_, index) => index + 1));
+
+    const withoutBackground = await pagesOf({ lite: false, include: { background: false } });
+    expect(withoutBackground.kinds).not.toContain("background");
+    expect(withoutBackground.numbers).toEqual(withoutBackground.kinds.map((_, index) => index + 1));
   });
 
   it("decodes imports and encodes exports at the wire boundary", async () => {

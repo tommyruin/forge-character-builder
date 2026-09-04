@@ -97,8 +97,8 @@ never be renamed:
   and their `appProperties` tags — see `apps/client/src/cloud/`;
 - browser persistence names — the IndexedDB database `fcb-local` and the
   localStorage keys `theme`, `fcb-autosave`, `fcb-active-character`,
-  `fcb-split-view`, `fcb-sheet-template`, `fcb-sheet-colours`, `fcb-sheet-fonts`
-  — which a host may replace through `shell.storage` (see
+  `fcb-split-view`, `fcb-sheet-template`, `fcb-sheet-colours`, `fcb-sheet-fonts`,
+  `fcb-sheet-pages` — which a host may replace through `shell.storage` (see
   [docs/host-shell.md](docs/host-shell.md)) but must then never change — and
   the `meta` store keys `character-default-restricted-source-ids` and
   `character-default-ruleset-mode` inside that database;

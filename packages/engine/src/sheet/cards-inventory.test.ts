@@ -179,3 +179,70 @@ describe("control items on the sheet", () => {
     expect(itemSurfaceText(model)).not.toContain(CONTROL_ITEM_NAME);
   });
 });
+
+/**
+ * A reader who prints the sheet can drop the pages they do not want. The build
+ * must then skip the work, not blank the page, and the survivors must keep a
+ * contiguous 1..n numbering.
+ */
+describe("optional sheet pages", () => {
+  const kinds = (model: ReturnType<typeof buildCharacterSheetModel>): string[] =>
+    model.pages.map((page) => page.templateKind);
+
+  /** Every model, whatever is left out, numbers its pages 1..n in order. */
+  const expectContiguous = (model: ReturnType<typeof buildCharacterSheetModel>): void => {
+    expect(model.pages.map((page) => page.page)).toEqual(model.pages.map((_, index) => index + 1));
+    expect(model.pageCount).toBe(model.pages.length);
+  };
+
+  function modelFor(
+    id: string,
+    include?: { background?: boolean; notes?: boolean; spellCards?: boolean; itemCards?: boolean },
+  ): ReturnType<typeof buildCharacterSheetModel> {
+    const { service } = buildFullSheetCharacter(library, id);
+    service.updateDetails(id, { notes1: "Remember the sword in the lake." });
+    return buildCharacterSheetModel(service.getCharacter(id), library, {
+      mode: "full",
+      ...(include ? { include } : {}),
+    });
+  }
+
+  it("prints every optional page by default", () => {
+    const model = modelFor("PagesAll");
+    expect(kinds(model)).toContain("background");
+    expect(kinds(model)).toContain("generic"); // the dedicated notes page
+    expect(kinds(model)).toContain("spell-cards");
+    expect(kinds(model)).toContain("item-cards");
+    expectContiguous(model);
+  });
+
+  it("drops each excluded page and renumbers the rest", () => {
+    const all = modelFor("PagesBaseline");
+    for (const [flag, kind] of [
+      ["background", "background"],
+      ["notes", "generic"],
+      ["spellCards", "spell-cards"],
+      ["itemCards", "item-cards"],
+    ] as const) {
+      const model = modelFor(`PagesNo-${flag}`, { [flag]: false });
+      expect(kinds(model)).not.toContain(kind);
+      expect(model.pageCount).toBeLessThan(all.pageCount);
+      expectContiguous(model);
+    }
+  });
+
+  it("keeps the details page first and the remaining pages in order when several are dropped", () => {
+    const all = modelFor("PagesKeepOrder");
+    const trimmed = modelFor("PagesTrimmed", { background: false, notes: false, itemCards: false });
+    expect(trimmed.pages[0]!.templateKind).toBe("details");
+    expect(kinds(trimmed)).toEqual(
+      kinds(all).filter((kind) => kind !== "background" && kind !== "generic" && kind !== "item-cards"),
+    );
+    expectContiguous(trimmed);
+  });
+
+  it("treats an explicit true and an absent flag alike", () => {
+    expect(kinds(modelFor("PagesExplicit", { background: true, notes: true, spellCards: true, itemCards: true })))
+      .toEqual(kinds(modelFor("PagesImplicit")));
+  });
+});

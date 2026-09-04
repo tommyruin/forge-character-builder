@@ -40,7 +40,7 @@ if (!existsSync(CONTRACT_MODULE)) {
   console.error("build the engine first (npm run build): missing " + CONTRACT_MODULE);
   process.exit(1);
 }
-const { SHEET_TEMPLATE_CONTRACT: C, SHEET_TEMPLATE_SETS, SHEET_PALETTE, DEFAULT_SHEET_COLOURS } = await import(pathToFileURL(CONTRACT_MODULE).href);
+const { SHEET_TEMPLATE_CONTRACT: C, SHEET_TEMPLATE_SETS, SHEET_PALETTE, DEFAULT_SHEET_COLOURS, SHEET_FIXED_COLOURS } = await import(pathToFileURL(CONTRACT_MODULE).href);
 const OUTPUT_ROOT = join(ROOT, "apps", "client", "public", C.directory);
 const FONT_DIR = join(OUTPUT_ROOT, C.fontsDirectory);
 
@@ -56,19 +56,20 @@ const MEASURE = await (async () => {
 })();
 
 // Palette: the contract's default text, accent and line colours (dark ink,
-// a deep crimson, an antique gold) plus a parchment tint inside the frames.
-// The writer recolours the three named parts at render time, so they must be
-// the contract's defaults and nothing else may share their values.
+// a deep crimson, an antique gold) plus the contract's fixed colours — a
+// parchment tint inside the frames and the greys. The writer recolours the
+// three named parts at render time, so they must be the contract's defaults
+// and nothing else may share their values.
 const INK = rgb(...SHEET_PALETTE[DEFAULT_SHEET_COLOURS.text].rgb);
 const ACCENT = rgb(...SHEET_PALETTE[DEFAULT_SHEET_COLOURS.accent].rgb);
 const GOLD = rgb(...SHEET_PALETTE[DEFAULT_SHEET_COLOURS.lines].rgb);
-const RULE = rgb(0.76, 0.68, 0.58);
-const FILL = rgb(0.992, 0.985, 0.965);
-const CREAM = rgb(0.985, 0.955, 0.89);
+const RULE = rgb(...SHEET_FIXED_COLOURS.rule);
+const FILL = rgb(...SHEET_FIXED_COLOURS.fill);
+const CREAM = rgb(...SHEET_FIXED_COLOURS.cream);
 const WHITE = rgb(1, 1, 1);
 const BAND = ACCENT;
-const SHADOW = rgb(0.45, 0.42, 0.38);
-const PANEL_GREY = rgb(0.935, 0.921, 0.897);
+const SHADOW = rgb(...SHEET_FIXED_COLOURS.shadow);
+const PANEL_GREY = rgb(...SHEET_FIXED_COLOURS.panelGrey);
 const LABEL_FONT = { display: "titles", caption: "captions", captionLight: "notes" };
 
 const EDITION = {
@@ -419,8 +420,12 @@ const SKILLS = [
 ];
 const ABILITY_NAME = Object.fromEntries(ABILITIES.map(([key, name]) => [key, name[0] + name.slice(1).toLowerCase()]));
 
-/** The page title band: a centred display title between ornamented rules. */
-function pageChrome(s, title, _edition) {
+/**
+ * The page title band: a centred display title between ornamented rules, with
+ * the edition label at the right. The label sits above the rules rather than on
+ * the masthead's line, which the 2024 hit points plate covers.
+ */
+function pageChrome(s, title, edition) {
   const size = 10.5;
   // The rules flank the widest title face the writer may pick; the title itself centres in whatever face is chosen.
   const width = s.textWidth(title, "display", size) * 1.25;
@@ -428,6 +433,7 @@ function pageChrome(s, title, _edition) {
   s.display(title, 0, 768, { size, align: "center", width: C.pageWidth });
   s.ornamentRule(30, cx - width / 2 - 8, 771.5, ACCENT);
   s.ornamentRule(cx + width / 2 + 8, 582, 771.5, ACCENT);
+  s.label(EDITION[edition].rules, 486, 776, { size: 4.4, color: "lines", align: "right", width: 100 });
 }
 
 /**
@@ -743,18 +749,57 @@ async function details2024(edition) {
   const areaX = 290;
   const areaW = 296;
   inner = s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 500, areaW, 132);
-  const columns = [["NAME", 294, 76], ["RANGE", 372, 28], ["ATK / DC", 402, 34], ["DAMAGE & TYPE", 438, 76], ["NOTES", 516, 66]];
+  // The band runs 504..604 between the column captions and the panel's foot,
+  // and the columns share the 288pt between 294 and 582 with 2pt gutters. Both
+  // budgets are spent on the NOTES column, because it is the only cell holding
+  // a phrase rather than a token: a 2024 property list with a "Mastery: <Name>"
+  // suffix runs to 52 characters ("Reach, Special, Special Lance, Heavy,
+  // Mastery: Topple"), while the widest name the SRD weapons offer needs 58pt
+  // and the widest damage string ("1d10+0 bludgeoning") 68pt. NAME keeps 68 and
+  // DAMAGE 64 — every SRD weapon name and every damage string but a versatile
+  // warhammer's still prints at its full 7pt — and NOTES takes the 20pt freed,
+  // which is what carries the longest property list at a full 6pt in every
+  // body face rather than shrinking it to 4.75pt as a 66pt column did.
+  const columns = [["NAME", 294, 68], ["RANGE", 364, 28], ["ATK / DC", 394, 34], ["DAMAGE & TYPE", 430, 64], ["NOTES", 496, 86]];
   columns.forEach(([caption, x]) => s.label(caption, x, 605, { size: 3.8, color: "lines" }));
   for (let row = 1; row <= 4; row += 1) {
-    const y = 594 - (row - 1) * 20;
+    const y = 594 - (row - 1) * 21;
     const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
     s.text(`details_attack${row}_weapon`, nx, y, nw, 10, { size: 7 });
     s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
-    s.text(`details_attack${row}_description`, ox, y, ow, 10, { size: 6 });
+    // The notes cell alone wraps: a 2024 property list with a mastery suffix
+    // ("Heavy, Reach, Two-Handed, Mastery: Cleave") is far too long for one
+    // line of this column, and a single-line cell clips the overflow through
+    // the middle of the second line. It keeps the row's whole 21pt pitch — the
+    // shortest cell that holds three wrapped lines at the writer's 4.5pt floor,
+    // so even a hand-written note never clips — but sits 0.9pt proud of the
+    // row's own top, which is what makes its first line read as level with the
+    // rest of the row rather than sinking below it.
+    //
+    // The offset is the difference between the two ways the writer places a
+    // line. A single-line value is centred on its box by cap height, at
+    // `y + height/2 - capRatio*size/2`; a wrapped cell's first baseline is a
+    // fixed inset from its top, `top - 2 - size`. Sharing the top (604) put the
+    // 6pt note's baseline 0.5pt under the 7pt values' and its cap top 1.2pt
+    // under theirs. Optically centring the 6pt line on the same 594..604 band
+    // wants a baseline of `599 - 3*capRatio`, so a top of `607 - 3*capRatio`:
+    // 604.85 for Helvetica (cap 0.718), 605.02 for Spectral (0.660), 605.08 for
+    // Alegreya Sans (0.641). The rect is one number for every face and has to
+    // stay under the column captions at 605, so it takes 604.9 — the value that
+    // balances the worst baseline error against the worst cap-top error across
+    // the three body faces, holding both inside half a point.
+    //
+    // It carries no rule of its own: one would strike through the wrapped line,
+    // and the four ruled columns still mark the row.
+    s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
   }
-  s.text("details_attack_description", 294, 504, 288, 10, { size: 6, box: "none" });
+  // The free-text note under the rows is prose, so it wraps too, filling what
+  // is left between the last row's notes cell and the foot of the panel. The
+  // rows took 5pt of it to spread over the band the fourth row used to leave
+  // blank; 16pt still holds two lines of the user's own attack notes.
+  s.text("details_attack_description", 294, 504, 288, 16, { multiline: true, size: 6, box: "none" });
   s.block("CLASS FEATURES", "details_features", areaX, 236, areaW, 256);
   s.block(style.traits, "details_additional_notes", areaX, 60, 146, 168);
   s.block("CONDITIONS & EXHAUSTION", "details_conditions", 444, 158, 142, 70, { size: 5.5 });

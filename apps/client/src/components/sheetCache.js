@@ -1,6 +1,6 @@
 // Module-level cache of recently generated character-sheet PDF bytes, keyed by
 // character + renderer/template revision + content revision + workspace mutation tick +
-// variant (lite vs full). mutationTick is bumped on every successful engine mutation
+// variant (lite vs full) + the optional pages selection. mutationTick is bumped on every successful engine mutation
 // (CharacterWorkspace), while contentRevision changes when the loaded content library changes.
 // SHEET_RENDERER_REVISION must be bumped when the PDF renderer or sheet template/layout changes.
 //
@@ -13,10 +13,10 @@
 const cache = new Map(); // key -> Uint8Array
 let order = [];
 const MAX_ENTRIES = 4;
-export const SHEET_RENDERER_REVISION = 'pdf-canvas-v3';
+export const SHEET_RENDERER_REVISION = 'pdf-canvas-v4';
 
-export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica') {
-  return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${lite ? 'lite' : 'full'}`;
+export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica', pages = 'background+notes+spellCards+itemCards') {
+  return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${pages}#${lite ? 'lite' : 'full'}`;
 }
 
 export function getCachedSheet(key) {
