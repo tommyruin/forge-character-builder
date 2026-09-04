@@ -173,7 +173,7 @@ describe("sheet attack rows", () => {
     expect(fields["details_attack1_damage"]).toBe(row.damage);
   });
 
-  it("prints a chosen 2024 weapon mastery in the row's description", async () => {
+  it("prints only the current 2024 weapon mastery before and after clearing and reimport", async () => {
     const lib = await library();
     const service = new CharacterService(undefined, lib);
     const id = service.createCharacter("Sheet Cleaver").id;
@@ -197,5 +197,14 @@ describe("sheet attack rows", () => {
     const fields = sheetAttackFields(service, lib, id);
     expect(fields["details_attack1_description"]).toContain("Mastery: Cleave");
     expect(sheetTokenText(service, lib, id)).toContain("Mastery: Cleave");
+
+    service.clearSelection(id, mastery.identifier, 1);
+    const copy = roundTrip(service, id);
+    for (const characterId of [id, copy]) {
+      const attack = service.getAttacks(characterId).find((a) => a.kind === "weapon")!;
+      expect(attack.description).toBe("Heavy, Two-Handed");
+      expect(sheetAttackFields(service, lib, characterId)["details_attack1_description"]).toBe(attack.description);
+      expect(sheetTokenText(service, lib, characterId)).not.toContain("Mastery: Cleave");
+    }
   });
 });

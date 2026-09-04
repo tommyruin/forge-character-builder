@@ -46,6 +46,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Clearing or changing a weapon mastery removes its label from attacks and
+  character sheets, while keeping custom attack notes.
 - Spells handed out through the DM-grant surface now appear for a character who
   casts nothing otherwise. They gather into an "Additional Spells" block, always
   ready and still removable.

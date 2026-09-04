@@ -828,7 +828,7 @@ const makeMasteryFighter = async (
   service: CharacterService,
   id: string,
   masteryId: string,
-): Promise<void> => {
+): Promise<string> => {
   service.setRulesetMode(id, "2024");
   setScores(service, id);
   await makeClass(service, id, FIGHTER_2024);
@@ -837,9 +837,54 @@ const makeMasteryFighter = async (
   );
   if (rule === undefined) throw new Error("no Weapon Mastery rule on the 2024 Fighter");
   service.setSelection(id, rule.identifier, masteryId);
+  return rule.identifier;
 };
 
 describe("weapon mastery (2024)", () => {
+  it.each(["clear", "replace"])("removes a generated mastery label after %s and a document round-trip", async (action) => {
+    const service = await freshService();
+    const id = service.createCharacter(`Changed mastery ${action}`).id;
+    const ruleId = await makeMasteryFighter(service, id, GREATAXE_CLEAVE);
+    service.addItem(id, { itemId: GREATAXE_2024, amount: 1, baseElementId: null });
+    expect(weaponRow(service.getAttacks(id), "Greataxe").description).toBe("Heavy, Two-Handed, Mastery: Cleave");
+    expect(service.exportCharacterXml(id)).toContain("Mastery: Cleave");
+
+    if (action === "clear") service.clearSelection(id, ruleId, 1);
+    else service.setSelection(id, ruleId, "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_LONGSWORD_SAP", 1);
+
+    const xml = service.exportCharacterXml(id);
+    const copy = `${id}-copy`;
+    service.importCharacterXml(copy, xml);
+    for (const characterId of [id, copy]) {
+      const row = weaponRow(service.getAttacks(characterId), "Greataxe");
+      expect(row.mastery).toEqual({ name: "Cleave", active: false });
+      expect(row.generated!.description).toBe("Heavy, Two-Handed");
+      expect(row.description).toBe("Heavy, Two-Handed");
+      expect(row.overriddenFields).toEqual([]);
+    }
+    expect(xml).toContain("<description><![CDATA[Heavy, Two-Handed]]></description>");
+    expect(xml).not.toContain("Mastery: Cleave");
+  });
+
+  it.each(["Swing wide.", "Heavy, Two-Handed, Mastery: Cleave; ask the DM."])("preserves a custom description after clearing mastery: %s", async (description) => {
+    const service = await freshService();
+    const id = service.createCharacter("Custom mastery note").id;
+    const ruleId = await makeMasteryFighter(service, id, GREATAXE_CLEAVE);
+    service.addItem(id, { itemId: GREATAXE_2024, amount: 1, baseElementId: null });
+    service.updateAttack(id, weaponRow(service.getAttacks(id), "Greataxe").id, { description });
+    service.clearSelection(id, ruleId, 1);
+    const copy = `${id}-copy`;
+    const xml = service.exportCharacterXml(id);
+    service.importCharacterXml(copy, xml);
+    for (const characterId of [id, copy]) {
+      const row = weaponRow(service.getAttacks(characterId), "Greataxe");
+      expect(row.mastery).toEqual({ name: "Cleave", active: false });
+      expect(row.description).toBe(description);
+      expect(row.overriddenFields).toContain("description");
+    }
+    expect(xml).toContain(`<description><![CDATA[${description}]]></description>`);
+  });
+
   it("marks a chosen mastery active and appends it to the generated description", async () => {
     const service = await freshService();
     const id = service.createCharacter("Cleave Fighter").id;

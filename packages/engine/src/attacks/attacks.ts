@@ -553,9 +553,10 @@ function resolveWeaponRow(
   // chosen it, so an unchosen one is reported but never printed on the sheet.
   const mastery = weaponMastery(library, base, masteries);
   const properties = weaponProperties(base);
-  const description = mastery !== null && mastery.active
+  const masteryDescription = mastery !== null
     ? [properties, `Mastery: ${mastery.name}`].filter((part) => part !== "").join(", ")
     : properties;
+  const description = mastery?.active ? masteryDescription : properties;
   // The generated block is the item's own row: the item's name and the values
   // computed with the row's effective ability (the current bonus/damage stays
   // there even after an explicit ability override).
@@ -566,9 +567,10 @@ function resolveWeaponRow(
     damage: weaponDamageString(dice, damageTotal, type),
     description,
   };
-  // A row written before the mastery suffix existed carries the bare property
-  // list; that is still generated text, not a description typed by hand.
-  const generatedDescription = (value: string): boolean => value === description || value === properties;
+  // Both forms are generated text: the bare properties and this weapon's
+  // mastery suffix from an earlier selection. Clearing or replacing mastery
+  // must not turn the old suffix into a manual override. Other prose stays put.
+  const generatedDescription = (value: string): boolean => value === masteryDescription || value === properties;
   const overriddenFields: string[] = [];
   if (row.name !== "" && row.name !== generated.name) overriddenFields.push("name");
   if (row.range !== "" && row.range !== generated.range) overriddenFields.push("range");
