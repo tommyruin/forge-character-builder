@@ -37,6 +37,7 @@ import {
   attrValueRange,
   createRegistrationContext,
   filledWrapperCount,
+  grantEligible,
   nodeByPath,
   orderSumEntries,
   reconcilePendingGrants,
@@ -89,13 +90,30 @@ function rollMainClassHitPoints(classElement: ParsedElement, rng: () => number):
   return rolls;
 }
 
+/**
+ * One splice into an element registered by an earlier level: the wrappers of
+ * its level-gated selects and the targets of its level-gated grants, which
+ * this level has just unlocked.
+ */
+export interface NestedNodeGroup {
+  parentPath: number[];
+  insertIndex: number;
+  nodes: TreeNode[];
+  /**
+   * Sum entries of the elements the nested grants registered, in order. Kept
+   * out of the level record: delevel reads the ids back off the document nodes
+   * it removes, so nothing needs them once the edits are planned.
+   */
+  sumIds?: string[];
+}
+
 export interface LevelApplication {
   /** Tree nodes to append under the class wrapper (state-level). */
   nodes: TreeNode[];
   /** Element ids registered by this application (sum entries, in order). */
   sumIds: string[];
-  /** Level-gated selections declared by features registered at an earlier level. */
-  nestedAddedNodes?: Array<{ parentPath: number[]; insertIndex: number; nodes: TreeNode[] }>;
+  /** Level-gated rules declared by features registered at an earlier level. */
+  nestedAddedNodes?: NestedNodeGroup[];
 }
 
 /**
@@ -243,18 +261,36 @@ export function nestedInsertEdits(
 function rebaseNestedPaths(
   state: CharacterState,
   nested: LevelApplication["nestedAddedNodes"],
-): LevelApplication["nestedAddedNodes"] {
+): LevelRegistrationRecord["nestedAddedNodes"] {
   if (nested === undefined) return undefined;
   let lastLevel = -1;
   state.elements.forEach((node, index) => {
     if (node.type === "Level") lastLevel = index;
   });
   const insertedAt = lastLevel + 1;
-  return nested.map((entry) =>
-    entry.parentPath.length > 0 && entry.parentPath[0]! >= insertedAt
-      ? { ...entry, parentPath: [entry.parentPath[0]! + 1, ...entry.parentPath.slice(1)] }
-      : entry,
+  return nested.map(({ parentPath, insertIndex, nodes }) =>
+    parentPath.length > 0 && parentPath[0]! >= insertedAt
+      ? { parentPath: [parentPath[0]! + 1, ...parentPath.slice(1)], insertIndex, nodes }
+      : { parentPath, insertIndex, nodes },
   );
+}
+
+/** The record form of a nested group: the planner's sum bookkeeping is not persisted. */
+function recordNestedGroups(nested: LevelApplication["nestedAddedNodes"]): LevelRegistrationRecord["nestedAddedNodes"] {
+  return nested?.map(({ parentPath, insertIndex, nodes }) => ({ parentPath, insertIndex, nodes }));
+}
+
+/** Sum inserts for the elements a level's nested grants registered. */
+function nestedSumInserts(
+  library: ElementLibrary,
+  nested: LevelApplication["nestedAddedNodes"],
+): Array<{ anchor: { mode: "after-subtree"; path: number[] }; entries: Array<{ type: string; id: string }> }> {
+  return (nested ?? [])
+    .filter((group) => (group.sumIds?.length ?? 0) > 0)
+    .map((group) => ({
+      anchor: { mode: "after-subtree" as const, path: group.parentPath },
+      entries: (group.sumIds ?? []).map((id) => ({ type: resolveElementType(library, id), id })),
+    }));
 }
 
 /** True when the node already holds the wrapper this select would spawn. */
@@ -271,8 +307,16 @@ function hasWrapperFor(node: RegisteredElement, wrapper: TreeNode & { kind: "wra
 }
 
 /**
- * Spawns the level-gated `<select>` wrappers of elements that were already
- * registered at an earlier level.
+ * Applies the level-gated rules of elements that were already registered at an
+ * earlier level: the `<select>` wrappers they spawn, and the targets of their
+ * `<grant>` rules.
+ *
+ * Registering an element materialises only the rules eligible at that moment
+ * (`registerElement`), so a feature registered at level 3 leaves its `level="5"`
+ * rules behind. The requirement sweep deliberately skips level-gated rules
+ * (`reconcile-rules.ts` header), which makes this the one place that ever fires
+ * them: without it a Draconic Sorcerer never gains Fear, and an Oath of
+ * Devotion paladin never gains its 5th/9th/13th/17th-level oath spells.
  *
  * Two passes, because "level" means different things either side of a class
  * wrapper (the reference engine ran class features through a per-class
@@ -286,7 +330,7 @@ function hasWrapperFor(node: RegisteredElement, wrapper: TreeNode & { kind: "wra
  *   without this pass their later wrappers are unreachable (an adjustment
  *   item's 4th-level bonus feat, a race's level-3 choice).
  */
-function withNestedLevelSelections(
+function withNestedLevelRules(
   state: CharacterState,
   library: ElementLibrary,
   application: LevelApplication,
@@ -301,7 +345,7 @@ function withNestedLevelSelections(
 ): LevelApplication {
   const newlyRegistered = new Set(application.sumIds);
   const extraIds = [...application.sumIds, ...(isMulticlass ? [classId] : [])];
-  const nestedAddedNodes: Array<{ parentPath: number[]; insertIndex: number; nodes: TreeNode[] }> = [];
+  const nestedAddedNodes: NestedNodeGroup[] = [];
 
   const collect = (
     nodes: RegisteredElement[],
@@ -313,7 +357,18 @@ function withNestedLevelSelections(
     nodes.forEach((node, index) => {
       if (skipClassContainers && (node.type === "Class" || node.type === "Multiclass")) return;
       const here = [...path, index];
-      const element = node.id === "" || newlyRegistered.has(node.id) ? undefined : library.byId.get(node.id);
+      // The element a node stands for: a registered element, or — for a filled
+      // selection wrapper — the element the player picked into it. A subclass,
+      // a feat and a chosen race are all wrappers, and their later features are
+      // declared by exactly these rules ("Level 7: Remarkable Athlete" is a
+      // `level="7"` grant on the Champion element the Archetype wrapper holds).
+      // Which level gates them follows the wrapper's container, as everywhere
+      // else: inside a class subtree the class level, outside it the character
+      // level. The class container itself is never an owner — pass one starts
+      // below it and pass two skips it — so `applyClassLevel` keeps sole charge
+      // of the class's own rules.
+      const ownerId = node.id !== "" ? node.id : (node.registered ?? "");
+      const element = ownerId === "" || newlyRegistered.has(ownerId) ? undefined : library.byId.get(ownerId);
       if (element !== undefined) {
         const wrappers: TreeNode[] = [];
         for (const select of element.rules) {
@@ -335,25 +390,56 @@ function withNestedLevelSelections(
               checksum: selectionRuleChecksum(element.identity.id, select, number),
             };
             // Registering an element already spawns every select eligible at
-            // that moment, so an item equipped at or above the gate level
-            // brought its wrapper with it — don't add a second one.
-            if (mode === "replay" || !hasWrapperFor(node, wrapper)) wrappers.push(wrapper);
+            // that moment, so an item equipped — or a subclass chosen — at or
+            // above the gate level brought its wrapper with it; don't add a
+            // second one. Replay wants the mirror image: the wrapper standing
+            // in the imported tree is the evidence that this level spawned it,
+            // and recording one that is not there would only cost the level its
+            // removability.
+            if (mode === "replay" ? hasWrapperFor(node, wrapper) : !hasWrapperFor(node, wrapper)) {
+              wrappers.push(wrapper);
+            }
           }
         }
-        if (wrappers.length > 0) {
+        const granted: TreeNode[] = [];
+        const sumIds: string[] = [];
+        for (const grant of element.rules) {
+          if (grant.kind !== "grant" || grant.level !== matchLevel || !grantEligible(grant, state, ctx)) continue;
+          const target = resolveGrant(grant, library);
+          if (target === undefined || ctx.ids.includes(target.identity.id)) continue;
+          const alreadyThere = node.children.some((child) => child.id === target.identity.id);
+          // Level-up plans what the tree is missing; replay reads back what a
+          // level put there. An imported tree already holds the target (and its
+          // sum entry, so `ctx.registered` knows it), which is exactly the
+          // evidence that this level is the one that registered it.
+          if (mode === "replay" ? !alreadyThere : alreadyThere || ctx.registered.has(target.identity.id)) continue;
+          const before = ctx.ids.length;
+          const registered = registerElement(target, library, state, ctx, new Set());
+          if (registered === null) continue;
+          granted.push({ kind: "element", element: target, children: registered });
+          sumIds.push(...ctx.ids.slice(before));
+        }
+        if (wrappers.length > 0 || granted.length > 0) {
           const firstAtOrAboveLevel = node.children.findIndex(
             (child) => child.requiredLevel !== undefined && child.requiredLevel >= matchLevel,
           );
           const firstRegisteredChild = node.children.findIndex((child) => child.requiredLevel === undefined);
           nestedAddedNodes.push({
             parentPath: here,
+            // Wrappers belong among the element's other wrappers, ahead of its
+            // registered children; a grant-only splice appends, which keeps
+            // every existing sibling's index — and so its selection-rule path —
+            // where it was (the same trade `reconcileRegistrationRules` makes).
             insertIndex:
-              firstAtOrAboveLevel >= 0
-                ? firstAtOrAboveLevel
-                : firstRegisteredChild < 0
-                  ? node.children.length
-                  : firstRegisteredChild,
-            nodes: wrappers,
+              wrappers.length === 0
+                ? node.children.length
+                : firstAtOrAboveLevel >= 0
+                  ? firstAtOrAboveLevel
+                  : firstRegisteredChild < 0
+                    ? node.children.length
+                    : firstRegisteredChild,
+            nodes: [...wrappers, ...granted],
+            ...(sumIds.length === 0 ? {} : { sumIds }),
           });
         }
       }
@@ -609,7 +695,9 @@ export function reconstructLevelRegistrations(
         addedNodes: application.nodes,
         // No rebase here: replay walks the imported tree, which already holds
         // every level wrapper, so these paths are final already.
-        ...(application.nestedAddedNodes === undefined ? {} : { nestedAddedNodes: application.nestedAddedNodes }),
+        ...(application.nestedAddedNodes === undefined
+          ? {}
+          : { nestedAddedNodes: recordNestedGroups(application.nestedAddedNodes) }),
       };
     });
   const reconstructedSuffix = (failedIndex: number): LevelRegistrationRecord[] =>
@@ -632,7 +720,7 @@ export function reconstructLevelRegistrations(
       ? classElementForMulticlass(library, entry.classId)
       : library.byId.get(entry.classId);
     if (!classElement || classElement.identity.type !== "Class") return reconstructedSuffix(index);
-    const application = withNestedLevelSelections(
+    const application = withNestedLevelRules(
       state,
       library,
       applyClassLevel(state, library, classElement, entry.classLevel, {
@@ -883,6 +971,7 @@ function appendLevelEdits(
           anchor: { mode: "container-end", containerPath },
           entries: application.sumIds.map((id) => ({ type: resolveElementType(library, id), id })),
         },
+        ...nestedSumInserts(library, application.nestedAddedNodes),
       ],
     );
     const sumNode = sumView.node;
@@ -955,7 +1044,7 @@ export function planLevelUpEdits(
   if (!classElement) throw engineError("not-found", `class '${classId}' not found`);
   const nextLevel = state.level + 1;
   const classLevel = state.levelHistory.filter((entry) => entry.classId === classId && !entry.isMulticlass).length + 1;
-  const application = withNestedLevelSelections(
+  const application = withNestedLevelRules(
     state,
     library,
     applyClassLevel(state, library, classElement, classLevel),
@@ -1029,7 +1118,7 @@ export function planLevelUpMulticlassEdits(
   if (state.level >= MAX_LEVEL) throw engineError("conflict", `cannot level up beyond level ${MAX_LEVEL}`);
   const classLevel = history[history.length - 1]!.classLevel + 1;
   const nextLevel = state.level + 1;
-  const application = withNestedLevelSelections(
+  const application = withNestedLevelRules(
     state,
     library,
     applyClassLevel(state, library, classElement, classLevel, { multiclass: true }),
@@ -1131,8 +1220,8 @@ export function planNewMulticlassEdits(
     `\r\n${innerPad}<element type="Grants" name="Multiclassing (Level ${nextLevel})" id="ID_INTERNAL_MULTICLASS_LEVEL_${nextLevel}" />` +
     `\r\n${pad}</element>`;
   // The pending multiclass level raises the character level on its own, so
-  // character-level selects on items/races unlock here too.
-  const application = withNestedLevelSelections(
+  // character-level rules on items/races unlock here too.
+  const application = withNestedLevelRules(
     state,
     library,
     { nodes: [], sumIds: [] },
@@ -1159,6 +1248,7 @@ export function planNewMulticlassEdits(
             { type: "Grants", id: `ID_INTERNAL_MULTICLASS_LEVEL_${nextLevel}` },
           ],
         },
+        ...nestedSumInserts(library, application.nestedAddedNodes),
       ],
     );
     const inner = `\r\n${entries
