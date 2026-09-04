@@ -251,8 +251,9 @@ export function SourceActionsFooter({
         </button>
       </div>
       <p className="fcb-muted-copy fcb-source-actions-help text-xs">
-        Required core sources cannot be disabled. A saved default changes future
-        characters; it does not alter this character or imported characters.
+        Required core sources cannot be disabled. Saving a default applies these
+        sources to every new character you create; it does not alter this
+        character or imported characters.
       </p>
     </footer>
   );

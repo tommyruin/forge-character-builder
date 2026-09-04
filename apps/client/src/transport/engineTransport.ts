@@ -19,6 +19,7 @@ import {
   normalizeRestrictedSourceIds,
   readDefaultRestrictedSourceIds,
 } from "../sourcePreferences.js";
+import { readDefaultRulesetMode } from "../rulesetPreferences.js";
 import { ACCEPTED_CHARACTER_PACKAGE_TOKENS, CHARACTER_PACKAGE_TOKEN } from "../storageNames.js";
 
 type AnyRecord = Record<string, unknown>;
@@ -1287,6 +1288,13 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       const restrictedSourceIds = await readDefaultRestrictedSourceIds(store);
       if (restrictedSourceIds.length || typeof engine.setCharacterSources === "function") {
         await invoke(engine, "setCharacterSources", detail.id, { restrictedSourceIds });
+      }
+      // A saved rules-version default. "all" is what the engine already starts
+      // from, so only an explicit edition is worth a write - and the character
+      // is still empty, so nothing has to be repaired.
+      const rulesetMode = await readDefaultRulesetMode(store);
+      if (rulesetMode === "2014" || rulesetMode === "2024") {
+        await invoke(engine, "setRulesetMode", detail.id, { mode: rulesetMode });
       }
       portraitBase64 = null;
       return persist(detail.id, withPortrait(await invoke(engine, "getCharacter", detail.id), null));

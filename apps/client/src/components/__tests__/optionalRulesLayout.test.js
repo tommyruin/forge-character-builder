@@ -93,6 +93,40 @@ describe("shared optional rules hub", () => {
     expect(markup.match(/disabled=""/g)).toHaveLength(3);
   });
 
+  it("saves the rules version as a site-wide default for new characters", () => {
+    const ruleset = {
+      mode: "2024",
+      availableModes: ["all", "2014", "2024"],
+      rules2014Count: 120,
+      rules2024Count: 90,
+      sharedCount: 30,
+    };
+    const props = {
+      ruleset,
+      busy: false,
+      savingDefault: false,
+      onSaveDefault: () => {},
+      onChange: () => {},
+    };
+
+    const changeable = renderToStaticMarkup(
+      createElement(RulesetSelector, { ...props, defaultMode: "2014" }),
+    );
+    expect(changeable).toContain("Save as default for new characters");
+    expect(changeable).toContain("New characters currently start in 2014 mode.");
+    expect(changeable).not.toContain('disabled=""');
+
+    const alreadyDefault = renderToStaticMarkup(
+      createElement(RulesetSelector, { ...props, defaultMode: "2024" }),
+    );
+    expect(alreadyDefault).toContain("Every new character starts in 2024 mode.");
+    expect(alreadyDefault).toContain('disabled=""');
+
+    // The panel owns the stored default, so the transport applies it on create.
+    expect(transport).toContain("readDefaultRulesetMode");
+    expect(transport).toContain('invoke(engine, "setRulesetMode", detail.id, { mode: rulesetMode })');
+  });
+
   it("keeps grant actions but removes duplicate rule toggles", () => {
     expect(build).toContain("Feat");
     expect(build).not.toContain("Feats (optional rule)");

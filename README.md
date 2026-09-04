@@ -99,7 +99,9 @@ never be renamed:
   localStorage keys `theme`, `fcb-autosave`, `fcb-active-character`,
   `fcb-split-view`, `fcb-sheet-template`, `fcb-sheet-colours`, `fcb-sheet-fonts`
   — which a host may replace through `shell.storage` (see
-  [docs/host-shell.md](docs/host-shell.md)) but must then never change;
+  [docs/host-shell.md](docs/host-shell.md)) but must then never change — and
+  the `meta` store keys `character-default-restricted-source-ids` and
+  `character-default-ruleset-mode` inside that database;
 - the snapshot manifest identities in
   `packages/engine/src/snapshot/identities.ts`, whose parser/schema pins move
   in lockstep with `apps/client/src/transport/fastStartSnapshot.js` and

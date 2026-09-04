@@ -7,6 +7,10 @@ import {
   InformationButton,
   InspectableItemButton,
 } from "../../InspectableItemControls";
+import {
+  readDefaultRulesetMode,
+  writeDefaultRulesetMode,
+} from "../../../rulesetPreferences.js";
 
 export function RuleList({
   title,
@@ -75,7 +79,15 @@ const RULESET_LABELS = {
   2024: "2024",
 };
 
-export function RulesetSelector({ ruleset, busy, switching, onChange }) {
+export function RulesetSelector({
+  ruleset,
+  busy,
+  switching,
+  onChange,
+  defaultMode,
+  savingDefault,
+  onSaveDefault,
+}) {
   if (!ruleset) return null;
   const selectedCount =
     ruleset.mode === "2014"
@@ -142,6 +154,32 @@ export function RulesetSelector({ ruleset, busy, switching, onChange }) {
           All content allows for all versions to be used simultaneously.
           Unmarked homebrew stays available in every mode.
         </p>
+        {typeof onSaveDefault === "function" && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="fcb-button fcb-ruleset-save-default"
+              aria-label={
+                savingDefault
+                  ? "Saving default rules version"
+                  : "Save as default for new characters"
+              }
+              disabled={busy || switching || savingDefault || defaultMode === ruleset.mode}
+              onClick={onSaveDefault}
+            >
+              {savingDefault
+                ? "Saving default…"
+                : "Save as default for new characters"}
+            </button>
+            <p className="fcb-muted-copy text-xs">
+              {defaultMode === ruleset.mode
+                ? `Every new character starts in ${RULESET_LABELS[defaultMode]} mode.`
+                : defaultMode
+                  ? `New characters currently start in ${RULESET_LABELS[defaultMode]} mode. Saving changes that for every new character; this one and imported characters are unaffected.`
+                  : "New characters currently start with all content. Saving changes that for every new character; this one and imported characters are unaffected."}
+            </p>
+          </div>
+        )}
         {selectedCount === 0 && (
           <p className="fcb-alert" role="status">
             This character still uses {RULESET_LABELS[ruleset.mode]} mode, but
@@ -194,13 +232,16 @@ function RulesetChangeSummary({ result }) {
 }
 
 export default function OptionalRulesPanel() {
-  const { id, busy, run, mutationTick, registerDetailsScroll } = useWorkspace();
+  const { id, busy, run, notify, mutationTick, registerDetailsScroll } =
+    useWorkspace();
   const [rules, setRules] = useState(null);
   const [ruleset, setRuleset] = useState(null);
   const [rulesetResult, setRulesetResult] = useState(null);
   const [error, setError] = useState(null);
   const [pendingKey, setPendingKey] = useState(null);
   const [switchingRuleset, setSwitchingRuleset] = useState(false);
+  const [defaultRulesetMode, setDefaultRulesetMode] = useState(null);
+  const [savingDefaultRuleset, setSavingDefaultRuleset] = useState(false);
   const [inspected, setInspected] = useState(null);
   const { inspect: inspectItem, descriptionPanelProps } =
     useMobileDescriptionNavigation({
@@ -224,6 +265,22 @@ export default function OptionalRulesPanel() {
   useEffect(() => {
     void refresh();
   }, [refresh, mutationTick]);
+
+  // The site-wide default is stored outside the character, so it is read once
+  // rather than on every mutation tick.
+  useEffect(() => {
+    let live = true;
+    readDefaultRulesetMode()
+      .then((mode) => {
+        if (live) setDefaultRulesetMode(mode);
+      })
+      .catch(() => {
+        // A browser that cannot read the default simply has none to show.
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const toggle = async (rule) => {
     setPendingKey(rule.key);
@@ -279,6 +336,23 @@ export default function OptionalRulesPanel() {
     }
   };
 
+  const saveDefaultRuleset = async () => {
+    if (!ruleset?.mode || ruleset.mode === defaultRulesetMode) return;
+    setSavingDefaultRuleset(true);
+    setError(null);
+    try {
+      const next = await writeDefaultRulesetMode(ruleset.mode);
+      setDefaultRulesetMode(next);
+      notify?.(
+        `New characters will start in ${RULESET_LABELS[next]} mode.`,
+      );
+    } catch (caught) {
+      setError(caught.message);
+    } finally {
+      setSavingDefaultRuleset(false);
+    }
+  };
+
   const options = rules?.filter((rule) => rule.kind === "option") ?? [];
   const classFeatures =
     rules?.filter((rule) => rule.kind === "optional-class-feature") ?? [];
@@ -292,6 +366,9 @@ export default function OptionalRulesPanel() {
           busy={busy}
           switching={switchingRuleset}
           onChange={changeRuleset}
+          defaultMode={defaultRulesetMode}
+          savingDefault={savingDefaultRuleset}
+          onSaveDefault={saveDefaultRuleset}
         />
         <RulesetChangeSummary result={rulesetResult} />
         {!rules && !error && (

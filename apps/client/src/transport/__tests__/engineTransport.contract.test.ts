@@ -492,6 +492,41 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["contentStatus"]);
   });
 
+  it("starts a new character in the saved default rules version", async () => {
+    const { client, calls } = fakeClient();
+    const store = fakeStore();
+    (store.getMeta as ReturnType<typeof vi.fn>).mockImplementation(
+      async (key: string) =>
+        key === "character-default-ruleset-mode" ? { version: 1, mode: "2024" } : [],
+    );
+    const api = createEngineApi({ client, store });
+
+    await api.characters.create("Ada");
+
+    expect(calls).toContainEqual(["setRulesetMode", "Ada", { mode: "2024" }]);
+    // Sources first: the mode switch repairs choices against the sources the
+    // character actually has.
+    expect(calls.findIndex(([method]) => method === "setRulesetMode")).toBeGreaterThan(
+      calls.findIndex(([method]) => method === "setCharacterSources"),
+    );
+  });
+
+  it("leaves a new character on the engine default when none is saved or it is all content", async () => {
+    const withoutDefault = fakeClient();
+    await createEngineApi({ client: withoutDefault.client, store: fakeStore() })
+      .characters.create("Ada");
+    expect(withoutDefault.calls.some(([method]) => method === "setRulesetMode")).toBe(false);
+
+    const allContent = fakeClient();
+    const store = fakeStore();
+    (store.getMeta as ReturnType<typeof vi.fn>).mockImplementation(
+      async (key: string) =>
+        key === "character-default-ruleset-mode" ? { version: 1, mode: "all" } : [],
+    );
+    await createEngineApi({ client: allContent.client, store }).characters.create("Ada");
+    expect(allContent.calls.some(([method]) => method === "setRulesetMode")).toBe(false);
+  });
+
   it("persists a portrait change before resolving so the grid refresh sees it", async () => {
     const { client } = fakeClient();
     const store = fakeStore();
