@@ -37,7 +37,7 @@ ours to define; 1:1 conformance applies to `.dnd5e` files and XML content semant
 
 Defined once as the typed `EngineMethodMap` in `packages/api/src/methods.ts`.
 Request tuples, result types, dispatcher handlers, and client method types are
-derived from that map. The runtime list contains 75 unique methods: 74 are
+derived from that map. The runtime list contains 78 unique methods: 77 are
 implemented and dispatched, and `ensureHostFile` is intentionally test-only.
 There are currently no public roadmap-unsupported methods. Groups:
 
@@ -54,8 +54,8 @@ There are currently no public roadmap-unsupported methods. Groups:
   `getAppearanceSuggestions`, `exportCharacterXml`, `importCharacterXml`,
   `importCharacterXmlWithSnapshot`, `getCharacterLoadDiagnostics`,
   `prepareCharacterLoadSnapshot`, `getCharacterLoadSnapshotBuffer`
-- **Progression**: `levelUp`, `levelDown`, `delevel`, `undoDelevel`,
-  `setHitPointRoll`, `getProgression`
+- **Progression**: `levelUp`, `levelUpTo`, `levelDown`, `delevel`,
+  `undoDelevel`, `setHitPointRoll`, `getProgression`
 - **Magic**: `getSpellcasting`, `setPrepared`, `getSpellBrowse`,
   `addGrantedSpell`, `removeGrantedSpell`, `addGrantedFeat`, `removeGrantedFeat`,
   `addGrantedAbilityScore`, `removeGrantedAbilityScore`, `getDmGrants`,
@@ -64,7 +64,13 @@ There are currently no public roadmap-unsupported methods. Groups:
   `extractItem`, `equipItem`, `attuneItem`, `setCoins`
 - **Attacks**: `getAttacks`, `getAttackOptions`, `createAttack`, `updateAttack`,
   `setAttackVisibility`, `moveAttack`, `deleteAttack`
-- **Sheet**: `generateSheet` (lite flag), `getSheetBuffer`
+- **Sheet**: `generateSheet` (lite flag, optional `include`), `getSheetBuffer`.
+  `generateSheet(id, {lite, include?})` — `include` is `{background?, notes?,
+  spellCards?, itemCards?}`, each defaulting to `true`. A page set to `false`
+  is not built, and the surviving pages carry contiguous `page` numbers
+  `1..n`. `background` is the appearance/portrait page; `notes`, `spellCards`
+  and `itemCards` exist only in the full sheet, so excluding one under `lite`
+  is a no-op.
 - **Testing**: `ensureHostFile`
 
 If a deployment cannot provide a method, it must return
@@ -208,6 +214,15 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
   directly, exactly like `getProgression`; it never returns character detail.
   The workspace may refresh detail separately.
 - `levelUp(id, {mode: "main"})` advances the main class.
+- `levelUpTo(id, {level})` advances the main class to `level` in one call (one
+  undo step), surfacing every intervening choice on the Build tab. Errors:
+  `invalid-argument` when `level` is not a whole number above the current level
+  and at most 20; `conflict` when the character has no main class. A failure
+  part-way rolls the character back to its pre-call state.
+- A level-gated `<grant>` on a feature registered at an earlier level — a
+  class feature's, gated on the class level; a race's, feat's or item's, gated
+  on the character level — registers when that level arrives and is removed
+  again by the delevel that takes the level away.
 - `levelUp(id, {mode: "new-multiclass"})` creates an unresolved multiclass level
   and its `Multiclass` selection. The progression history exposes that entry with
   `classId`/`classLevel` as `null`, `className: "Unresolved multiclass"`, and
@@ -230,7 +245,8 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
 - `setRulesetMode(mode)` → `{mode, repaired, removed, unresolved}` with `RulesetChangeItemDto {ruleName, ruleType, previousElementId, previousElementName, previousSource, newElementId, newElementName, newSource}`
 - `LoadIssueDto` (in `getCharacter` detail): `{kind, ruleType, ruleName, requiredLevel, previousElementId, previousElementName, message}` (kinds: `elementMissing`, `equipmentMissing`, `selectionInvalidated`)
 - `getInventory` → `InventoryDto {items: InventoryItemDto[], coins: Coinage, equipmentWeight: number, attunedItemCount: number, maxAttunedItemCount: number}`
-- `InventoryItemDto`: `{identifier, itemId, name, type, amount, isEquippable, isEquipped, equippedLocation, isAttunable, isAttuned, displayPrice, source, equipLocations, weight, category, isPhysicalEquipment, description, rarity, attunement: {required, addition}, isExtractable, extractableContents: {itemId, name, amount}[]}`
+- `InventoryItemDto`: `{identifier, itemId, name, type, amount, isEquippable, isEquipped, equippedLocation, isAttunable, isAttuned, displayPrice, source, equipLocations, weight, category, isPhysicalEquipment, description, rarity, attunement: {required, addition}, isExtractable, extractableContents: {itemId, name, amount}[], hasAttackRow: boolean}`
+  (`hasAttackRow` is true when an attack row is stored for this inventory record)
 - `getItemBaseOptions(itemId)` → `{slot: "weapon"|"armor"|null, options: {id, name}[]}`
 - `addItem({itemId, amount, baseElementId})` / `removeItem(identifier, amount?)` / `equipItem(identifier, {location})` (keys `primary|secondary|armor|primary-twohanded|none`) / `attuneItem(identifier, {attuned})` / `setCoins(Coinage)` / `extractItem(identifier)` — all return `InventoryDto`
 
@@ -238,8 +254,9 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
 
 - `getAttacks` → `AttackDto[]` (rows in stored order; sheet positions among displayed rows):
   `{id, name, range, bonus, damage, description, isDisplayed, isAutomatic, isCurrentlyEquipped, sheetPosition: number|null, kind: "weapon"|"manual"|"calculated"|"spell"|"unarmed", abilityMode: "default"|"explicit"|null, ability: string|null, defaultAbility: string|null, generated: {name, range, bonus, damage, description}|null, overriddenFields: string[], calculation: {source, ability, useProficiency, attackMiscBonus, damageDice, addAbilityToDamage, damageMiscBonus, damageType, casterIdentifier: string|null}|null, source: {casterIdentifier, spellId, warning, beamCount}|null, unarmed: {dice: string}|null, computation: {attackBonusContributions: {label, value}[], appliedModifiers: {id, name, field, effect}[], sourceNotes: string[], attackCount: number, isPerHit: boolean}|null}`
-- `getAttackOptions` → `{abilities: {name, abbreviation}[] (STR/DEX/CON/INT/WIS/CHA), casters: [], spells: []}`
-- `createAttack({mode: "manual", name, range, bonus, damage, description} | {mode: "calculated", name, range, description?, calculationSource, abilityName, useProficiency, attackMiscBonus, damageDice, addAbilityToDamage, damageMiscBonus, damageType} | {mode: "spell", casterIdentifier, spellId, name?, range?, bonus?, damage?, description?} | {mode: "unarmed"})` → `AttackDto[]`. Spell rows resolve generated fields and computation from the current known-spell option; non-null display fields are explicit overrides.
+- `AttackDto.mastery: {name, active} | null` — the 2024 weapon-mastery property the weapon carries (Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex, resolved from the weapon's `Weapon Property` support and the content's Weapon Mastery features); `active` only when the character has chosen that weapon's mastery. Non-weapon rows and 2014 weapons are `null`. When active, the generated weapon description ends with `, Mastery: <Name>`; a stored description holding the bare property list still counts as generated, not an override.
+- `getAttackOptions` → `{abilities: {name, abbreviation}[] (STR/DEX/CON/INT/WIS/CHA), casters: [], spells: [], weapons: {identifier, itemId, name, isEquipped}[]}` — `weapons` lists owned weapons that have no attack row.
+- `createAttack({mode: "manual", name, range, bonus, damage, description} | {mode: "calculated", name, range, description?, calculationSource, abilityName, useProficiency, attackMiscBonus, damageDice, addAbilityToDamage, damageMiscBonus, damageType} | {mode: "spell", casterIdentifier, spellId, name?, range?, bonus?, damage?, description?} | {mode: "unarmed"} | {mode: "weapon", identifier})` → `AttackDto[]`. Spell rows resolve generated fields and computation from the current known-spell option; non-null display fields are explicit overrides. Weapon mode appends the automatic row for an owned weapon that has none (`not-found` for a missing inventory record, `invalid-argument` for a non-weapon, `conflict` when a row already exists); it is the same row an equip would have created, so it may later be deleted while unequipped and is never duplicated by an equip.
 - `updateAttack(attackId, partial)` — display fields (name/range/bonus/damage/description), weapon and unarmed rows accept `abilityMode` + `abilityName` (explicit ability override), unarmed rows additionally accept `damageDice` (a manual damage-die override; `""` restores the derived die), calculated rows accept the calculation fields → `AttackDto[]`. For generated weapon display fields, explicit `null` or `undefined` clears the stored override and restores the generated value; the strings `"null"` and `"undefined"` are never serialized.
 - Unarmed rows carry no inventory item. Their damage die, default ability, and bonuses resolve from the character's content statistics on every read: `martial arts:dice` (both rulesets), `unarmed fighting:size`, and `unarmed strike:dice` replace the die (largest wins, base `1`); `unarmed strike:attack|damage` and `unarmed:attack|damage` sum into the totals; the presence of `martial arts:attack|damage` or `martial arts:ability modifier` allows the higher of STR/DEX. Proficiency always applies, and the `melee:*` category keys never do. Only the die override is persisted, as `unarmed-dice` on the attack node.
 - `content/system/system-unarmed-riders.xml` appends those keys to published items and feats that the upstream corpus ships as prose only (both Eldritch Claw Tattoo printings, Wraps of Unarmed Prowess, Tavern Brawler, the 2024 Unarmed Fighting feat). Appends are gathered across every ingested file and applied once all elements are known, so they patch bundled and user-imported content alike; an append whose target is absent records an `append-target` diagnostic and is otherwise inert. All `unarmed strike:dice` rules share one bonus bucket so the largest die wins instead of the values summing.
@@ -250,18 +267,50 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
 
 ### Magic reads and mutations
 
-- `getSpellcasting` → `SpellcasterDto[]` (order: caster block order in the
-  document):
-  `{identifier, name, ability, attackModifier, saveDc, requiresPreparation,
-  allowReplace, prepareCount, currentPreparedCount, slotsPerLevel: number[9],
-  knownSpells: KnownSpellDto[], maxSpellLevel, resource}`
+- `getSpellcasting` → `SpellcasterDto[]` (order: class casters in caster block
+  order, then feature casters in registration order):
+  `{identifier, name, kind: "class"|"feature", ability, attackModifier, saveDc,
+  requiresPreparation, allowReplace, prepareCount, currentPreparedCount,
+  slotsPerLevel: number[9], knownSpells: KnownSpellDto[], maxSpellLevel, resource}`
+  - A `"feature"` caster projects the spells a feat or trait grants or lets the
+    character choose outside any spellcasting feature (Magic Initiate,
+    Fey-Touched, Ritual Caster, a tiefling legacy, spell-granting invocations),
+    grouped under the granting feature and named by it. It has zero slots,
+    `requiresPreparation: false`, `prepareCount: 0`, `allowReplace: false`, a
+    slot resource that cannot use spell points, and attack/DC from proficiency
+    plus the ability the feature nominates (the sibling Intelligence/Wisdom/
+    Charisma sub-feature, else the first class caster's ability, else
+    Intelligence). It is read-only: `setPrepared` and the grant mutations
+    return 404 for it. A character with no `<magic>` block still gets its
+    feature casters. A `"feature"` caster is also how DM grants reach a
+    character with no caster block to carry them: when `<magic><additional>`
+    holds spells and there is no class caster, they project as one block named
+    `"Additional Spells"` of the same slotless read-only shape. Its spells are
+    always prepared and never counted in `currentPreparedCount`. A grant names
+    no ability, so the block reports the character's highest of Intelligence,
+    Wisdom and Charisma (ties in that order) — a display default, not a rules
+    claim. Unlike a feat's spells these stay DM grants: `removeGrantedSpell`
+    still removes them, being keyed by spell id and never by caster. With at
+    least one class caster the grants continue to ride on the first block and
+    no such block appears. Spell cards keep filing granted spells under the
+    `<additional>` entry's own `source`.
 - `KnownSpellDto`: `{id, name, source, isPrepared, isChosen, level, school,
   isRitual, isConcentration, isAlwaysPrepared, castingTime, components, range,
-  duration, description}`
+  duration, description, usage?}`
   - `isPrepared` excludes always-prepared spells (their count is not in
     `currentPreparedCount`); `isAlwaysPrepared`/`isChosen` derive from the
     character's spell rules (domain/oath/known-spell rules), NOT from XML
     attributes (a stale `always-prepared="true"` in the file shows as false).
+  - A `<grant type="Spell">` naming a `spellcasting` target projects as always
+    prepared for that caster whether or not it carries `prepared="true"`, once
+    its target has registered (so `level=` and `<requirements>` gates hold).
+    This is how the 2024 files express Divine Smite, Find Steed and every
+    subclass spell table. Full-list and known casters alike receive them.
+  - `usage` (feature casters, levelled spells only) is the free-cast allowance
+    the granting feature attaches: its `<sheet usage="…">` when declared, else
+    `"1/Long Rest"` when the feature's text promises a cast without a spell
+    slot that returns on a long rest, else absent. It is read from content,
+    not assumed.
   - Prepared casters: `knownSpells` = the caster's full spell list (duplicates
     across sources included, e.g. PHB + PHB24). Known casters (bard/ranger/
     warlock): the character's known spells only (warlock: cantrips + chosen).

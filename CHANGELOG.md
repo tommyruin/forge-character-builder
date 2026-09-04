@@ -6,14 +6,60 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Spells a feature grants outright now reach the spell pages: Divine Smite,
+  Find Steed, and every oath, patron and subclass list.
+- Spells from a feat or a species get their own block on the spell page, headed
+  by the feature that granted them and marked with any free cast.
+- A 2024 weapon names its mastery property under the attack, once the character
+  has chosen that weapon's mastery.
+- A weapon you own but have not equipped can be added to the attacks box, from
+  its Equipment row or the attack editor's "Owned weapon" mode.
+- Manage → Attacks suggests attack-roll spells the character knows that have no
+  row yet, one click each.
+- Each level of the Level History takes its class average in one click. The
+  Average Hit Points optional rule still fixes every level at once.
+- Level Up & XP takes a target level: "Go to level N" advances the main class
+  straight there, leaving the intervening choices on the Build tab.
+- Manage → Optional rules can save a rules version as the default for new
+  characters, beside the existing default for sources.
+- The sheet layout follows the open character's rules version until you choose a
+  layout yourself, and Manage → Sheet offers "Match ruleset" when they disagree.
+- Manage → Sheet can leave pages out: the appearance and portrait page, the
+  notes page, the spell cards and the item cards. The rest renumber without a
+  gap.
+
 ### Changed
 
+- Features on the details and companion pages are separated by a gap sized to
+  the type rather than the breath between one feature's own paragraphs, so where
+  one ends and the next begins is legible.
+- The Monochrome sheet theme is now "Print (black & white)" and drops the
+  parchment fills and warm greys along with the colour, so a printed sheet costs
+  no colour ink.
+- Cached sheets are redrawn once after this upgrade, so they pick up the
+  per-page edition label.
 - Manage → Sheet shows which sheet layout is live. The 2014/2024 choice is a
   segmented toggle now, and the chosen set carries the same tint the workspace
   tabs and spell level pills use, instead of two identical buttons.
 
 ### Fixed
 
+- Spells handed out through the DM-grant surface now appear for a character who
+  casts nothing otherwise. They gather into an "Additional Spells" block, always
+  ready and still removable.
+- A 2024 weapon's NOTES cell no longer clips its second line or shrinks the text
+  to fit. The column is wider and each cell takes the row's full pitch, so the
+  longest property list prints at full size, level with the rest of the row.
+- Every sheet page carries the rules version it was laid out for. The 2024
+  character page and both equipment pages had no label at all.
+- A level-gated grant on a feature registered at an earlier level now registers
+  when that level arrives: Draconic Sorcery's Fear at sorcerer 5, the Oath of
+  Devotion's 5th-level spells, the Fiend patron's Fireball.
+- Subclass features above the level the subclass was chosen at now register at
+  all: a Champion gains Remarkable Athlete at fighter 7, a Draconic Sorcerer
+  gains Elemental Affinity at sorcerer 6.
 - A host logo painted over the sheet's brand badge no longer punches a white
   block through the masthead. Covering the template's die mark took the header
   rule's left end and the name plate's top corner with it; the mark now stays
