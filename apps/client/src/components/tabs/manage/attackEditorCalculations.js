@@ -187,6 +187,11 @@ export function buildAttackWriteRequest(draft) {
     overrideFields = [],
     ...request
   } = draft;
+  // Adding an owned weapon: the engine builds every display field from the
+  // inventory record, so the identifier is the whole request.
+  if (draft.mode === 'weapon' && draft.identifier) {
+    return { mode: 'weapon', identifier: draft.identifier };
+  }
   const normalizedRequest = {
     ...request,
     attackMiscBonus: asNumber(draft.attackMiscBonus),

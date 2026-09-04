@@ -256,6 +256,15 @@ export default function EquipmentTab() {
         onRemove={(identifier) =>
           mutate(() => api.characters.removeItem(id, identifier))
         }
+        onAddAttack={async (identifier) => {
+          // Equipping a weapon adds its row automatically; this is the way in
+          // for one that is carried rather than wielded.
+          await run(() =>
+            api.characters.createAttack(id, { mode: "weapon", identifier }),
+          );
+          refreshInventory(true);
+          notify("Attack row added. Edit it on the Manage tab.");
+        }}
         onSetCoins={(coins) => mutate(() => api.characters.setCoins(id, coins))}
       />
     ) : (
@@ -1148,6 +1157,7 @@ function Inventory({
   onAttune,
   onExtract,
   onRemove,
+  onAddAttack,
   onSetCoins,
   onInspect,
   inspected,
@@ -1243,6 +1253,7 @@ function Inventory({
                             onAttune={onAttune}
                             onExtract={onExtract}
                             onRemove={onRemove}
+                            onAddAttack={onAddAttack}
                             variant="mobile"
                           />
                         </span>
@@ -1295,6 +1306,7 @@ function Inventory({
                         onAttune={onAttune}
                         onExtract={onExtract}
                         onRemove={onRemove}
+                        onAddAttack={onAddAttack}
                         variant="desktop"
                       />
                     </td>
@@ -1377,6 +1389,7 @@ export function InventoryActionButtons({
   onAttune,
   onExtract,
   onRemove,
+  onAddAttack,
   variant,
 }) {
   return (
@@ -1416,6 +1429,14 @@ export function InventoryActionButtons({
           icon="extract"
           disabled={busy}
           onClick={() => onExtract(item)}
+        />
+      )}
+      {item.type === "Weapon" && !item.hasAttackRow && onAddAttack && (
+        <ActionButton
+          label="Add attack"
+          icon="add"
+          disabled={busy}
+          onClick={() => onAddAttack(item.identifier)}
         />
       )}
       <ActionButton

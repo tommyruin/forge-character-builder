@@ -172,4 +172,30 @@ describe("sheet attack rows", () => {
     expect(fields["details_attack1_attack"]).toBe(row.bonus);
     expect(fields["details_attack1_damage"]).toBe(row.damage);
   });
+
+  it("prints a chosen 2024 weapon mastery in the row's description", async () => {
+    const lib = await library();
+    const service = new CharacterService(undefined, lib);
+    const id = service.createCharacter("Sheet Cleaver").id;
+    service.setRulesetMode(id, "2024");
+    service.setAbilities(id, {
+      strength: 16, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 12, charisma: 8,
+    });
+    await selectClass(service, id, "ID_WOTC_PHB24_CLASS_FIGHTER");
+    const mastery = pendingSelectionRules(service.getCharacter(id)).find(
+      (r) => r.name === "Weapon Mastery (Fighter 1)",
+    )!;
+    service.setSelection(
+      id,
+      mastery.identifier,
+      "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_GREATAXE_CLEAVE",
+    );
+    service.addItem(id, { itemId: "ID_WOTC_PHB24_WEAPON_GREATAXE", amount: 1, baseElementId: null });
+
+    const row = service.getAttacks(id).find((a) => a.kind === "weapon")!;
+    expect(row.mastery).toEqual({ name: "Cleave", active: true });
+    const fields = sheetAttackFields(service, lib, id);
+    expect(fields["details_attack1_description"]).toContain("Mastery: Cleave");
+    expect(sheetTokenText(service, lib, id)).toContain("Mastery: Cleave");
+  });
 });

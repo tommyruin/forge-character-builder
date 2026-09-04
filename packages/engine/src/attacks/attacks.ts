@@ -13,7 +13,11 @@
  *    scores on every read. The default ability is the higher of STR/DEX for
  *    finesse weapons, DEX for ranged weapons, STR otherwise; the range is
  *    the weapon's range setter or "5 ft"; the description is the weapon's
- *    property list ("Ammunition, Two-Handed", "Versatile", ...).
+ *    property list ("Ammunition, Two-Handed", "Versatile", ...), with
+ *    "Mastery: <Name>" appended when the character has chosen that 2024
+ *    weapon's mastery property.
+ *  - a weapon owned but never equipped has no row; `createAttack` with
+ *    `{mode: "weapon", identifier}` appends one from `getAttackOptions`.
  *  - manual, calculated, and linked-spell rows are appended at the END of the stored list;
  *    manual rows show their stored strings with every non-empty display
  *    field overridden; calculated rows recompute bonus/damage and carry the
@@ -97,6 +101,24 @@ export interface AttackGeneratedDto {
   description: string;
 }
 
+/**
+ * The weapon mastery property a 2024 weapon carries, and whether this
+ * character has chosen it (a mastery only applies to a weapon whose mastery
+ * property the character has selected through a Weapon Mastery feature).
+ */
+export interface AttackMasteryDto {
+  name: string;
+  active: boolean;
+}
+
+/** A weapon in the inventory with no attack row yet (`createAttack` input). */
+export interface AttackWeaponOptionDto {
+  identifier: string;
+  itemId: string;
+  name: string;
+  isEquipped: boolean;
+}
+
 export interface AttackDto {
   id: string;
   name: string;
@@ -118,6 +140,8 @@ export interface AttackDto {
   source: AttackSourceDto | null;
   unarmed: AttackUnarmedDto | null;
   computation: AttackComputationDto | null;
+  /** The weapon's mastery property (2024 weapons only), else null. */
+  mastery: AttackMasteryDto | null;
 }
 
 export interface AttackOptionsDto {
@@ -126,6 +150,8 @@ export interface AttackOptionsDto {
   spells: Array<unknown>;
   /** The row `createAttack({mode: "unarmed"})` would produce right now. */
   unarmed: AttackGeneratedDto | null;
+  /** Owned weapons with no attack row (`createAttack({mode: "weapon"})`). */
+  weapons: AttackWeaponOptionDto[];
 }
 
 /** The magic rows merged into the attack options (spellcasting domain). */
@@ -283,12 +309,128 @@ function weaponProperties(base: ParsedElement): string {
 }
 
 // ---------------------------------------------------------------------------
+// Weapon mastery (2024)
+// ---------------------------------------------------------------------------
+
+/**
+ * The mastery property names the loaded content defines.
+ *
+ * Mastery is content-driven, not id-driven: a mastery property is one that a
+ * "Weapon Mastery" feature can be chosen for, and those features are named
+ * "<Weapon> (<Mastery>)". Deriving the name set from them is what separates a
+ * mastery tag from the other non-internal weapon-property tags a weapon may
+ * carry (the DMG firearm properties, "Special (Hoopak)", ...). With no 2024
+ * content loaded the set is empty and no weapon reports a mastery, which is
+ * the right answer: the rule does not exist in that character's content.
+ */
+const masteryNamesByLibrary = new WeakMap<ElementLibrary, { revision: number; names: Set<string> }>();
+
+function masteryPropertyNames(library: ElementLibrary): Set<string> {
+  const revision = library.revision ?? 0;
+  const cached = masteryNamesByLibrary.get(library);
+  if (cached !== undefined && cached.revision === revision) return cached.names;
+  const names = new Set<string>();
+  for (const element of library.byType.get("Class Feature") ?? []) {
+    if (!element.supports.includes("Weapon Mastery")) continue;
+    const match = /\(([^()]+)\)\s*$/.exec(element.identity.name);
+    if (match !== null) names.add(match[1]!);
+  }
+  masteryNamesByLibrary.set(library, { revision, names });
+  return names;
+}
+
+/** The weapon's mastery property name, or null when it has none. */
+function weaponMasteryName(library: ElementLibrary, base: ParsedElement): string | null {
+  const masteries = masteryPropertyNames(library);
+  if (masteries.size === 0) return null;
+  for (const tag of base.supports) {
+    if (tag.startsWith("ID_INTERNAL_") || !tag.includes("WEAPON_PROPERTY_")) continue;
+    const element = library.byId.get(tag);
+    if (element === undefined || element.identity.type !== "Weapon Property") continue;
+    if (masteries.has(element.identity.name)) return element.identity.name;
+  }
+  return null;
+}
+
+/** The mastery choices this character has registered, computed once per pass. */
+export interface MasteryContext {
+  /** The weapon-proficiency ids the chosen masteries require. */
+  requirements: Set<string>;
+  /** The chosen features' names ("Greataxe (Cleave)"), for content without requirements. */
+  names: Set<string>;
+}
+
+const EMPTY_MASTERY_CONTEXT: MasteryContext = { requirements: new Set(), names: new Set() };
+
+/** The registered "Weapon Mastery" features of a character. */
+export function masteryContext(state: CharacterState, library: ElementLibrary): MasteryContext {
+  const requirements = new Set<string>();
+  const names = new Set<string>();
+  for (const registered of state.sum.elements) {
+    const element = library.byId.get(registered.id);
+    if (element === undefined || !element.supports.includes("Weapon Mastery")) continue;
+    if (element.requirements !== undefined && element.requirements !== "") {
+      requirements.add(element.requirements);
+    }
+    names.add(element.identity.name);
+  }
+  return { requirements, names };
+}
+
+/**
+ * The weapon's mastery property and whether this character has chosen it.
+ *
+ * A chosen mastery is a Class Feature requiring the weapon's own proficiency
+ * element, which is the same id the weapon's `proficiency` setter names. The
+ * name fallback covers content that spells the choice out in the feature name
+ * without carrying a requirement.
+ */
+function weaponMastery(
+  library: ElementLibrary,
+  base: ParsedElement,
+  context: MasteryContext,
+): AttackMasteryDto | null {
+  const name = weaponMasteryName(library, base);
+  if (name === null) return null;
+  const proficiency = setterValue(base, "proficiency") ?? "";
+  const active =
+    (proficiency !== "" && context.requirements.has(proficiency)) ||
+    context.names.has(`${base.identity.name} (${name})`);
+  return { name, active };
+}
+
+// ---------------------------------------------------------------------------
 // DTO
 // ---------------------------------------------------------------------------
 
 /** The attack options DTO (static ability list). */
 export function buildAttackOptionsDto(): AttackOptionsDto {
-  return { abilities: ABILITY_NAMES, casters: [], spells: [], unarmed: null };
+  return { abilities: ABILITY_NAMES, casters: [], spells: [], unarmed: null, weapons: [] };
+}
+
+/**
+ * The owned weapons with no attack row yet.
+ *
+ * Equipping a weapon creates its row automatically; a weapon that has never
+ * been equipped has none, and this is how one is offered to `createAttack`.
+ * The duplicate guard is the one `planAutoAttackInsertEdits` uses, so the two
+ * entry points cannot disagree about what "already has a row" means.
+ */
+export function weaponsWithoutRows(state: CharacterState, library: ElementLibrary): AttackWeaponOptionDto[] {
+  const options: AttackWeaponOptionDto[] = [];
+  for (const item of state.items) {
+    if (state.attacks.some((row) => row.identifier === item.identifier)) continue;
+    const base = elementById(library, item.itemId);
+    if (base === undefined || base.identity.type !== "Weapon") continue;
+    const effective = effectiveElement(library, item);
+    options.push({
+      identifier: item.identifier,
+      itemId: item.itemId,
+      name: effective?.identity.name ?? base.identity.name,
+      isEquipped: item.equipped,
+    });
+  }
+  return options;
 }
 
 /**
@@ -317,6 +459,7 @@ interface ResolvedRow {
   calculation: AttackCalculationDto | null;
   computation: AttackComputationDto | null;
   source?: AttackSourceDto;
+  mastery?: AttackMasteryDto | null;
 }
 
 const SPELL_OVERRIDE_FIELDS = ["name", "range", "bonus", "damage", "description"] as const;
@@ -360,6 +503,7 @@ function resolveWeaponRow(
   statistics: StatisticsValues,
   row: AttackState,
   item: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; location?: string } | undefined,
+  masteries: MasteryContext,
 ): ResolvedRow {
   const base = item ? elementById(library, item.itemId) : undefined;
   const effective = item ? effectiveElement(library, item) : undefined;
@@ -379,6 +523,7 @@ function resolveWeaponRow(
       abilityMode: row.abilityMode,
       calculation: null,
       computation: null,
+      mastery: null,
     };
   }
   const defaultAbility = weaponDefaultAbility(state, base, statistics);
@@ -404,6 +549,13 @@ function resolveWeaponRow(
   const type = setterType(base, "damage") ?? "";
   const damageTotal = modifier + enhancement + categoryDamage + (statistics[`${statisticName}:damage`] ?? 0);
   const range = setterValue(base, "range") ?? "5 ft";
+  // A mastery property only reads as part of the weapon once the character has
+  // chosen it, so an unchosen one is reported but never printed on the sheet.
+  const mastery = weaponMastery(library, base, masteries);
+  const properties = weaponProperties(base);
+  const description = mastery !== null && mastery.active
+    ? [properties, `Mastery: ${mastery.name}`].filter((part) => part !== "").join(", ")
+    : properties;
   // The generated block is the item's own row: the item's name and the values
   // computed with the row's effective ability (the current bonus/damage stays
   // there even after an explicit ability override).
@@ -412,18 +564,21 @@ function resolveWeaponRow(
     range,
     bonus: bonusString(attackTotal),
     damage: weaponDamageString(dice, damageTotal, type),
-    description: weaponProperties(base),
+    description,
   };
+  // A row written before the mastery suffix existed carries the bare property
+  // list; that is still generated text, not a description typed by hand.
+  const generatedDescription = (value: string): boolean => value === description || value === properties;
   const overriddenFields: string[] = [];
   if (row.name !== "" && row.name !== generated.name) overriddenFields.push("name");
   if (row.range !== "" && row.range !== generated.range) overriddenFields.push("range");
-  if (row.description !== "" && row.description !== generated.description) overriddenFields.push("description");
+  if (row.description !== "" && !generatedDescription(row.description)) overriddenFields.push("description");
   return {
     name: row.name === "" ? generated.name : row.name,
     range: row.range === "" ? generated.range : row.range,
     bonus: bonusString(attackTotal),
     damage: weaponDamageString(dice, damageTotal, type),
-    description: row.description === "" ? generated.description : row.description,
+    description: row.description === "" || generatedDescription(row.description) ? description : row.description,
     generated,
     overriddenFields,
     ability,
@@ -431,6 +586,7 @@ function resolveWeaponRow(
     abilityMode: row.abilityMode,
     calculation: null,
     computation: null,
+    mastery,
   };
 }
 
@@ -650,11 +806,15 @@ function resolveRow(
   spellOptions: MagicAttackSpellOptionDto[],
   item?: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; location?: string },
   contributors: readonly StatContributor[] = [],
+  masteries: MasteryContext = EMPTY_MASTERY_CONTEXT,
 ): { resolved: ResolvedRow; itemEquipped: boolean } {
   const resolvedItem =
     item ?? state.items.find((i) => i.identifier === row.identifier);
   if (row.kind === "weapon") {
-    return { resolved: resolveWeaponRow(state, library, statistics, row, resolvedItem), itemEquipped: resolvedItem?.equipped ?? false };
+    return {
+      resolved: resolveWeaponRow(state, library, statistics, row, resolvedItem, masteries),
+      itemEquipped: resolvedItem?.equipped ?? false,
+    };
   }
   if (row.kind === "spell" && row.spell !== undefined) {
     return { resolved: resolveSpellRow(row, spellOptions), itemEquipped: false };
@@ -672,7 +832,12 @@ function resolveRow(
 function rowResolutionContext(
   state: CharacterState,
   library: ElementLibrary,
-): { statistics: StatisticsValues; spellOptions: MagicAttackSpellOptionDto[]; contributors: StatContributor[] } {
+): {
+  statistics: StatisticsValues;
+  spellOptions: MagicAttackSpellOptionDto[];
+  contributors: StatContributor[];
+  masteries: MasteryContext;
+} {
   const contributors: StatContributor[] = [];
   const collector = state.attacks.some((row) => row.kind === "unarmed")
     ? { keys: UNARMED_SOURCE_KEYS, out: contributors }
@@ -686,15 +851,18 @@ function rowResolutionContext(
         state.magicCasterIds,
       ).spells
     : [];
-  return { statistics, spellOptions, contributors };
+  const masteries = state.attacks.some((row) => row.kind === "weapon")
+    ? masteryContext(state, library)
+    : EMPTY_MASTERY_CONTEXT;
+  return { statistics, spellOptions, contributors, masteries };
 }
 
 /** The attacks DTO: rows in stored order, sheet positions among displayed rows. */
 export function buildAttacksDto(state: CharacterState, library: ElementLibrary): AttackDto[] {
   let displayed = 0;
-  const { statistics, spellOptions, contributors } = rowResolutionContext(state, library);
+  const { statistics, spellOptions, contributors, masteries } = rowResolutionContext(state, library);
   return state.attacks.map((row) => {
-    const { resolved, itemEquipped } = resolveRow(state, library, statistics, row, spellOptions, undefined, contributors);
+    const { resolved, itemEquipped } = resolveRow(state, library, statistics, row, spellOptions, undefined, contributors, masteries);
     const isDisplayed = row.displayed;
     if (isDisplayed) displayed++;
     return {
@@ -718,6 +886,7 @@ export function buildAttacksDto(state: CharacterState, library: ElementLibrary):
       source: resolved.source ?? null,
       unarmed: row.kind === "unarmed" ? { dice: row.unarmed?.dice ?? "" } : null,
       computation: resolved.computation,
+      mastery: resolved.mastery ?? null,
     };
   });
 }
@@ -829,7 +998,8 @@ function resolvedOf(
         state.magicCasterIds,
       ).spells
     : [];
-  return resolveRow(state, library, statistics, row, spellOptions, item, contributors).resolved;
+  const masteries = row.kind === "weapon" ? masteryContext(state, library) : EMPTY_MASTERY_CONTEXT;
+  return resolveRow(state, library, statistics, row, spellOptions, item, contributors, masteries).resolved;
 }
 
 /** Edits that insert a new row at the top (automatic weapon rows) or the end. */
@@ -887,12 +1057,12 @@ export function planRewriteAllAttackEdits(state: CharacterState, document: Dnd5e
     const id = getAttrId(node);
     if (id !== null) nodesById.set(id, node);
   }
-  const { statistics, spellOptions, contributors } = rowResolutionContext(state, library);
+  const { statistics, spellOptions, contributors, masteries } = rowResolutionContext(state, library);
   const edits: RawEdit[] = [];
   for (const row of state.attacks) {
     const node = nodesById.get(row.id);
     if (node === undefined) continue;
-    const { resolved } = resolveRow(state, library, statistics, row, spellOptions, undefined, contributors);
+    const { resolved } = resolveRow(state, library, statistics, row, spellOptions, undefined, contributors, masteries);
     const rowText = renderAttackNode(row, resolved, indentOf(raw, node), line);
     if (rowText === raw.slice(node.start, node.end)) continue;
     edits.push({ start: node.start, end: node.end, replacement: rowText });

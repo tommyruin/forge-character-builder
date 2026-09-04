@@ -8169,3 +8169,25 @@ html.fcb-busy-cursor * {
   z-index: -1;
   font-size: 0;
 }
+
+/* A weapon mastery is a named 2024 feature, not a status glyph, so it reads as
+   its own labelled line under the attack's details rather than as another
+   30px pill crammed into the card heading. */
+.fcb-attack-mastery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  border-left: 3px solid var(--fcb-primary);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-primary) 12%, transparent);
+  padding: 6px 10px;
+}
+
+.fcb-attack-mastery-name {
+  color: var(--fcb-text);
+  font-family: var(--dmf-font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+}

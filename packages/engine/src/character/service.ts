@@ -101,8 +101,10 @@ import {
   newCalculatedAttackRow,
   newManualAttackRow,
   newUnarmedAttackRow,
+  newWeaponAttackRow,
   buildUnarmedPreview,
   newSpellAttackRow,
+  weaponsWithoutRows,
   planAutoAttackInsertEdits,
   planInsertAttackEdits,
   planItemAttackRemovalEdits,
@@ -1863,6 +1865,7 @@ export class CharacterService {
     const base = buildAttackOptionsDto();
     if (this.library === undefined) return base;
     base.unarmed = buildUnarmedPreview(state, this.library);
+    base.weapons = weaponsWithoutRows(state, this.library);
     const statistics = computeStatistics(state, this.library);
     // The magic rows carry per-caster session identifiers; assign them here
     // too so a fresh import projects UUIDs before getSpellcasting ever runs.
@@ -1876,7 +1879,7 @@ export class CharacterService {
     return { ...base, casters: magic.casters, spells: magic.spells };
   }
 
-  /** Creates an unarmed, manual, calculated, or linked spell attack row. */
+  /** Creates a weapon, unarmed, manual, calculated, or linked spell attack row. */
   createAttack(id: string, body: Record<string, unknown>): AttackDto[] {
     const { state, document } = this.require(id);
     if (this.library === undefined) {
@@ -1886,12 +1889,28 @@ export class CharacterService {
       body.mode !== "manual" &&
       body.mode !== "calculated" &&
       body.mode !== "spell" &&
-      body.mode !== "unarmed"
+      body.mode !== "unarmed" &&
+      body.mode !== "weapon"
     ) {
       throw engineError("invalid-argument", `Unsupported attack mode '${String(body.mode)}'.`);
     }
     let row;
-    if (body.mode === "unarmed") {
+    if (body.mode === "weapon") {
+      // An owned weapon that has never been equipped has no automatic row.
+      // The duplicate guard matches the equip path's, so the two cannot
+      // disagree about whether a row already exists for the item.
+      const identifier = String(body.identifier ?? "");
+      const item = state.items.find((candidate) => candidate.identifier === identifier);
+      if (item === undefined) throw engineError("not-found", `item '${identifier}' not found`);
+      const base = this.library.byId.get(item.itemId);
+      if (base === undefined || base.identity.type !== "Weapon") {
+        throw engineError("invalid-argument", "Only a weapon can be added as an attack.");
+      }
+      if (state.attacks.some((candidate) => candidate.identifier === item.identifier)) {
+        throw engineError("conflict", "This weapon already has an attack row.");
+      }
+      row = newWeaponAttackRow(state, this.library, item);
+    } else if (body.mode === "unarmed") {
       // The name, range, bonus, and damage are all resolved from the character;
       // the editor's display overrides arrive through updateAttack.
       row = newUnarmedAttackRow(

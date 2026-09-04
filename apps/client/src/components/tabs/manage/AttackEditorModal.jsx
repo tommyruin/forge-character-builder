@@ -12,6 +12,7 @@ import {
 } from './attackEditorCalculations';
 
 const ATTACK_MODES = [
+  ['weapon', 'Owned weapon'],
   ['manual', 'Manual'],
   ['calculated', 'Calculated'],
   ['spell', 'Known spell'],
@@ -64,6 +65,8 @@ const EMPTY = {
   damageType: '',
   casterIdentifier: '',
   spellId: '',
+  // The inventory record a new "Owned weapon" row is built from.
+  identifier: '',
   unarmedDice: '',
   unarmedDiceCustom: false,
   resetFields: [],
@@ -206,14 +209,28 @@ export default function AttackEditorModal({
     }));
   };
 
+  // Adding an owned weapon builds the row from the item, so the editor shows
+  // the inventory picker instead of the generated display fields.
+  const isNewWeapon = draft.mode === 'weapon' && !attack;
+
   const submit = async (event) => {
     event.preventDefault();
-    if (draft.mode !== 'spell' && draft.mode !== 'unarmed' && !draft.name.trim()) {
+    // A weapon row's name is the item's, so the editor never demands one.
+    if (
+      draft.mode !== 'spell' &&
+      draft.mode !== 'unarmed' &&
+      draft.mode !== 'weapon' &&
+      !draft.name.trim()
+    ) {
       setError('Attack name is required.');
       return;
     }
     if (draft.mode === 'spell' && (!draft.spellId || !draft.casterIdentifier)) {
       setError('Choose a known spell.');
+      return;
+    }
+    if (isNewWeapon && !draft.identifier) {
+      setError('Choose a weapon from your inventory.');
       return;
     }
     setError('');
@@ -446,6 +463,31 @@ export default function AttackEditorModal({
           </label>
         )}
 
+        {isNewWeapon && (
+          <label className="fcb-field-label">
+            Owned weapon
+            <select
+              className="fcb-input normal-case"
+              value={draft.identifier}
+              onChange={(event) => set('identifier', event.target.value)}
+              disabled={busy}
+            >
+              <option value="">Choose a weapon…</option>
+              {options?.weapons?.map((weapon) => (
+                <option key={weapon.identifier} value={weapon.identifier}>
+                  {weapon.name}
+                  {weapon.isEquipped ? ' (equipped)' : ''}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs normal-case text-[var(--fcb-text-muted)]">
+              {options?.weapons?.length
+                ? 'Equipping a weapon adds its attack automatically. This adds a row for a weapon you are carrying but not wielding.'
+                : 'Every weapon you own already has an attack row.'}
+            </span>
+          </label>
+        )}
+
         {draft.mode === 'spell' && !attack && (
           <label className="fcb-field-label">
             Known attack spell
@@ -654,7 +696,7 @@ export default function AttackEditorModal({
           computation={computation}
         />
 
-        {draft.mode === 'calculated' ? (
+        {isNewWeapon ? null : draft.mode === 'calculated' ? (
           <section
             className="rounded-xl border border-[var(--fcb-border)] bg-[var(--fcb-surface-2)] p-4"
             aria-label="Calculated attack values"
@@ -701,12 +743,13 @@ export default function AttackEditorModal({
             )}
           </div>
         )}
-        {generatedField(
-          'description',
-          'Description',
-          true,
-          fieldPlaceholder('description'),
-        )}
+        {!isNewWeapon &&
+          generatedField(
+            'description',
+            'Description',
+            true,
+            fieldPlaceholder('description'),
+          )}
 
         {error && <p className="fcb-alert">{error}</p>}
         <div className="flex justify-end gap-2">

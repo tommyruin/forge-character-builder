@@ -42,6 +42,10 @@ const WRAPS_VERY_RARE = "ID_WOTC_BOMT_MAGIC_ITEM_WRAPS_OF_UNARMED_PROWESS_VERY_R
 const TAVERN_BRAWLER = "ID_PHB_FEAT_TAVERNBRAWLER";
 const PHB24_UNARMED_FIGHTING = "ID_WOTC_PHB24_FEAT_UNARMED_FIGHTING";
 const FIGHTER_2024 = "ID_WOTC_PHB24_CLASS_FIGHTER";
+const GREATAXE_2024 = "ID_WOTC_PHB24_WEAPON_GREATAXE";
+const LONGSWORD_2024 = "ID_WOTC_PHB24_WEAPON_LONGSWORD";
+const GREATAXE_CLEAVE = "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_GREATAXE_CLEAVE";
+const PITON = "ID_WOTC_PHB_ITEM_PITON";
 const MC_FIGHTER = "ID_WOTC_PHB_MULTICLASS_FIGHTER";
 const OPTION_MULTICLASS = "ID_INTERNAL_OPTION_ALLOW_MULTICLASSING";
 
@@ -144,6 +148,7 @@ describe("attacks DTO", () => {
         damage: "1+0 bludgeoning",
         description: "",
       },
+      weapons: [],
     });
   });
 
@@ -812,6 +817,184 @@ describe("attacks DTO", () => {
     expect(staffAfter).toContain("CDATA[Override desc.]]>");
     expect(after).not.toContain('ability="Charisma">');
     expect(after).toContain('ability="Strength">');
+  });
+});
+
+/**
+ * A 2024 Fighter with the scores above who has chosen `masteryId` as one of
+ * the three Weapon Mastery properties the class grants at level 1.
+ */
+const makeMasteryFighter = async (
+  service: CharacterService,
+  id: string,
+  masteryId: string,
+): Promise<void> => {
+  service.setRulesetMode(id, "2024");
+  setScores(service, id);
+  await makeClass(service, id, FIGHTER_2024);
+  const rule = pendingSelectionRules(service.getCharacter(id)).find(
+    (r) => r.name === "Weapon Mastery (Fighter 1)",
+  );
+  if (rule === undefined) throw new Error("no Weapon Mastery rule on the 2024 Fighter");
+  service.setSelection(id, rule.identifier, masteryId);
+};
+
+describe("weapon mastery (2024)", () => {
+  it("marks a chosen mastery active and appends it to the generated description", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Cleave Fighter").id;
+    await makeMasteryFighter(service, id, GREATAXE_CLEAVE);
+    service.addItem(id, { itemId: GREATAXE_2024, amount: 1, baseElementId: null });
+
+    const row = weaponRow(service.getAttacks(id), "Greataxe");
+    expect(row.mastery).toEqual({ name: "Cleave", active: true });
+    expect(row.generated!.description).toBe("Heavy, Two-Handed, Mastery: Cleave");
+    expect(row.description).toBe("Heavy, Two-Handed, Mastery: Cleave");
+    // The suffix is generated text, so the row is not an override.
+    expect(row.overriddenFields).toEqual([]);
+  });
+
+  it("names an unchosen mastery without printing it", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Sap Fighter").id;
+    await makeMasteryFighter(service, id, GREATAXE_CLEAVE);
+    service.addItem(id, { itemId: LONGSWORD_2024, amount: 1, baseElementId: null });
+
+    const row = weaponRow(service.getAttacks(id), "Longsword");
+    // The Longsword's mastery is Sap, and this fighter chose Greataxe (Cleave).
+    expect(row.mastery).toEqual({ name: "Sap", active: false });
+    expect(row.description).toBe("Versatile");
+  });
+
+  it("gives a 2014 weapon no mastery at all", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Legacy Fighter").id;
+    setScores(service, id);
+    await makeFighter(service, id);
+    service.addItem(id, { itemId: LONGSWORD, amount: 1, baseElementId: null });
+
+    const row = weaponRow(service.getAttacks(id), "Longsword");
+    expect(row.mastery).toBeNull();
+    expect(row.description).toBe("Versatile");
+  });
+
+  it("keeps the mastery suffix through a document round-trip", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Round Trip Cleave").id;
+    await makeMasteryFighter(service, id, GREATAXE_CLEAVE);
+    service.addItem(id, { itemId: GREATAXE_2024, amount: 1, baseElementId: null });
+    expect(service.exportCharacterXml(id)).toContain("Mastery: Cleave");
+
+    const copy = `${id}-copy`;
+    service.importCharacterXml(copy, service.exportCharacterXml(id));
+    const row = weaponRow(service.getAttacks(copy), "Greataxe");
+    expect(row.mastery).toEqual({ name: "Cleave", active: true });
+    expect(row.overriddenFields).toEqual([]);
+  });
+
+  it("keeps a hand-written description as an override", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Custom Cleave").id;
+    await makeMasteryFighter(service, id, GREATAXE_CLEAVE);
+    service.addItem(id, { itemId: GREATAXE_2024, amount: 1, baseElementId: null });
+    const rowId = weaponRow(service.getAttacks(id), "Greataxe").id;
+    service.updateAttack(id, rowId, { description: "Swing wide." });
+
+    const row = service.getAttacks(id).find((a) => a.id === rowId)!;
+    expect(row.description).toBe("Swing wide.");
+    expect(row.overriddenFields).toContain("description");
+    expect(row.generated!.description).toBe("Heavy, Two-Handed, Mastery: Cleave");
+  });
+});
+
+describe("owned weapons without an attack row", () => {
+  /** A character carrying an equipped longsword and an unequipped rapier. */
+  const makeSpareRapier = async (
+    service: CharacterService,
+    id: string,
+  ): Promise<string> => {
+    setScores(service, id);
+    service.addItem(id, { itemId: LONGSWORD, amount: 1, baseElementId: null });
+    const added = service.addItem(id, { itemId: RAPIER, amount: 1, baseElementId: null });
+    const rapier = added.items.find((i) => i.itemId === RAPIER)!;
+    // The longsword holds the only one-handed slot, so the rapier is carried
+    // rather than equipped and never gets an automatic row.
+    expect(rapier.isEquipped).toBe(false);
+    expect(service.getAttacks(id).map((a) => a.name)).toEqual(["Longsword"]);
+    return rapier.identifier;
+  };
+
+  it("offers the weapon in the attack options and appends its row on request", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Spare Rapier").id;
+    const identifier = await makeSpareRapier(service, id);
+
+    expect(service.getAttackOptions(id).weapons).toEqual([
+      { identifier, itemId: RAPIER, name: "Rapier", isEquipped: false },
+    ]);
+
+    const rows = service.createAttack(id, { mode: "weapon", identifier });
+    expect(rows.map((a) => [a.name, a.sheetPosition, a.isCurrentlyEquipped])).toEqual([
+      ["Longsword", 1, true],
+      ["Rapier", 2, false],
+    ]);
+    const rapier = weaponRow(rows, "Rapier");
+    expect(rapier.kind).toBe("weapon");
+    expect(rapier.isAutomatic).toBe(true);
+    // dex 13 (+1), no class proficiency: the finesse default is Strength here.
+    expect(rapier.damage).toBe("1d8+2 piercing");
+    expect(rapier.description).toBe("Finesse");
+    // Once it has a row it is no longer on offer.
+    expect(service.getAttackOptions(id).weapons).toEqual([]);
+  });
+
+  it("reports the row in the inventory DTO", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Rapier Inventory").id;
+    const identifier = await makeSpareRapier(service, id);
+    const before = service.getInventory(id).items.find((i) => i.identifier === identifier)!;
+    expect(before.hasAttackRow).toBe(false);
+
+    service.createAttack(id, { mode: "weapon", identifier });
+    const after = service.getInventory(id).items.find((i) => i.identifier === identifier)!;
+    expect(after.hasAttackRow).toBe(true);
+    expect(service.getInventory(id).items.every((i) => i.hasAttackRow)).toBe(true);
+  });
+
+  it("rejects a duplicate row, an unknown item, and a non-weapon", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Rapier Guards").id;
+    const identifier = await makeSpareRapier(service, id);
+    const piton = service.addItem(id, { itemId: PITON, amount: 1, baseElementId: null })
+      .items.find((i) => i.itemId === PITON)!;
+
+    service.createAttack(id, { mode: "weapon", identifier });
+    expect(() => service.createAttack(id, { mode: "weapon", identifier })).toThrow(
+      /already has an attack row/i,
+    );
+    expect(() => service.createAttack(id, { mode: "weapon", identifier: "nope" })).toThrow(
+      /not found/i,
+    );
+    expect(() =>
+      service.createAttack(id, { mode: "weapon", identifier: piton.identifier }),
+    ).toThrow(/only a weapon/i);
+  });
+
+  it("does not duplicate the row when the weapon is later equipped, and deletes while unequipped", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Rapier Equip").id;
+    const identifier = await makeSpareRapier(service, id);
+    const rowId = weaponRow(service.createAttack(id, { mode: "weapon", identifier }), "Rapier").id;
+
+    service.equipItem(id, identifier, "secondary");
+    const equipped = service.getAttacks(id);
+    expect(equipped.map((a) => a.name)).toEqual(["Longsword", "Rapier"]);
+    expect(weaponRow(equipped, "Rapier").isCurrentlyEquipped).toBe(true);
+    expect(() => service.deleteAttack(id, rowId)).toThrow(/cannot be deleted/i);
+
+    service.equipItem(id, identifier, "none");
+    expect(service.deleteAttack(id, rowId).map((a) => a.name)).toEqual(["Longsword"]);
+    expect(service.getAttackOptions(id).weapons.map((w) => w.name)).toEqual(["Rapier"]);
   });
 });
 

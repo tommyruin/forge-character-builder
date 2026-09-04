@@ -665,6 +665,22 @@ function abilityAbbreviation(ability) {
   return ability?.slice(0, 3).toUpperCase() ?? '';
 }
 
+/* The engine appends "Mastery: <Name>" to a weapon's description so the
+   printed sheet carries it (packages/engine/src/attacks/attacks.ts). The card
+   now names the mastery on its own line, so the trailing clause is dropped
+   here. This is display only: the stored row, the export and the sheet keep
+   the full description. */
+function attackDescriptionText(attack) {
+  const description = attack.description ?? '';
+  const name = attack.mastery?.active ? attack.mastery.name : '';
+  if (!description || !name) return description;
+  const clause = `Mastery: ${name}`;
+  if (description === clause) return '';
+  return description.endsWith(`, ${clause}`)
+    ? description.slice(0, -(clause.length + 2))
+    : description;
+}
+
 function AttacksManager({
   id,
   detail,
@@ -743,6 +759,18 @@ function AttacksManager({
     }
   };
 
+  // The sheet prints four rows, so attack cantrips are offered rather than
+  // added automatically: one click for a known attack spell with no row yet.
+  const linkedSpellIds = new Set(
+    (attacks ?? [])
+      .filter((attack) => attack.kind === 'spell')
+      .map((attack) => attack.source?.spellId)
+      .filter(Boolean),
+  );
+  const suggestedSpells = (options?.spells ?? []).filter(
+    (spell) => !linkedSpellIds.has(spell.spellId),
+  );
+
   if (!attacks && !error)
     return <p className="fcb-empty-copy">Loading attacks…</p>;
 
@@ -766,10 +794,39 @@ function AttacksManager({
       </header>
       <div className="fcb-panel-body">
         {error && <p className="fcb-alert mb-4">{error}</p>}
+        {suggestedSpells.length > 0 && (
+          <div className="mb-4">
+            <p className="fcb-field-label">Suggested</p>
+            <div className="fcb-toolbar mt-2 flex-wrap">
+              {suggestedSpells.map((spell) => (
+                <button
+                  key={`${spell.casterIdentifier}:${spell.spellId}`}
+                  type="button"
+                  className="fcb-button px-2 py-1 text-xs"
+                  disabled={busy}
+                  title={`Add ${spell.spellName} (${spell.casterName}) as an attack`}
+                  onClick={() =>
+                    mutate(() =>
+                      api.characters.createAttack(id, {
+                        mode: 'spell',
+                        casterIdentifier: spell.casterIdentifier,
+                        spellId: spell.spellId,
+                      }),
+                    )
+                  }
+                >
+                  <Icon name="add" />
+                  {spell.spellName}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {attacks?.length === 0 ? (
           <p className="fcb-empty-copy">
             No attacks yet. Equip a weapon to add its attack here, or choose
-            Attack to add an unarmed strike, a spell, or a custom row.
+            Attack to add an owned weapon, an unarmed strike, a spell, or a
+            custom row.
           </p>
         ) : (
           <div className="space-y-3">
@@ -852,9 +909,22 @@ function AttacksManager({
                           )
                           .join(' · ') || 'No attack details'}
                       </p>
-                      {attack.description && (
+                      {attackDescriptionText(attack) && (
                         <p className="mt-1 text-xs text-[var(--fcb-text-faint)]">
-                          {attack.description}
+                          {attackDescriptionText(attack)}
+                        </p>
+                      )}
+                      {attack.mastery?.active && (
+                        <p
+                          className="fcb-attack-mastery mt-2"
+                          title={`Weapon mastery: ${attack.mastery.name}`}
+                        >
+                          <span className="fcb-field-label">
+                            Weapon mastery
+                          </span>
+                          <span className="fcb-attack-mastery-name">
+                            {attack.mastery.name}
+                          </span>
                         </p>
                       )}
                       {attack.source?.warning && (

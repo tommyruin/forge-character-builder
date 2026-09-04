@@ -25,6 +25,14 @@ const exportMenu = readFileSync(
   new URL('../ExportMenu.jsx', import.meta.url),
   'utf8',
 );
+const calculations = readFileSync(
+  new URL('../tabs/manage/attackEditorCalculations.js', import.meta.url),
+  'utf8',
+);
+const equipment = readFileSync(
+  new URL('../tabs/EquipmentTab.jsx', import.meta.url),
+  'utf8',
+);
 
 describe('custom attacks manager', () => {
   it('offers manual, calculated, and known-spell creation modes', () => {
@@ -37,9 +45,59 @@ describe('custom attacks manager', () => {
   it('offers an unarmed strike creation mode', () => {
     expect(editor).toContain("['unarmed', 'Unarmed strike']");
     // The name is generated, so the editor must not demand one.
-    expect(editor).toContain(
-      "draft.mode !== 'spell' && draft.mode !== 'unarmed' && !draft.name.trim()",
+    expect(editor).toMatch(
+      /draft\.mode !== 'spell' &&\s+draft\.mode !== 'unarmed' &&\s+draft\.mode !== 'weapon' &&\s+!draft\.name\.trim\(\)/,
     );
+  });
+
+  it('offers an owned weapon as a creation mode', () => {
+    expect(editor).toContain("['weapon', 'Owned weapon']");
+    expect(editor).toContain("const isNewWeapon = draft.mode === 'weapon' && !attack");
+    // The row is built entirely from the inventory record.
+    expect(editor).toContain('options?.weapons?.map((weapon)');
+    expect(editor).toContain("set('identifier', event.target.value)");
+    expect(editor).toContain('Choose a weapon from your inventory.');
+    expect(calculations).toContain(
+      "return { mode: 'weapon', identifier: draft.identifier };",
+    );
+  });
+
+  it('adds an owned weapon as an attack from the inventory row', () => {
+    expect(equipment).toContain('item.type === "Weapon" && !item.hasAttackRow');
+    expect(equipment).toContain('label="Add attack"');
+    expect(equipment).toContain(
+      'api.characters.createAttack(id, { mode: "weapon", identifier })',
+    );
+  });
+
+  it('names a chosen weapon mastery below the attack details', () => {
+    expect(manage).toContain('attack.mastery?.active');
+    // The mastery is a labelled line in the card body, under the range /
+    // bonus / damage line and the description.
+    expect(manage).toContain('className="fcb-attack-mastery mt-2"');
+    expect(manage).toContain('Weapon mastery');
+    expect(manage).toContain(
+      '<span className="fcb-attack-mastery-name">',
+    );
+    // It is no longer one of the compact icon pills in the heading row.
+    expect(manage).not.toContain('Mastery: {attack.mastery.name}');
+    expect(manage).not.toMatch(
+      /fcb-attack-meta-item[\s\S]{0,200}attack\.mastery/,
+    );
+    // The engine still appends the clause for the sheet, so the card drops it
+    // from the description it shows rather than printing it twice.
+    expect(manage).toContain('function attackDescriptionText(attack)');
+    expect(manage).toContain('const clause = `Mastery: ${name}`;');
+    expect(manage).toContain('{attackDescriptionText(attack) && (');
+  });
+
+  it('suggests known attack spells that have no row yet', () => {
+    expect(manage).toContain('const suggestedSpells =');
+    expect(manage).toContain("attack.source?.spellId");
+    expect(manage).toContain('{suggestedSpells.length > 0 && (');
+    expect(manage).toContain("mode: 'spell',");
+    // The sheet still prints four rows, so nothing is added automatically.
+    expect(manage).toContain('The first four visible attacks fill the sheet rows.');
   });
 
   it('fills the unarmed strike form from the engine preview before it exists', () => {
@@ -74,7 +132,8 @@ describe('custom attacks manager', () => {
   });
 
   it('points at the unarmed strike from the empty attacks panel', () => {
-    expect(manage).toContain('add an unarmed strike');
+    expect(manage).toContain('an unarmed strike');
+    expect(manage).toContain('Attack to add an owned weapon');
   });
 
   it('shows syntax examples in empty manual attack fields', () => {

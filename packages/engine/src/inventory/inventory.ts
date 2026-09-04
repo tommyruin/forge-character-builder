@@ -59,6 +59,12 @@ export interface InventoryItemDto {
   attunement: EquipmentAttunementDto;
   isExtractable: boolean;
   extractableContents: Array<{ itemId: string; name: string; amount: number }>;
+  /**
+   * True when an attack row already exists for this record. Equipping a weapon
+   * creates one automatically; this is what tells the Equipment tab whether a
+   * never-equipped weapon can still be offered as an attack.
+   */
+  hasAttackRow: boolean;
 }
 
 export interface InventoryDto {
@@ -330,6 +336,7 @@ export function buildInventoryDto(
       attunement: metadata.attunement,
       isExtractable: (base?.extract ?? []).length > 0 || (element?.extract ?? []).length > 0,
       extractableContents: extractOf(library, item),
+      hasAttackRow: state.attacks.some((row) => row.identifier === item.identifier),
     };
   });
   const equipmentWeight =
