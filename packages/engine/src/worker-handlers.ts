@@ -381,6 +381,8 @@ export function createEngineMethodHandlers(
     getCharacterLoadDiagnostics: () => character.diagnostics(),
     levelUp: (id, request) =>
       objectResult(service.getCharacterDetail(service.levelUpMode(id, request).id)),
+    levelUpTo: (id, request) =>
+      objectResult(service.getCharacterDetail(service.levelUpTo(id, request).id)),
     levelDown: (id) => objectResult(service.levelDown(id)),
     delevel: (id, request) => objectResult(service.delevel(id, request)),
     undoDelevel: (id) => objectResult(service.undoDelevel(id)),

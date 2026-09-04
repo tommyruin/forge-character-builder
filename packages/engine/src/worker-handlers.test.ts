@@ -315,6 +315,7 @@ describe("engine worker handlers", () => {
       exportCharacterXml: ["Ada"],
       importCharacterXml: ["copy", xmlBase64],
       levelUp: ["Ada", { mode: "main" }],
+      levelUpTo: ["Ada", { level: 2 }],
       levelDown: ["Ada"],
       delevel: ["Ada", { mode: "last" }],
       undoDelevel: ["Ada"],
@@ -549,7 +550,8 @@ describe("engine worker handlers", () => {
 
     // 75: added setItemStorage (item-storage assignment).
     // 77: added setCompanionPortrait / removeCompanionPortrait.
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 77, engineVersion: ENGINE_VERSION } }]);
+    // 78: added levelUpTo (level straight to a target level).
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 78, engineVersion: ENGINE_VERSION } }]);
   });
 });
 

@@ -43,7 +43,7 @@ function fakeClient() {
     "contentSources", "equipmentCategories", "contentElements", "contentElement", "ingestUploaded", "removeUploaded", "patchHomebrew",
     "setPortrait", "removePortrait", "updateDetails", "setAbilities", "getSelectionOptions",
     "setSelection", "clearSelection", "getOptionalRules", "getRulesetMode", "setRulesetMode", "getCharacterAdjustments",
-    "setCharacterControl", "getStatistics", "levelUp", "levelDown", "delevel", "undoDelevel",
+    "setCharacterControl", "getStatistics", "levelUp", "levelUpTo", "levelDown", "delevel", "undoDelevel",
     "setHitPointRoll", "getProgression", "getSpellcasting", "setPrepared", "getSpellBrowse",
     "addGrantedSpell", "removeGrantedSpell", "addGrantedFeat", "removeGrantedFeat",
     "addGrantedAbilityScore", "removeGrantedAbilityScore", "getCompanion", "setCompanionName",

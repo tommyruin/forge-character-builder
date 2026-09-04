@@ -44,6 +44,7 @@ import {
 } from "./state.js";
 import {
   classElementForMulticlass,
+  MAX_LEVEL,
   planClassRndhpEdit,
   planDelevelEdits,
   planHealDegenerateRollsEdits,
@@ -1339,6 +1340,52 @@ export class CharacterService {
     return this.applyWithMagicReconcile(id, state, document, [...plan.edits, ...healEdits], (next) => {
       next.levelRegistrations = [...(state.levelRegistrations ?? []), plan.record];
     });
+  }
+
+  /**
+   * Advances the main class repeatedly until the character stands at `level`.
+   *
+   * One call so the transport records a single undo step; a failure part-way
+   * puts the pre-operation document back rather than storing a character that
+   * is half-way up the ladder.
+   */
+  levelUpTo(id: string, opts: { level: number }): CharacterState {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for leveling");
+    }
+    const target = opts.level;
+    if (!Number.isInteger(target)) {
+      throw engineError("invalid-argument", "target level must be a whole number");
+    }
+    if (target > MAX_LEVEL) {
+      throw engineError("invalid-argument", `target level ${target} is above the maximum character level of ${MAX_LEVEL}`);
+    }
+    if (target <= state.level) {
+      throw engineError("invalid-argument", `target level ${target} must be above the current level ${state.level}`);
+    }
+    if (!buildProgression(state, this.library).hasMainClass) {
+      throw engineError("conflict", "choose a class before levelling up to a target level");
+    }
+    const documentRaw = document.raw;
+    const levelRegistrations = [...(state.levelRegistrations ?? [])];
+    try {
+      for (let remaining = target - state.level; remaining > 0; remaining -= 1) {
+        const before = this.require(id).state.level;
+        this.levelUpMode(id, { mode: "main" });
+        if (this.require(id).state.level <= before) {
+          throw engineError("conflict", `levelling up stalled at level ${before}`);
+        }
+      }
+    } catch (cause) {
+      const restored = parseDnd5e(documentRaw);
+      const rolled = this.remap(restored, state, id);
+      rolled.levelRegistrations = levelRegistrations;
+      this.store.set(rolled);
+      this.documents.set(id, restored);
+      throw cause;
+    }
+    return this.require(id).state;
   }
 
   /** Removes the last level (convenience form of delevel). */

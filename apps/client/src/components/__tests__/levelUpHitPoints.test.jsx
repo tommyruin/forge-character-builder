@@ -1,7 +1,12 @@
+// @vitest-environment happy-dom
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  averageHitPoints,
   buildHitPointIndex,
   HitPointRoll,
   HitPointRuleBadge,
@@ -12,6 +17,14 @@ import {
   commitHitPointDraft,
   parseHitPointDraft,
 } from '../hitPointDraft';
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// This file mounts a component to press its buttons, so it runs in happy-dom -
+// whose URL resolves a relative path against a page origin rather than this
+// file. Source pins therefore go through the real directory instead.
+const readSource = (path) =>
+  readFileSync(join(import.meta.dirname, path), 'utf8');
 
 const fighter = {
   classId: 'ID_TEST_CLASS_FIGHTER',
@@ -159,10 +172,7 @@ describe('LevelUpHitPoints', () => {
 
   it('keeps two-digit die results readable in narrow roll tiles', () => {
     const markup = renderHistory([fighter, barbarian]);
-    const css = readFileSync(
-      new URL('../../index.css', import.meta.url),
-      'utf8',
-    );
+    const css = readSource('../../index.css');
 
     expect(markup).toContain('fcb-hp-roll-input');
     expect(markup).toContain('fcb-level-hp');
@@ -198,10 +208,7 @@ describe('LevelUpHitPoints', () => {
   });
 
   it('gives the nudges a touch-sized target', () => {
-    const css = readFileSync(
-      new URL('../../index.css', import.meta.url),
-      'utf8',
-    );
+    const css = readSource('../../index.css');
     const coarse = css.slice(css.indexOf('.fcb-level-hp__nudge {'));
 
     expect(coarse).toContain('@media (pointer: coarse)');
@@ -251,6 +258,98 @@ describe('LevelUpHitPoints', () => {
     expect(markup).not.toContain(
       'aria-label="Wizard level 1 hit points" disabled=""',
     );
+  });
+
+  it('reads the average as half the die rounded up', () => {
+    expect(averageHitPoints('d6')).toBe(4);
+    expect(averageHitPoints('d8')).toBe(5);
+    expect(averageHitPoints('d10')).toBe(6);
+    expect(averageHitPoints('d12')).toBe(7);
+    // No die, no average to offer.
+    expect(averageHitPoints('')).toBe(0);
+    expect(averageHitPoints(undefined)).toBe(0);
+  });
+
+  it('offers the average on every editable roll that is not already on it', () => {
+    const markup = renderHistory([fighter, barbarian]);
+
+    // Fighter 2 (7), Fighter 3 (5) and Barbarian 1 (12) are all off their
+    // average; the fixed Fighter 1 is not editable at all.
+    expect(markup.match(/fcb-level-hp__average/g)).toHaveLength(3);
+    expect(markup).toContain(
+      'aria-label="Use average 6 for Fighter level 2 hit points"',
+    );
+    expect(markup).toContain(
+      'aria-label="Use average 7 for Barbarian level 1 hit points"',
+    );
+    expect(markup).not.toContain('for Fighter level 1 hit points"');
+  });
+
+  it('drops the average button on a roll that already holds its average', () => {
+    const markup = renderHistory([{ ...fighter, hitPointValues: [10, 6, 5] }]);
+
+    expect(markup.match(/fcb-level-hp__average/g)).toHaveLength(1);
+    expect(markup).not.toContain(
+      'aria-label="Use average 6 for Fighter level 2 hit points"',
+    );
+    expect(markup).toContain(
+      'aria-label="Use average 6 for Fighter level 3 hit points"',
+    );
+  });
+
+  it('hides the average button when the Average Hit Points rule fixes the values', () => {
+    const markup = renderHistory([{ ...fighter, hitPointValues: [10, 6, 5] }], true);
+
+    expect(markup).not.toContain('fcb-level-hp__average');
+  });
+
+  it('saves the class average when a row average button is pressed', async () => {
+    const onSave = vi.fn(async () => true);
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const hitPoints = buildHitPointIndex([fighter]);
+
+    await act(async () => {
+      root.render(
+        <HitPointRoll
+          entry={{
+            totalLevel: 3,
+            classId: fighter.classId,
+            className: 'Fighter',
+            classLevel: 3,
+            isClassStart: false,
+            isPending: false,
+          }}
+          hitPoints={hitPoints}
+          usesAverageHitPoints={false}
+          busy={false}
+          onSave={onSave}
+        />,
+      );
+    });
+
+    const button = container.querySelector('.fcb-level-hp__average');
+    expect(button).not.toBeNull();
+    await act(async () => {
+      button.click();
+    });
+
+    expect(onSave).toHaveBeenCalledWith(fighter.classId, 3, 6);
+    expect(container.querySelector('.fcb-hp-roll-input').value).toBe('6');
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  // The bulk "use average for all" action is gone: the per-row Avg button
+  // above covers a single level, and Manage / Optional rules > Average Hit
+  // Points is the permanent setting.
+  it('keeps the average action per row rather than in the flyout', () => {
+    const flyout = readSource('../LevelUpFlyout.jsx');
+
+    expect(flyout).not.toContain('Use average for all');
+    expect(flyout).not.toContain('averageHitPoints');
   });
 
   it('leaves a level with no resolved class without a roll', () => {
@@ -347,14 +446,8 @@ describe('LevelUpHitPoints', () => {
   });
 
   it('wires hit-point edits through the shared character mutation flow', () => {
-    const flyout = readFileSync(
-      new URL('../LevelUpFlyout.jsx', import.meta.url),
-      'utf8',
-    );
-    const transport = readFileSync(
-      new URL('../../transport/engineTransport.ts', import.meta.url),
-      'utf8',
-    );
+    const flyout = readSource('../LevelUpFlyout.jsx');
+    const transport = readSource('../../transport/engineTransport.ts');
 
     expect(flyout).toContain('<HitPointRoll');
     expect(flyout).toContain('api.characters.setHitPointRoll');

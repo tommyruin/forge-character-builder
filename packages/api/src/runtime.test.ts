@@ -16,7 +16,8 @@ describe("engine method contract", () => {
   it("classifies every declared method exactly once", () => {
     // 75: added setItemStorage (item-storage assignment).
     // 77: added setCompanionPortrait / removeCompanionPortrait.
-    expect(ENGINE_METHOD_NAMES).toHaveLength(77);
+    // 78: added levelUpTo (level straight to a target level).
+    expect(ENGINE_METHOD_NAMES).toHaveLength(78);
     expect(new Set(ENGINE_METHOD_NAMES).size).toBe(ENGINE_METHOD_NAMES.length);
     expect(Object.keys(METHOD_SUPPORT).sort()).toEqual([...ENGINE_METHOD_NAMES].sort());
 
@@ -223,7 +224,8 @@ describe("typed client bridge", () => {
     expect(requests[2]?.transfer).toEqual([body]);
     // 75: added setItemStorage (item-storage assignment).
     // 77: added setCompanionPortrait / removeCompanionPortrait.
-    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 77 } });
+    // 78: added levelUpTo (level straight to a target level).
+    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 78 } });
   });
 
   it("transfers snapshot buffers: nested request bodies and ArrayBuffer results", async () => {

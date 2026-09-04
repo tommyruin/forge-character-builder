@@ -1318,6 +1318,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     clearSelection: (id: string, ruleId: string, number = 1) => mutateDetail(id, "clearSelection", [id, ruleId, { number }]),
     levelUp: (id: string) => mutateDetail(id, "levelUp", [id, { mode: "main" }]),
     levelUpMode: (id: string, mode: string, classId?: string) => mutateDetail(id, "levelUp", [id, { mode, ...(classId ? { classId } : {}) }]),
+    levelUpTo: (id: string, level: number) => mutateDetail(id, "levelUpTo", [id, { level }]),
     levelDown: (id: string) => mutateDetail(id, "levelDown", [id]),
     delevel: (id: string, mode: string, classId?: string) => mutateDetailAndPersist(id, "delevel", [id, { mode, ...(classId ? { classId } : {}) }]),
     undoDelevel: (id: string) => mutateDetailAndPersist(id, "undoDelevel", [id]),

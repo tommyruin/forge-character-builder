@@ -279,6 +279,7 @@ export interface EngineMethodMap {
     [id: string, request: { mode: "main" | "new-multiclass" | "multiclass"; classId?: string }],
     WireObject
   >;
+  levelUpTo: MethodContract<[id: string, request: { level: number }], WireObject>;
   levelDown: MethodContract<[id: string], WireObject>;
   delevel: MethodContract<[id: string, request: { mode: "last" | "class"; classId?: string }], WireObject>;
   undoDelevel: MethodContract<[id: string], WireObject>;
@@ -371,6 +372,7 @@ export const ENGINE_METHOD_NAMES = [
   "prepareCharacterLoadSnapshot",
   "getCharacterLoadSnapshotBuffer",
   "levelUp",
+  "levelUpTo",
   "levelDown",
   "delevel",
   "undoDelevel",
@@ -471,6 +473,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   prepareCharacterLoadSnapshot: implemented,
   getCharacterLoadSnapshotBuffer: implemented,
   levelUp: implemented,
+  levelUpTo: implemented,
   levelDown: implemented,
   delevel: implemented,
   undoDelevel: implemented,
@@ -551,6 +554,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   prepareCharacterLoadSnapshot: "read-only",
   getCharacterLoadSnapshotBuffer: "read-only",
   levelUp: "character-write",
+  levelUpTo: "character-write",
   levelDown: "character-write",
   delevel: "character-write",
   undoDelevel: "character-write",

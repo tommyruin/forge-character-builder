@@ -11,6 +11,9 @@ import {
 import Icon from './Icon';
 import useDismissableOverlay from '../hooks/useDismissableOverlay';
 
+// Mirrors MAX_LEVEL in packages/engine/src/progression/leveling.ts.
+export const MAX_CHARACTER_LEVEL = 20;
+
 export function assertProgressionResponse(value) {
   if (
     value === null ||
@@ -32,6 +35,7 @@ export default function LevelUpFlyout({ onClose }) {
   const [progression, setProgression] = useState(null);
   const [error, setError] = useState(null);
   const [pendingDelevel, setPendingDelevel] = useState(null);
+  const [targetLevel, setTargetLevel] = useState('');
   const panelRef = useRef(null);
   const closeButtonRef = useRef(null);
 
@@ -61,6 +65,17 @@ export default function LevelUpFlyout({ onClose }) {
     try {
       await run(() => api.characters.levelUpMode(id, mode, classId));
       refresh();
+    } catch { /* surfaced by workspace */ }
+  };
+
+  // One engine call for the whole climb, so it is a single undo step and the
+  // pending ASI/subclass/spell choices all surface together on the Build tab.
+  const goToLevel = async (level) => {
+    try {
+      await run(() => api.characters.levelUpTo(id, level));
+      setTargetLevel('');
+      refresh();
+      notify?.(`Levelled up to ${level}`);
     } catch { /* surfaced by workspace */ }
   };
 
@@ -125,6 +140,15 @@ export default function LevelUpFlyout({ onClose }) {
   // Built once per render so each level row can look up its own roll instead of
   // the rolls living in a second panel that repeats the whole class list.
   const hitPoints = buildHitPointIndex(progression?.classes ?? []);
+  // "Go to level N": the field starts on the next level, so an untouched field
+  // never asks the engine for a level the character already has.
+  const nextLevel = Number(detail?.level ?? 1) + 1;
+  const targetDraft = targetLevel === '' ? String(nextLevel) : targetLevel;
+  const targetValue = Number.parseInt(targetDraft, 10);
+  const targetIsValid =
+    Number.isInteger(targetValue) &&
+    targetValue > Number(detail?.level ?? 1) &&
+    targetValue <= MAX_CHARACTER_LEVEL;
   const multiclasses = progression?.classes.filter((c) => c.isMulticlass) ?? [];
   const levelHistory = progression?.levelHistory ?? [];
   const latestLevel = levelHistory.at(-1);
@@ -185,6 +209,42 @@ export default function LevelUpFlyout({ onClose }) {
                 >
                   Level up {main.className} to {main.level + 1}
                 </button>
+              )}
+              {progression.hasMainClass && progression.canLevelUp && (
+                <div className="space-y-2" data-testid="level-up-to">
+                  <div className="flex items-center gap-2">
+                    <label
+                      className="text-xs text-[var(--fcb-text-faint)]"
+                      htmlFor="fcb-level-up-target"
+                    >
+                      Target level
+                    </label>
+                    {/* .fcb-input sets width:100% outside Tailwind's layers,
+                        so a width utility never bites; a fixed flex basis is
+                        what actually keeps the field to two digits. */}
+                    <input
+                      className="fcb-input shrink-0 grow-0 basis-16"
+                      disabled={busy}
+                      id="fcb-level-up-target"
+                      inputMode="numeric"
+                      max={MAX_CHARACTER_LEVEL}
+                      min={nextLevel}
+                      onChange={(event) => setTargetLevel(event.target.value)}
+                      step={1}
+                      type="number"
+                      value={targetDraft}
+                    />
+                  </div>
+                  <button
+                    className="fcb-button block w-full whitespace-nowrap text-left"
+                    disabled={busy || !targetIsValid}
+                    onClick={() => goToLevel(targetValue)}
+                    title={`Takes ${main?.className ?? 'the main class'} up one level at a time in a single step`}
+                    type="button"
+                  >
+                    Go to level {targetIsValid ? targetValue : detail.level}
+                  </button>
+                </div>
               )}
               {multiclasses.map((c) => (
                 <button

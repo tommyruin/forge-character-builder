@@ -6,6 +6,17 @@ export const hitDieMaximum = (hitDie) => {
   return match ? Number(match[1]) : 0;
 };
 
+// Half the die rounded up - the same number the Average Hit Points optional
+// rule fixes a level at.
+const averageForMaximum = (maximum) => Math.floor(maximum / 2) + 1;
+
+// The average result for a class's hit die, so a player who prefers averages
+// can take one without turning the rule on for the whole character.
+export const averageHitPoints = (hitDie) => {
+  const maximum = hitDieMaximum(hitDie);
+  return maximum ? averageForMaximum(maximum) : 0;
+};
+
 // Level History rows are chronological, but rolls are stored per class, so the
 // row needs to look its value up by the pair that identifies it.
 const rollKey = (classId, classLevel) => `${classId}:${classLevel}`;
@@ -105,6 +116,14 @@ function HitPointInput({
     void commit(String(next));
   };
 
+  // Taking the average is a save, not a draft: like the nudges it has a
+  // definite "done" moment, so it posts straight away.
+  const average = averageForMaximum(maximum);
+  const takeAverage = () => {
+    setDraft(String(average));
+    void commit(String(average));
+  };
+
   const locked = disabled || busy;
   const label = `${classProgression.className} level ${classLevel} hit points`;
 
@@ -180,6 +199,18 @@ function HitPointInput({
               strokeLinecap="round"
             />
           </svg>
+        </button>
+      )}
+      {!disabled && value !== average && (
+        <button
+          type="button"
+          aria-label={`Use average ${average} for ${label}`}
+          title={`Use the average d${maximum} result (${average})`}
+          className="fcb-level-hp__average min-h-[2.25rem] shrink-0 rounded-[var(--fcb-radius)] border border-[var(--fcb-control-border)] bg-[var(--fcb-control)] px-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--fcb-text-muted)] disabled:opacity-40"
+          disabled={locked}
+          onClick={takeAverage}
+        >
+          Avg
         </button>
       )}
     </div>

@@ -177,3 +177,69 @@ describe("buildProgression", () => {
     expect(fighter.getProgression("PF").canMulticlass).toBe(false);
   });
 });
+
+describe("levelUpTo", () => {
+  const ID_FIGHTER = "ID_WOTC_PHB_CLASS_FIGHTER";
+
+  function buildFighter1(id: string): CharacterService {
+    const service = new CharacterService(undefined, library, { rng: seededRng(7) });
+    service.createCharacter(id);
+    service.setAbilities(id, { strength: 15, dexterity: 13, constitution: 14, intelligence: 10, wisdom: 12, charisma: 8 });
+    const state = service.getCharacter(id);
+    service.setSelection(id, ruleOfType(pendingSelectionRules(state), "Class").identifier, ID_FIGHTER);
+    return service;
+  }
+
+  it("climbs the main class to the target level in one call", () => {
+    const service = buildFighter1("Ladder");
+    expect(service.getCharacter("Ladder").level).toBe(1);
+
+    const state = service.levelUpTo("Ladder", { level: 5 });
+
+    expect(state.level).toBe(5);
+    // A created character carries no record for its first level, so the climb
+    // leaves one registration per level gained.
+    expect(state.levelRegistrations).toHaveLength(4);
+    expect(state.levelRegistrations.map((record) => record.totalLevel)).toEqual([2, 3, 4, 5]);
+    expect(state.levelRegistrations.every((record) => record.classId === ID_FIGHTER)).toBe(true);
+    const progression = service.getProgression("Ladder");
+    expect(progression.levelHistory).toHaveLength(5);
+    expect(progression.classes[0]).toMatchObject({ classId: ID_FIGHTER, level: 5 });
+  });
+
+  it("refuses a level that is not above the current one", () => {
+    const service = buildFighter1("Sideways");
+    for (const level of [1, 0, -3]) {
+      expect(() => service.levelUpTo("Sideways", { level })).toThrowError(
+        expect.objectContaining({
+          code: "invalid-argument",
+          message: expect.stringContaining("must be above the current level"),
+        }),
+      );
+    }
+    expect(() => service.levelUpTo("Sideways", { level: 2.5 })).toThrowError(
+      expect.objectContaining({ code: "invalid-argument", message: expect.stringContaining("whole number") }),
+    );
+    expect(service.getCharacter("Sideways").level).toBe(1);
+  });
+
+  it("refuses a level above the maximum", () => {
+    const service = buildFighter1("TooHigh");
+    expect(() => service.levelUpTo("TooHigh", { level: 21 })).toThrowError(
+      expect.objectContaining({
+        code: "invalid-argument",
+        message: expect.stringContaining("maximum character level of 20"),
+      }),
+    );
+    expect(service.getCharacter("TooHigh").level).toBe(1);
+  });
+
+  it("refuses a character with no class", () => {
+    const service = new CharacterService(undefined, library, { rng: seededRng(7) });
+    service.createCharacter("Classless");
+    expect(() => service.levelUpTo("Classless", { level: 3 })).toThrowError(
+      expect.objectContaining({ code: "conflict", message: expect.stringContaining("choose a class") }),
+    );
+    expect(service.getCharacter("Classless").level).toBe(1);
+  });
+});
