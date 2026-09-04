@@ -269,6 +269,50 @@ describe('MagicTab compact layout', () => {
     expect(css).toMatch(/:not\(\s*\.fcb-spell-meta-line\s*\)/s);
   });
 
+  it('marks a feature caster as granted rather than prepared', () => {
+    // Magic Initiate and its kin project as a slotless "feature" caster:
+    // nothing to prepare and nothing to remove. The prepare counter, the
+    // Prepared column and the toggles all key off requiresPreparation, which a
+    // feature caster never sets; the remove action and the caption are the two
+    // that need the kind guard.
+    expect(source).toContain("activeCaster.kind === 'feature'");
+    expect(source).toContain('Granted by feature. Always ready.');
+    expect(source).toMatch(
+      /activeCaster\.kind !== 'feature' \|\|[\s\S]*?dmSpellIds\.has\(spell\.id\)/,
+    );
+    expect(source).toContain('Free casting: ${spell.usage}');
+  });
+
+  it('keeps the remove action on the DM-grant block', () => {
+    // A character with no class caster gets the engine's "Additional Spells"
+    // block for spells the DM granted. It reports kind "feature" (no slots,
+    // nothing to prepare), so the feature guard above would have hidden the
+    // remove action that is the whole point of the block.
+    expect(source).toContain("const GRANTED_CASTER_NAME = 'Additional Spells'");
+    expect(source).toMatch(
+      /activeCaster\.name === GRANTED_CASTER_NAME\s*\)\s*&&\s*dmSpellIds\.has\(spell\.id\)/,
+    );
+    // ...and its caption does not claim a feature granted them.
+    expect(source).toContain('Granted spells. Always ready.');
+  });
+
+  it('derives the free-cast sentence from the spells that carry a usage', () => {
+    // Only some feature grants promise a free cast: a tiefling's Infernal
+    // Legacy, Armor of Shadows and the cantrip-only grants carry no usage, so
+    // the old unconditional "the level 1 spell can be cast once per long rest"
+    // claim was wrong for them. The sentence now hangs off the usage values
+    // actually present on the caster's known spells.
+    expect(source).not.toContain('the level 1 spell can');
+    expect(source).toMatch(
+      /const featureUsages = \[\s*\.\.\.new Set\(\s*\(activeCaster\?\.knownSpells \?\? \[\]\)\.map\(\(s\) => s\.usage\)\.filter\(Boolean\),/,
+    );
+    expect(source).toMatch(/featureUsages\.length > 0 &&/);
+    expect(source).toContain('Spells marked ${featureUsages.join(');
+    expect(source).toContain(
+      'can be cast once per long rest without a spell slot.',
+    );
+  });
+
   it('keeps the prepared-spell limit warning visible on the client path', () => {
     expect(source).toContain('data-testid="prepare-limit-popup"');
     expect(source).toContain('can prepare at most');

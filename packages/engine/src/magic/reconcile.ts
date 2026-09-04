@@ -6,6 +6,8 @@ import { isSpellcastingExtension } from "../content/parser.js";
 import { multiclassSlotProgression } from "../statistics/calculator.js";
 import { spellInfo, canonicalSourceRank } from "./spelllist.js";
 import { applySpellRiders, damageWithBonus } from "./spell-riders.js";
+import { featureSpellCasters } from "./feature-casters.js";
+import { grantedCasterAbility, GRANTED_CASTER_KEY, GRANTED_CASTER_NAME } from "./dto.js";
 import type { MagicAdditionalSpell, MagicCasterBlock, MagicSpellEntry, MagicState } from "./state.js";
 
 /**
@@ -503,7 +505,10 @@ export function buildMagicAttackOptions(
   const magic = state.magic;
   const casters: MagicAttackCasterOptionDto[] = [];
   const spells: MagicAttackSpellOptionDto[] = [];
-  if (magic === null) return { casters, spells };
+  // Feature spells (Magic Initiate's Fire Bolt) exist without a `<magic>`
+  // region, so they are collected before the early return.
+  const featureCasters = featureSpellCasters(state, library);
+  if (magic === null && featureCasters.length === 0) return { casters, spells };
 
   const proficiency = statistics["proficiency"] ?? 0;
   const abilityModifier = (ability: string): number => {
@@ -513,11 +518,48 @@ export function buildMagicAttackOptions(
   const registered = new Set(state.sum.elements.map((entry) => entry.id));
   const nameOf = (id: string): string | undefined => library.byId.get(id)?.identity.name;
 
-  for (const block of magic.casters) {
+  // Caster blocks and feature casters project the same attack rows; only the
+  // attack modifier differs (a feature caster has no per-caster statistics).
+  const sources: { identifier: string; name: string; ability: string; attackModifier: number; spellIds: string[] }[] = [];
+  for (const block of magic?.casters ?? []) {
     const abbr = ABILITY_ABBR[block.ability] ?? block.ability;
-    const attackModifier = statistics[`spellcasting:attack:${abbr.toLowerCase()}`] ?? proficiency + abilityModifier(block.ability);
-    casters.push({
+    sources.push({
       identifier: casterIds.get(block.name) ?? block.name,
+      name: block.name,
+      ability: block.ability,
+      attackModifier:
+        statistics[`spellcasting:attack:${abbr.toLowerCase()}`] ?? proficiency + abilityModifier(block.ability),
+      spellIds: [...new Set([...block.cantrips, ...block.spells].map((spell) => spell.id))],
+    });
+  }
+  for (const feature of featureCasters) {
+    sources.push({
+      identifier: casterIds.get(feature.key) ?? feature.key,
+      name: feature.name,
+      ability: feature.ability,
+      attackModifier: proficiency + abilityModifier(feature.ability),
+      spellIds: [...new Set([...feature.cantripIds, ...feature.spellIds])],
+    });
+  }
+  // DM grants ride on the first caster block when there is one; with none they
+  // stand as their own source, so a granted attack cantrip is still offered as
+  // an attack option (the spellcasting DTO projects the matching block).
+  if (magic !== null && magic.casters.length === 0 && magic.additional.length > 0) {
+    const ability = grantedCasterAbility(statistics);
+    sources.push({
+      identifier: casterIds.get(GRANTED_CASTER_KEY) ?? GRANTED_CASTER_KEY,
+      name: GRANTED_CASTER_NAME,
+      ability,
+      attackModifier: proficiency + abilityModifier(ability),
+      spellIds: [...new Set(magic.additional.map((spell) => spell.id))],
+    });
+  }
+
+  for (const block of sources) {
+    const abbr = ABILITY_ABBR[block.ability] ?? block.ability;
+    const attackModifier = block.attackModifier;
+    casters.push({
+      identifier: block.identifier,
       name: block.name,
       ability: block.ability,
       attackModifier,
@@ -532,8 +574,7 @@ export function buildMagicAttackOptions(
         isPerHit: true,
       },
     });
-    const knownIds = new Set([...block.cantrips, ...block.spells].map((spell) => spell.id));
-    for (const id of knownIds) {
+    for (const id of block.spellIds) {
       const element = library.byId.get(id);
       if (element === undefined || element.identity.type !== "Spell") continue;
       const attack = parseSpellAttack(element.descriptionXml, state.level);
@@ -569,7 +610,7 @@ export function buildMagicAttackOptions(
       });
       sourceNotes.push(...riders.sourceNotes, ...attack.notes);
       spells.push({
-        casterIdentifier: casterIds.get(block.name) ?? block.name,
+        casterIdentifier: block.identifier,
         casterName: block.name,
         spellId: id,
         spellName: info.name,

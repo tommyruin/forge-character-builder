@@ -17,15 +17,17 @@ import {
 } from "../selection/selection.js";
 import type { ParsedElement } from "../content/parser.js";
 import { engineError } from "../errors.js";
-import type { MagicCasterBlock } from "./state.js";
+import type { MagicAdditionalSpell, MagicCasterBlock } from "./state.js";
 import {
   alwaysPreparedSets,
   canonicalSourceRank,
+  compareSpellInfo,
   fullCasterList,
   ownKnownSpells,
   spellInfo,
   type SpellInfo,
 } from "./spelllist.js";
+import { featureSpellCasters, type FeatureSpellCaster } from "./feature-casters.js";
 
 /**
  * Magic DTO projections.
@@ -80,6 +82,55 @@ const ABILITY_ABBR: Readonly<Record<string, string>> = {
 };
 
 const SPELL_POINTS_OPTION = "ID_INTERNAL_OPTION_ALLOW_SPELL_POINTS";
+
+/**
+ * The banner DM-granted spells project under when no class caster carries
+ * them. The spell cards already file such a spell as "Additional Spell,
+ * {name}" (`spellOriginLabel` prints the `<additional>` entry's own `source`),
+ * so the block that gathers them is named for the same family.
+ */
+export const GRANTED_CASTER_NAME = "Additional Spells";
+
+/**
+ * The `magicCasterIds` key for that block. No `<magic>` caster owns it, so it
+ * cannot be keyed by a caster name; the prefix keeps it clear of the feature
+ * casters' `feature:<element id>` keys.
+ */
+export const GRANTED_CASTER_KEY = "additional:granted";
+
+/** The abilities a spell can be cast with, in PHB order. */
+const GRANTED_ABILITY_ORDER: readonly string[] = ["Intelligence", "Wisdom", "Charisma"];
+
+/**
+ * The ability a DM-granted spell is cast with. A grant carries no ability and
+ * the content supports no claim about which one applies, so rather than assert
+ * a rule the block reports the character's strongest casting ability (ties in
+ * PHB order) — the most favourable reading, and one a DM can overrule at the
+ * table.
+ */
+export function grantedCasterAbility(statistics: Readonly<Record<string, number>>): string {
+  let best = GRANTED_ABILITY_ORDER[0]!;
+  let bestModifier = Number.NEGATIVE_INFINITY;
+  for (const ability of GRANTED_ABILITY_ORDER) {
+    const modifier = statistics[`${ability.toLowerCase()}:modifier`] ?? 0;
+    if (modifier > bestModifier) {
+      bestModifier = modifier;
+      best = ability;
+    }
+  }
+  return best;
+}
+
+/**
+ * Whether the character's `<additional>` grants reach no class caster. With at
+ * least one caster block the grants ride on the first one (see
+ * `buildSpellcastingDto`); with none they need a block of their own.
+ */
+export function hasUnprojectedGrants(state: CharacterState): boolean {
+  const magic = state.magic;
+  if (magic === null) return false;
+  return magic.casters.length === 0 && magic.additional.length > 0;
+}
 
 // The public 5e per-slot-level spell point costs; slots of level 6+ can be
 // converted only once each per long rest. The maximum pool is the caster's
@@ -194,7 +245,11 @@ export function buildSpellcastingDto(
   casterIds: ReadonlyMap<string, string>,
 ): SpellcasterDto[] {
   const magic = state.magic;
-  if (magic === null) return [];
+  // A character can have feature spells with no `<magic>` region at all (a
+  // Fighter whose background granted Magic Initiate), so the feature casters
+  // are built before the early return.
+  const featureCasters = featureSpellCasters(state, library);
+  if (magic === null && featureCasters.length === 0) return [];
   const always = alwaysPreparedSets(state, library);
   const proficiency = statistics["proficiency"] ?? 0;
   const abilityModifier = (ability: string): number => {
@@ -205,7 +260,7 @@ export function buildSpellcastingDto(
   const casters: SpellcasterDto[] = [];
   const seenNames = new Set<string>();
   let grantedProjected = false;
-  for (const block of magic.casters) {
+  for (const block of magic?.casters ?? []) {
     // One caster per spellcasting name: a stale document may still carry a
     // duplicated block (an extension serialized as a caster), which must not
     // project twice.
@@ -257,13 +312,26 @@ export function buildSpellcastingDto(
       spellInfos = [...alwaysInfos, ...ownCantrips, ...rest];
     } else {
       spellInfos = ownKnownSpells(library, block);
+      // Feature grants (2024 subclass expanded lists, Divine Smite, Find
+      // Steed) never enter `<spells>`, so the known-caster projection unions
+      // them in and re-sorts with the DTO comparator.
+      const known = new Set(spellInfos.map((info) => info.id));
+      const granted: SpellInfo[] = [];
+      for (const id of alwaysSet) {
+        if (known.has(id)) continue;
+        const info = spellInfo(library, id);
+        if (info === null) continue;
+        known.add(id);
+        granted.push(info);
+      }
+      if (granted.length > 0) spellInfos = [...spellInfos, ...granted].sort(compareSpellInfo);
     }
     // Granted spells live in <additional> and belong to no single caster, so
     // they ride on the first caster: always ready, never counted against the
     // preparation limit, and removable through the DM-grant surface.
     if (!grantedProjected) {
       const present = new Set(spellInfos.map((info) => info.id));
-      for (const extra of magic.additional) {
+      for (const extra of magic?.additional ?? []) {
         if (present.has(extra.id)) continue;
         const info = spellInfo(library, extra.id);
         if (info === null) continue;
@@ -280,6 +348,7 @@ export function buildSpellcastingDto(
     casters.push({
       identifier: casterIds.get(block.name) ?? block.name,
       name: block.name,
+      kind: "class",
       ability: block.ability,
       attackModifier,
       saveDc,
@@ -293,7 +362,109 @@ export function buildSpellcastingDto(
       resource,
     });
   }
+  for (const feature of featureCasters) {
+    casters.push(featureCasterDto(library, statistics, casterIds, feature, proficiency, abilityModifier));
+  }
+  // A character with no caster block never entered the loop above, so nothing
+  // projected the `<additional>` grants: a Barbarian handed Fire Bolt saw it
+  // nowhere at all. They gather into their own slotless block instead of being
+  // dropped. Nothing changes when a class caster exists — the grants still
+  // ride on the first one.
+  if (!grantedProjected && (magic?.additional.length ?? 0) > 0) {
+    casters.push(grantedCasterDto(library, statistics, casterIds, magic!.additional, proficiency, abilityModifier));
+  }
   return casters;
+}
+
+/**
+ * Projects one feature caster: no slots, nothing to prepare, and an
+ * attack/DC from proficiency plus the nominated ability modifier. Its levelled
+ * spells are always prepared and carry the feature's free-cast allowance, when
+ * it grants one; cantrips are at-will and carry none.
+ */
+function featureCasterDto(
+  library: ElementLibrary,
+  statistics: Readonly<Record<string, number>>,
+  casterIds: ReadonlyMap<string, string>,
+  feature: FeatureSpellCaster,
+  proficiency: number,
+  abilityModifier: (ability: string) => number,
+): SpellcasterDto {
+  const modifier = abilityModifier(feature.ability);
+  const toDto = (id: string, usage: string | null): KnownSpellDto | null => {
+    const info = spellInfo(library, id);
+    if (info === null) return null;
+    return {
+      ...toKnownSpellDto(info, { prepared: false, always: true }),
+      ...(usage === null ? {} : { usage }),
+    };
+  };
+  const knownSpells = [
+    ...feature.cantripIds.map((id) => toDto(id, null)),
+    ...feature.spellIds.map((id) => toDto(id, feature.usage)),
+  ]
+    .filter((spell): spell is KnownSpellDto => spell !== null)
+    .sort((left, right) => left.level - right.level || left.name.localeCompare(right.name));
+  return {
+    identifier: casterIds.get(feature.key) ?? feature.key,
+    name: feature.name,
+    kind: "feature",
+    ability: feature.ability,
+    attackModifier: proficiency + modifier,
+    saveDc: 8 + proficiency + modifier,
+    requiresPreparation: false,
+    allowReplace: false,
+    prepareCount: 0,
+    currentPreparedCount: 0,
+    slotsPerLevel: Array<number>(9).fill(0),
+    knownSpells,
+    maxSpellLevel: knownSpells.reduce((highest, spell) => Math.max(highest, spell.level), 0),
+    resource: { mode: "slots", canUseSpellPoints: false },
+  };
+}
+
+/**
+ * Projects the DM grants a character has with no class caster to carry them.
+ * Shaped like a feature caster — no slots, nothing to prepare, an attack/DC
+ * from proficiency plus the nominated ability — because that is what a granted
+ * spell is: always available, and never counted against a preparation limit.
+ */
+function grantedCasterDto(
+  library: ElementLibrary,
+  statistics: Readonly<Record<string, number>>,
+  casterIds: ReadonlyMap<string, string>,
+  additional: readonly MagicAdditionalSpell[],
+  proficiency: number,
+  abilityModifier: (ability: string) => number,
+): SpellcasterDto {
+  const ability = grantedCasterAbility(statistics);
+  const modifier = abilityModifier(ability);
+  const seen = new Set<string>();
+  const knownSpells: KnownSpellDto[] = [];
+  for (const extra of additional) {
+    if (seen.has(extra.id)) continue;
+    const info = spellInfo(library, extra.id);
+    if (info === null) continue;
+    seen.add(extra.id);
+    knownSpells.push(toKnownSpellDto(info, { prepared: false, always: true }));
+  }
+  knownSpells.sort((left, right) => left.level - right.level || left.name.localeCompare(right.name));
+  return {
+    identifier: casterIds.get(GRANTED_CASTER_KEY) ?? GRANTED_CASTER_KEY,
+    name: GRANTED_CASTER_NAME,
+    kind: "feature",
+    ability,
+    attackModifier: proficiency + modifier,
+    saveDc: 8 + proficiency + modifier,
+    requiresPreparation: false,
+    allowReplace: false,
+    prepareCount: 0,
+    currentPreparedCount: 0,
+    slotsPerLevel: Array<number>(9).fill(0),
+    knownSpells,
+    maxSpellLevel: knownSpells.reduce((highest, spell) => Math.max(highest, spell.level), 0),
+    resource: { mode: "slots", canUseSpellPoints: false },
+  };
 }
 
 function spellcastingNameFor(

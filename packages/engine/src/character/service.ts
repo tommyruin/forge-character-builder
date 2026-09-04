@@ -118,6 +118,8 @@ import { randomUuid } from "../platform.js";
 import {
   buildSpellcastingDto,
   buildSpellBrowseDto,
+  hasUnprojectedGrants,
+  GRANTED_CASTER_KEY,
   type SpellcasterDto,
   type SpellBrowseDto,
 } from "../magic/dto.js";
@@ -128,6 +130,7 @@ import {
   planSetCompanionName,
 } from "../magic/planners.js";
 import { buildCompanionDto, buildMagicAttackOptions, reconcileMagic, type CompanionDto } from "../magic/reconcile.js";
+import { featureSpellCasters } from "../magic/feature-casters.js";
 import {
   planGrantedFeatEdits,
   planGrantedAbilityScoreEdits,
@@ -1697,10 +1700,22 @@ export class CharacterService {
   }
 
   private ensureMagicCasterIds(state: CharacterState): void {
-    if (state.magic === null) return;
-    for (const caster of state.magic.casters) {
+    for (const caster of state.magic?.casters ?? []) {
       if (!state.magicCasterIds.has(caster.name)) {
         state.magicCasterIds.set(caster.name, randomUuid());
+      }
+    }
+    // DM grants with no class caster to ride on project their own block, which
+    // likewise has no caster name to key an id by.
+    if (hasUnprojectedGrants(state) && !state.magicCasterIds.has(GRANTED_CASTER_KEY)) {
+      state.magicCasterIds.set(GRANTED_CASTER_KEY, randomUuid());
+    }
+    // Feature casters (Magic Initiate and friends) exist without a `<magic>`
+    // region, so their ids are seeded outside the block above.
+    if (this.library === undefined) return;
+    for (const caster of featureSpellCasters(state, this.library)) {
+      if (!state.magicCasterIds.has(caster.key)) {
+        state.magicCasterIds.set(caster.key, randomUuid());
       }
     }
   }

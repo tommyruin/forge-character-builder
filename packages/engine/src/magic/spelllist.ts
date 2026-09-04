@@ -92,6 +92,11 @@ const byLevelThenNameThenSource = () => (left: SpellInfo, right: SpellInfo): num
   return canonicalSourceRank(left.source) - canonicalSourceRank(right.source);
 };
 
+/** The DTO spell order: level, then name, then canonical source. */
+export function compareSpellInfo(left: SpellInfo, right: SpellInfo): number {
+  return byLevelThenNameThenSource()(left, right);
+}
+
 /**
  * The caster's projected known spells (prepared full-list casters): the whole
  * class list up to the caster's max slot level, in DTO order.
@@ -128,8 +133,16 @@ export function ownKnownSpells(library: ElementLibrary, caster: MagicCasterBlock
 }
 
 /**
- * Always-prepared spells per caster: Spell grants with `prepared="true"`
- * (and the spellcasting target) from the character's registered elements.
+ * Always-prepared spells per caster, from the character's registered elements:
+ *
+ * - Spell grants carrying `prepared="true"` (and a spellcasting target), and
+ * - bare `<grant type="Spell" spellcasting="X"/>` rules — the 2024 corpus
+ *   writes its subclass lists, Divine Smite and Find Steed without the
+ *   `prepared` attribute — but only when the grant actually registered as a
+ *   child of the granting node. Registration is where `grantEligible()`
+ *   applied the rule's `level=` and `<requirements>` gates, so reading it back
+ *   honours a `level="5"` grant (the Draconic Sorcerer's Fear) for free.
+ *
  * The XML `always-prepared` attribute is NOT read (captured: stale fixture
  * attributes project false when no grant backs them).
  */
@@ -139,9 +152,10 @@ export function alwaysPreparedSets(state: CharacterState, library: ElementLibrar
     for (const registered of nodes) {
       const element = library.byId.get(registered.id);
       if (element !== undefined) {
+        const registeredChildren = new Set(registered.children.map((child) => child.id));
         for (const rule of element.rules) {
           if (rule.kind !== "grant" || rule.type !== "Spell" || rule.id === undefined) continue;
-          if (rule.prepared !== true) continue;
+          if (rule.prepared !== true && !registeredChildren.has(rule.id)) continue;
           const casterName = rule.spellcasting;
           if (casterName === undefined) continue;
           const set = sets.get(casterName) ?? new Set<string>();

@@ -678,7 +678,10 @@ function buildFormValues(
   }
   set("details_attack_description", state.attacksDescription);
 
-  const caster = spellcasters[0];
+  // The details page carries one spellcasting block, which belongs to the
+  // character's class caster; a feature caster only fills it when there is no
+  // class caster at all.
+  const caster = spellcasters.find((entry) => entry.kind === "class") ?? spellcasters[0];
   if (caster !== undefined) {
     set("Spellcasting Class 2", caster.name);
     set("SpellcastingAbility 2", caster.ability);
@@ -1976,6 +1979,10 @@ function classArchetypes(state: CharacterState): Map<string, string> {
 }
 
 function casterDisplayName(state: CharacterState, library: ElementLibrary, caster: SpellcasterDto): string {
+  // A feature caster is already named for its feature ("Magic Initiate
+  // (Cleric)"); the single-archetype fallback below would append the
+  // character's subclass to it.
+  if (caster.kind === "feature") return caster.name;
   const classMap = classArchetypes(state);
   const byClass = new Map<string, string>();
   for (const [classId, archetypeId] of classMap) {
@@ -2129,6 +2136,10 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       if (index < prepared.length) tokens.push(PREPARED_MARK);
       tokens.push(...spell.name.split(/\s+/));
       if (index < prepared.length && spell.isAlwaysPrepared) tokens.push("(Always", "Prepared)");
+      // A feature spell also carries its free-cast allowance ("(1/Long Rest)").
+      if (spell.usage !== undefined && spell.usage !== null && spell.usage !== "") {
+        tokens.push(...`(${spell.usage})`.split(/\s+/));
+      }
     }
     return tokens;
   };
@@ -2147,7 +2158,11 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     for (let level = 1; level <= 9; level++) {
       const slots = slotsPerLevel[level - 1] ?? 0;
       const knownAtLevel = spells.filter((spell) => spell.level === level);
-      if (slots <= 0 && !(caster.resource.mode === "spellPoints" && knownAtLevel.length > 0)) continue;
+      // A feature caster has no slots of its own (its level-1 spell is cast
+      // free once per long rest, or from another caster's slots), so its
+      // levels are admitted on known spells alone.
+      const slotless = caster.resource.mode === "spellPoints" || caster.kind === "feature";
+      if (slots <= 0 && !(slotless && knownAtLevel.length > 0)) continue;
       const prepared = spells.filter(
         (spell) => spell.level === level && (spell.isPrepared || spell.isAlwaysPrepared),
       );
@@ -2287,40 +2302,37 @@ function buildSpellDescriptionPages(
   };
   const dtoFor = (caster: SpellcasterDto, id: string): KnownSpellDto | undefined =>
     caster.knownSpells.find((spell) => spell.id === id);
-  if (state.magic !== null) {
-    for (const block of state.magic.casters) {
-      const caster = casterByName.get(block.name) ?? null;
-      if (caster === null) continue;
-      for (const raw of block.cantrips) {
-        const spell = dtoFor(caster, raw.id) ?? knownSpellFromLibrary(library, raw.id);
-        if (spell !== undefined && spell.level === 0) add(spell, caster);
-      }
-      for (const raw of block.spells) {
-        const spell = dtoFor(caster, raw.id) ?? knownSpellFromLibrary(library, raw.id);
-        if (spell === undefined) continue;
-        if (!caster.requiresPreparation || raw.prepared || raw.alwaysPrepared || spell.isPrepared || spell.isAlwaysPrepared) {
-          add(spell, caster);
-        }
+  for (const block of state.magic?.casters ?? []) {
+    const caster = casterByName.get(block.name) ?? null;
+    if (caster === null) continue;
+    for (const raw of block.cantrips) {
+      const spell = dtoFor(caster, raw.id) ?? knownSpellFromLibrary(library, raw.id);
+      if (spell !== undefined && spell.level === 0) add(spell, caster);
+    }
+    for (const raw of block.spells) {
+      const spell = dtoFor(caster, raw.id) ?? knownSpellFromLibrary(library, raw.id);
+      if (spell === undefined) continue;
+      if (!caster.requiresPreparation || raw.prepared || raw.alwaysPrepared || spell.isPrepared || spell.isAlwaysPrepared) {
+        add(spell, caster);
       }
     }
-    // Registered spell identities include always-prepared grants that may not
-    // carry a prepared flag in the persisted magic block.
-    for (const registered of state.sum.elements) {
-      if (registered.type !== "Spell") continue;
-      for (const caster of casters) {
-        const spell = dtoFor(caster, registered.id);
-        if (spell !== undefined) {
-          add(spell, caster);
-          break;
-        }
+  }
+  // Registered spell identities include always-prepared grants that may not
+  // carry a prepared flag in the persisted magic block, and every feature
+  // caster's spells — a character can have those with no magic region at all.
+  for (const registered of state.sum.elements) {
+    if (registered.type !== "Spell") continue;
+    for (const caster of casters) {
+      const spell = dtoFor(caster, registered.id);
+      if (spell !== undefined) {
+        add(spell, caster);
+        break;
       }
     }
-    for (const extra of state.magic.additional) {
-      const spell = knownSpellFromLibrary(library, extra.id, extra.name, extra.level);
-      if (spell !== undefined) add(spell, null, extra.source);
-    }
-  } else {
-    // No magic region means no active spell identities.
+  }
+  for (const extra of state.magic?.additional ?? []) {
+    const spell = knownSpellFromLibrary(library, extra.id, extra.name, extra.level);
+    if (spell !== undefined) add(spell, null, extra.source);
   }
   const entries = [...union.values()].sort(
     (left, right) =>
@@ -2390,6 +2402,8 @@ function knownSpellFromLibrary(
 function spellOriginLabel(state: CharacterState, entry: SpellDescriptionEntry): string {
   if (entry.additionalSource !== undefined) return entry.additionalSource;
   if (entry.caster === null) return "Spellcasting";
+  // A feature caster's card is filed under the feature that granted it.
+  if (entry.caster.kind === "feature") return entry.caster.name;
   const caster = entry.caster.name;
   if (entry.spell.isAlwaysPrepared) {
     const archetype = state.archetype ?? "";

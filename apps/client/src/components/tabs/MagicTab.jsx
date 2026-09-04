@@ -26,6 +26,11 @@ import {
 
 // DM/homebrew "add a spell" is a local-engine-only capability (needs api.characters.addSpell).
 const canAddSpell = typeof api.characters.addSpell === 'function';
+// The banner the engine projects DM grants under when the character has no
+// class caster to carry them (GRANTED_CASTER_NAME in magic/dto.ts). It reports
+// kind "feature" — it has no slots and nothing to prepare — but unlike a feat's
+// caster its spells ARE DM grants, so they keep their remove action.
+const GRANTED_CASTER_NAME = 'Additional Spells';
 const ABILITY_ABBREVIATIONS = {
   Strength: 'STR',
   Dexterity: 'DEX',
@@ -484,6 +489,17 @@ export default function MagicTab() {
     (casters?.length ?? 0) > 0 || spellRules.length > 0 || hasCompanion;
   const activeCaster = casters?.find((c) => c.identifier === activeTab);
 
+  // Only some feature grants promise a free cast: a tiefling's Infernal
+  // Legacy, Armor of Shadows and the other invocation grants, and every
+  // cantrip-only caster hand out nothing of the sort. The engine marks the
+  // ones that do with a usage string, so the caption reads that instead of
+  // claiming a level 1 free cast for all of them.
+  const featureUsages = [
+    ...new Set(
+      (activeCaster?.knownSpells ?? []).map((s) => s.usage).filter(Boolean),
+    ),
+  ];
+
   const addSpellAction = () =>
     canAddSpell ? (
       <button
@@ -763,6 +779,17 @@ export default function MagicTab() {
                         ? 'Prepared spells'
                         : 'Known spells'}
                     </h2>
+                    {activeCaster.kind === 'feature' && (
+                      <p className="fcb-muted-copy mt-0.5 text-xs">
+                        {activeCaster.name === GRANTED_CASTER_NAME
+                          ? 'Granted spells. Always ready.'
+                          : 'Granted by feature. Always ready.'}
+                        {featureUsages.length > 0 &&
+                          ` Spells marked ${featureUsages.join(
+                            ' or ',
+                          )} can be cast once per long rest without a spell slot.`}
+                      </p>
+                    )}
                   </div>
                   {addSpellAction()}
                 </header>
@@ -784,7 +811,14 @@ export default function MagicTab() {
                           (s) => s.level === activeSpellLevel(activeCaster),
                         )
                         .map((spell) => {
-                          const isDmGranted = dmSpellIds.has(spell.id);
+                          // A feat or trait caster's spells come from the
+                          // feature that granted them, never from a DM grant,
+                          // so they carry no remove action. The DM-grant block
+                          // is the exception: it exists only to hold them.
+                          const isDmGranted =
+                            (activeCaster.kind !== 'feature' ||
+                              activeCaster.name === GRANTED_CASTER_NAME) &&
+                            dmSpellIds.has(spell.id);
                           return (
                             <tr
                               key={spell.id}
@@ -836,6 +870,14 @@ export default function MagicTab() {
                                       title="Concentration"
                                     >
                                       C
+                                    </span>
+                                  )}
+                                  {spell.usage && (
+                                    <span
+                                      className="fcb-status-badge fcb-status-complete"
+                                      title={`Free casting: ${spell.usage}`}
+                                    >
+                                      {spell.usage}
                                     </span>
                                   )}
                                   {isDmGranted && (

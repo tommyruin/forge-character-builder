@@ -102,11 +102,23 @@ export interface KnownSpellDto {
   range: string;
   duration: string;
   description: string;
+  /**
+   * The free-cast allowance the granting feature attaches to the spell
+   * ("1/Long Rest" for a Magic Initiate level-1 spell). Absent or null when
+   * the spell is cast from slots alone.
+   */
+  usage?: string | null;
 }
 
 export interface SpellcasterDto {
   identifier: string;
   name: string;
+  /**
+   * "class" for a caster block backed by a spellcasting feature; "feature" for
+   * spells a feat or trait grants outside any caster (Magic Initiate, the High
+   * Elf cantrip). Feature casters have no slots and prepare nothing.
+   */
+  kind: "class" | "feature";
   ability: string;
   attackModifier: number;
   saveDc: number;
