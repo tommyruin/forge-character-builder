@@ -70,10 +70,11 @@ describe("attunement benefit gates", () => {
     expect(buildInventoryDto(state, library).attunedItemCount).toBe(1);
   });
 
-  // A cloak has no equip slot: there is no held/worn toggle to satisfy, so
-  // attunement is its only gate. It is worn by carrying it, exactly as the
-  // legacy character format modeled it (an <attunement> node and a registered
-  // sum entry, never an <equipped> node).
+  // A cloak has no hand or armour slot to fill, so attunement is its only
+  // gate: the magical bond is what puts it to use. Saved characters model it
+  // that way too -- an <attunement> node and a registered sum entry, with an
+  // <equipped>true</equipped> node (no location) only when the wearer has no
+  // attunement to record.
   it("activates a slotless attunement item on attunement alone", () => {
     const { service, id, identifier } = withItem(CLOAK_OF_PROTECTION);
     const before = computeStatistics(service.getCharacter(id), library);

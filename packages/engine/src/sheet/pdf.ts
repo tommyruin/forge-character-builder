@@ -789,8 +789,15 @@ async function addFilledTemplatePage(
   const textColour = SHEET_PALETTE[colours.text].rgb;
   for (const [name, field] of art.fields) {
     // Values render through WinAnsi, so an unencodable glyph in third-party
-    // content degrades rather than aborting the whole build.
-    const value = winAnsiText(values[name] ?? "");
+    // content degrades rather than aborting the whole build. A multiline
+    // widget is sanitised one line at a time: WinAnsi collapses every control
+    // character to a space, and the form appearance this drawing replaces
+    // broke a multiline value at its newlines, so the breaks have to survive
+    // the sanitising for the drawn text to say the same thing.
+    const raw = values[name] ?? "";
+    const value = field.multiline
+      ? raw.split(/\r?\n/).map((line) => winAnsiText(line)).join("\n")
+      : winAnsiText(raw);
     if (field.kind === "check") {
       // Both template sets' markers (squares and circles) carry the same mark.
       if (value === "true") {

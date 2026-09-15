@@ -28,6 +28,8 @@ const EQUIP_ACTION_LABELS = {
   primary: "Main hand",
   secondary: "Off hand",
   "primary-twohanded": "Two-handed",
+  // A slotless item fills no hand or armor slot: it is simply worn.
+  worn: "Wear",
 };
 
 const EQUIP_ACTION_ICONS = {
@@ -35,6 +37,7 @@ const EQUIP_ACTION_ICONS = {
   primary: "main-hand",
   secondary: "off-hand",
   "primary-twohanded": "two-handed",
+  worn: "check",
 };
 
 function categorySlug(value) {
@@ -1409,7 +1412,9 @@ export function InventoryActionButtons({
         ))}
       {item.isEquipped && (
         <ActionButton
-          label="Unequip"
+          // A worn item occupies no slot, so there is nothing to unequip from:
+          // the action is taking it off.
+          label={item.equippedLocation === null ? "Remove" : "Unequip"}
           icon="unequip"
           disabled={busy}
           onClick={() => onEquip(item.identifier, "none")}

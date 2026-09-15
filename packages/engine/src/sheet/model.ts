@@ -447,7 +447,10 @@ function buildFormValues(
   set("details_speed_climb", specialSpeed(values["speed:climb"]));
   set("details_speed_swim", specialSpeed(values["speed:swim"]));
   set("details_vision", visionNames(state, library).join(", "));
-  set("details_resistances", state.conditional.join("\n"));
+  // The computed defences first, then an imported file's own hand-written
+  // <defenses><conditional> text: nothing in this app writes that text, so it
+  // is the importing player's note and outlives what the engine can derive.
+  set("details_resistances", [...defenceLines(state, library, values, inline), ...state.conditional].join("\n"));
   set("details_initiative", signed(values.initiative ?? 0));
   const attacksPerAction = Math.max(1, values["extra attack:count"] ?? 1);
   set("details_encounter_box", `${attacksPerAction} ${attacksPerAction === 1 ? "Attack" : "Attacks"} / Attack Action`);
@@ -859,32 +862,12 @@ function buildPage1(
   sections.push({ title: "speed", rows: [{ kind: "tokens", tokens: speedTokens }] });
   sections.push({ title: "vision", rows: [{ kind: "tokens", tokens: visionNames(state, library) }] });
 
+  // The same lines the Resistances box prints, so the canonical projection
+  // and the drawn sheet can never disagree about what a character resists.
   const conditionTokens: string[] = [];
-  for (const condition of state.conditional) {
-    conditionTokens.push(...condition.split(/\s+/));
-  }
-  if (conditionTokens.length === 0) {
-    const seen = new Set<string>();
-    for (const id of registeredIds(state)) {
-      const element = library.byId.get(id);
-      if (element === undefined || element.identity.type !== "Condition") continue;
-      for (const sheet of element.sheets) {
-        if (sheet.display === false) continue;
-        const description = sheetDescriptionAtLevel(sheet, state.level);
-        if (description === undefined) continue;
-        const text = substitute(description.text, values, inline);
-        if (!seen.has(text)) {
-          seen.add(text);
-          conditionTokens.push(...text.split(/\s+/));
-        }
-      }
-      if (element.sheets.length === 0) {
-        const display = conditionDisplayName(element.identity.name);
-        if (display !== null && !seen.has(display)) {
-          seen.add(display);
-          conditionTokens.push(...display.split(/\s+/));
-        }
-      }
+  for (const line of [...defenceLines(state, library, values, inline), ...state.conditional]) {
+    for (const word of line.split(/\s+/)) {
+      if (word !== "") conditionTokens.push(word);
     }
   }
   sections.push({ title: "conditions", rows: [{ kind: "tokens", tokens: conditionTokens }] });
@@ -976,6 +959,81 @@ function acTokens(state: CharacterState, library: ElementLibrary, values: Statis
     tokens.push(...miscAlt.split(/\s+/), `(${misc})`);
   }
   return tokens;
+}
+
+/** The damage-defence groups, in the order the Resistances box prints them. */
+const DEFENCE_GROUPS: readonly { readonly name: string; readonly label: string }[] = [
+  { name: "Resistance", label: "Resistances" },
+  { name: "Immunity", label: "Immunities" },
+  { name: "Vulnerability", label: "Vulnerabilities" },
+];
+
+/** A defence Condition's name: the group it belongs to and the damage type. */
+const DEFENCE_NAME = /^(Resistance|Immunity|Vulnerability)\s+\((.+)\)$/;
+
+/**
+ * The computed lines of the Resistances box.
+ *
+ * A character's defences are registered Condition elements, put there by a
+ * race, a class feature or an item whose benefits are active. A Condition
+ * carrying sheet text prints that text: the element's own words are the only
+ * statement of what it does. One without sheet text is known only by its
+ * name, so the three damage-defence groups gather onto a line each —
+ * "Resistances: Acid, Fire" rather than a line per type, because the box is
+ * a few lines tall and a character can hold half a dozen defences — and any
+ * other parenthesised name keeps the conditional display form. Types sort
+ * alphabetically so the same set of sources always prints the same line, and
+ * a group nothing registered is left out rather than printed empty.
+ */
+function defenceLines(
+  state: CharacterState,
+  library: ElementLibrary,
+  values: StatisticsValues,
+  inline?: Readonly<Record<string, string>>,
+): string[] {
+  const grouped = new Map<string, Set<string>>();
+  const described: string[] = [];
+  const seen = new Set<string>();
+  for (const id of registeredIds(state)) {
+    const element = library.byId.get(id);
+    if (element === undefined || element.identity.type !== "Condition") continue;
+    let hasSheetText = false;
+    for (const sheet of element.sheets) {
+      if (sheet.display === false) continue;
+      const description = sheetDescriptionAtLevel(sheet, state.level);
+      if (description === undefined) continue;
+      const text = substitute(description.text, values, inline).trim();
+      if (text === "") continue;
+      hasSheetText = true;
+      if (seen.has(text)) continue;
+      seen.add(text);
+      described.push(text);
+    }
+    // Sheet text supersedes the name: an element that says what it does has
+    // already said it, and its name would repeat the same benefit.
+    if (hasSheetText) continue;
+    const match = DEFENCE_NAME.exec(element.identity.name);
+    if (match !== null) {
+      const types = grouped.get(match[1]!) ?? new Set<string>();
+      // Two sources of the same resistance are one entry: the sheet states
+      // what the character has, not how many items grant it.
+      types.add(match[2]!);
+      grouped.set(match[1]!, types);
+      continue;
+    }
+    const display = conditionDisplayName(element.identity.name);
+    if (display === null || seen.has(display)) continue;
+    seen.add(display);
+    described.push(display);
+  }
+  const lines: string[] = [];
+  for (const group of DEFENCE_GROUPS) {
+    const types = grouped.get(group.name);
+    if (types === undefined || types.size === 0) continue;
+    lines.push(`${group.label}: ${[...types].sort().join(", ")}`);
+  }
+  lines.push(...described);
+  return lines;
 }
 
 /** "Resistance (Poison)" -> "Resistances. Poison" (conditional sheet display). */

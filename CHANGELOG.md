@@ -29,6 +29,20 @@ project uses [Semantic Versioning](https://semver.org/).
 - Manage → Sheet can leave pages out: the appearance and portrait page, the
   notes page, the spell cards and the item cards. The rest renumber without a
   gap.
+- An item in use passes on everything it grants. A magic weapon's or armor's
+  own resistances, languages, proficiencies, senses, spells and choices reach
+  the sheet, the spell pages and the Build tab once the item is equipped and,
+  where it asks for it, attuned — Dragon Scale Mail's resistance, Elven Chain's
+  proficiency, a Ring of Resistance's resistance, a Belt of Dwarvenkind's
+  Dwarvish — and leave again with the item.
+- Equipment offers **Wear** for a slotless item such as a cloak, an amulet or
+  goggles, and **Remove** to take it off. A worn item is saved the way Aurora
+  saves one, so the file still opens there.
+- Manage → **Additional features** is its own sub-tab: supernatural gifts,
+  extra features and the other adjustments browse like the Equipment catalog,
+  with a category strip, a search box, Add and Remove on each card, and the
+  description pane beside them. A gift an attuned item brings shows "Granted
+  by" that item and can still be taken on in its own right.
 
 ### Changed
 
@@ -43,6 +57,9 @@ project uses [Semantic Versioning](https://semver.org/).
 - Manage → Sheet shows which sheet layout is live. The 2014/2024 choice is a
   segmented toggle now, and the chosen set carries the same tint the workspace
   tabs and spell level pills use, instead of two identical buttons.
+- A slotless item that needs no attunement applies its benefits once it is
+  worn, not while it is merely carried. Goggles of Night in a pack no longer
+  grant darkvision; click Wear.
 
 ### Fixed
 
@@ -67,6 +84,19 @@ project uses [Semantic Versioning](https://semver.org/).
   rule's left end and the name plate's top corner with it; the mark now stays
   inside its own badge box, and the slice of rule the knockout crosses is
   painted back.
+- Unequipping one of two identical items — a pair of longswords, two rings
+  granting the same resistance — no longer strips the other's benefits with it.
+- Stowing an attuned item in a container now takes its benefits away; they
+  return when the item is taken out and put to use again.
+- A DM can grant a feat that an item already provides, and removing either copy
+  leaves the other in place.
+- The sheet's Resistances box now prints what the character has: resistances,
+  immunities and vulnerabilities from items, species and features, grouped as
+  "Resistances: Acid, Fire" and "Immunities: Poison". Text an imported Aurora
+  file wrote there by hand keeps its place after them.
+- A multi-line sheet box keeps its line breaks. Backstory paragraphs, the
+  additional-features notes and the magic item sidebars printed as one run of
+  text; each now starts where the writer broke the line.
 
 ## [2.2.0] - 2026-08-28
 

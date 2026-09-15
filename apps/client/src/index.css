@@ -3816,6 +3816,20 @@ button:disabled {
   }
 }
 
+/* The Additional features rail shares the Manage primary column with the
+   sub-tab rail and the details pane, so its categories wrap as a chip strip
+   instead of claiming a column of their own. */
+.fcb-feature-category-nav {
+  position: static;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.fcb-feature-category-nav .fcb-nav-item {
+  width: auto;
+  padding: 6px 10px;
+}
+
 .fcb-nav-item {
   width: 100%;
   border: 1px solid transparent;

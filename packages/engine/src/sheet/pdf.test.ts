@@ -534,6 +534,98 @@ describe("character sheet PDF writer", () => {
     assertInside("racialtok", racialRect);
   }, 120_000);
 
+  // The Resistances box prints one line per defence group, so its value is
+  // multiline on any character with both resistances and immunities. Both
+  // template sets size the field for a few short lines; this holds the writer
+  // to drawing every word of such a value inside the widget rather than past
+  // its edge. The widget rectangle, not the layout script, is the authority
+  // for where the box is, so the assertion reads it from the template itself.
+  it("keeps a two-line resistances value inside its box on both templates", async () => {
+    const value = "Resistances: Acid, Fire\nImmunities: Poison";
+    const model = {
+      characterId: "Defences",
+      mode: "full" as const,
+      pageCount: 1,
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
+      formValues: { details_resistances: value },
+    };
+
+    for (const ruleset of ["2014", "2024"] as const) {
+      const bundle = localTemplateBundle(ruleset);
+      const source = await PDFDocument.load(bundle.details);
+      const rect = source.getForm().getTextField("details_resistances").acroField
+        .getWidgets()[0]!.getRectangle();
+
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
+      const browserPdf = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+      const content = await (await browserPdf.getPage(1)).getTextContent();
+      // pdfjs coalesces adjacent drawn runs into one item, so the value is
+      // matched with its line breaks flattened; picking items by rectangle
+      // alone would catch the template's own captions.
+      const flattened = value.replace(/\s+/g, " ");
+      const runs = content.items
+        .filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item)
+        .filter((item) => item.str.trim() !== "" && flattened.includes(item.str.trim()) &&
+          item.transform[4] >= rect.x - 0.5 && item.transform[4] < rect.x + rect.width &&
+          (item.transform[5] as number) >= rect.y && (item.transform[5] as number) < rect.y + rect.height);
+
+      // Every word of both groups is drawn, in order, and none of it escapes.
+      expect(runs.flatMap((item) => item.str.trim().split(" ")), ruleset).toEqual(value.split(/\s+/));
+      for (const run of runs) {
+        expect(run.transform[5], `${ruleset} baseline`).toBeGreaterThanOrEqual(rect.y - 0.5);
+        expect(run.transform[5], `${ruleset} baseline`).toBeLessThanOrEqual(rect.y + rect.height);
+        expect(run.transform[4], `${ruleset} left`).toBeGreaterThanOrEqual(rect.x - 0.5);
+        expect(run.transform[4] + run.width, `${ruleset} right`).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
+      }
+    }
+  }, 120_000);
+
+  // A multiline widget's own form appearance broke the value at its newlines,
+  // so the drawn replacement has to as well: the Resistances box's groups are
+  // separate statements and running them together reads as one sentence.
+  it("draws each line of a multiline value on its own baseline", async () => {
+    const value = "Resistances: Acid, Fire\nImmunities: Poison";
+    const model = {
+      characterId: "Defence lines",
+      mode: "full" as const,
+      pageCount: 1,
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
+      formValues: { details_resistances: value },
+    };
+
+    for (const ruleset of ["2014", "2024"] as const) {
+      const bundle = localTemplateBundle(ruleset);
+      // The template's own widget rectangle is the authority for the box.
+      const source = await PDFDocument.load(bundle.details);
+      const rect = source.getForm().getTextField("details_resistances").acroField
+        .getWidgets()[0]!.getRectangle();
+
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
+      const browserPdf = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+      const content = await (await browserPdf.getPage(1)).getTextContent();
+      const items = content.items
+        .filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item)
+        .filter((item) => item.str.trim() !== "");
+
+      const lineOf = (label: string): (typeof items)[number] => {
+        const matched = items.filter((item) => item.str.trim().startsWith(label));
+        expect(matched, `${ruleset} ${label}`).toHaveLength(1);
+        return matched[0]!;
+      };
+      const resistances = lineOf("Resistances:");
+      const immunities = lineOf("Immunities:");
+      // The second group starts a line of its own, below the first.
+      expect(immunities.transform[5], `${ruleset} line order`)
+        .toBeLessThan(resistances.transform[5] as number);
+      for (const line of [resistances, immunities]) {
+        expect(line.transform[5], `${ruleset} baseline`).toBeGreaterThanOrEqual(rect.y - 0.5);
+        expect(line.transform[5], `${ruleset} baseline`).toBeLessThanOrEqual(rect.y + rect.height);
+        expect(line.transform[4], `${ruleset} left`).toBeGreaterThanOrEqual(rect.x - 0.5);
+        expect(line.transform[4] + line.width, `${ruleset} right`).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
+      }
+    }
+  }, 120_000);
+
   it("keeps drawn inventory notes inside the equipment page's notes column", async () => {
     // Enough prose to fill the column, so many wrap decisions are exercised.
     const filler = Array.from({ length: 260 }, (_, index) => `notestok${index}`).join(" ");

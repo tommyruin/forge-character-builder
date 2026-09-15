@@ -20,6 +20,11 @@ import {
   type RawEdit,
 } from "../selection/selection.js";
 import { engineError } from "../errors.js";
+import {
+  isItemRegistrationNode,
+  itemOwnedRegistrationIds,
+  subtreeIdsOf as subtreeIdsOfNode,
+} from "../inventory/item-registration.js";
 
 export interface GrantedElementDto {
   kind: "spell" | "feat" | "ability";
@@ -33,8 +38,21 @@ export type DmGrantsDto = GrantedElementDto[];
 /** Grantable element types: corpus types registered as standalone nodes. */
 const GRANTED_TYPES: ReadonlySet<string> = new Set(["Feat", "Ability Score Improvement"]);
 
-const isRegistered = (state: CharacterState, id: string): boolean =>
-  state.sum.elements.some((entry) => entry.id === id);
+/** How many times the id appears in the `<sum>`. */
+const registeredCountOf = (state: CharacterState, id: string): number =>
+  state.sum.elements.filter((entry) => entry.id === id).length;
+
+/**
+ * Whether the element is already a DM grant. An element an active inventory
+ * item registers is not: the item owns that copy and takes it away again when
+ * it stops conveying its benefits, so the DM must still be able to grant the
+ * same element in their own right.
+ */
+const isGranted = (
+  state: CharacterState,
+  itemOwned: ReadonlyMap<string, number>,
+  id: string,
+): boolean => registeredCountOf(state, id) > (itemOwned.get(id) ?? 0);
 
 /** The number of top-level granted nodes (selection-registered feats live inside level wrappers). */
 function countGrantedNodes(nodes: CharacterState["elements"]): number {
@@ -56,22 +74,6 @@ function countItemNodes(nodes: CharacterState["elements"]): number {
   };
   walk(nodes);
   return count;
-}
-
-/** True when `id` is registered inside the granted node's subtree in the document. */
-function isSubtreeId(document: Dnd5eDocument, grantId: string, id: string): boolean {
-  const elementsNode = document.root.build.elements?.node;
-  if (!elementsNode) return false;
-  const grant = childElements(elementsNode, "element").find((node) => getAttr(node, "id") === grantId);
-  if (!grant) return false;
-  const ids = new Set<string>();
-  const walk = (node: Dnd5eNode): void => {
-    const own = getAttr(node, "id");
-    if (own) ids.add(own);
-    for (const childNode of childElements(node, "element")) walk(childNode);
-  };
-  walk(grant);
-  return ids.has(id);
 }
 
 function removeNodeEdit(raw: string, node: Dnd5eNode): RawEdit {
@@ -141,6 +143,7 @@ function planGrantedRegistrations(
   label: string,
 ): RawEdit[] {
   const seen = new Set<string>();
+  const itemOwned = itemOwnedRegistrationIds(document, library);
   const elements = ids.map((id) => {
     const element = library.byId.get(id);
     if (!element || element.identity.type !== type) {
@@ -152,7 +155,7 @@ function planGrantedRegistrations(
       if (seen.has(id)) {
         throw engineError("conflict", `${label} '${id}' is already granted`);
       }
-      if (isRegistered(state, id)) {
+      if (isGranted(state, itemOwned, id)) {
         throw engineError("conflict", `${label} '${id}' is already granted`);
       }
     }
@@ -197,17 +200,29 @@ function planGrantedRemovals(
   // id removes exactly one instance (one element node, one sum entry).
   const removeCounts = new Map<string, number>();
   for (const id of ids) removeCounts.set(id, (removeCounts.get(id) ?? 0) + 1);
+  const itemOwned = itemOwnedRegistrationIds(document, library);
+  // Each removed node gives up one sum instance of every id it registered.
+  // Another registration — a second grant, or an active item's own subtree —
+  // may hold its own copy of the same id, so budget the removals instead of
+  // sweeping every match out of the list.
+  const sumBudget = new Map(removeCounts);
   for (const [id, count] of removeCounts) {
     // Only DIRECT top-level nodes are DM grants; a selection result nests
     // inside a level/class wrapper and must not be removable here (its sum
     // entries belong to the selection, not to a grant).
     const existing = childElements(elementsNode, "element").filter((node) => getAttr(node, "id") === id);
-    if (existing.length < count || !isRegistered(state, id)) {
+    const grantNodes = existing.filter((node) => !isItemRegistrationNode(library, node));
+    if (grantNodes.length < count || !isGranted(state, itemOwned, id)) {
       throw engineError("not-found", `${label} '${id}' is not granted`);
     }
-    for (const node of existing.slice(0, count)) edits.push(removeNodeEdit(raw, node));
+    for (const node of grantNodes.slice(0, count)) {
+      edits.push(removeNodeEdit(raw, node));
+      for (const subId of subtreeIdsOfNode(node)) {
+        if (subId === id) continue;
+        sumBudget.set(subId, (sumBudget.get(subId) ?? 0) + 1);
+      }
+    }
   }
-  const sumBudget = new Map(removeCounts);
   const remaining = (document.root.build.sum?.elements() ?? [])
     .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
     .filter((e) => {
@@ -216,7 +231,7 @@ function planGrantedRemovals(
         sumBudget.set(e.id, budget - 1);
         return false;
       }
-      return !ids.some((id) => id !== e.id && isSubtreeId(document, id, e.id));
+      return true;
     });
   edits.push(...planSumReplaceEdits(document, remaining));
   edits.push(...planRegisteredCountEdit(document, state, -ids.length));

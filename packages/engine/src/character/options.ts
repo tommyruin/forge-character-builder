@@ -6,6 +6,7 @@
 import { child, childElements, getAttr, type Dnd5eDocument, type Dnd5eNode } from "../dnd5e/document.js";
 import { elementById, type ElementLibrary, rulesetOf } from "../content/library.js";
 import { itemBenefitsActive, planRemoveControlRecordEdits } from "../inventory/inventory.js";
+import { isItemContentElement, itemOwnedRegistrationIds } from "../inventory/item-registration.js";
 import type { ParsedElement } from "../content/parser.js";
 import type { CharacterState, RegisteredElement } from "./state.js";
 import { evaluateRequirements, type RequirementContext } from "../selection/expr.js";
@@ -81,6 +82,55 @@ function hasActiveControlRecord(state: CharacterState, library: ElementLibrary, 
 /** Whether a control element is on, by either representation. */
 export function isControlEnabled(state: CharacterState, library: ElementLibrary, id: string): boolean {
   return isRegistered(state, id) || hasActiveControlRecord(state, library, id);
+}
+
+/**
+ * Whether the character owns a registration of `id` in its own right: a
+ * top-level node of the elements tree, or a carried control record.
+ *
+ * An active inventory item registers its own grant subtree, so a control
+ * element the item grants reaches the `<sum>` without the character having
+ * chosen it. That copy belongs to the item: the remove path takes away a
+ * top-level node and control records and has nothing of its own to remove,
+ * so reporting it as on offers a switch that cannot turn off.
+ */
+export function hasOwnControlRegistration(state: CharacterState, library: ElementLibrary, id: string): boolean {
+  return state.elements.some((node) => node.id === id) || hasActiveControlRecord(state, library, id);
+}
+
+/** Every element id a registered subtree carries, the node's own id first. */
+function registeredSubtreeIds(node: RegisteredElement): string[] {
+  const ids: string[] = [];
+  const walk = (current: RegisteredElement): void => {
+    if (current.id !== "") ids.push(current.id);
+    if (current.registered !== undefined && current.registered !== "") ids.push(current.registered);
+    for (const child of current.children) walk(child);
+  };
+  walk(node);
+  return ids;
+}
+
+/**
+ * Element id to the display names of the inventory records whose own
+ * registration subtree carries it, in document order. The node id of an
+ * item registration is the record's content element — the adorner of an
+ * adorned record, or the worn item itself — which is also the name the
+ * inventory shows for it.
+ */
+function itemGrantSources(state: CharacterState, library: ElementLibrary): Map<string, string[]> {
+  const sources = new Map<string, string[]>();
+  for (const node of state.elements) {
+    if (!isItemContentElement(library.byId.get(node.id))) continue;
+    const record = state.items.find((item) => (item.adorners[0] ?? item.itemId) === node.id);
+    if (record === undefined) continue;
+    const name = library.byId.get(node.id)?.identity.name ?? record.name;
+    for (const id of registeredSubtreeIds(node)) {
+      const names = sources.get(id) ?? [];
+      if (!names.includes(name)) names.push(name);
+      sources.set(id, names);
+    }
+  }
+  return sources;
 }
 
 /** True when the element's ruleset tag passes the character's ruleset mode (mirrors selection.ts isEligible). */
@@ -173,7 +223,10 @@ export interface CharacterAdjustmentDto {
   source: string;
   category: string;
   description: string;
+  /** The character owns a registration of this element (a switch it can turn off). */
   enabled: boolean;
+  /** Inventory records whose own registration carries this element, by display name. */
+  grantedBy: string[];
 }
 
 /**
@@ -201,6 +254,7 @@ const ADJUSTMENT_CATEGORIES: readonly string[] = [
 
 export function getCharacterAdjustments(state: CharacterState, library: ElementLibrary): CharacterAdjustmentDto[] {
   const restricted = new Set(state.restrictedElements);
+  const granted = itemGrantSources(state, library);
   const out: CharacterAdjustmentDto[] = [];
   for (const type of ["Item", "Magic Item"]) {
     for (const element of library.byType.get(type) ?? []) {
@@ -217,7 +271,8 @@ export function getCharacterAdjustments(state: CharacterState, library: ElementL
         source: element.identity.source,
         category,
         description: element.descriptionXml ?? "",
-        enabled: isControlEnabled(state, library, element.identity.id),
+        enabled: hasOwnControlRegistration(state, library, element.identity.id),
+        grantedBy: granted.get(element.identity.id) ?? [],
       });
     }
   }
@@ -316,9 +371,21 @@ export function planItemEdits(
     }
     if (!existing) return edits;
     edits.push(removeNodeEdit(raw, existing));
+    // An active inventory item registers the same ids under its own node, and
+    // those `<sum>` instances belong to the item: they were written when it
+    // registered and go away only when it does. Only the instances this
+    // control put there come out, so an item-granted copy survives the switch.
+    const itemOwned = itemOwnedRegistrationIds(document, library);
+    const keptPerId = new Map<string, number>();
     const remaining = (document.root.build.sum?.elements() ?? [])
       .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
-      .filter((e) => e.id !== itemId && !isSubtreeId(document, itemId, e.id));
+      .filter((e) => {
+        if (e.id !== itemId && !isSubtreeId(document, itemId, e.id)) return true;
+        const kept = keptPerId.get(e.id) ?? 0;
+        if (kept >= (itemOwned.get(e.id) ?? 0)) return false;
+        keptPerId.set(e.id, kept + 1);
+        return true;
+      });
     edits.push(...planSumReplaceEdits(document, remaining));
     edits.push(...planElementsCountEdits(document, state, 0));
   }

@@ -10,10 +10,12 @@
  *    attunement; the attune endpoint accepts non-attunable items (no count
  *    change) and rejects attuning beyond the computed "attunement:max"
  *    statistic (base 3, raised by content stat rules).
- *  - equipped or attuned items register into the <sum> (base element, its
- *    grants, and the adorner), armor items additionally register into the
- *    <elements> tree, and registered-count increments by one per
- *    equipped/attuned item.
+ *  - an equipped or attuned weapon/armor record registers its base into the
+ *    <sum> (the base element, its grants, and the adorner's id), armor items
+ *    additionally register into the <elements> tree, and registered-count
+ *    increments by one, or by two when the record is adorned. What the adorner
+ *    or a worn slotless item GRANTS is a registration of its own, planned in
+ *    `item-registration.ts`; only a worn slotless item moves the count there.
  *  - extracting a pack removes it and adds its <extract> contents as new
  *    items; non-extractable items are rejected.
  */
@@ -101,6 +103,13 @@ export const LOCATION_DISPLAY: Record<string, string> = {
   armor: "Armor",
   "primary-twohanded": "Two-Handed",
 };
+
+/**
+ * The equip key of a slotless item that is worn rather than held. It occupies
+ * no slot, so the document records it as a bare `<equipped>true</equipped>`
+ * with no location attribute — the form saved files use for a worn cloak.
+ */
+export const WORN_LOCATION = "worn";
 
 const DISPLAY_LOCATION: Record<string, string> = {
   "Primary Hand": "primary",
@@ -235,13 +244,57 @@ function isAttunableElement(element: ParsedElement | undefined): boolean {
 }
 
 /**
- * Whether an inventory item currently conveys its benefits: the item must be
- * equipped (worn/held), and an attunement-requiring item must also be attuned.
- * Attunement alone does not activate an item that is not in use, and an
- * attunement-requiring item in hand stays inert until attuned. A slotless item
- * (no equip location — a cloak, boots, a ring) has no held/worn toggle to
- * satisfy: it is worn by carrying it, so attunement is its only gate. A stowed
- * item (assigned to a storage container) is off the character's person and is
+ * A slotless item that is put to use by wearing it: real equipment with no
+ * equip location of its own (a cloak, a ring, goggles, a tattoo). A magic
+ * overlay still waiting for its base weapon or armour is excluded — it is not
+ * usable until based — and so is a stackable consumable, which is spent
+ * rather than worn.
+ */
+export function isWearableElement(element: ParsedElement | undefined): boolean {
+  if (!element) return false;
+  if (element.identity.type === "Weapon" || element.identity.type === "Armor") return false;
+  if (!isPhysicalEquipment(element)) return false;
+  if (isAdornerElement(element)) return false;
+  return setterValue(element, "stackable")?.trim().toLowerCase() !== "true";
+}
+
+/**
+ * True when the element is a magic overlay laid over a base weapon or armour
+ * rather than an item in its own right: its `weapon`/`armor` setter names what
+ * it can adorn. An adorned record is counted by its base registration, so an
+ * adorner's own subtree never moves the registered count again.
+ */
+export function isAdornerElement(element: ParsedElement | undefined): boolean {
+  return baseSlotSetter(element) !== undefined;
+}
+
+/**
+ * The element whose own benefits an inventory record carries, as opposed to
+ * the physical base it is built on: the adorner of an adorned record, or the
+ * item itself when it is worn in its own right. Records with neither (a plain
+ * weapon, a stack of torches, an unbased magic item) have nothing of their own
+ * to register.
+ */
+export function contentElementOf(
+  library: ElementLibrary,
+  item: { itemId: string; adorners: string[] },
+): ParsedElement | undefined {
+  if (item.adorners.length > 0) return elementById(library, item.adorners[0]!);
+  const element = elementById(library, item.itemId);
+  return isWearableElement(element) ? element : undefined;
+}
+
+/**
+ * Whether an inventory item currently conveys its benefits. A weapon or
+ * armour must be equipped, and an attunement-requiring one must also be
+ * attuned: attunement alone does not activate an item that is not in use, and
+ * an attunement-requiring item in hand stays inert until attuned. A slotless
+ * item (no equip location — a cloak, boots, a ring) has no hand or armour
+ * slot to fill, so attunement alone activates it. A slotless item that needs
+ * no attunement has only the act of wearing it to tell use from carriage --
+ * except for the corpus's control records, which are switches rather than
+ * gear and are on as soon as the character holds one. A stowed item
+ * (assigned to a storage container) is off the character's person and is
  * always inert, regardless of its equipped/attuned flags.
  */
 export function itemBenefitsActive(
@@ -249,9 +302,11 @@ export function itemBenefitsActive(
   item: { itemId: string; adorners: string[]; equipped: boolean; attuned: boolean; storage?: string },
 ): boolean {
   if (item.storage) return false;
-  const slotless = equipLocationsFor(elementById(library, item.itemId)).length === 0;
-  if (!slotless && !item.equipped) return false;
-  return item.attuned || !isAttunableElement(effectiveElement(library, item));
+  const base = elementById(library, item.itemId);
+  const attunable = isAttunableElement(effectiveElement(library, item));
+  if (equipLocationsFor(base).length > 0) return item.equipped && (item.attuned || !attunable);
+  if (attunable) return item.attuned;
+  return isWearableElement(base) ? item.equipped : true;
 }
 
 /** The extract block contents of an item's effective element. */
@@ -309,7 +364,10 @@ export function buildInventoryDto(
     const element = effectiveElement(library, item);
     const displayElement = element ?? base;
     const metadata = equipmentMetadata(displayElement, (id) => library.byId.get(id));
-    const locations = equipLocationsFor(base);
+    // A slotless item fills no slot, so it offers the one "worn" action
+    // instead of the hand/armour choices a weapon or armour offers.
+    const slots = equipLocationsFor(base);
+    const locations = slots.length > 0 ? slots : isWearableElement(base) ? [WORN_LOCATION] : [];
     const equipped = item.equipped;
     return {
       identifier: item.identifier,
@@ -464,7 +522,13 @@ function attrValueRange(raw: string, node: Dnd5eNode, name: string): { start: nu
   return { start: node.start + match.index + match[0].indexOf('"') + 1, end: node.start + match.index + match[0].length - 1 };
 }
 
-/** Sum entries of an item registration: base, its grants, and the adorner. */
+/**
+ * Sum entries of a base registration: the base, its own grants, and the
+ * adorner's id in the order saved files carry them. The adorner's *grants*
+ * are not here — those belong to the adorner's own registration, which the
+ * item-registration sweep writes after this entry once the record is actually
+ * conveying its benefits.
+ */
 function sumEntriesFor(
   library: ElementLibrary,
   base: ParsedElement,
@@ -538,9 +602,80 @@ function planSumReplaceEdits(document: Dnd5eDocument, remaining: Array<{ type: s
   return edits;
 }
 
-/** The registered-count delta of an item registration (adorners count extra). */
-function countDeltaOf(adorners: string[]): number {
+/**
+ * The registered-count delta of a base registration. A record counts once for
+ * itself and once more when it is adorned: saved characters tally an adorned
+ * weapon as two registrations from the moment the base is registered, whether
+ * or not the adorner is yet conveying anything.
+ */
+function countDeltaOf(adorners: readonly string[]): number {
   return adorners.length > 0 ? 2 : 1;
+}
+
+/**
+ * The sum entries left after removing one instance of each id a registration
+ * contributed. Two records can share a base or a grant id (a pair of
+ * longswords, two items granting the same resistance); dropping every match
+ * would unregister the other record's copy along with this one's.
+ */
+function sumWithoutOneInstanceEach(
+  document: Dnd5eDocument,
+  removed: Array<{ type: string; id: string }>,
+): Array<{ type: string; id: string }> {
+  const budget = new Map<string, number>();
+  for (const entry of removed) budget.set(entry.id, (budget.get(entry.id) ?? 0) + 1);
+  return (document.root.build.sum?.elements() ?? [])
+    .map((entry) => ({ type: entry.type ?? "", id: entry.id ?? "" }))
+    .filter((entry) => {
+      const left = budget.get(entry.id) ?? 0;
+      if (left === 0) return true;
+      budget.set(entry.id, left - 1);
+      return false;
+    });
+}
+
+/**
+ * True when another inventory record still holds a registration on the same
+ * base element. The elements tree carries one node per element id, so the
+ * node belongs to every record that shares that base and may only be removed
+ * once the last of them unregisters.
+ */
+function baseSharedWithOtherRecord(
+  library: ElementLibrary,
+  state: CharacterState,
+  item: InventoryItemState,
+): boolean {
+  return state.items.some(
+    (other) =>
+      other.identifier !== item.identifier &&
+      other.itemId === item.itemId &&
+      baseRegistrationPresent(library, other),
+  );
+}
+
+/**
+ * True when the record's physical base is a Weapon or Armor, the only kind
+ * the equip/attune planners register. Slotless items carry no base of their
+ * own and are left entirely to the item-registration sweep.
+ */
+function hasSlotBase(library: ElementLibrary, item: { itemId: string }): boolean {
+  return equipLocationsFor(elementById(library, item.itemId)).length > 0;
+}
+
+/**
+ * Whether the record's base registration is in the document right now. Only a
+ * Weapon/Armor record carries one, and only while the item is on the
+ * character (stowing takes it away) and either equipped or attuned. Planners
+ * consult this rather than the flags alone so a registration is never written
+ * twice or removed twice.
+ */
+export function baseRegistrationPresent(
+  library: ElementLibrary,
+  item: { itemId: string; equipped: boolean; attuned: boolean; storage?: string },
+): boolean {
+  if (item.storage) return false;
+  if (!hasSlotBase(library, item)) return false;
+  return item.equipped || item.attuned;
 }
 
 /** Edits that update the elements registered-count by a delta. */
@@ -712,7 +847,7 @@ export function planAddItemEdits(
   if (registers) {
     edits.push(...planSumInsertEdits(document, sumEntriesFor(library, base, adornerId)));
     edits.push(...planTreeAppendEdits(document, state, library, base));
-    edits.push(...planRegisteredCountEdit(document, state, adornerId === null ? 1 : 2));
+    edits.push(...planRegisteredCountEdit(document, state, countDeltaOf(adornerId === null ? [] : [adornerId])));
   }
   return { edits, identifier, baseId: base.identity.id, adornerId, equippedLocation, amount, registers };
 }
@@ -748,16 +883,12 @@ export function planRemoveItemEdits(
     return [];
   }
   const edits: RawEdit[] = [removeNodeEdit(raw, node)];
-  if (item.equipped || item.attuned) {
+  if (baseRegistrationPresent(library, item)) {
     const base = baseElementOf(library, item);
     if (base) {
-      const sum = document.root.build.sum?.elements() ?? [];
-      const removed = new Set(sumEntriesFor(library, base, item.adorners[0] ?? null).map((e) => e.id));
-      const remaining = sum
-        .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
-        .filter((e) => !removed.has(e.id));
-      edits.push(...planSumReplaceEdits(document, remaining));
-      edits.push(...planTreeRemoveEdits(document, item.itemId));
+      const removed = sumEntriesFor(library, base, item.adorners[0] ?? null);
+      edits.push(...planSumReplaceEdits(document, sumWithoutOneInstanceEach(document, removed)));
+      if (!baseSharedWithOtherRecord(library, state, item)) edits.push(...planTreeRemoveEdits(document, item.itemId));
       edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
     }
   }
@@ -777,14 +908,15 @@ export function planEquipItemEdits(
   const base = baseElementOf(library, item);
   if (!base) throw engineError("not-found", `item '${item.itemId}' not found`);
   const edits: RawEdit[] = [];
-  const removedIds = new Set<string>();
+  const removedEntries: Array<{ type: string; id: string }> = [];
   const appendedEntries: Array<{ type: string; id: string }> = [];
   let countDelta = 0;
   const unregister = (target: InventoryItemState): void => {
+    if (!baseRegistrationPresent(library, target)) return;
     const targetBase = baseElementOf(library, target);
     if (targetBase) {
-      for (const entry of sumEntriesFor(library, targetBase, target.adorners[0] ?? null)) removedIds.add(entry.id);
-      edits.push(...planTreeRemoveEdits(document, target.itemId));
+      removedEntries.push(...sumEntriesFor(library, targetBase, target.adorners[0] ?? null));
+      if (!baseSharedWithOtherRecord(library, state, target)) edits.push(...planTreeRemoveEdits(document, target.itemId));
       countDelta -= countDeltaOf(target.adorners);
     }
   };
@@ -793,6 +925,19 @@ export function planEquipItemEdits(
       edits.push(...planItemChildEdit(document, identifier, "<equipped>true</equipped>", "remove"));
       edits.push(...planItemChildEdit(document, identifier, "<attunement>true</attunement>", "remove"));
       unregister(item);
+    }
+  } else if (location === WORN_LOCATION) {
+    if (equipLocationsFor(base).length > 0 || !isWearableElement(base)) {
+      throw engineError("invalid-argument", `item '${item.itemId}' cannot be worn`);
+    }
+    // Single location principle: wearing an item clears its storage assignment.
+    if (item.storage) {
+      edits.push(...planItemChildEdit(document, identifier, "<storage>", "remove"));
+    }
+    // A worn slotless item evicts nothing and registers no base; the
+    // item-registration sweep picks up its own benefits.
+    if (!item.equipped) {
+      edits.push(...planItemChildEdit(document, identifier, "<equipped>true</equipped>", "add", ["storage"]));
     }
   } else {
     const display = LOCATION_DISPLAY[location];
@@ -815,18 +960,20 @@ export function planEquipItemEdits(
         edits.push(...planItemChildEdit(document, identifier, `<equipped location="${escapeXml(display)}">true</equipped>`, "replace"));
       } else {
         edits.push(...planItemChildEdit(document, identifier, `<equipped location="${escapeXml(display)}">true</equipped>`, "add", ["storage"]));
-        appendedEntries.push(...sumEntriesFor(library, base, item.adorners[0] ?? null));
-        edits.push(...planTreeAppendEdits(document, state, library, base));
-        countDelta += countDeltaOf(item.adorners);
+        // An attuned item already carries its base registration; equipping
+        // it must not write a second copy.
+        if (hasSlotBase(library, item) && !baseRegistrationPresent(library, item)) {
+          appendedEntries.push(...sumEntriesFor(library, base, item.adorners[0] ?? null));
+          edits.push(...planTreeAppendEdits(document, state, library, base));
+          countDelta += countDeltaOf(item.adorners);
+        }
       }
     }
   }
-  if (removedIds.size > 0 || appendedEntries.length > 0) {
-    const sum = document.root.build.sum?.elements() ?? [];
-    const remaining = sum
-      .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
-      .filter((e) => !removedIds.has(e.id));
-    edits.push(...planSumReplaceInsertEdits(document, remaining, appendedEntries));
+  if (removedEntries.length > 0 || appendedEntries.length > 0) {
+    edits.push(
+      ...planSumReplaceInsertEdits(document, sumWithoutOneInstanceEach(document, removedEntries), appendedEntries),
+    );
   }
   if (countDelta !== 0) edits.push(...planRegisteredCountEdit(document, state, countDelta));
   return edits;
@@ -838,8 +985,9 @@ export function planEquipItemEdits(
  * character again. Single location principle: stowing an equipped item
  * unequips it (equipping a stowed item likewise clears its storage; see
  * `planEquipItemEdits`). Attunement is a magical bond, not physical
- * possession, so it persists through stowage -- `itemBenefitsActive` already
- * keeps a stowed item's benefits inert regardless of its attuned flag.
+ * possession, so it persists through stowage -- but a stowed item conveys
+ * nothing, so its registration goes with it and comes back when the item is
+ * taken out and put to use again.
  */
 export function planSetItemStorageEdits(
   state: CharacterState,
@@ -869,20 +1017,16 @@ export function planSetItemStorageEdits(
   );
   if (item.equipped) {
     edits.push(...planItemChildEdit(document, identifier, "<equipped>true</equipped>", "remove"));
-    // Registration (sum/tree/registered-count) exists while equipped OR
-    // attuned; only unregister when this clears the last of those two.
-    if (!item.attuned) {
-      const base = baseElementOf(library, item);
-      if (base) {
-        const sum = document.root.build.sum?.elements() ?? [];
-        const removed = new Set(sumEntriesFor(library, base, item.adorners[0] ?? null).map((e) => e.id));
-        const remaining = sum
-          .map((e) => ({ type: e.type ?? "", id: e.id ?? "" }))
-          .filter((e) => !removed.has(e.id));
-        edits.push(...planSumReplaceEdits(document, remaining));
-        edits.push(...planTreeRemoveEdits(document, item.itemId));
-        edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
-      }
+  }
+  // A stowed item is off the character's person and conveys nothing, so the
+  // base registration goes whether or not the attunement bond survives.
+  if (baseRegistrationPresent(library, item)) {
+    const base = baseElementOf(library, item);
+    if (base) {
+      const removed = sumEntriesFor(library, base, item.adorners[0] ?? null);
+      edits.push(...planSumReplaceEdits(document, sumWithoutOneInstanceEach(document, removed)));
+      if (!baseSharedWithOtherRecord(library, state, item)) edits.push(...planTreeRemoveEdits(document, item.itemId));
+      edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
     }
   }
   return edits;
@@ -911,23 +1055,19 @@ export function planAttuneItemEdits(
       throw engineError("conflict", "Maximum number of attuned items reached.");
     }
     edits.push(...planItemChildEdit(document, identifier, "<attunement>true</attunement>", "add"));
-    if (!item.equipped) {
+    // A slotless item has no base registration of its own; the
+    // item-registration sweep owns everything it contributes.
+    if (!item.storage && !item.equipped && hasSlotBase(library, item)) {
       edits.push(...planSumInsertEdits(document, sumEntriesFor(library, base, item.adorners[0] ?? null)));
       edits.push(...planTreeAppendEdits(document, state, library, base));
       edits.push(...planRegisteredCountEdit(document, state, countDeltaOf(item.adorners)));
     }
   } else if (!attuned && item.attuned) {
     edits.push(...planItemChildEdit(document, identifier, "<attunement>true</attunement>", "remove"));
-    if (!item.equipped) {
-      const sum = document.root.build.sum?.elements() ?? [];
-      const removed = new Set(sumEntriesFor(library, base, item.adorners[0] ?? null).map((e) => e.id));
-      edits.push(
-        ...planSumReplaceEdits(
-          document,
-          sum.map((e) => ({ type: e.type ?? "", id: e.id ?? "" })).filter((e) => !removed.has(e.id)),
-        ),
-      );
-      edits.push(...planTreeRemoveEdits(document, item.itemId));
+    if (!item.storage && !item.equipped && hasSlotBase(library, item)) {
+      const removed = sumEntriesFor(library, base, item.adorners[0] ?? null);
+      edits.push(...planSumReplaceEdits(document, sumWithoutOneInstanceEach(document, removed)));
+      if (!baseSharedWithOtherRecord(library, state, item)) edits.push(...planTreeRemoveEdits(document, item.itemId));
       edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
     }
   }

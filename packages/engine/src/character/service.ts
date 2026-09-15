@@ -72,7 +72,7 @@ import {
   getCharacterControls,
   getOptionalRules,
   getRulesetMode,
-  isControlEnabled,
+  hasOwnControlRegistration,
   planItemEdits,
   planRulesetModeEdits,
   planRulesetTagEdit,
@@ -96,6 +96,7 @@ import {
   type InventoryDto,
   type ItemBaseOptionsDto,
 } from "../inventory/inventory.js";
+import { planItemRegistrationSweep } from "../inventory/item-registration.js";
 import {
   buildAttackOptionsDto,
   buildAttacksDto,
@@ -644,6 +645,32 @@ export class CharacterService {
   }
 
   /**
+   * Applies an inventory plan: the planner's own edits, then the item
+   * registration sweep, then the settle path every registering mutation
+   * shares. An item's grants can pull in requirement-gated rules, spells and
+   * choices exactly as a DM-granted feat does, so equipping or attuning one
+   * has to settle rules, re-derive the magic region and re-key the selection
+   * identifiers in the same operation.
+   */
+  private applyInventoryPlan(
+    id: string,
+    state: CharacterState,
+    document: Dnd5eDocument,
+    edits: RawEdit[],
+  ): CharacterState {
+    if (this.library === undefined) return this.applyPlan(id, state, document, edits);
+    let current = parseDnd5e(applyRawEdits(document.raw, edits));
+    let next = this.remap(current, state, id);
+    const sweep = planItemRegistrationSweep(current, next, this.library);
+    if (sweep.changed) {
+      current = parseDnd5e(applyRawEdits(current.raw, sweep.edits));
+      next = this.remap(current, next, id);
+    }
+    const settled = this.settleRegistrationRules(id, current, next, state);
+    return this.reconcileMagicRegion(id, settled.document, settled.state);
+  }
+
+  /**
    * Re-runs the requirement sweep until it stops changing anything. A sweep can
    * enable rules that the previous one’s removals unblocked, so one pass is not
    * always enough; the bound and the repeat check keep mutually exclusive
@@ -768,9 +795,29 @@ export class CharacterService {
     this.store.set(state);
     this.documents.set(id, document);
     if (legacy !== null) this.replayLegacyDmGrants(id, legacy);
+    this.sweepItemRegistrations(id);
     const imported = this.getCharacter(id);
     this.onImport?.({ mode: "xml", id, state: imported, parseMs, hydrationMs });
     return imported;
+  }
+
+  /**
+   * Brings an imported character's item registrations into the current shape.
+   * A file written before items owned their own subtrees carries an active
+   * item as a flat run of sum entries; the sweep gives it its node so the
+   * senses, spells and choices it grants reach the tree-reading surfaces. A
+   * file that already agrees produces no edits and is left byte-identical.
+   */
+  private sweepItemRegistrations(id: string): void {
+    if (this.library === undefined) return;
+    const state = this.store.get(id);
+    const document = this.documents.get(id);
+    if (state === undefined || document === undefined) return;
+    const sweep = planItemRegistrationSweep(document, state, this.library);
+    if (!sweep.changed) return;
+    const updated = parseDnd5e(applyRawEdits(document.raw, sweep.edits));
+    this.store.set(this.remap(updated, state, id));
+    this.documents.set(id, updated);
   }
 
   /**
@@ -885,10 +932,12 @@ export class CharacterService {
     }
     if (control.key.startsWith("item:")) {
       const itemId = control.key.slice("item:".length);
-      // A control item is on by either representation — registered in the
-      // elements tree, or carried as an equipment record — so the no-op check
-      // has to consider both, or switching a carried one off does nothing.
-      if (control.enabled === isControlEnabled(state, this.library, itemId)) return state;
+      // A control item is on by either representation it owns — a top-level
+      // node of the elements tree, or a carried equipment record — so the
+      // no-op check has to consider both, or switching a carried one off does
+      // nothing. A copy an inventory item's registration granted is not one
+      // of them: the character can still take the control on in its own right.
+      if (control.enabled === hasOwnControlRegistration(state, this.library, itemId)) return state;
       const edits = planItemEdits(state, document, this.library, itemId, control.enabled);
       return this.applyWithRuleReconcile(id, state, document, edits);
     }
@@ -1646,7 +1695,7 @@ export class CharacterService {
         }),
       );
     }
-    const next = this.applyPlan(id, state, document, edits);
+    const next = this.applyInventoryPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }
 
@@ -1657,7 +1706,7 @@ export class CharacterService {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
     const edits = [...planRemoveItemEdits(state, document, this.library, identifier, amount), ...planItemAttackRemovalEdits(document, identifier)];
-    const next = this.applyPlan(id, state, document, edits);
+    const next = this.applyInventoryPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }
 
@@ -1674,7 +1723,7 @@ export class CharacterService {
         edits.push(...planAutoAttackInsertEdits(state, document, this.library, item));
       }
     }
-    const next = this.applyPlan(id, state, document, edits);
+    const next = this.applyInventoryPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }
 
@@ -1685,7 +1734,7 @@ export class CharacterService {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
     const edits = planSetItemStorageEdits(state, document, this.library, identifier, storage);
-    const next = this.applyPlan(id, state, document, edits);
+    const next = this.applyInventoryPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }
 
@@ -1697,7 +1746,7 @@ export class CharacterService {
     }
     const maxAttunedItemCount = this.attunementMax(state, this.library);
     const edits = planAttuneItemEdits(state, document, this.library, identifier, attuned, maxAttunedItemCount);
-    const next = this.applyPlan(id, state, document, edits);
+    const next = this.applyInventoryPlan(id, state, document, edits);
     return buildInventoryDto(next, this.library, maxAttunedItemCount);
   }
 
@@ -1716,7 +1765,7 @@ export class CharacterService {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
     const edits = planExtractItemEdits(state, document, this.library, identifier);
-    const next = this.applyPlan(id, state, document, edits);
+    const next = this.applyInventoryPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }
 

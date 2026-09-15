@@ -239,16 +239,17 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
 ## Character option DTOs
 
 - `getOptionalRules` → `[{key, kind, elementId, name, source, description, enabled, defaultEnabled, eligible, unavailableReason}]`
-- `getCharacterAdjustments` → `[{key, elementId, name, source, category, description, enabled}]`
+- `getCharacterAdjustments` → `[{key, elementId, name, source, category, description, enabled, grantedBy}]`; `enabled` is true only for a registration the character owns (a top-level elements node or a carried control record), so `setCharacterControl` can switch it off; `grantedBy` lists the display names of inventory records whose own registration carries the element (an attuned item granting a Supernatural Gift), which is on the character but not removable here
 - `getCharacterControls` → `[{key, elementId, name, type, enabled}]`; `setCharacterControl({key, enabled})` accepts `option:`/`item:` prefixes
 - `getRulesetMode` → `{mode, availableModes, rules2014Count, rules2024Count, sharedCount, incompatibleWith2014, incompatibleWith2024}`
 - `setRulesetMode(mode)` → `{mode, repaired, removed, unresolved}` with `RulesetChangeItemDto {ruleName, ruleType, previousElementId, previousElementName, previousSource, newElementId, newElementName, newSource}`
 - `LoadIssueDto` (in `getCharacter` detail): `{kind, ruleType, ruleName, requiredLevel, previousElementId, previousElementName, message}` (kinds: `elementMissing`, `equipmentMissing`, `selectionInvalidated`)
 - `getInventory` → `InventoryDto {items: InventoryItemDto[], coins: Coinage, equipmentWeight: number, attunedItemCount: number, maxAttunedItemCount: number}`
 - `InventoryItemDto`: `{identifier, itemId, name, type, amount, isEquippable, isEquipped, equippedLocation, isAttunable, isAttuned, displayPrice, source, equipLocations, weight, category, isPhysicalEquipment, description, rarity, attunement: {required, addition}, isExtractable, extractableContents: {itemId, name, amount}[], hasAttackRow: boolean}`
-  (`hasAttackRow` is true when an attack row is stored for this inventory record)
+  (`hasAttackRow` is true when an attack row is stored for this inventory record; a slotless item that can be worn — real equipment that is not a weapon, armor, an unbased magic overlay or a stackable consumable — has `equipLocations: ["worn"]`, `isEquippable: true`, and `equippedLocation: null` while worn)
 - `getItemBaseOptions(itemId)` → `{slot: "weapon"|"armor"|null, options: {id, name}[]}`
-- `addItem({itemId, amount, baseElementId})` / `removeItem(identifier, amount?)` / `equipItem(identifier, {location})` (keys `primary|secondary|armor|primary-twohanded|none`) / `attuneItem(identifier, {attuned})` / `setCoins(Coinage)` / `extractItem(identifier)` — all return `InventoryDto`
+- `addItem({itemId, amount, baseElementId})` / `removeItem(identifier, amount?)` / `equipItem(identifier, {location})` (keys `primary|secondary|armor|primary-twohanded|worn|none`; `worn` writes `<equipped>true</equipped>` with no location, evicts nothing and is never applied automatically on add) / `attuneItem(identifier, {attuned})` / `setCoins(Coinage)` / `extractItem(identifier)` — all return `InventoryDto`
+- An item conveys its benefits while it is not stowed and: for a weapon or armor, equipped (and attuned when it requires attunement); for a slotless item, attuned, or worn when it requires no attunement. While it does, the item's own element registers as a top-level `<elements>` node holding what it grants (the shape Aurora writes for an adorner such as Weapon of Warning), with its `<sum>` entries following the base's (`base, base grants, adorner, adorner grants`); an item with nothing to grant or choose registers as a sum entry alone. Spells, choices, languages, senses and resistances the item grants therefore reach the same surfaces a feat's do, and leave with the item. A file saved in the earlier flat form (sum entries, no node) is migrated on import; an Aurora-written file round-trips byte-identically.
 
 ## Inventory and attack DTOs
 

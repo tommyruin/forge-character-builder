@@ -9,7 +9,7 @@ import useMobileDescriptionNavigation from '../../hooks/useMobileDescriptionNavi
 import Modal from '../Modal';
 import OptionalRulesPanel from './manage/OptionalRulesPanel';
 import CharacterSourcesPanel from './manage/CharacterSourcesPanel';
-import CharacterAdjustments from './manage/CharacterAdjustments';
+import AdditionalFeaturesPanel from './manage/AdditionalFeaturesPanel';
 import AttackEditorModal from './manage/AttackEditorModal';
 import AttackComputationDetails from './manage/AttackComputationDetails';
 import Icon from '../Icon';
@@ -19,6 +19,7 @@ import SheetSettingsPanel from './manage/SheetSettingsPanel';
 const SUB_TABS = [
   ['character', 'Character'],
   ['optional-rules', 'Optional rules'],
+  ['features', 'Additional features'],
   ['sources', 'Sources'],
   ['backstory', 'Backstory'],
   ['notes', 'Notes'],
@@ -449,7 +450,17 @@ export default function ManageTab() {
                   'Additional features & Traits',
                   5,
                 )}
-                <CharacterAdjustments id={id} busy={busy} run={run} />
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    className="fcb-button"
+                    data-testid="browse-features"
+                    onClick={() => setSubTab('features')}
+                  >
+                    <Icon name="add" />
+                    Browse features
+                  </button>
+                </div>
               </div>
             </section>
 
@@ -481,6 +492,8 @@ export default function ManageTab() {
           ref={registerPrimaryScroll}
         >
           {subTab === 'optional-rules' && <OptionalRulesPanel />}
+
+          {subTab === 'features' && <AdditionalFeaturesPanel />}
 
           {subTab === 'sources' && <CharacterSourcesPanel />}
 
@@ -523,6 +536,7 @@ export default function ManageTab() {
 
           {subTab !== 'attacks' &&
             subTab !== 'optional-rules' &&
+            subTab !== 'features' &&
             subTab !== 'sources' &&
             subTab !== 'sheet' && (
             <div className="mt-6">
