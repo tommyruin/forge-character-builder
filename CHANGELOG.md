@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-16
+
 ### Added
 
 - Spells a feature grants outright now reach the spell pages: Divine Smite,
