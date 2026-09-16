@@ -1,10 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { type ElementLibrary } from "./library.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
+
+let lib: ElementLibrary;
+
+beforeAll(async () => {
+  lib = await buildCorpusLibrary();
+}, 120_000);
 
 
 describe("element library (vendored corpus)", () => {
   it("ingests the corpus with pinned counts", async () => {
-    const lib = await buildCorpusLibrary();
     expect(lib.elementCount).toBe(25960); // includes ingest-generated proxies
     expect(Object.keys(lib.typeCounts)).toHaveLength(47);
     expect(lib.sources.size).toBe(136);
@@ -12,7 +18,6 @@ describe("element library (vendored corpus)", () => {
   });
 
   it("resolves system elements (levels, grants, options)", async () => {
-    const lib = await buildCorpusLibrary();
     for (const id of ["ID_LEVEL_1", "ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE", "ID_INTERNAL_OPTION_ALLOW_FEATS"]) {
       expect(lib.byId.get(id), id).toBeDefined();
     }
@@ -21,7 +26,6 @@ describe("element library (vendored corpus)", () => {
   });
 
   it("resolves public corpus elements", async () => {
-    const lib = await buildCorpusLibrary();
     const gnome = lib.byId.get("ID_RACE_GNOME");
     expect(gnome).toBeDefined();
     expect(gnome!.identity.source).toBeTruthy();
@@ -30,7 +34,6 @@ describe("element library (vendored corpus)", () => {
   });
 
   it("collects select rules and grants from a race element", async () => {
-    const lib = await buildCorpusLibrary();
     const gnome = lib.byId.get("ID_RACE_GNOME")!;
     const selects = gnome.rules.filter((rule) => rule.kind === "select");
     expect(selects.length).toBeGreaterThan(0);

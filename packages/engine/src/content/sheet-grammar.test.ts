@@ -1,9 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { type ElementLibrary } from "./library.js";
 import { parseElement } from "./parser.js";
 import { parseXml } from "./xml.js";
 import { createFastStartController } from "../snapshot/fast-start.js";
 import { FAST_START_MANIFEST, FAST_START_SCHEMA_VERSION } from "../snapshot/identities.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
+
+let lib: ElementLibrary;
+
+beforeAll(async () => {
+  lib = await buildCorpusLibrary();
+}, 120_000);
 
 
 function parseFirstElement(xml: string) {
@@ -121,7 +128,6 @@ describe("content sheet grammar", () => {
   });
 
   it("round-trips sheets through the fast-start snapshot payload", async () => {
-    const lib = await buildCorpusLibrary();
     const controller = createFastStartController(lib);
     await controller.prepare();
     const body = controller.takeBuffer();
@@ -151,7 +157,6 @@ describe("content sheet grammar", () => {
 
 describe("corpus sheet grammar pins", () => {
   it("pins the corpus sheet inventory", async () => {
-    const lib = await buildCorpusLibrary();
     let elementsWithSheets = 0;
     let sheets = 0;
     let displayFalse = 0;

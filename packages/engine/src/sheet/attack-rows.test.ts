@@ -5,7 +5,7 @@
  * written into the document when the row was created.
  */
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules, selectionOptions } from "../selection/selection.js";
@@ -18,6 +18,10 @@ const library = (): Promise<ElementLibrary> => {
   libraryPromise ??= buildCorpusLibrary();
   return libraryPromise;
 };
+
+beforeAll(async () => {
+  await library();
+}, 120_000);
 
 /** Every `details_attack<n>_*` field of the sheet model, flattened. */
 const sheetAttackFields = (

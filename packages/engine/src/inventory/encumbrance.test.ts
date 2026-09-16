@@ -7,7 +7,7 @@
  * replaces the base item's weight rather than adding to it.
  */
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
@@ -18,6 +18,10 @@ const library = (): Promise<ElementLibrary> => {
   libraryPromise ??= buildCorpusLibrary();
   return libraryPromise;
 };
+
+beforeAll(async () => {
+  await library();
+}, 120_000);
 
 const freshService = async (): Promise<CharacterService> => new CharacterService(undefined, await library());
 

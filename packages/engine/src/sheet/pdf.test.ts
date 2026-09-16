@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import type { SpellResourceDto } from "@forge-cb/api";
 import { PDFArray, PDFDocument, PDFName, PDFStream, decodePDFRawStream } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -25,6 +25,10 @@ import { localTemplateBundle } from "../testing/sheet-bundle.js";
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "../../../..");
 const PUBLIC = join(ROOT, "apps", "client", "public", "sheets", "2014");
 const libraryPromise = buildCorpusLibrary();
+
+beforeAll(async () => {
+  await libraryPromise;
+}, 120_000);
 
 function template(name: string): Uint8Array {
   return new Uint8Array(readFileSync(join(PUBLIC, name)));
