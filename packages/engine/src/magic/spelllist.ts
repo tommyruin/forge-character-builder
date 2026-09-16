@@ -1,6 +1,9 @@
 import type { ElementLibrary } from "../content/library.js";
-import type { CharacterState } from "../character/state.js";
+import type { CharacterState, RegisteredElement } from "../character/state.js";
 import type { MagicCasterBlock } from "./state.js";
+import { grantedSpellUsage, type GrantedSpellUsage } from "./spell-usage.js";
+import type { ParsedElement } from "../content/parser.js";
+import { casterClassLevel, createRegistrationContext, grantEligible } from "../selection/selection.js";
 
 /**
  * Caster spell-list derivation.
@@ -148,9 +151,25 @@ export function ownKnownSpells(library: ElementLibrary, caster: MagicCasterBlock
  */
 export function alwaysPreparedSets(state: CharacterState, library: ElementLibrary): Map<string, Set<string>> {
   const sets = new Map<string, Set<string>>();
-  const walk = (nodes: { id: string; children: { id: string }[] }[]): void => {
+  for (const { casterName, spellId } of activeClassSpellGrants(state, library)) {
+    const set = sets.get(casterName) ?? new Set<string>();
+    set.add(spellId);
+    sets.set(casterName, set);
+  }
+  return sets;
+}
+
+/** Resolve both ordinary elements and selected owners, with the owner's own
+ * class-level gates. Combined multiclass slots never unlock a domain table. */
+function activeClassSpellGrants(state: CharacterState, library: ElementLibrary): Array<{
+  element: ParsedElement; casterName: string; spellId: string;
+}> {
+  const grants: Array<{ element: ParsedElement; casterName: string; spellId: string }> = [];
+  const context = createRegistrationContext(state, library);
+  const levels = new Map<string, number>();
+  const walk = (nodes: readonly RegisteredElement[]): void => {
     for (const registered of nodes) {
-      const element = library.byId.get(registered.id);
+      const element = library.byId.get(registered.id || registered.registered || "");
       if (element !== undefined) {
         const registeredChildren = new Set(registered.children.map((child) => child.id));
         for (const rule of element.rules) {
@@ -158,16 +177,38 @@ export function alwaysPreparedSets(state: CharacterState, library: ElementLibrar
           if (rule.prepared !== true && !registeredChildren.has(rule.id)) continue;
           const casterName = rule.spellcasting;
           if (casterName === undefined) continue;
-          const set = sets.get(casterName) ?? new Set<string>();
-          set.add(rule.id);
-          sets.set(casterName, set);
+          if (!levels.has(casterName)) levels.set(casterName, casterClassLevel(state, library, casterName) || state.level);
+          if (!grantEligible(rule, state, { ...context, level: levels.get(casterName)! })) continue;
+          grants.push({ element, casterName, spellId: rule.id });
         }
       }
-      walk(registered.children as unknown as { id: string; children: { id: string }[] }[]);
+      walk(registered.children);
     }
   };
-  walk(state.elements as unknown as { id: string; children: { id: string }[] }[]);
-  return sets;
+  walk(state.elements);
+  return grants;
 }
 
-
+/**
+ * The free-cast allowance on class casters' granted spells: caster name →
+ * spell id → allowance and optional conditions (including a `{{stat}}`
+ * template the caller resolves). The same registered grants as
+ * `alwaysPreparedSets`, so the same level and requirement gates apply.
+ *
+ * Normally a declared usage counts only when the element's own text promises the spell
+ * is cast without a slot: Paladin's Smite ("cast it without expending a spell
+ * slot, but you must finish a Long Rest") and Favored Enemy do; Beguiling
+ * Magic's 1/Long Rest belongs to its rider, not to the spells it prepares.
+ * spell-usage.ts handles the reviewed exceptions and shared-use conditions.
+ */
+export function alwaysPreparedUsages(state: CharacterState, library: ElementLibrary): Map<string, Map<string, GrantedSpellUsage>> {
+  const usages = new Map<string, Map<string, GrantedSpellUsage>>();
+  for (const { element, casterName, spellId } of activeClassSpellGrants(state, library)) {
+    const usage = grantedSpellUsage(element, spellId, state);
+    if (usage === undefined) continue;
+    const spells = usages.get(casterName) ?? new Map<string, GrantedSpellUsage>();
+    if (!spells.has(spellId)) spells.set(spellId, usage);
+    usages.set(casterName, spells);
+  }
+  return usages;
+}

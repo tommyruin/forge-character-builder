@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Modal from '../../Modal';
 import AttackComputationDetails from './AttackComputationDetails';
+import { isSaveDcBonus } from './attackComputationFormat';
 import {
   buildAttackWriteRequest,
   calculateUnarmedPreview,
@@ -151,6 +152,9 @@ export default function AttackEditorModal({
     (draft.mode === 'calculated'
       ? calculatedComputation
       : attack?.computation);
+  const bonusLabel = isSaveDcBonus(selectedSpell ?? attack)
+    ? 'Save DC'
+    : 'Attack bonus';
 
   const set = (key, value) =>
     setDraft((current) => ({ ...current, [key]: value }));
@@ -514,6 +518,13 @@ export default function AttackEditorModal({
           </label>
         )}
 
+        {draft.mode === 'spell' && (
+          <p className="text-xs normal-case text-[var(--fcb-text-muted)]">
+            For spells with conditional, delayed or multiple damage effects,
+            add a Manual attack and enter the effect you want to track.
+          </p>
+        )}
+
         {showsAbilityChoice && (
           <label className="fcb-field-label">
             Attack and damage ability
@@ -729,7 +740,7 @@ export default function AttackEditorModal({
               <>
                 {generatedField(
                   'bonus',
-                  'Attack bonus',
+                  bonusLabel,
                   false,
                   fieldPlaceholder('bonus'),
                 )}

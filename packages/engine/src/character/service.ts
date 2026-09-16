@@ -1624,6 +1624,24 @@ export class CharacterService {
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for multiclassing");
     }
+    if (state.level > 1 && !state.levelHistory.at(-1)?.isPending) {
+      // Converting an already-added class level must remove its feature and
+      // selection nodes too. Build every intermediate document locally so a
+      // rejected target leaves the character unchanged.
+      const removal = planDelevelEdits(state, document, this.library, { mode: "last" });
+      const removed = parseDnd5e(applyRawEdits(document.raw, removal.edits));
+      const lowered = this.remap(removed, state, id);
+      lowered.levelRegistrations = state.levelRegistrations.slice(0, -1);
+      const pending = planNewMulticlassEdits(lowered, removed, this.library);
+      const pendingDocument = parseDnd5e(applyRawEdits(removed.raw, pending.edits));
+      const pendingState = this.remap(pendingDocument, lowered, id);
+      pendingState.levelRegistrations = [...lowered.levelRegistrations, pending.record];
+      const start = planStartMulticlassEdits(pendingState, pendingDocument, this.library, multiclassId, this.rng);
+      const updated = parseDnd5e(applyRawEdits(pendingDocument.raw, start.edits));
+      const next = this.remap(updated, pendingState, id);
+      next.levelRegistrations = [...lowered.levelRegistrations, start.record];
+      return this.reconcileMagicRegion(id, updated, next);
+    }
     const plan = planStartMulticlassEdits(state, document, this.library, multiclassId, this.rng);
     // The plan rewrites whichever level wrapper is currently last, so that
     // level's registration record is replaced rather than added to — the level

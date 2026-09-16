@@ -93,6 +93,12 @@ const EMPOWERED_EVOCATION = [
 const SPELL_SNIPER_2014 = ["ID_PHB_FEAT_SPELLSNIPER"];
 const SPELL_SNIPER_2024 = ["ID_WOTC_PHB24_FEAT_SPELLSNIPER"];
 
+/**
+ * Riders that only touch spells with an attack roll: both printings of Spell
+ * Sniper extend "a spell that requires an attack roll", never a save.
+ */
+export const ATTACK_ROLL_RIDER_IDS: ReadonlySet<string> = new Set([...SPELL_SNIPER_2014, ...SPELL_SNIPER_2024]);
+
 const ELEMENTAL_AFFINITY = [
   "ID_WOTC_PHB_ARCHETYPE_FEATURE_ELEMENTAL_AFFINITY",
   "ID_WOTC_PHB24_ARCHETYPE_FEATURE_SORCERER_DRACONIC_SORCERY_ELEMENTAL_AFFINITY",

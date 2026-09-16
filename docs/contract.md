@@ -223,6 +223,19 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
   class feature's, gated on the class level; a race's, feat's or item's, gated
   on the character level — registers when that level arrives and is removed
   again by the delevel that takes the level away.
+- A Spell select's `$(spellcasting:slots)` token expands to every slot level the
+  caster has at its current level in its own class (multiclass-variant levels
+  count toward that class; a subclass caster such as the Eldritch Knight counts
+  the class that offers the subclass), not the level the select was gained at
+  and not the combined multiclass table. A caster with `prepare=true` and
+  without `listKnown=true` acquires spells into a book: its selects, including
+  Savant and renamed homebrew choices, keep their acquisition-level ceiling.
+  The spell browse DTO's `maxSpellLevel` and `activeSpellLevels` report the same
+  ceiling. This bounds repertoire editing; it does not enforce advancement
+  replacement counts (such as the Sorcerer's one replacement per class level).
+- A delevel that lowers that ceiling below a filled pick's spell level clears
+  the pick and reports its select in `requiredRepicks`, as it does for a choice
+  granted above the new level.
 - `levelUp(id, {mode: "new-multiclass"})` creates an unresolved multiclass level
   and its `Multiclass` selection. The progression history exposes that entry with
   `classId`/`classLevel` as `null`, `className: "Unresolved multiclass"`, and
@@ -249,7 +262,7 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
   (`hasAttackRow` is true when an attack row is stored for this inventory record; a slotless item that can be worn — real equipment that is not a weapon, armor, an unbased magic overlay or a stackable consumable — has `equipLocations: ["worn"]`, `isEquippable: true`, and `equippedLocation: null` while worn)
 - `getItemBaseOptions(itemId)` → `{slot: "weapon"|"armor"|null, options: {id, name}[]}`
 - `addItem({itemId, amount, baseElementId})` / `removeItem(identifier, amount?)` / `equipItem(identifier, {location})` (keys `primary|secondary|armor|primary-twohanded|worn|none`; `worn` writes `<equipped>true</equipped>` with no location, evicts nothing and is never applied automatically on add) / `attuneItem(identifier, {attuned})` / `setCoins(Coinage)` / `extractItem(identifier)` — all return `InventoryDto`
-- An item conveys its benefits while it is not stowed and: for a weapon or armor, equipped (and attuned when it requires attunement); for a slotless item, attuned, or worn when it requires no attunement. While it does, the item's own element registers as a top-level `<elements>` node holding what it grants (the shape Aurora writes for an adorner such as Weapon of Warning), with its `<sum>` entries following the base's (`base, base grants, adorner, adorner grants`); an item with nothing to grant or choose registers as a sum entry alone. Spells, choices, languages, senses and resistances the item grants therefore reach the same surfaces a feat's do, and leave with the item. A file saved in the earlier flat form (sum entries, no node) is migrated on import; an Aurora-written file round-trips byte-identically.
+- An item conveys its benefits while it is not stowed and: for a weapon or armor, equipped (and attuned when it requires attunement); for a slotless item, attuned, or worn when it requires no attunement. While it does, the item's own element registers as a top-level `<elements>` node holding what it grants (the compatible imported shape for an adorner such as Weapon of Warning), with its `<sum>` entries following the base's (`base, base grants, adorner, adorner grants`); an item with nothing to grant or choose registers as a sum entry alone. Spells, choices, languages, senses and resistances the item grants therefore reach the same surfaces a feat's do, and leave with the item. A file saved in the earlier flat form (sum entries, no node) is migrated on import; an imported compatible file round-trips byte-identically.
 
 ## Inventory and attack DTOs
 
@@ -297,7 +310,7 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
     `<additional>` entry's own `source`.
 - `KnownSpellDto`: `{id, name, source, isPrepared, isChosen, level, school,
   isRitual, isConcentration, isAlwaysPrepared, castingTime, components, range,
-  duration, description, usage?}`
+  duration, description, usage?, usageNote?}`
   - `isPrepared` excludes always-prepared spells (their count is not in
     `currentPreparedCount`); `isAlwaysPrepared`/`isChosen` derive from the
     character's spell rules (domain/oath/known-spell rules), NOT from XML
@@ -312,6 +325,17 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
     `"1/Long Rest"` when the feature's text promises a cast without a spell
     slot that returns on a long rest, else absent. It is read from content,
     not assumed.
+  - A class caster's granted spell normally carries `usage` only when the
+    granting element both declares `<sheet usage="…">` and promises a slotless
+    cast. Reviewed content-ID exceptions cover Grasping Tentacles and Lunar
+    Embodiment, whose allowances are not expressed by a sheet usage. Lunar
+    allowances follow the selected phase; published content limits this to its
+    first-level spell, while the playtest grants one use per eligible spell.
+    Mantle of Majesty labels one feature activation rather than one Command;
+    Fateful Naming labels the shared Bane/Bless pool. Optional `usageNote`
+    explains these conditions in the Magic tab's allowance tooltip.
+    `{{stat}}` tokens resolve against the statistics (Favored Enemy →
+    `"2/Long Rest"`); a usage with an unresolvable token is left absent.
   - Prepared casters: `knownSpells` = the caster's full spell list (duplicates
     across sources included, e.g. PHB + PHB24). Known casters (bard/ranger/
     warlock): the character's known spells only (warlock: cantrips + chosen).
@@ -418,7 +442,21 @@ methods with no counterpart elsewhere. Contract:
   AttackSpellOptionDto[] {casterIdentifier, casterName, spellId, spellName,
   level, range, bonus ("+8 INT vs AC"), damage (level-scaled, e.g. "2d10
   fire"), description, warning, beamCount, computation}` for the character's
-  attack-roll spells.
+  supported attack-roll and damaging saving-throw spells. Save parsing requires
+  a damage clause tied to the failed save, with a single save ability. Separate
+  saves for dropping an object, delayed punishment, attack-triggered riders and
+  multiple random effects do not become misleading save-damage rows. Complex
+  spells can be entered using Manual; this is not a complete spell interpreter.
+- A caster's spells are its chosen cantrips and spells plus the spells its
+  features grant (`alwaysPreparedSets`, levelled grants only once the caster
+  has a slot of that level); the first class caster also carries the DM grants.
+- Attack modifiers and save DCs use the same resolver as the Magic tab:
+  nonzero caster-specific statistics take precedence over ability-wide
+  statistics, then the proficiency/ability fallback. A saving-throw row's
+  `bonus` reads `"DC 13 INT"`, with the ability the target saves with. Its
+  `computation` lists `Base 8`, ability, proficiency and any remaining
+  spellcasting bonuses, and sets `isPerHit: false`. A spell with both an attack
+  roll and a save projects as an attack row.
 - Caster identifiers are stable UUIDs for one loaded-character session. The same
   identifier links a caster row to all of its spell attack-option rows; it is not
   a content element id and may differ after a new import/session.

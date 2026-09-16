@@ -5,6 +5,11 @@ export function formatAttackContribution(contribution) {
   }`;
 }
 
+// A saving-throw spell's bonus reads "DC 13 INT" rather than "+5 CHA vs AC".
+export function isSaveDcBonus(attack) {
+  return /^DC /.test(attack?.generated?.bonus ?? attack?.bonus ?? '');
+}
+
 export function attackCountLabel(attack, count) {
   const name = attack?.name ?? attack?.spellName ?? '';
   const normalized = name.toLowerCase();

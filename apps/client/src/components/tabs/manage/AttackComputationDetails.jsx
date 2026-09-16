@@ -1,6 +1,7 @@
 import {
   attackCountLabel,
   formatAttackContribution,
+  isSaveDcBonus,
 } from './attackComputationFormat';
 
 export default function AttackComputationDetails({
@@ -34,7 +35,7 @@ export default function AttackComputationDetails({
       {contributions.length > 0 && (
         <p>
           <span className="font-semibold text-[var(--fcb-text)]">
-            Attack:
+            {isSaveDcBonus(attack) ? 'Save DC:' : 'Attack:'}
           </span>{' '}
           {contributions.map(formatAttackContribution).join(' · ')}
         </p>

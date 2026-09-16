@@ -178,7 +178,7 @@ export function repickRules(state: CharacterState, unrestored: WrapperSnapshot[]
     const rule = matchPending(state, snapshot, taken);
     if (rule === null) continue;
     taken.add(rule.path.join("."));
-    rules.push(rule);
+    rules.push({ ...rule, selectedElementIds: [snapshot.registered] });
   }
   return rules;
 }

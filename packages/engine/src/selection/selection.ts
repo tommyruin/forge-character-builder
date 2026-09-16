@@ -228,7 +228,7 @@ function isEligible(
  * the granting element's rules; undefined when the wrapper is engine-baked.
  * $(spellcasting:list) and $(spellcasting:slots) references in the supports
  * are expanded against the character (the select's spellcasting name and the
- * character's highest spell-slot level).
+ * caster's highest spell-slot level; see expandSelectSupports).
  */
 export function selectRuleFor(state: CharacterState, library: ElementLibrary, rule: SelectionRule): SelectRule | undefined {
   if (rule.path.length < 2) return undefined;
@@ -353,8 +353,8 @@ function casterBlockNamed(
  * - `$(spellcasting:list)` becomes the caster's base list expression OR-ed
  *   with every registered extension expression;
  * - `$(spellcasting:slots)` becomes the OR of every slot level from 1 up to
- *   the caster's highest slot level (the acquisition-level progression when
- *   derivable, else the serialized slots);
+ *   the caster's highest slot level (its own class's progression at the level
+ *   slotCeilingClassLevel picks when derivable, else the serialized slots);
  * - extension spell ids are admitted by id when their own level fits.
  */
 const supportsExpansionCache = new WeakMap<
@@ -399,10 +399,9 @@ function expandSelectSupportsUncached(
   const listParts = [baseList, ...extensions.expressions].filter((part) => part.trim() !== "");
   const listExpression = listParts.length > 1 ? `(${listParts.map((part) => `(${part})`).join("||")})` : (listParts[0] ?? casterName);
 
+  const ceilingLevel = select.type === "Spell" ? slotCeilingClassLevel(state, library, select, casterName) : undefined;
   const progressionSlots =
-    select.type === "Spell" && select.level !== undefined
-      ? spellSlotLevelAtClassLevel(library, casterName, select.level)
-      : 0;
+    ceilingLevel !== undefined ? spellSlotLevelAtClassLevel(library, casterName, ceilingLevel) : 0;
   const maxSlot = progressionSlots > 0 ? progressionSlots : maxSpellSlotLevel(state);
   const levels = Array.from({ length: maxSlot }, (_, index) => String(index + 1));
   // No slot level yet: a token that cannot match anything (mirrors the
@@ -468,6 +467,158 @@ function spellSlotLevelAtClassLevel(
     highest = Math.max(highest, highestSlotLevelFromRules(element.rules, casterName, classLevel));
   }
   return highest;
+}
+
+/**
+ * The class level a select's `$(spellcasting:slots)` ceiling is read at.
+ * Spells known are the caster's current repertoire: every one of those choices
+ * may hold a spell of any level the caster has slots for now, so the ceiling
+ * follows its current level in its own class. Spellbook selects keep the level
+ * that granted them, because a wizard copies those spells in when it gains the
+ * level, of a level it had slots for then. Undefined when neither is known.
+ */
+function slotCeilingClassLevel(
+  state: CharacterState,
+  library: ElementLibrary,
+  select: SelectRule,
+  casterName: string,
+): number | undefined {
+  // A prepared caster without a full known list acquires spells individually
+  // into a book. This also covers Savant and homebrew book choices regardless
+  // of their display names; ordinary prepared casters know their whole list.
+  const source = state.magic?.casters.find((block) => block.name === casterName)?.source;
+  const casting = source === undefined ? undefined : library.byId.get(source)?.spellcasting;
+  const isSpellbook = casting?.prepare === true && casting.listKnown !== true;
+  const current = isSpellbook ? 0 : casterClassLevel(state, library, casterName);
+  return current > 0 ? current : select.level;
+}
+
+/**
+ * The highest spell level a Spell select admits from its caster's own slot
+ * progression: read at the level slotCeilingClassLevel picks when the select
+ * carries `$(spellcasting:slots)`, else at the level that granted it (those
+ * selects fix their spell level in the supports). 0 when the progression
+ * cannot be derived. The spell-browse projection and the delevel planner use
+ * it so they agree with the select on what it accepts.
+ */
+export function spellSlotCeilingFor(
+  state: CharacterState,
+  library: ElementLibrary,
+  rule: SelectionRule,
+  casterName?: string,
+): number {
+  const select = selectRuleFor(state, library, rule);
+  const caster = casterName ?? select?.spellcasting ?? state.spellcasting[0]?.name ?? "";
+  const classLevel =
+    select !== undefined && (select.supports ?? "").includes("$(spellcasting:slots)")
+      ? slotCeilingClassLevel(state, library, select, caster)
+      : rule.requiredLevel;
+  return classLevel !== undefined ? spellSlotLevelAtClassLevel(library, caster, classLevel) : 0;
+}
+
+/**
+ * The character's level in the class that owns the named caster (see
+ * classOwnsCaster), counting multiclass-variant levels toward their class.
+ * 0 when no class in the level history owns it.
+ */
+export function casterClassLevel(state: CharacterState, library: ElementLibrary, casterName: string): number {
+  const owners = casterOwnersFor(library, casterName);
+  if (owners.casterIds.size === 0) return 0;
+  const ownsCaster = new Map<string, boolean>();
+  let level = 0;
+  for (const entry of state.levelHistory.slice(0, state.level)) {
+    if (entry.isPending) continue;
+    let owns = ownsCaster.get(entry.classId);
+    if (owns === undefined) {
+      const direct = library.byId.get(entry.classId);
+      const element = direct?.identity.type === "Multiclass" || direct === undefined
+        ? classForMulticlassVariant(library, entry.classId)
+        : direct;
+      owns = element !== undefined && classOwnsCaster(element, owners);
+      ownsCaster.set(entry.classId, owns);
+    }
+    if (owns) level += 1;
+  }
+  return level;
+}
+
+interface CasterOwners {
+  /** The elements carrying the caster's own (non-extension) spellcasting block. */
+  casterIds: ReadonlySet<string>;
+  /**
+   * The elements whose Archetype select admits a subclass granting one of
+   * them — the class feature offering the subclass choice (2014 "Martial
+   * Archetype", 2024 "Level 3: Fighter Subclass"), or a class declaring it.
+   */
+  subclassOffererIds: ReadonlySet<string>;
+}
+
+const casterOwnersCache = new WeakMap<ElementLibrary, { revision: number; byCaster: Map<string, CasterOwners> }>();
+
+/** See CasterOwners; derived once per caster name and library revision. */
+function casterOwnersFor(library: ElementLibrary, casterName: string): CasterOwners {
+  const revision = library.revision ?? 0;
+  let cached = casterOwnersCache.get(library);
+  if (cached === undefined || cached.revision !== revision) {
+    cached = { revision, byCaster: new Map() };
+    casterOwnersCache.set(library, cached);
+  }
+  let owners = cached.byCaster.get(casterName);
+  if (owners === undefined) {
+    const casterIds = new Set(
+      spellcastingElementsFor(library, casterName)
+        .filter((element) => element.spellcasting !== undefined && !isSpellcastingExtension(element.spellcasting))
+        .map((element) => element.identity.id),
+    );
+    const subclassTags = (library.byType.get("Archetype") ?? [])
+      .filter((element) => grantsAnyOf(element, casterIds))
+      .map((element) => new Set([...element.supports.map((tag) => tag.trim()), element.identity.id]));
+    const subclassOffererIds = new Set<string>();
+    if (subclassTags.length > 0) {
+      for (const element of library.byId.values()) {
+        const offers = element.rules.some(
+          (rule) =>
+            rule.kind === "select" &&
+            rule.type === "Archetype" &&
+            rule.supports !== undefined &&
+            subclassTags.some((tags) => evaluateSupportsExpression(rule.supports!, tags)),
+        );
+        if (offers) subclassOffererIds.add(element.identity.id);
+      }
+    }
+    owners = { casterIds, subclassOffererIds };
+    cached.byCaster.set(casterName, owners);
+  }
+  return owners;
+}
+
+function grantsAnyOf(element: ParsedElement, ids: ReadonlySet<string>): boolean {
+  return element.rules.some((rule) => rule.kind === "grant" && rule.id !== undefined && ids.has(rule.id));
+}
+
+/**
+ * True when the class carries the caster's spellcasting block or offers a
+ * subclass that does — itself or through a feature it grants. The subclass
+ * route is how the Eldritch Knight and Arcane Trickster, whose blocks sit on
+ * archetype features, belong to the fighter and the rogue, whose levels their
+ * slot tables are keyed on.
+ */
+function classOwnsCaster(element: ParsedElement, owners: CasterOwners): boolean {
+  const id = element.identity.id;
+  return (
+    owners.casterIds.has(id) ||
+    grantsAnyOf(element, owners.casterIds) ||
+    owners.subclassOffererIds.has(id) ||
+    grantsAnyOf(element, owners.subclassOffererIds)
+  );
+}
+
+/** The class element declaring the multiclass variant id (leveling.ts has the same lookup; importing it would cycle). */
+function classForMulticlassVariant(library: ElementLibrary, multiclassId: string): ParsedElement | undefined {
+  for (const element of library.byType.get("Class") ?? []) {
+    if (element.multiclass?.id === multiclassId) return element;
+  }
+  return undefined;
 }
 
 /** See spellSlotLevelAtClassLevel; shared with the spell-browse projection. */
@@ -1230,11 +1381,11 @@ function removeInvalidGrantChildren(state: CharacterState, library: ElementLibra
           for (const child of node.children) {
             const childId = child.id || child.registered || "";
             if (childId === "") continue;
-            const grant = owner.rules.find(
+            const grants = owner.rules.filter(
               (candidate): candidate is GrantRule =>
                 candidate.kind === "grant" && resolveGrant(candidate, library)?.identity.id === childId,
             );
-            if (grant && !grantEligible(grant, state, ctx)) {
+            if (grants.length > 0 && !grants.some((grant) => grantEligible(grant, state, ctx))) {
               for (const id of subtreeIds([child])) stale.add(id);
             }
           }
@@ -1337,15 +1488,17 @@ export function setSelection(
     type: resolveElementType(library, id),
     id,
   }));
-  const inserts: SumInsert[] = replacing
-    ? [{ anchor: { mode: "end" }, entries: inserted }]
-    : [
-        { anchor: { mode: "after-last-outside-container" }, entries: inserted },
-        ...reconcile.map((group) => ({
-          anchor: { mode: "after-subtree", path: group.parentPath } as const,
-          entries: group.sumIds.map((id) => ({ type: resolveElementType(library, id), id })),
-        })),
-      ];
+  // Sibling grants the pick made eligible follow their parent's subtree on a
+  // replacing pick too: the tree already holds them, and statistics, detail
+  // and requirements read the sum.
+  const reconcileInserts: SumInsert[] = reconcile.map((group) => ({
+    anchor: { mode: "after-subtree", path: group.parentPath } as const,
+    entries: group.sumIds.map((id) => ({ type: resolveElementType(library, id), id })),
+  }));
+  const inserts: SumInsert[] = [
+    { anchor: replacing ? { mode: "end" } : { mode: "after-last-outside-container" }, entries: inserted },
+    ...reconcileInserts,
+  ];
   next.sum = {
     elementCount: 0,
     elements: orderSumEntries(next.sum.elements, next, inserts),
@@ -1631,7 +1784,11 @@ export function planSelectionEdits(
     if (!parent) throw engineError("not-found", "reconcile parent node not found in document");
     const parentPad = linePrefix(raw, parent);
     const staleInParent = staleNodes.some((node) => node.start >= parent.start && node.end <= parent.end);
-    if (staleInParent) {
+    // A replacement may remove and re-grant the same id. Its sum membership
+    // never changes, so staleNodes cannot identify the old XML child.
+    const existingIds = new Set(childElements(parent, "element").map((child) => getAttr(child, "id")));
+    const replacesExisting = group.nodes.some((node) => node.kind === "element" && existingIds.has(node.element.identity.id));
+    if (staleInParent || replacesExisting) {
       const desiredParent = elementAtPath(desired.elements, group.parentPath);
       if (!desiredParent) throw engineError("not-found", "reconcile parent missing from desired state");
       const openTag = raw.slice(parent.start, parent.openEnd);

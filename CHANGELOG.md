@@ -36,8 +36,8 @@ project uses [Semantic Versioning](https://semver.org/).
   proficiency, a Ring of Resistance's resistance, a Belt of Dwarvenkind's
   Dwarvish — and leave again with the item.
 - Equipment offers **Wear** for a slotless item such as a cloak, an amulet or
-  goggles, and **Remove** to take it off. A worn item is saved the way Aurora
-  saves one, so the file still opens there.
+  goggles, and **Remove** to take it off. A worn item uses the compatible `.dnd5e`
+  format, so the file still opens in other builders.
 - Manage → **Additional features** is its own sub-tab: supernatural gifts,
   extra features and the other adjustments browse like the Equipment catalog,
   with a category strip, a search box, Add and Remove on each card, and the
@@ -92,11 +92,50 @@ project uses [Semantic Versioning](https://semver.org/).
   leaves the other in place.
 - The sheet's Resistances box now prints what the character has: resistances,
   immunities and vulnerabilities from items, species and features, grouped as
-  "Resistances: Acid, Fire" and "Immunities: Poison". Text an imported Aurora
-  file wrote there by hand keeps its place after them.
+  "Resistances: Acid, Fire" and "Immunities: Poison". Hand-written text in an imported
+  `.dnd5e` file keeps its place after them.
 - A multi-line sheet box keeps its line breaks. Backstory paragraphs, the
   additional-features notes and the magic item sidebars printed as one run of
   text; each now starts where the writer broke the line.
+- Choosing Brass, Gold or Red Draconic Ancestry for a 2024 Dragonborn no longer
+  fails with "engine method 'setSelection' failed". The three fire ancestries
+  each grant fire resistance, and settling the choice deleted that resistance
+  twice, corrupting the character.
+- Changing or re-picking a Draconic Ancestry keeps exactly one matching
+  resistance in the tree and sum, including changes between fire ancestries.
+  Re-picking also repairs missing resistance in older saves; untouched imports
+  retain their original bytes.
+- A spell choice accepts any level the class has slots for at its current level,
+  not only the level it had when the choice was gained. It applies to known and prepared
+  spell lists in both rules versions, including the 2024 Bard's first four
+  picks and the Eldritch Knight's and Arcane Trickster's choices; Wizard
+  spellbook choices, including Savant, retain their acquisition-level limits
+  regardless of the select's name. The editor does not enforce per-level
+  replacement counts; Sorcerers still replace only one spell per class level. The
+  Magic tab's spell browser offers the same levels, and losing a level takes
+  back a spell that is now too high and asks for a new pick. Secondary
+  multiclass casters use their own class level. Old Bard checksums retain their
+  filled wrappers through import, editing and deleveling.
+- Converting the latest level to another class removes the original level's
+  features, preventing a later class delevel from finding orphaned features.
+- Spells a feature lets the caster cast without a slot print their free cast
+  beside the name on the spell pages ("Divine Smite 1/LR", a Magic Initiate
+  spell), and the Magic tab shows it for class spells too. A feat's spell block
+  no longer prints "0 SPELL SLOTS". Grasping Tentacles and the selected Lunar
+  phase receive their allowances; Mantle of Majesty distinguishes an activation
+  from a single Command, and Fateful Naming labels its shared pool. Long names
+  shorten at the minimum font size so their markers stay inside both sheet sets.
+- Add attack → Known spell includes supported spells
+  a subclass or feature grants (the Draconic Sorcerer's Chromatic Orb), DM-granted
+  spells, 2024 "attack roll" wording (Sorcerous Burst), and damaging saving-throw
+  spells such as Mind Sliver, Sacred Flame and Fireball, which show "DC 13 INT"
+  and are labelled Save DC. Manage → Attacks suggests them the same way.
+  DCs and attack modifiers include the Magic tab's caster-specific item bonuses.
+  Selected subclass spell grants observe their own class-level gates. Saves
+  unrelated to the damage and complex conditional effects are excluded from
+  automatic save rows; the editor points to Manual for those effects.
+- The content-library digest equality test has a 15-second timeout for full
+  corpus canonicalization under coverage; its assertions are unchanged.
 
 ## [2.2.0] - 2026-08-28
 
@@ -213,4 +252,3 @@ project uses [Semantic Versioning](https://semver.org/).
 
 - The vendored sheet PDFs, help documents and third-party core data files
   the client previously shipped.
-

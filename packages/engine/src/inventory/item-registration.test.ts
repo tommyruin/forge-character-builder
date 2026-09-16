@@ -505,7 +505,7 @@ describe.each(["2014", "2024"])("item-granted spells and choices (%s rules)", (m
 
 const FIXTURE_ROOT = fileURLToPath(new URL("../../../../fixtures/coverage/characters/", import.meta.url));
 
-describe("Aurora-saved characters", () => {
+describe("Imported compatible characters", () => {
   let library: ElementLibrary;
 
   beforeAll(async () => {

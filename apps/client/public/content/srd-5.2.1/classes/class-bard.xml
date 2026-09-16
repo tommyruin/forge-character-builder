@@ -213,7 +213,7 @@
 			<select type="Spell" name="Cantrip (Bard)" supports="$(spellcasting:list), 0" level="4" spellcasting="Bard" />
 			<select type="Spell" name="Cantrip (Bard)" supports="$(spellcasting:list), 0" level="10" spellcasting="Bard" />
 
-			<select type="Spell" name="Spell (Bard)" supports="$(spellcasting:list), 1" number="4" spellcasting="Bard" />
+			<select type="Spell" name="Spell (Bard)" supports="$(spellcasting:list), $(spellcasting:slots)" number="4" spellcasting="Bard" />
 			<select type="Spell" name="Spell (Bard)" supports="$(spellcasting:list), $(spellcasting:slots)" level="2" spellcasting="Bard" />
 			<select type="Spell" name="Spell (Bard)" supports="$(spellcasting:list), $(spellcasting:slots)" level="3" spellcasting="Bard" />
 			<select type="Spell" name="Spell (Bard)" supports="$(spellcasting:list), $(spellcasting:slots)" level="4" spellcasting="Bard" />

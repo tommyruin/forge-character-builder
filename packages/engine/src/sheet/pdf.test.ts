@@ -8,7 +8,8 @@ import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { encodeBase64 } from "../platform.js";
 import { CharacterService } from "../character/service.js";
-import { buildFullSheetCharacter, buildRogue5 } from "../testing/character-factory.js";
+import { buildFullSheetCharacter, buildRogue5, seededRng } from "../testing/character-factory.js";
+import { pendingSelectionRules } from "../selection/selection.js";
 import { inventoryRuns } from "./card-layout.js";
 import { buildCharacterSheetModel } from "./model.js";
 import {
@@ -50,6 +51,34 @@ async function pageOperators(pdf: ArrayBuffer, index = 0): Promise<string> {
 }
 
 describe("character sheet PDF writer", () => {
+  it.each(["2014", "2024"] as const)("keeps long spell names and free-cast markers inside every %s cell", async (ruleset) => {
+    const model = {
+      characterId: "Long spell names", mode: "full" as const, pageCount: 1,
+      pages: [{ page: 1, templateKind: "spell-list" as const, sections: [], spellcasting: [{
+        name: "Wizard", ability: "Intelligence", attackBonus: "+5", saveDc: "13", prepareCount: "4",
+        resource: { mode: "slots" as const, canUseSpellPoints: false },
+        sections: [{ level: 1, slots: 0, spells: Array.from({ length: 5 }, (_, i) => ({
+          name: `${i} ${"Wondrous Ward ".repeat(12)}`, prepared: true, alwaysPrepared: true, usage: "1/Long Rest",
+        })) }],
+      }] }],
+    };
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(ruleset));
+    const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
+    const content = await (await doc.getPage(1)).getTextContent();
+    const items = content.items.filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item);
+    const markers = items.filter((item) => item.str === "1/LR");
+    expect(markers).toHaveLength(5);
+    for (let i = 0; i < 5; i++) {
+      const column = i < 2 ? i + 1 : (i - 2) % 3;
+      const name = items.find((item) => item.str.startsWith(`${i} `))!;
+      expect(name.str).toMatch(/\.\.\.$/);
+      const marker = markers.find((item) => Math.abs(item.transform[5] - name.transform[5]) < 2 &&
+        item.transform[4] >= name.transform[4] + name.width - 0.01 && item.transform[4] - name.transform[4] - name.width < 4)!;
+      expect(marker, JSON.stringify({ name, markers })).toBeDefined();
+      expect(marker.transform[4] + marker.width).toBeLessThanOrEqual([228, 417, 582][column]! + 0.01);
+    }
+  }, 120_000);
+
   it("emits a deterministic browser-readable PDF", () => {
     const model = {
       characterId: "Ada",
@@ -357,6 +386,59 @@ describe("character sheet PDF writer", () => {
     expect(middle("Wisdom")).toBeCloseTo(headerY + spellHeader.statMiddle, 1);
     expect(middle("Ranger, Gloom Stalker")).toBeCloseTo(headerY + spellHeader.bannerMiddle, 1);
   }, 120_000);
+
+  // A level-3 Paladin whose Acolyte background took Magic Initiate (Cleric):
+  // Divine Smite and Cure Wounds each have one slotless cast per Long Rest,
+  // and the feat's block has no slots of its own.
+  it("marks free casts beside their spells and prints slot counts only where slots exist", async () => {
+    const library = await libraryPromise;
+    const service = new CharacterService(undefined, library, { rng: seededRng(7) });
+    const id = service.createCharacter("Free casts").id;
+    service.setRulesetMode(id, "2024");
+    service.setAbilities(id, { strength: 15, dexterity: 10, constitution: 13, intelligence: 8, wisdom: 12, charisma: 14 });
+    const pick = (matches: (rule: { type: string; name: string }) => boolean, elementId: string): void => {
+      const rule = pendingSelectionRules(service.getCharacter(id)).find((candidate) => matches(candidate) && !candidate.hasSelection)!;
+      service.setSelection(id, rule.identifier, elementId);
+    };
+    pick((rule) => rule.type === "Race", "ID_WOTC_PHB24_RACE_HUMAN");
+    pick((rule) => rule.type === "Class", "ID_WOTC_PHB24_CLASS_PALADIN");
+    pick((rule) => rule.type === "Background", "ID_WOTC_PHB24_BACKGROUND_ACOLYTE");
+    service.levelUp(id);
+    service.levelUp(id);
+    pick((rule) => rule.name === "Spellcasting Ability (Magic Initiate)", "ID_WOTC_PHB24_FEAT_FEATURE_MAGIC_INITIATE_CLERIC_WISDOM");
+    pick((rule) => rule.name === "Cantrip (Magic Initiate)", "ID_WOTC_PHB24_SPELL_SACRED_FLAME");
+    pick((rule) => rule.name === "Cantrip (Magic Initiate)", "ID_WOTC_PHB24_SPELL_GUIDANCE");
+    pick((rule) => rule.name === "Level 1 Spell (Magic Initiate)", "ID_WOTC_PHB24_SPELL_CURE_WOUNDS");
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
+    const spellPage = model.pages.findIndex((page) => page.templateKind === "spell-list") + 1;
+    // The cell each spell column's text sits in ends where the next cell's
+    // prepared dot begins (scripts/build-sheet-templates.mjs).
+    const cellRight = (x: number): number => (x < 230 ? 228 : x < 419 ? 417 : 582);
+
+    for (const ruleset of ["2014", "2024"] as const) {
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(ruleset));
+      const browserPdf = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+      const content = await (await browserPdf.getPage(spellPage)).getTextContent();
+      const items = content.items.filter(
+        (item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item,
+      );
+
+      for (const name of ["Divine Smite", "Cure Wounds"]) {
+        const spell = items.find((item) => item.str === name);
+        expect(spell, `${ruleset} ${name}`).toBeDefined();
+        const nameRight = spell!.transform[4] + spell!.width;
+        const marker = items.find((item) =>
+          item.str === "1/LR" && Math.abs(item.transform[5] - spell!.transform[5]) < 2 &&
+          item.transform[4] >= nameRight && item.transform[4] - nameRight < 12);
+        expect(marker, `${ruleset} ${name} marker`).toBeDefined();
+        expect(marker!.transform[4] + marker!.width, `${ruleset} ${name} marker fits`).toBeLessThanOrEqual(cellRight(spell!.transform[4]));
+      }
+      // The feat's slotless level block no longer reads "0 SPELL SLOTS"; the
+      // Paladin's slotted one still prints its count.
+      const labels = items.map((item) => item.str).filter((text) => text.endsWith("SPELL SLOTS"));
+      expect(labels, ruleset).toEqual(["3 SPELL SLOTS"]);
+    }
+  }, 180_000);
 
   it("renders the spell point reference table under the caster header", async () => {
     const casterPage = (resource: SpellResourceDto) => ({

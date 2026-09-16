@@ -4,9 +4,10 @@ import type { Dnd5eDocument } from "../dnd5e/document.js";
 import type { RawEdit } from "../selection/selection.js";
 import { isSpellcastingExtension } from "../content/parser.js";
 import { multiclassSlotProgression } from "../statistics/calculator.js";
-import { spellInfo, canonicalSourceRank } from "./spelllist.js";
-import { applySpellRiders, damageWithBonus } from "./spell-riders.js";
+import { spellInfo, canonicalSourceRank, alwaysPreparedSets } from "./spelllist.js";
+import { applySpellRiders, damageWithBonus, ATTACK_ROLL_RIDER_IDS } from "./spell-riders.js";
 import { featureSpellCasters } from "./feature-casters.js";
+import { casterModifier } from "./caster-modifiers.js";
 import { grantedCasterAbility, GRANTED_CASTER_KEY, GRANTED_CASTER_NAME } from "./dto.js";
 import type { MagicAdditionalSpell, MagicCasterBlock, MagicSpellEntry, MagicState } from "./state.js";
 
@@ -296,21 +297,25 @@ function textOf(descriptionXml: string | undefined): string {
  * "when you reach 5th level (2d10), 11th level (3d10)", 2024 reads "when you reach
  * levels 5 (2d10), 11 (3d10)". Anchor on the upgrade clause once, then read tiers out of
  * that clause alone so an unrelated "3rd level (2d6)" elsewhere cannot pose as a tier.
+ * Toll the Dead "increases by one die" and lists both dice per tier ("2d8 or 2d12"),
+ * so a tier keeps the die size of the damage it scales.
  */
 function scaledDamageDice(text: string, dice: string, level: number): string {
-  const anchor = /increases by \d+d\d+ when you reach/.exec(text);
+  const anchor = /increases by (?:\d+d\d+|one die) when you reach/.exec(text);
   if (anchor === null) return dice;
   const rest = text.slice(anchor.index + anchor[0].length);
   const stop = rest.indexOf(".");
   const clause = stop === -1 ? rest : rest.slice(0, stop);
-  const tiers = /(\d+)(?:st|nd|rd|th)?(?: level)?\s*\((\d+d\d+)\)/g;
+  const tiers = /(\d+)(?:st|nd|rd|th)?(?: level)?\s*\((\d+d\d+(?: or \d+d\d+)*)\)/g;
+  const die = dice.slice(dice.indexOf("d"));
   let scaled = dice;
   let bestLevel = -1;
   for (const match of clause.matchAll(tiers)) {
     const at = Number.parseInt(match[1]!, 10);
     if (at <= level && at > bestLevel) {
+      const options = match[2]!.split(" or ");
       bestLevel = at;
-      scaled = match[2]!;
+      scaled = options.find((option) => option.slice(option.indexOf("d")) === die) ?? options[0]!;
     }
   }
   return scaled;
@@ -335,8 +340,17 @@ function scaledBeamCount(text: string, level: number): number {
   return count;
 }
 
-/** The sentence "Make a ranged spell attack" in every printing's casing and count. */
-const SPELL_ATTACK_GATE = /\bmake (?:a|one|up to \w+) (?:ranged|melee) spell attacks?\b/i;
+/**
+ * The sentence "Make a ranged spell attack" in every printing's casing and count,
+ * and the 2024 "Make a ranged attack roll against the target" (Sorcerous Burst).
+ */
+const SPELL_ATTACK_GATE = /\bmake (?:a|one|up to \w+) (?:ranged|melee) (?:spell attacks?|attack rolls?)\b/i;
+
+/** The ability a saving-throw spell names: "must succeed on a Wisdom saving throw". */
+const SPELL_SAVE = /\b(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) saving throw\b/i;
+
+/** "taking 8d6 Fire damage on a failed save or half as much damage on a successful one". */
+const HALF_ON_SUCCESS = /\bhalf as much damage\b|\bhalf (?:the )?damage on a success/i;
 
 /** The word count of a spell's projectiles, tolerant of adjectives between count and noun. */
 const PROJECTILE_COUNT =
@@ -374,9 +388,13 @@ interface PrimaryDamage {
 /**
  * The per-hit damage clause. The printings phrase the subject many ways ("the
  * target takes", "it takes", "a missile deals", "takes Fire damage equal to"),
- * so the shapes are matched independently and the earliest wins.
+ * so the shapes are matched independently and the earliest wins. Saving-throw
+ * spells also say "or take 1d6 Psychic damage", "taking 8d6 Fire damage" and
+ * "takes 10d6 + 40 Force damage"; `saving` admits those forms without touching
+ * the attack-roll reading. "You take" is refused there: that is damage the
+ * caster takes (Contact Other Plane), not the target.
  */
-function primaryDamage(text: string): PrimaryDamage | null {
+function primaryDamage(text: string, saving = false): PrimaryDamage | null {
   const candidates: PrimaryDamage[] = [];
   const equalTo = /\btakes ((?:[\w-]+ )?[\w-]+) damage equal to (\d+d\d+)( (?:\+|plus) your spellcasting ability modifier)?/i.exec(text);
   if (equalTo !== null) {
@@ -388,10 +406,12 @@ function primaryDamage(text: string): PrimaryDamage | null {
       addsSpellcastingModifier: equalTo[3] !== undefined,
     });
   }
-  const takes = /\btakes (\d+d\d+(?: ?\+ ?\d+d\d+)?)(?: ((?:[\w-]+ )?[\w-]+))? damage\b/i.exec(text);
+  const takes = (saving
+    ? /\b(?:takes|taking|(?<!\byou )take) (\d+d\d+(?: ?\+ ?\d+d\d+)?(?: ?\+ ?\d+\b)?)(?: ((?:[\w-]+ )?[\w-]+))? damage\b/i
+    : /\btakes (\d+d\d+(?: ?\+ ?\d+d\d+)?)(?: ((?:[\w-]+ )?[\w-]+))? damage\b/i).exec(text);
   if (takes !== null) {
     const after = text.slice(takes.index + takes[0].length);
-    const chosen = /^ of (?:the type you cho(?:o)?se|the chosen type)/i.test(after);
+    const chosen = /^ of (?:(?:the|a) type you cho(?:o)?se|the chosen type)/i.test(after);
     candidates.push({
       dice: takes[1]!.replace(/\s+/g, ""),
       type: takes[2] ?? (chosen ? "(chosen type)" : ""),
@@ -476,10 +496,8 @@ export function parseSpellAttack(descriptionXml: string | undefined, level: numb
       `Higher-level slots create one additional ${upcastProjectiles[1]!.toLowerCase()} per slot level above ${ordinal(Number.parseInt(upcastProjectiles[2]!, 10))}.`,
     );
   }
-  const upcastDamage = DAMAGE_UPCAST.exec(text);
-  if (upcastDamage !== null) {
-    warnings.push(`Higher-level slots add ${upcastDamage[1]} per slot level above ${ordinal(Number.parseInt(upcastDamage[2]!, 10))}.`);
-  }
+  const upcastDamage = upcastDamageWarning(text);
+  if (upcastDamage !== null) warnings.push(upcastDamage);
   if (damage === "") warnings.push("No damage roll was found in the description; check the spell text.");
   return {
     damage,
@@ -491,10 +509,91 @@ export function parseSpellAttack(descriptionXml: string | undefined, level: numb
   };
 }
 
+/** The upcast damage warning both parsers share, or null when the text has none. */
+function upcastDamageWarning(text: string): string | null {
+  const upcast = DAMAGE_UPCAST.exec(text);
+  if (upcast === null) return null;
+  return `Higher-level slots add ${upcast[1]} per slot level above ${ordinal(Number.parseInt(upcast[2]!, 10))}.`;
+}
+
+export interface SpellSaveParse {
+  /** The ability the target saves with, e.g. "Intelligence". */
+  ability: string;
+  /** Damage on a failed save, e.g. "1d6 Psychic". */
+  damage: string;
+  /** True when a successful save still takes half the damage. */
+  halfOnSuccess: boolean;
+  /** True when the text adds the caster's spellcasting ability modifier to the damage. */
+  addsSpellcastingModifier: boolean;
+  /** Decisions the player has to make (upcasting). */
+  warning: string | null;
+  /** Secondary damage sentences, quoted so they stay visible without being applied. */
+  notes: string[];
+}
 
 /**
- * The magic attack-option rows: casters and their attack-roll spells.
- * Spell attacks are parsed from the spell descriptions.
+ * Parses a damaging saving-throw spell (Mind Sliver, Sacred Flame, Fireball)
+ * from its description. Only an explicit save/damage clause is projected;
+ * multi-effect, weapon-rider and deferred-damage spells need a custom row.
+ * The supports tags can only rule a spell out:
+ * the 2014 printing tags saves but never damage, so only a spell tagged as
+ * healing and not as damaging is refused on its tags.
+ */
+export function parseSpellSave(
+  descriptionXml: string | undefined,
+  level: number,
+  supports: readonly string[] = [],
+): SpellSaveParse | null {
+  if (supports.includes("Healing Spell") && !supports.includes("Damaging Spell")) return null;
+  const text = textOf(descriptionXml);
+  const saves = [...text.matchAll(new RegExp(SPELL_SAVE.source, "gi"))];
+  // Do not combine the save for one ray/layer/option with another's damage.
+  if (new Set(saves.map((save) => save[1]!.toLowerCase())).size !== 1) return null;
+  if (/\b(?:as|when|the next time) you hit\b|\bwhen (?:it|the target) wakes\b|\broll (?:a |1)d8\b/i.test(text)) return null;
+  const save = saves[0] ?? null;
+  if (save === null) return null;
+  const saveEnd = save.index + save[0].length;
+  const sentenceEnd = text.indexOf(".", saveEnd);
+  let clauseEnd = sentenceEnd < 0 ? text.length : sentenceEnd + 1;
+  // Some printings put the damage in the immediately following sentence:
+  // "A target takes ... on a failed save" or "On a failed save, ...".
+  const nextEnd = text.indexOf(".", clauseEnd);
+  const nextSentence = text.slice(clauseEnd, nextEnd < 0 ? text.length : nextEnd + 1);
+  if (/\b(?:on a failed save|if (?:it|the target|a creature) fails (?:the|this) save)\b/i.test(nextSentence)) {
+    clauseEnd = nextEnd < 0 ? text.length : nextEnd + 1;
+  }
+  // Catapult explicitly connects a failed save to an impact, then defines
+  // that impact's damage in the next sentence.
+  if (/on a failed save, the object strikes the target/i.test(nextSentence) &&
+      /^\s*when the object strikes something,/i.test(text.slice(clauseEnd))) {
+    const impactEnd = text.indexOf(".", clauseEnd);
+    clauseEnd = impactEnd < 0 ? text.length : impactEnd + 1;
+  }
+  const clause = text.slice(saveEnd, clauseEnd);
+  // The save must explicitly lead to damage, rather than ending an ongoing
+  // effect or forcing the target to drop an already-damaging hot object.
+  if (!/\bor\b[^.]*\btake\b|\btaking\b|\bon a failed save\b|\bfails (?:the|this) save\b/i.test(clause)) return null;
+  const localDamage = primaryDamage(clause, true);
+  const primary = localDamage === null ? null : {
+    ...localDamage, start: localDamage.start + saveEnd, end: localDamage.end + saveEnd,
+  };
+  if (primary === null) return null;
+  const named = save[1]!.toLowerCase();
+  const dice = /^\d+d\d+$/.test(primary.dice) ? scaledDamageDice(text, primary.dice, level) : primary.dice;
+  return {
+    ability: ABILITIES.find((ability) => ability.toLowerCase() === named) ?? save[1]!,
+    damage: primary.type === "" ? dice : `${dice} ${primary.type}`,
+    halfOnSuccess: HALF_ON_SUCCESS.test(clause),
+    addsSpellcastingModifier: primary.addsSpellcastingModifier,
+    warning: upcastDamageWarning(text),
+    notes: secondaryDamageNotes(text, primary),
+  };
+}
+
+/**
+ * The magic attack-option rows: casters and their attacking spells.
+ * Attack-roll and damaging saving-throw spells are parsed from the spell
+ * descriptions; a save spell's bonus reads "DC 13 INT" in the same column.
  */
 export function buildMagicAttackOptions(
   state: CharacterState,
@@ -519,17 +618,37 @@ export function buildMagicAttackOptions(
   const nameOf = (id: string): string | undefined => library.byId.get(id)?.identity.name;
 
   // Caster blocks and feature casters project the same attack rows; only the
-  // attack modifier differs (a feature caster has no per-caster statistics).
-  const sources: { identifier: string; name: string; ability: string; attackModifier: number; spellIds: string[] }[] = [];
-  for (const block of magic?.casters ?? []) {
+  // attack modifier and save DC differ (a feature caster has no per-caster statistics).
+  const sources: {
+    identifier: string;
+    name: string;
+    ability: string;
+    attackModifier: number;
+    saveDc: number;
+    spellIds: string[];
+  }[] = [];
+  // A class caster also casts what its features grant (Draconic Spells'
+  // Chromatic Orb), which never enters `<spells>`, and the first block carries
+  // the DM grants, as the Magic tab lists them. A levelled grant waits for a
+  // slot of its level: 2014 prepared="true" lists register before they apply.
+  const granted = magic === null ? new Map<string, Set<string>>() : alwaysPreparedSets(state, library);
+  for (const [index, block] of (magic?.casters ?? []).entries()) {
     const abbr = ABILITY_ABBR[block.ability] ?? block.ability;
+    let maxSlotLevel = 0;
+    for (let level = 1; level <= 9; level++) {
+      if (Number.parseInt(block.slots[`s${level}`] ?? "0", 10) > 0) maxSlotLevel = level;
+    }
+    const grants = [...(granted.get(block.name) ?? [])].filter(
+      (id) => (spellInfo(library, id)?.level ?? 0) <= maxSlotLevel,
+    );
+    const additional = index === 0 ? magic!.additional.map((spell) => spell.id) : [];
     sources.push({
       identifier: casterIds.get(block.name) ?? block.name,
       name: block.name,
       ability: block.ability,
-      attackModifier:
-        statistics[`spellcasting:attack:${abbr.toLowerCase()}`] ?? proficiency + abilityModifier(block.ability),
-      spellIds: [...new Set([...block.cantrips, ...block.spells].map((spell) => spell.id))],
+      attackModifier: casterModifier(statistics, block.name, abbr, "attack", proficiency + abilityModifier(block.ability)),
+      saveDc: casterModifier(statistics, block.name, abbr, "dc", 8 + proficiency + abilityModifier(block.ability)),
+      spellIds: [...new Set([...block.cantrips, ...block.spells].map((spell) => spell.id).concat(grants, additional))],
     });
   }
   for (const feature of featureCasters) {
@@ -538,6 +657,7 @@ export function buildMagicAttackOptions(
       name: feature.name,
       ability: feature.ability,
       attackModifier: proficiency + abilityModifier(feature.ability),
+      saveDc: 8 + proficiency + abilityModifier(feature.ability),
       spellIds: [...new Set([...feature.cantripIds, ...feature.spellIds])],
     });
   }
@@ -551,23 +671,33 @@ export function buildMagicAttackOptions(
       name: GRANTED_CASTER_NAME,
       ability,
       attackModifier: proficiency + abilityModifier(ability),
+      saveDc: 8 + proficiency + abilityModifier(ability),
       spellIds: [...new Set(magic.additional.map((spell) => spell.id))],
     });
   }
+  // Spell Sniper's range applies to attack rolls only, so save rows are built
+  // as if it were not registered.
+  const saveRegistered = new Set([...registered].filter((id) => !ATTACK_ROLL_RIDER_IDS.has(id)));
 
   for (const block of sources) {
     const abbr = ABILITY_ABBR[block.ability] ?? block.ability;
     const attackModifier = block.attackModifier;
+    const contributions = (total: number, saving: boolean) => {
+      const base = proficiency + abilityModifier(block.ability) + (saving ? 8 : 0);
+      return [
+        ...(saving ? [{ label: "Base", value: 8 }] : []),
+        { label: block.ability, value: abilityModifier(block.ability) },
+        { label: "Proficiency", value: proficiency },
+        ...(total === base ? [] : [{ label: "Spellcasting bonuses", value: total - base }]),
+      ];
+    };
     casters.push({
       identifier: block.identifier,
       name: block.name,
       ability: block.ability,
       attackModifier,
       computation: {
-        attackBonusContributions: [
-          { label: block.ability, value: abilityModifier(block.ability) },
-          { label: "Proficiency", value: proficiency },
-        ],
+        attackBonusContributions: contributions(attackModifier, false),
         appliedModifiers: [],
         sourceNotes: [],
         attackCount: 1,
@@ -577,15 +707,19 @@ export function buildMagicAttackOptions(
     for (const id of block.spellIds) {
       const element = library.byId.get(id);
       if (element === undefined || element.identity.type !== "Spell") continue;
+      // An attack roll wins over a save the same spell also forces (Ice Knife).
       const attack = parseSpellAttack(element.descriptionXml, state.level);
-      if (attack === null) continue;
+      const save = attack === null ? parseSpellSave(element.descriptionXml, state.level, element.supports) : null;
+      const parsed = attack ?? save;
+      if (parsed === null) continue;
       const info = spellInfo(library, id);
       if (info === null) continue;
-      const damage = attack.addsSpellcastingModifier
-        ? damageWithBonus(attack.damage, abilityModifier(block.ability))
-        : attack.damage;
+      const beamCount = attack?.beamCount ?? 1;
+      const damage = parsed.addsSpellcastingModifier
+        ? damageWithBonus(parsed.damage, abilityModifier(block.ability))
+        : parsed.damage;
       const sourceNotes: string[] = [];
-      if (attack.beamCount > 1) {
+      if (attack !== null && attack.beamCount > 1) {
         const word = RAY_COUNT_WORDS[attack.beamCount] ?? String(attack.beamCount);
         sourceNotes.push(`${attack.beamCount} ${attack.beamUnit}; damage is shown per hit.`);
         if (attack.warning !== null && attack.warning.includes("one additional")) {
@@ -593,7 +727,10 @@ export function buildMagicAttackOptions(
           sourceNotes.push(`Base casting creates ${word} ${attack.beamUnit}; higher-level slots add one ${unit} per slot level.`);
         }
       }
-      if (attack.addsSpellcastingModifier) {
+      if (save !== null && save.halfOnSuccess) {
+        sourceNotes.push("Half damage on a successful save.");
+      }
+      if (parsed.addsSpellcastingModifier) {
         sourceNotes.push(`${block.ability} modifier added to the damage, as the description says.`);
       }
       const riders = applySpellRiders({
@@ -603,12 +740,12 @@ export function buildMagicAttackOptions(
         casterName: block.name,
         range: setterText(element, "range"),
         damage,
-        beamCount: attack.beamCount,
-        registered,
+        beamCount,
+        registered: save === null ? registered : saveRegistered,
         statistics,
         nameOf,
       });
-      sourceNotes.push(...riders.sourceNotes, ...attack.notes);
+      sourceNotes.push(...riders.sourceNotes, ...parsed.notes);
       spells.push({
         casterIdentifier: block.identifier,
         casterName: block.name,
@@ -616,20 +753,20 @@ export function buildMagicAttackOptions(
         spellName: info.name,
         level: info.level,
         range: riders.range,
-        bonus: `+${attackModifier} ${abbr} vs AC`,
+        bonus: save === null
+          ? `+${attackModifier} ${abbr} vs AC`
+          : `DC ${block.saveDc} ${ABILITY_ABBR[save.ability] ?? save.ability}`,
         damage: riders.damage,
         description: textOf(element.descriptionXml),
-        warning: attack.warning,
-        beamCount: attack.beamCount,
+        warning: parsed.warning,
+        beamCount,
         computation: {
-          attackBonusContributions: [
-            { label: block.ability, value: abilityModifier(block.ability) },
-            { label: "Proficiency", value: proficiency },
-          ],
+          attackBonusContributions: contributions(save === null ? attackModifier : block.saveDc, save !== null),
           appliedModifiers: riders.appliedModifiers,
           sourceNotes,
-          attackCount: attack.beamCount,
-          isPerHit: true,
+          attackCount: beamCount,
+          // A save's damage lands once per target, not once per hit.
+          isPerHit: save === null,
         },
       });
     }

@@ -60,7 +60,7 @@ function spellLevel(spell: ParsedElement): number {
 }
 
 /** The first `usage` any of the element's `<sheet>` entries declares. */
-function declaredUsage(element: ParsedElement | undefined): string | null {
+export function declaredUsage(element: ParsedElement | undefined): string | null {
   const usage = element?.sheets.find((sheet) => sheet.usage !== undefined && sheet.usage !== "")?.usage;
   return usage === undefined || usage === "" ? null : usage;
 }
@@ -72,7 +72,7 @@ function declaredUsage(element: ParsedElement | undefined): string | null {
  * finish a Long Rest") both say so; Armor of Shadows casts Mage Armor without a
  * slot but never mentions a rest, so it stays at-will and unmarked.
  */
-function promisesFreeCastPerLongRest(element: ParsedElement | undefined): boolean {
+export function promisesFreeCastPerLongRest(element: ParsedElement | undefined): boolean {
   const text = (element?.descriptionXml ?? "").replace(/<[^>]*>/g, " ").toLowerCase();
   if (!/without (expending )?a spell slot/.test(text)) return false;
   return text.includes("long rest");

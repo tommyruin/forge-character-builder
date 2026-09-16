@@ -112,13 +112,15 @@ describe("content library graph codec (vendored corpus)", () => {
     expect(canonicalStringify(a)).toBe(canonicalStringify(b));
   });
 
+  // Three canonicalizations of the full corpus routinely approach 5 seconds
+  // under coverage. This checks equality, not a 5-second performance budget.
   it("computes a stable library digest over the canonical payload", async () => {
     const payload = serializeContentLibrary(library);
     const digest = await contentLibraryDigest(payload);
     expect(digest).toHaveLength(64);
     expect(digest).toBe(await sha256Hex(canonicalStringify(payload)));
     expect(await contentLibraryDigest(serializeContentLibrary(library))).toBe(digest);
-  });
+  }, 15_000);
 });
 
 describe("content library graph codec validation", () => {

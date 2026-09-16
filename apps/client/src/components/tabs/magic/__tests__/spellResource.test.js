@@ -58,6 +58,41 @@ describe('spellResourceDisplay', () => {
     });
   });
 
+  it("sums up a slotless feature block's free casts instead of its slots", () => {
+    expect(
+      spellResourceDisplay({
+        kind: 'feature',
+        slotsPerLevel: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        resource: { mode: 'slots', canUseSpellPoints: false },
+        knownSpells: [
+          { name: 'Guidance' },
+          { name: 'Cure Wounds', usage: '1/Long Rest' },
+        ],
+      }),
+    ).toEqual({
+      label: 'FREE CASTS',
+      compactLabel: 'FREE',
+      value: '1/LR',
+      title: 'Cast without a spell slot — Cure Wounds 1/Long Rest',
+    });
+  });
+
+  it('says a feature block with no free casts has no slots', () => {
+    expect(
+      spellResourceDisplay({
+        kind: 'feature',
+        slotsPerLevel: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        resource: { mode: 'slots', canUseSpellPoints: false },
+        knownSpells: [{ name: 'Fire Bolt' }],
+      }),
+    ).toEqual({
+      label: 'NO SLOTS',
+      compactLabel: 'NO SL',
+      value: '',
+      title: 'This feature provides no spell slots; follow each spell’s casting rules',
+    });
+  });
+
   it('shows the enabled maximum instead of eligible slot counts', () => {
     expect(
       spellResourceDisplay({

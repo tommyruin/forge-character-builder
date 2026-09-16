@@ -875,7 +875,7 @@ export default function MagicTab() {
                                   {spell.usage && (
                                     <span
                                       className="fcb-status-badge fcb-status-complete"
-                                      title={`Free casting: ${spell.usage}`}
+                                      title={spell.usageNote ?? `Free casting: ${spell.usage}`}
                                     >
                                       {spell.usage}
                                     </span>

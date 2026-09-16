@@ -75,6 +75,8 @@ export interface SheetSpellListSection {
     name: string;
     prepared: boolean;
     alwaysPrepared: boolean;
+    /** The free-cast allowance ("1/Long Rest"), when the spell has one. */
+    usage?: string;
   }[];
 }
 
@@ -338,6 +340,16 @@ export function buildCharacterSheetModel(
  * list more than once (two content sources, or a class list alongside an
  * always-prepared grant); the prepared entry wins so its mark survives.
  */
+/** A spell as the spell page layout draws it. */
+function layoutSpell(spell: KnownSpellDto): SheetSpellListSection["spells"][number] {
+  return {
+    name: spell.name,
+    prepared: spell.isPrepared,
+    alwaysPrepared: spell.isAlwaysPrepared,
+    ...(spell.usage === undefined || spell.usage === null || spell.usage === "" ? {} : { usage: spell.usage }),
+  };
+}
+
 function uniqueSpellNames(spells: readonly KnownSpellDto[]): KnownSpellDto[] {
   const byKey = new Map<string, KnownSpellDto>();
   for (const spell of spells) {
@@ -2219,7 +2231,7 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       if (index < prepared.length) tokens.push(PREPARED_MARK);
       tokens.push(...spell.name.split(/\s+/));
       if (index < prepared.length && spell.isAlwaysPrepared) tokens.push("(Always", "Prepared)");
-      // A feature spell also carries its free-cast allowance ("(1/Long Rest)").
+      // A spell with a free cast also carries its allowance ("(1/Long Rest)").
       if (spell.usage !== undefined && spell.usage !== null && spell.usage !== "") {
         tokens.push(...`(${spell.usage})`.split(/\s+/));
       }
@@ -2309,21 +2321,13 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     }): SheetSpellListSection => ({
       level: level.level,
       slots: level.slots,
-      spells: [...level.prepared, ...level.full].map((spell) => ({
-        name: spell.name,
-        prepared: spell.isPrepared,
-        alwaysPrepared: spell.isAlwaysPrepared,
-      })),
+      spells: [...level.prepared, ...level.full].map(layoutSpell),
     });
     let layoutSections = emitCasterHeader();
     layoutSections.push({
       level: 0,
       slots: 0,
-      spells: cantrips.map((spell) => ({
-        name: spell.name,
-        prepared: spell.isPrepared,
-        alwaysPrepared: spell.isAlwaysPrepared,
-      })),
+      spells: cantrips.map(layoutSpell),
     });
     if (absorbFirstLevel) {
       const first = levels.shift()!;

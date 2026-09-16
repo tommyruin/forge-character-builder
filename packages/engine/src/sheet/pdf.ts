@@ -1568,6 +1568,37 @@ function drawSpellPointReference(
   }
 }
 
+/**
+ * Where each spell column's cell ends: the next cell's prepared dot begins
+ * there (scripts/build-sheet-templates.mjs draws the same edges).
+ */
+const SPELL_CELL_RIGHTS: readonly number[] = SPELL_LIST.cellRights;
+
+// drawText emits advances without kerning; measuring a complete string with
+// pdf-lib subtracts kerning and can place the marker on top of the name.
+function spellTextWidth(text: string, font: PDFFont, size: number): number {
+  return [...text].reduce((width, character) => width + font.widthOfTextAtSize(character, size), 0);
+}
+
+/** Keep even custom names/allowances inside their cell at the minimum size. */
+function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: number): string {
+  if (spellTextWidth(text, font, size) <= width) return text;
+  let used = spellTextWidth("...", font, size);
+  if (used > width) return "";
+  let prefix = "";
+  for (const character of text) {
+    used += font.widthOfTextAtSize(character, size);
+    if (used > width) break;
+    prefix += character;
+  }
+  return `${prefix}...`;
+}
+
+/** A free-cast allowance short enough to sit beside a spell name: "1/Long Rest" → "1/LR". */
+function compactUsage(usage: string): string {
+  return usage.replace(/\s*Long Rest/gi, "LR").replace(/\s*Short Rest/gi, "SR");
+}
+
 async function addSpellListPage(
   output: PDFDocument,
   modelPage: SheetPage,
@@ -1613,7 +1644,9 @@ async function addSpellListPage(
       drawTemplateText(page, bundle.labels[files.spellcastingSectionBottom], fonts, colours, 0, topY - rows * rowHeight - endHeight);
       page.drawPage(tops[spellSection.level] ?? tops[0]!, { x: 0, y: topY, width: PAGE_WIDTH, height: topHeight });
       drawTemplateText(page, bundle.labels[SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[spellSection.level] ?? SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[0]!], fonts, colours, 0, topY);
-      if (spellSection.level > 0 && caster.resource.mode === "slots") {
+      // A feature caster's level block has no slots to count (its spells are
+      // cast free or from another caster's slots), so it prints no label.
+      if (spellSection.level > 0 && caster.resource.mode === "slots" && spellSection.slots > 0) {
         page.drawText(`${spellSection.slots} SPELL SLOTS`, {
           x: slotTextX,
           y: topY + textBaseline,
@@ -1628,7 +1661,23 @@ async function addSpellListPage(
         const row = firstRow ? 0 : 1 + Math.floor((index - 2) / 3);
         const x = columns[column]!;
         const y = topY + textBaseline - row * rowHeight;
-        page.drawText(winAnsiText(spell.name), { x, y, size: 7, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+        const name = winAnsiText(spell.name);
+        const rawMarker = spell.usage === undefined || spell.usage === "" ? "" : winAnsiText(compactUsage(spell.usage));
+        const marker = ellipsizeSpellText(rawMarker, fonts.regular, 5.5, (SPELL_CELL_RIGHTS[column]! - x) / 2);
+        // A free cast's marker follows the name in the small slot-label size; a
+        // name too long to leave it room inside the cell gives up size rather
+        // than run the marker into the next cell's prepared dot.
+        const markerGap = 2.5;
+        const markerWidth = marker === "" ? 0 : markerGap + spellTextWidth(marker, fonts.regular, 5.5);
+        const room = SPELL_CELL_RIGHTS[column]! - x - markerWidth;
+        const fullWidth = spellTextWidth(name, fonts.regular, 7);
+        const size = fullWidth <= room ? 7 : Math.max(5, 7 * room / fullWidth);
+        const fittedName = ellipsizeSpellText(name, fonts.regular, size, room);
+        page.drawText(fittedName, { x, y, size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+        if (marker !== "") {
+          const markerX = x + spellTextWidth(fittedName, fonts.regular, size) + markerGap;
+          page.drawText(marker, { x: markerX, y, size: 5.5, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
+        }
         if (spell.prepared || spell.alwaysPrepared) {
           page.drawText("•", { x: x - 13, y: y - 0.2, size: 5, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
         }

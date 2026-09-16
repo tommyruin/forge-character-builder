@@ -108,6 +108,8 @@ export interface KnownSpellDto {
    * the spell is cast from slots alone.
    */
   usage?: string | null;
+  /** Conditions or shared-feature limits on the free-cast allowance. */
+  usageNote?: string;
 }
 
 export interface SpellcasterDto {

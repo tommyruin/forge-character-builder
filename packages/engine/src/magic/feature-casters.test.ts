@@ -235,6 +235,138 @@ describe("a class caster with Magic Initiate", () => {
   });
 });
 
+describe("a paladin with Magic Initiate", () => {
+  it("describes Mantle of Majesty as an activation allowing repeated Commands", () => {
+    const { service, id } = build2024("Majesty", "ID_WOTC_PHB24_CLASS_BARD", ACOLYTE, 6);
+    const rule = pendingSelectionRules(service.getCharacter(id)).find((r) => r.type === "Archetype")!;
+    service.setSelection(id, rule.identifier, "ID_WOTC_PHB24_ARCHETYPE_BARD_COLLEGE_OF_GLAMOUR");
+    const command = service.getSpellcasting(id)[0]!.knownSpells.find((s) => s.id === "ID_WOTC_PHB24_SPELL_COMMAND")!;
+    expect(command.usage).toBe("1 use/Long Rest");
+    expect(command.usageNote).toContain("1 minute");
+    expect(command.usageNote).toContain("level 3+");
+  });
+
+  it("projects the Fathomless free cast even without a declared sheet usage", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Tentacles").id;
+    const pick = (type: string, target: string): void => {
+      service.setSelection(id, pendingSelectionRules(service.getCharacter(id)).find((r) => r.type === type)!.identifier, target);
+    };
+    pick("Class", "ID_WOTC_PHB_CLASS_WARLOCK");
+    pick("Archetype", "ID_WOTC_TCOE_ARCHETYPE_WARLOCK_THE_FATHOMLESS");
+    while (service.getCharacter(id).level < 10) service.levelUp(id);
+    const spell = service.getSpellcasting(id)[0]!.knownSpells.find((s) => s.id === "ID_PHB_SPELL_EVARDS_BLACK_TENTACLES")!;
+    expect(spell.usage).toBe("1/Long Rest");
+  });
+
+  it("marks only the selected Lunar phase's first-level spell and retains the choice on reload", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Lunar").id;
+    const pick = (type: string, target: string): void => {
+      service.setSelection(id, pendingSelectionRules(service.getCharacter(id)).find((r) => r.type === type && !r.hasSelection)!.identifier, target);
+    };
+    pick("Class", "ID_WOTC_PHB_CLASS_SORCERER");
+    pick("Archetype", "ID_WOTC_DSDQ_ARCHETYPE_SORCERER_LUNAR_MAGIC");
+    while (service.getCharacter(id).level < 5) service.levelUp(id);
+    const phase = pendingSelectionRules(service.getCharacter(id)).find((r) => r.name === "Lunar Phase")!;
+    const prefix = "ID_WOTC_DSDQ_ARCHETYPE_FEATURE_LUNAR_MAGIC_LUNAR_EMBODIMENT_";
+    const usages = (s: CharacterService, key: string) => s.getSpellcasting(key)[0]!.knownSpells.filter((spell) => spell.usage).map((spell) => [spell.id, spell.usage]);
+    service.setSelection(id, phase.identifier, `${prefix}FULL_MOON`);
+    expect(usages(service, id)).toEqual([["ID_PHB_SPELL_SHIELD", "1/Long Rest"]]);
+    service.setSelection(id, phase.identifier, `${prefix}NEW_MOON`);
+    expect(usages(service, id)).toEqual([["ID_PHB_SPELL_RAY_OF_SICKNESS", "1/Long Rest"]]);
+    const reader = new CharacterService(undefined, library);
+    reader.importCharacterXml("reload", service.exportCharacterXml(id));
+    expect(usages(reader, "reload")).toEqual(usages(service, id));
+  });
+
+  it("labels Fateful Naming as a shared pool for Bane and Bless", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Onomancer").id;
+    service.setAbilities(id, { ...ABILITIES, intelligence: 16 });
+    const pick = (type: string, target: string): void => {
+      service.setSelection(id, pendingSelectionRules(service.getCharacter(id)).find((r) => r.type === type && !r.hasSelection)!.identifier, target);
+    };
+    pick("Class", "ID_WOTC_PHB_CLASS_WIZARD");
+    service.levelUp(id);
+    pick("Archetype", "ID_WOTC_UA20191003_ARCHETYPE_ONOMANCY");
+    const spells = service.getSpellcasting(id)[0]!.knownSpells.filter((spell) => spell.usage);
+    expect(spells.map((spell) => [spell.id, spell.usage])).toEqual([
+      ["ID_PHB_SPELL_BANE", "3 shared/Long Rest"],
+      ["ID_PHB_SPELL_BLESS", "3 shared/Long Rest"],
+    ]);
+    expect(spells.every((spell) => spell.usageNote?.includes("true name"))).toBe(true);
+  });
+
+  it("keeps the playtest Lunar allowance per spell for the selected phase", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Playtest Lunar").id;
+    const pick = (type: string, target: string): void => {
+      service.setSelection(id, pendingSelectionRules(service.getCharacter(id)).find((r) => r.type === type && !r.hasSelection)!.identifier, target);
+    };
+    pick("Class", "ID_WOTC_PHB_CLASS_SORCERER");
+    pick("Archetype", "ID_WOTC_UA20220308_ARCHETYPE_SORCERER_LUNAR_MAGIC");
+    while (service.getCharacter(id).level < 3) service.levelUp(id);
+    const phase = pendingSelectionRules(service.getCharacter(id)).find((r) => r.name === "Lunar Phase")!;
+    service.setSelection(id, phase.identifier, "ID_WOTC_UA20220308_ARCHETYPE_FEATURE_LUNAR_MAGIC_LUNAR_EMBODIMENT_FULL_MOON");
+    const spells = service.getSpellcasting(id)[0]!.knownSpells.filter((spell) => spell.usage);
+    expect(spells.map((spell) => [spell.id, spell.usage])).toEqual([
+      ["ID_PHB_SPELL_FAERIE_FIRE", "1/Long Rest"],
+      ["ID_PHB_SPELL_MOONBEAM", "1/Long Rest"],
+    ]);
+    expect(spells.every((spell) => spell.usageNote?.includes("once per spell"))).toBe(true);
+  });
+
+  const DIVINE_SMITE = "ID_WOTC_PHB24_SPELL_DIVINE_SMITE";
+
+  function paladinWithMagicInitiate(label: string): { service: CharacterService; id: string } {
+    const built = build2024(label, PALADIN, ACOLYTE, 3);
+    fillMagicInitiate(built.service, built.id, MI_CLERIC_WISDOM, [SACRED_FLAME, GUIDANCE], CURE_WOUNDS);
+    return built;
+  }
+
+  it("gives both casters' free casts their usage", () => {
+    const { service, id } = paladinWithMagicInitiate("PaladinMIUsage");
+    const casters = service.getSpellcasting(id);
+    const paladin = casters.find((caster) => caster.name === "Paladin")!;
+    const initiate = casters.find((caster) => caster.name === "Magic Initiate (Cleric)")!;
+
+    // Paladin's Smite: "you can cast it without expending a spell slot, but you
+    // must finish a Long Rest before you can cast it in this way again".
+    const smite = paladin.knownSpells.find((spell) => spell.id === DIVINE_SMITE)!;
+    expect(smite.isAlwaysPrepared).toBe(true);
+    expect(smite.usage).toBe("1/Long Rest");
+    // The rest of the Paladin list is cast from slots alone.
+    expect(paladin.knownSpells.filter((spell) => spell.usage !== undefined).map((spell) => spell.id)).toEqual([DIVINE_SMITE]);
+    expect(initiate.knownSpells.find((spell) => spell.id === CURE_WOUNDS)!.usage).toBe("1/Long Rest");
+  });
+
+  it("carries the usage onto the spell page layout", () => {
+    const { service, id } = paladinWithMagicInitiate("PaladinMILayout");
+    const layouts = sheetModel(service, id).pages
+      .filter((page) => page.templateKind === "spell-list")
+      .flatMap((page) => page.spellcasting ?? []);
+    const entry = (caster: string, name: string) => layouts
+      .filter((layout) => layout.name === caster)
+      .flatMap((layout) => layout.sections)
+      .flatMap((section) => section.spells)
+      .find((spell) => spell.name === name);
+
+    expect(entry("Paladin", "Divine Smite")?.usage).toBe("1/Long Rest");
+    expect(entry("Magic Initiate (Cleric)", "Cure Wounds")?.usage).toBe("1/Long Rest");
+    expect(entry("Magic Initiate (Cleric)", "Guidance")?.usage).toBeUndefined();
+  });
+
+  it("resolves a class grant's templated allowance", () => {
+    // Favored Enemy declares usage="{{favored enemy:usage}}/Long Rest" and
+    // casts Hunter's Mark "twice without expending a spell slot" at level 1.
+    const { service, id } = build2024("RangerFavoredEnemy", "ID_WOTC_PHB24_CLASS_RANGER", "ID_WOTC_PHB24_BACKGROUND_SOLDIER");
+    const ranger = service.getSpellcasting(id).find((caster) => caster.name === "Ranger")!;
+    const mark = ranger.knownSpells.find((spell) => spell.id === "ID_WOTC_PHB24_SPELL_HUNTERS_MARK")!;
+    expect(mark.usage).toBe("2/Long Rest");
+  });
+});
+
 describe("a 2014 racial spell select", () => {
   it("projects the High Elf cantrip as an Intelligence feature caster", () => {
     const { service, id } = buildCharacter(library, {

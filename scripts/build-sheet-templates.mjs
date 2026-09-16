@@ -959,7 +959,7 @@ const LEVEL_LABELS = ["CANTRIPS", "1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH
  */
 function rowCells(s, y, height, { first = "light" } = {}) {
   const L = C.spellList;
-  const cells = [[40, L.labelCellRight], [L.labelCellRight + 2, L.columns[2] - 20], [L.columns[2] - 18, 582]];
+  const cells = L.cellRights.map((right, index) => [index === 0 ? 40 : L.cellRights[index - 1] + 2, right]);
   cells.forEach(([left, right], index) => {
     if (index === 0 && first === "dark") {
       s.page.drawRectangle({ x: left, y, width: right - left, height, color: BAND });

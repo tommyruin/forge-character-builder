@@ -34,6 +34,7 @@ import type { CharacterState, RegisteredElement } from "../character/state.js";
 import type { Dnd5eDocument } from "../dnd5e/document.js";
 import type { GrantRule, ParsedElement, Rule, SelectRule } from "../content/parser.js";
 import { countItemNodes } from "../character/options.js";
+import { engineError } from "../errors.js";
 import { nestedInsertEdits, planElementsCountEdits, planSumReplaceEdits } from "../progression/leveling.js";
 import { evaluateRequirements } from "./expr.js";
 import {
@@ -172,6 +173,29 @@ function findGrantChild(node: RegisteredElement, targetId: string): RegisteredEl
   return node.children.find((child) => child.id === targetId);
 }
 
+/**
+ * Ids an owner's grant rules still grant under `ctx`. Content often grants one
+ * target from several rules, one per gating choice — the 2024 Draconic
+ * Resistance grants fire separately for Brass, Gold and Red — so an unmet rule
+ * may only take its target away when no sibling rule still holds. Level-gated
+ * rules are left out: they materialise under a level node, never under the
+ * owner (see the module header).
+ */
+function heldGrantTargets(
+  owner: ParsedElement,
+  library: ElementLibrary,
+  ctx: ReturnType<typeof createRegistrationContext>,
+): Set<string> {
+  const held = new Set<string>();
+  for (const rule of owner.rules) {
+    if (rule.kind !== "grant" || rule.level !== undefined) continue;
+    if ((rule.requirements ?? "").trim() !== "" && !evaluateRequirements(rule.requirements, ctx)) continue;
+    const target = resolveGrant(rule, library);
+    if (target !== undefined) held.add(target.identity.id);
+  }
+  return held;
+}
+
 interface Removal {
   path: number[];
   ids: Set<string>;
@@ -261,6 +285,7 @@ export function reconcileRegistrationRules(
       const owner = ownerElement(library, node);
       if (owner !== undefined) {
         const ctx = contextFor(levelAt(here));
+        let held: Set<string> | undefined;
         for (const rule of owner.rules) {
           if (!reconcilable(rule)) continue;
           const eligible = evaluateRequirements(rule.requirements, ctx);
@@ -283,6 +308,8 @@ export function reconcileRegistrationRules(
           if (rule.kind !== "grant" || eligible || !removable(rule)) continue;
           const target = resolveGrant(rule, library);
           if (target === undefined) continue;
+          held ??= heldGrantTargets(owner, library, ctx);
+          if (held.has(target.identity.id)) continue;
           const child = findGrantChild(node, target.identity.id);
           if (child === undefined) continue;
           removals.push({
@@ -297,11 +324,13 @@ export function reconcileRegistrationRules(
   };
   walkRemovals(state.elements, []);
 
-  // Only the outermost removal in a branch gets an edit; the rest ride along
-  // inside its subtree.
-  const outermost = removals.filter(
+  // Rules naming the same child collapse to one removal, since two deletes of
+  // one span would also eat the XML after it. Then only the outermost removal
+  // in a branch gets an edit; the rest ride along inside its subtree.
+  const unique = [...new Map(removals.map((removal) => [removal.path.join("/"), removal] as const)).values()];
+  const outermost = unique.filter(
     (candidate) =>
-      !removals.some(
+      !unique.some(
         (other) =>
           other !== candidate && other.path.length < candidate.path.length && startsWith(candidate.path, other.path),
       ),
@@ -396,11 +425,32 @@ export function reconcileRegistrationRules(
     ),
   );
 
+  assertDisjoint(edits);
   return {
     edits,
     changed: true,
     flips: [...outermost.map((removal) => removal.flip), ...additions.flatMap((addition) => addition.flips)],
   };
+}
+
+/**
+ * Refuses a plan whose edits overlap. `applyRawEdits` splices back to front, so
+ * overlapping spans cut into neighbouring markup and leave a document that no
+ * longer parses; an engine error here says what went wrong instead.
+ */
+function assertDisjoint(edits: readonly RawEdit[]): void {
+  let widest: RawEdit | undefined;
+  for (const edit of [...edits].sort((a, b) => a.start - b.start || a.end - b.end)) {
+    if (widest !== undefined && edit.start < widest.end) {
+      throw engineError("internal", `requirement reconcile planned overlapping edits at offset ${edit.start}`, {
+        spans: [
+          [widest.start, widest.end],
+          [edit.start, edit.end],
+        ],
+      });
+    }
+    if (widest === undefined || edit.end > widest.end) widest = edit;
+  }
 }
 
 function pruneTree(nodes: RegisteredElement[], stale: ReadonlySet<string>): RegisteredElement[] {

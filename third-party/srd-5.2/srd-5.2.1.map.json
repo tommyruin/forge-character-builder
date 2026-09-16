@@ -27,6 +27,12 @@
     "Rary’s Telepathic Bond": "Telepathic Bond"
   },
   "edits": {
+    "bard-level-1-spells-slot-ceiling": {
+      "file": "classes/class-bard.xml",
+      "from": "name=\"Spell (Bard)\" supports=\"$(spellcasting:list), 1\" number=\"4\"",
+      "to": "name=\"Spell (Bard)\" supports=\"$(spellcasting:list), $(spellcasting:slots)\" number=\"4\"",
+      "why": "the bard's level-1 spell choices may hold any level it has slots for, like the choices of every later level; the corpus pins them to 1st level, which would keep those four spells 1st-level for good"
+    },
     "elf-lineage-drow-setting-flavor": {
       "file": "races/race-elf.xml",
       "from": "\t\t\t<p>Drow typically dwell in the Underdark and have been shaped by it. Some drow individuals and societies avoid the Underdark altogether yet carry its magic. In the Eberron setting, for example, drow dwell in rainforests and cyclopean ruins on the continent of Xen’drik.</p>\n",

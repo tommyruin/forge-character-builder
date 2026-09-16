@@ -184,7 +184,7 @@ describe.each(["2014", "2024"])("sheet damage defences (%s rules)", (mode) => {
     const { service, id } = character("Imported");
     const dto = service.addItem(id, { itemId: RING_OF_RESISTANCE_FIRE, amount: 1, baseElementId: null });
     service.attuneItem(id, dto.items.at(-1)!.identifier, true);
-    // The free text an Aurora file carries lives in <defenses><conditional>;
+    // The free text an imported file carries lives in <defenses><conditional>;
     // nothing in this app writes it, so it can only arrive by import.
     const xml = service
       .exportCharacterXml(id)

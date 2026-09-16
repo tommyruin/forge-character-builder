@@ -46,7 +46,9 @@ import {
   renderWrapperOpen,
   resolveElementType,
   resolveGrant,
+  selectRuleFor,
   selectionRuleChecksum,
+  spellSlotCeilingFor,
   toStateNodes,
   type RawEdit,
   type RegistrationContext,
@@ -1190,7 +1192,8 @@ export function planNewMulticlassEdits(
   if (!state.options.has(OPTION_MULTICLASSING)) {
     throw engineError("invalid-argument", "the multiclassing option is not enabled");
   }
-  if (state.level <= 1) throw engineError("invalid-argument", "multiclassing requires a total level above 1");
+  // This appends the next level, so a level-1 character can choose a second
+  // class for level 2. Converting level 1 itself is still rejected by start.
   if (state.level >= MAX_LEVEL) throw engineError("conflict", `cannot level up beyond level ${MAX_LEVEL}`);
   if (state.levelHistory.some((entry) => entry.isPending)) {
     throw engineError("conflict", "resolve the pending multiclass before leveling up");
@@ -1523,6 +1526,33 @@ function wrappersAboveLevel(nodes: RegisteredElement[], level: number, path: num
   return out;
 }
 
+/**
+ * Filled slot-gated Spell wrappers granted at or below the new level whose
+ * spell is above the ceiling their select has once the level is gone. A
+ * known-spells choice follows the caster's current class level
+ * (spellSlotCeilingFor), so losing that level can leave a pick the select no
+ * longer admits; it is taken back like a choice granted above the new level.
+ */
+function spellPicksAboveCeiling(state: CharacterState, library: ElementLibrary, newLevel: number): FilledWrapper[] {
+  const lowered: CharacterState = { ...state, level: newLevel };
+  return wrappersAboveLevel(state.elements, 0).filter(({ node, path }) => {
+    if (node.type !== "Spell" || (node.requiredLevel ?? 0) > newLevel) return false;
+    const rule: SelectionRule = {
+      identifier: "",
+      type: node.type,
+      name: node.name,
+      requiredLevel: node.requiredLevel ?? 1,
+      hasSelection: true,
+      selectedElementIds: [node.registered!],
+      path,
+    };
+    if (!(selectRuleFor(lowered, library, rule)?.supports ?? "").includes("$(spellcasting:slots)")) return false;
+    const spellLevel = Number(library.byId.get(node.registered!)?.setters.find((setter) => setter.name === "level")?.value);
+    const ceiling = spellSlotCeilingFor(lowered, library, rule);
+    return ceiling > 0 && Number.isFinite(spellLevel) && spellLevel > ceiling;
+  });
+}
+
 function selectionRuleForPath(state: CharacterState, path: number[]): SelectionRule {
   const ids = state.selectionRuleIds ?? new Map<string, string>();
   const key = path.join(".");
@@ -1723,7 +1753,10 @@ export function planDelevelEdits(
     }
   }
 
-  const invalidated = wrappersAboveLevel(state.elements, newLevel);
+  const invalidated = [
+    ...wrappersAboveLevel(state.elements, newLevel),
+    ...spellPicksAboveCeiling(state, library, newLevel),
+  ];
   // A wrapper that goes away with the level — whether it IS one of the removed
   // nodes or sits inside one — needs neither a re-pick nor a clear-the-pick
   // edit. Emitting one for a node that is also being deleted would overlap the

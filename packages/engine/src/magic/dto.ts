@@ -8,18 +8,20 @@ import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
 import {
   evaluateSupportsExpression,
-  highestSlotLevelFromRules,
   isRestrictedForCharacter,
   selectionOptions,
   selectionRuleFor,
   selectionSlotRule,
   spellListExtensions,
+  spellSlotCeilingFor,
 } from "../selection/selection.js";
 import type { ParsedElement } from "../content/parser.js";
 import { engineError } from "../errors.js";
 import type { MagicAdditionalSpell, MagicCasterBlock } from "./state.js";
+import { casterModifier } from "./caster-modifiers.js";
 import {
   alwaysPreparedSets,
+  alwaysPreparedUsages,
   canonicalSourceRank,
   compareSpellInfo,
   fullCasterList,
@@ -227,6 +229,24 @@ function toKnownSpellDto(info: SpellInfo, flags: { prepared: boolean; always: bo
   };
 }
 
+/**
+ * A declared usage with its `{{stat}}` tokens filled from the statistics
+ * (Favored Enemy's "{{favored enemy:usage}}/Long Rest" reads "2/Long Rest"), or
+ * null when a token has no value, since a raw template means nothing on a
+ * sheet. The sheet's `substitute` is not reused: sheet/model.ts imports this
+ * module.
+ */
+function resolvedUsage(usage: string, statistics: Readonly<Record<string, number>>): string | null {
+  let unresolved = false;
+  const text = usage.replace(/\{\{([^}]+)\}\}/g, (match, rawKey: string) => {
+    const value = statistics[rawKey.trim()];
+    if (typeof value === "number" && Number.isFinite(value)) return `${value}`;
+    unresolved = true;
+    return match;
+  });
+  return unresolved ? null : text;
+}
+
 /** Whether the spellcasting feature projects the full class list (`<list known="true">`). */
 function isFullListCaster(library: ElementLibrary, block: MagicCasterBlock): boolean {
   const feature = library.byId.get(block.source);
@@ -251,6 +271,7 @@ export function buildSpellcastingDto(
   const featureCasters = featureSpellCasters(state, library);
   if (magic === null && featureCasters.length === 0) return [];
   const always = alwaysPreparedSets(state, library);
+  const usages = alwaysPreparedUsages(state, library);
   const proficiency = statistics["proficiency"] ?? 0;
   const abilityModifier = (ability: string): number => {
     const key = `${ability.toLowerCase()}:modifier`;
@@ -272,17 +293,9 @@ export function buildSpellcastingDto(
     // The per-caster statistics carry content bonuses on top of the
     // per-ability value; fall back through the per-ability key to the
     // computed formula.
-    const casterKey = block.name.toLowerCase();
-    const perCasterAttack = statistics[`${casterKey}:spellcasting:attack`];
-    const attackFromStats = perCasterAttack !== undefined && perCasterAttack !== 0
-      ? perCasterAttack
-      : statistics[`spellcasting:attack:${ability}`];
-    const attackModifier = attackFromStats ?? proficiency + abilityModifier(block.ability);
-    const perCasterDc = statistics[`${casterKey}:spellcasting:dc`];
-    const dcFromStats = perCasterDc !== undefined && perCasterDc !== 0
-      ? perCasterDc
-      : statistics[`spellcasting:dc:${ability}`];
-    const saveDc = dcFromStats ?? 8 + proficiency + abilityModifier(block.ability);
+    const base = proficiency + abilityModifier(block.ability);
+    const attackModifier = casterModifier(statistics, block.name, ability, "attack", base);
+    const saveDc = casterModifier(statistics, block.name, ability, "dc", 8 + base);
     const prepareKey = `${block.name.toLowerCase()}:spellcasting:prepare`;
     const prepareCount = statistics[prepareKey] ?? 0;
     const rawSlots = slotsArray(block);
@@ -341,9 +354,16 @@ export function buildSpellcastingDto(
       }
       grantedProjected = true;
     }
-    const knownSpells = spellInfos.map((info) =>
-      toKnownSpellDto(info, flags.get(info.id) ?? { prepared: false, always: alwaysSet.has(info.id) }),
-    );
+    // A granted spell the feature also lets the caster cast without a slot
+    // (Divine Smite, Hunter's Mark) carries that allowance, as a feature
+    // caster's spells do.
+    const casterUsages = usages.get(block.name);
+    const knownSpells = spellInfos.map((info) => {
+      const spell = toKnownSpellDto(info, flags.get(info.id) ?? { prepared: false, always: alwaysSet.has(info.id) });
+      const declared = casterUsages?.get(info.id);
+      const usage = declared === undefined ? null : resolvedUsage(declared.usage, statistics);
+      return usage === null ? spell : { ...spell, usage, ...(declared?.note === undefined ? {} : { usageNote: declared.note }) };
+    });
 
     casters.push({
       identifier: casterIds.get(block.name) ?? block.name,
@@ -515,37 +535,6 @@ function sameRule(left: { requiredLevel?: number; type?: string; name?: string }
   return left.requiredLevel === right.requiredLevel && left.type === right.type && left.name === right.name;
 }
 
-function slotProgressionSpellLevel(
-  state: CharacterState,
-  library: ElementLibrary,
-  casterName: string,
-  classLevel: number,
-): number {
-  const classIds = new Set(
-    state.levelHistory
-      .filter((entry) => !entry.isPending && library.byId.get(entry.classId)?.identity.name === casterName)
-      .map((entry) => entry.classId),
-  );
-  const classElements = [...classIds]
-    .map((id) => library.byId.get(id))
-    .filter((element): element is NonNullable<typeof element> => element !== undefined);
-  const featureIds = new Set<string>();
-  for (const element of classElements) {
-    for (const rule of element.rules) {
-      if (rule.kind === "grant" && rule.type === "Class Feature" && rule.id !== undefined) featureIds.add(rule.id);
-    }
-  }
-  const featureElements = [...featureIds]
-    .map((id) => library.byId.get(id))
-    .filter((element): element is NonNullable<typeof element> => element !== undefined)
-    .filter((element) => element.spellcasting?.name === casterName);
-  let highest = 0;
-  for (const element of featureElements) {
-    highest = Math.max(highest, highestSlotLevelFromRules(element.rules, casterName, classLevel));
-  }
-  return highest;
-}
-
 /**
  * Builds the spell-browse DTO for a Spell selection rule.
  * Errors: unknown rule and non-Spell rule are 404s.
@@ -658,9 +647,11 @@ export function buildSpellBrowseDto(
     };
   }
 
+  // The same ceiling the select's supports expand to, so the panel offers and
+  // labels exactly the levels the select accepts.
   const progressionLevel = isCantripRule
     ? 0
-    : slotProgressionSpellLevel(state, library, caster.name, rule.requiredLevel);
+    : spellSlotCeilingFor(state, library, rule, caster.name);
   const maxLevel = isCantripRule
     ? 0
     : progressionLevel > 0 ? progressionLevel : maxSlotLevel(slotsArray(caster));

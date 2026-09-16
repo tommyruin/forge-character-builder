@@ -266,6 +266,7 @@ export const SHEET_TEMPLATE_CONTRACT = {
     columns: [58, 248, 437],
     /** Cell edges: the first cell ends at labelCellRight; the next two start 2pt after the previous cell. */
     labelCellRight: 228,
+    cellRights: [228, 417, 582],
     slotTextX: 82,
     textBaseline: 3.5,
   },
