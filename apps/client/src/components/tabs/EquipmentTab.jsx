@@ -94,6 +94,7 @@ export default function EquipmentTab() {
   const [inventory, setInventory] = useState(null);
   const [inspected, setInspected] = useState(null);
   const [extracting, setExtracting] = useState(null);
+  const [stowing, setStowing] = useState(null);
   const [flashIds, setFlashIds] = useState(() => new Set());
   const [error, setError] = useState(null);
   const physicalInventory = inventory
@@ -190,6 +191,34 @@ export default function EquipmentTab() {
     }
   };
 
+  // Moving part of a stack: the engine splits the record (or joins an
+  // identical stack already in the destination) and keeps the remainder
+  // where it was.
+  const stowItem = async (amount) => {
+    if (!stowing) return;
+    const { item, storage } = stowing;
+    try {
+      await mutate(() =>
+        api.characters.setItemStorage(id, item.identifier, storage, amount),
+      );
+      setStowing(null);
+      notify(
+        storage ? (
+          <>
+            Stowed <strong>{amount} × {item.name}</strong> in{" "}
+            <strong>{storage}</strong>
+          </>
+        ) : (
+          <>
+            Returned <strong>{amount} × {item.name}</strong> to your inventory
+          </>
+        ),
+      );
+    } catch {
+      // run() keeps the record where it was and surfaces the engine error.
+    }
+  };
+
   // The band belongs to the tab, but the shell belongs to whichever view is
   // showing: each view brings its own rail, and a rail has to be a child of the
   // shell to be part of the band stack. Passing the band down keeps one shell
@@ -227,12 +256,20 @@ export default function EquipmentTab() {
 
   const notices = error ? <p className="fcb-alert mb-4">{error}</p> : null;
   const modals = (
-    <ExtractEquipmentModal
-      item={extracting}
-      busy={busy}
-      onClose={() => setExtracting(null)}
-      onConfirm={extractItem}
-    />
+    <>
+      <ExtractEquipmentModal
+        item={extracting}
+        busy={busy}
+        onClose={() => setExtracting(null)}
+        onConfirm={extractItem}
+      />
+      <StowQuantityModal
+        move={stowing}
+        busy={busy}
+        onClose={() => setStowing(null)}
+        onConfirm={stowItem}
+      />
+    </>
   );
 
   if (subTab === "inventory") {
@@ -249,9 +286,20 @@ export default function EquipmentTab() {
         onEquip={(identifier, location) =>
           mutate(() => api.characters.equipItem(id, identifier, location))
         }
-        onSetStorage={(identifier, storage) =>
-          mutate(() => api.characters.setItemStorage(id, identifier, storage))
+        onSetItemAmount={(identifier, amount) =>
+          mutate(() => api.characters.setItemAmount(id, identifier, amount))
         }
+        onSetStorage={(item, storage) => {
+          // A stack moves in whatever portion the player chooses; a single
+          // record moves whole, as it always has.
+          if (item.amount > 1) {
+            setStowing({ item, storage });
+            return undefined;
+          }
+          return mutate(() =>
+            api.characters.setItemStorage(id, item.identifier, storage),
+          );
+        }}
         onAttune={(identifier, attuned) =>
           mutate(() => api.characters.attuneItem(id, identifier, attuned))
         }
@@ -1156,6 +1204,7 @@ function Inventory({
   busy,
   flashIds,
   onEquip,
+  onSetItemAmount,
   onSetStorage,
   onAttune,
   onExtract,
@@ -1267,7 +1316,19 @@ function Inventory({
                         </div>
                       ) : null}
                     </td>
-                    <td data-label="Qty">{item.amount}</td>
+                    <td data-label="Qty">
+                      <QuantityStepper
+                        amount={item.amount}
+                        label={item.name}
+                        busy={busy}
+                        onDecrease={() =>
+                          onSetItemAmount(item.identifier, item.amount - 1)
+                        }
+                        onIncrease={() =>
+                          onSetItemAmount(item.identifier, item.amount + 1)
+                        }
+                      />
+                    </td>
                     <td className="text-xs" data-label="Equipped">
                       {item.isEquipped ? (
                         <span className="fcb-success-note">
@@ -1285,7 +1346,7 @@ function Inventory({
                         value={item.storage ?? ""}
                         disabled={busy}
                         onChange={(e) =>
-                          onSetStorage(item.identifier, e.target.value || null)
+                          onSetStorage(item, e.target.value || null)
                         }
                       >
                         <option value="">Carried</option>
@@ -1382,6 +1443,46 @@ function Inventory({
       />
       {modals}
     </WorkspaceTabLayout>
+  );
+}
+
+// The stepper's ceiling: a guardrail, not a rule. The engine accepts any
+// positive integer, but a 4-digit stack is a typo long before it is a wish.
+export const MAX_ITEM_AMOUNT = 999;
+
+// The Qty cell's inline stepper. Minus stops at 1: removing the record is the
+// Delete action's job, so a fast clicker cannot delete a stack by accident.
+export function QuantityStepper({
+  amount,
+  label,
+  busy,
+  onDecrease,
+  onIncrease,
+}) {
+  return (
+    <span className="fcb-inventory-qty">
+      <button
+        type="button"
+        className="fcb-inventory-qty-button"
+        aria-label={`Decrease ${label} quantity`}
+        title="Decrease quantity"
+        disabled={busy || amount <= 1}
+        onClick={onDecrease}
+      >
+        <Icon name="remove" className="fcb-inventory-qty-icon" />
+      </button>
+      <span className="fcb-inventory-qty-value tabular-nums">{amount}</span>
+      <button
+        type="button"
+        className="fcb-inventory-qty-button"
+        aria-label={`Increase ${label} quantity`}
+        title="Increase quantity"
+        disabled={busy || amount >= MAX_ITEM_AMOUNT}
+        onClick={onIncrease}
+      >
+        <Icon name="add" className="fcb-inventory-qty-icon" />
+      </button>
+    </span>
   );
 }
 
@@ -1499,6 +1600,99 @@ export function ExtractEquipmentModal({ item, busy, onClose, onConfirm }) {
           {busy ? "Extracting…" : "Extract"}
         </button>
       </div>
+    </Modal>
+  );
+}
+
+export function StowQuantityModal({ move, busy, onClose, onConfirm }) {
+  const item = move?.item ?? null;
+  const maximum = item?.amount ?? 1;
+  const [amount, setAmount] = useState(maximum);
+  useEffect(() => {
+    setAmount(maximum);
+  }, [move, maximum]);
+
+  const close = () => {
+    if (!busy) onClose();
+  };
+  const nudge = (delta) =>
+    setAmount((current) => Math.min(maximum, Math.max(1, current + delta)));
+  const setDraft = (raw) => {
+    const parsed = Number.parseInt(raw, 10);
+    setAmount(
+      Number.isInteger(parsed) ? Math.min(maximum, Math.max(1, parsed)) : 1,
+    );
+  };
+  const destination = move?.storage ?? "";
+
+  return (
+    <Modal
+      open={Boolean(move)}
+      title={destination ? "Stow items" : "Return items to inventory"}
+      onClose={close}
+    >
+      {item ? (
+        <>
+          <p>
+            <strong>{item.name}</strong> has {item.amount} in this stack.{" "}
+            {destination ? (
+              <>
+                How many do you stow in <strong>{destination}</strong>?
+              </>
+            ) : (
+              "How many do you return to your inventory?"
+            )}
+          </p>
+          <div className="fcb-stow-quantity">
+            <button
+              type="button"
+              className="fcb-button fcb-stow-quantity-button"
+              aria-label="Fewer"
+              disabled={busy || amount <= 1}
+              onClick={() => nudge(-1)}
+            >
+              <Icon name="remove" className="fcb-stow-quantity-icon" />
+            </button>
+            <input
+              type="number"
+              min={1}
+              max={maximum}
+              className="fcb-input fcb-stow-quantity-input tabular-nums"
+              aria-label={`Quantity of ${item.name} to move`}
+              disabled={busy}
+              value={amount}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <button
+              type="button"
+              className="fcb-button fcb-stow-quantity-button"
+              aria-label="More"
+              disabled={busy || amount >= maximum}
+              onClick={() => nudge(1)}
+            >
+              <Icon name="add" className="fcb-stow-quantity-icon" />
+            </button>
+          </div>
+          <div className="fcb-toolbar mt-4 justify-end">
+            <button
+              type="button"
+              className="fcb-button"
+              disabled={busy}
+              onClick={close}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="fcb-button fcb-button-primary"
+              disabled={busy}
+              onClick={() => onConfirm(amount)}
+            >
+              {busy ? "Moving…" : destination ? `Stow ${amount}` : `Return ${amount}`}
+            </button>
+          </div>
+        </>
+      ) : null}
     </Modal>
   );
 }

@@ -5298,6 +5298,74 @@ button:disabled {
   margin-top: 6px;
 }
 
+.fcb-inventory-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fcb-inventory-qty-button {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: 6px;
+  background: var(--fcb-surface);
+  color: var(--fcb-text);
+  cursor: pointer;
+}
+
+.fcb-inventory-qty-button:hover:not(:disabled) {
+  border-color: var(--fcb-border);
+  background: var(--fcb-surface-2);
+}
+
+.fcb-inventory-qty-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fcb-inventory-qty-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.fcb-inventory-qty-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.fcb-stow-quantity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fcb-stow-quantity-button {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.fcb-stow-quantity-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.fcb-stow-quantity-input {
+  width: 5rem;
+  text-align: center;
+}
+
 @container fcb-inventory-primary (max-width: 960px) {
   .fcb-inventory-table thead {
     display: none;

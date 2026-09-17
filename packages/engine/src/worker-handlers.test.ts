@@ -583,7 +583,8 @@ describe("engine worker handlers", () => {
     // 75: added setItemStorage (item-storage assignment).
     // 77: added setCompanionPortrait / removeCompanionPortrait.
     // 78: added levelUpTo (level straight to a target level).
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 78, engineVersion: ENGINE_VERSION } }]);
+    // 79: added setItemAmount (stack quantity changes).
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 79, engineVersion: ENGINE_VERSION } }]);
   });
 });
 

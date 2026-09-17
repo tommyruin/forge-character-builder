@@ -309,6 +309,91 @@ describe("inventory remove and extract", () => {
   });
 });
 
+describe("inventory amounts and stacking", () => {
+  const POTION = "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HEALING";
+  const DAGGER = "ID_WOTC_PHB_WEAPON_DAGGER";
+
+  it("sets an amount up and down, writing the attribute only above 1", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Amount Char").id;
+    let dto = service.addItem(id, { itemId: POTION, amount: 1, baseElementId: null });
+    const potion = dto.items[0]!;
+    expect(potion.amount).toBe(1);
+    expect(potion.weight).toBe("½ lb.");
+    expect(dto.equipmentWeight).toBe(0.5);
+
+    dto = service.setItemAmount(id, potion.identifier, 5);
+    expect(byItemId(dto, POTION)!.amount).toBe(5);
+    expect(dto.equipmentWeight).toBe(2.5);
+    const raised = service.exportCharacterXml(id);
+    expect(raised).toContain('amount="5"');
+    const imported = service.importCharacterXml("Amount Char 2", raised);
+    expect(byItemId(buildInventoryDto(imported, await library()), POTION)!.amount).toBe(5);
+
+    dto = service.setItemAmount(id, potion.identifier, 1);
+    expect(byItemId(dto, POTION)!.amount).toBe(1);
+    expect(dto.equipmentWeight).toBe(0.5);
+    // The omitted-at-1 form round-trips: no amount attribute survives.
+    const lowered = service.exportCharacterXml(id);
+    expect(lowered).not.toMatch(/<item[^>]* amount="/);
+    const reimported = service.importCharacterXml("Amount Char 3", lowered);
+    expect(byItemId(buildInventoryDto(reimported, await library()), POTION)!.amount).toBe(1);
+  });
+
+  it("rejects non-positive and fractional amounts", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Amount Guard").id;
+    const dto = service.addItem(id, { itemId: POTION, amount: 1, baseElementId: null });
+    const potion = dto.items[0]!;
+    expect(() => service.setItemAmount(id, potion.identifier, 0)).toThrow(/invalid item amount/);
+    expect(() => service.setItemAmount(id, potion.identifier, -3)).toThrow(/invalid item amount/);
+    expect(() => service.setItemAmount(id, potion.identifier, 2.5)).toThrow(/invalid item amount/);
+  });
+
+  it("grows the existing carried stack when the same item is added again", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Stack Char").id;
+    let dto = service.addItem(id, { itemId: POTION, amount: 1, baseElementId: null });
+    const first = dto.items[0]!;
+    dto = service.addItem(id, { itemId: POTION, amount: 2, baseElementId: null });
+    const potions = dto.items.filter((i) => i.itemId === POTION);
+    expect(potions).toHaveLength(1);
+    expect(potions[0]!.identifier).toBe(first.identifier);
+    expect(potions[0]!.amount).toBe(3);
+    expect(dto.equipmentWeight).toBe(1.5);
+  });
+
+  it("keeps a repeated add separate when the item auto-equips or is not stackable", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Stack Guard").id;
+    let dto = service.addItem(id, { itemId: DAGGER, amount: 1, baseElementId: null });
+    const first = dto.items[0]!;
+    expect(first.isEquipped).toBe(true);
+    dto = service.addItem(id, { itemId: DAGGER, amount: 1, baseElementId: null });
+    expect(dto.items.filter((i) => i.itemId === DAGGER)).toHaveLength(2);
+  });
+
+  it("never merges attunable, adorned or stowed records", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Stack Attune").id;
+    // Attunable records stay one row each: the attunement bond belongs to a record.
+    let dto = service.addItem(id, { itemId: RING, amount: 1, baseElementId: null });
+    dto = service.addItem(id, { itemId: RING, amount: 1, baseElementId: null });
+    expect(dto.items.filter((i) => i.itemId === RING)).toHaveLength(2);
+
+    // A stowed stack is not a carried merge target; the new copy lands carried.
+    dto = service.addItem(id, { itemId: POTION, amount: 4, baseElementId: null });
+    const potion = dto.items.find((i) => i.itemId === POTION)!;
+    dto = service.setItemStorage(id, potion.identifier, "#1");
+    expect(byItemId(dto, POTION)!.storage).toBe("#1");
+    dto = service.addItem(id, { itemId: POTION, amount: 1, baseElementId: null });
+    const rows = dto.items.filter((i) => i.itemId === POTION);
+    expect(rows).toHaveLength(2);
+    expect(rows.find((i) => i.storage === null)!.amount).toBe(1);
+    expect(rows.find((i) => i.storage === "#1")!.amount).toBe(4);
+  });
+});
+
 describe("inventory coins", () => {
   it("replaces the coinage", async () => {
     const service = await freshService();

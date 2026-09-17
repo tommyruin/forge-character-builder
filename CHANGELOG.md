@@ -6,6 +6,22 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The inventory Qty column has minus and plus controls: a stack's amount
+  changes in place, up to 999, and carried weight follows for stackable items.
+- Adding an item that is already carried as an identical stackable stack grows
+  that stack instead of adding a row. Items that are equipped, attuned,
+  attunable, adorned or stowed keep their own rows.
+- Part of a stack can be stowed: assigning a container on a multi-item stack
+  asks how many units to move, and returning part of a stowed stack works the
+  same way, joining an identical carried stack when one exists.
+
+### Fixed
+
+- Delete on a stack removes the whole record. It previously removed a single
+  unit without saying so.
+
 ## [2.3.0] - 2026-09-16
 
 ### Added

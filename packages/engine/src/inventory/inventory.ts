@@ -464,11 +464,17 @@ function renderItemNode(item: {
   adorner: { name: string; id: string } | null;
   detailsName: string;
   notes: string;
+  /** The storage container to stow the new record in (absent means carried). */
+  storage?: string | null;
+  /** Observed details-card opts; new records default to a full-sheet card. */
+  card?: boolean;
+  sidebar?: boolean;
 }): string {
   const lines: string[] = [];
   lines.push(
     `<item identifier="${item.identifier}" name="${escapeXml(item.name)}" id="${escapeXml(item.id)}"` +
       (item.amount > 1 ? ` amount="${item.amount}"` : "") +
+      (item.sidebar ? ` sidebar="true"` : "") +
       ">",
   );
   if (item.equippedLocation !== null) {
@@ -477,12 +483,15 @@ function renderItemNode(item: {
   if (item.attuned) {
     lines.push("\t\t\t\t<attunement>true</attunement>");
   }
+  if (item.storage) {
+    lines.push(`\t\t\t\t<storage><location>${escapeXml(item.storage)}</location></storage>`);
+  }
   if (item.adorner) {
     lines.push("\t\t\t\t<items>");
     lines.push(`\t\t\t\t\t<adorner name="${escapeXml(item.adorner.name)}" id="${escapeXml(item.adorner.id)}" />`);
     lines.push("\t\t\t\t</items>");
   }
-  lines.push('\t\t\t\t<details card="true">');
+  lines.push(`\t\t\t\t<details${item.card === false ? "" : ' card="true"'}>`);
   lines.push("\t\t\t\t\t<name>");
   if (item.detailsName !== "") lines.push(escapeXml(item.detailsName));
   lines.push("\t\t\t\t\t</name>");
@@ -785,6 +794,8 @@ export interface AddItemPlan {
   equippedLocation: string | null;
   amount: number;
   registers: boolean;
+  /** True when the add grew an existing carried stack instead of appending. */
+  merged: boolean;
 }
 
 /** The auto-equip decision for a newly added item (first free location). */
@@ -792,6 +803,32 @@ function autoEquipLocation(state: CharacterState, locations: string[]): string |
   if (locations.length === 0) return null;
   const first = locations[0]!;
   return isSlotFree(state, first) ? first : null;
+}
+
+/**
+ * The record that can absorb another copy of the same item: an identical plain
+ * stack (no adorners), stowed in the same place, not equipped or attuned, and
+ * authored as stackable so an amount change keeps carried weight honest. A
+ * record whose state an amount cannot share -- equipped, attuned, attunable
+ * (each attunement is one record's bond), adorned -- is deliberately never a
+ * merge target.
+ */
+function mergeTargetFor(
+  state: CharacterState,
+  library: ElementLibrary,
+  itemId: string,
+  storage: string | null,
+  excludeIdentifier: string | null,
+): InventoryItemState | undefined {
+  return state.items.find((item) => {
+    if (item.identifier === excludeIdentifier) return false;
+    if (item.itemId !== itemId) return false;
+    if (item.adorners.length > 0) return false;
+    if (item.equipped || item.attuned) return false;
+    if (isAttunableElement(effectiveElement(library, item))) return false;
+    if ((item.storage ?? null) !== storage) return false;
+    return setterValue(baseElementOf(library, item), "stackable")?.trim().toLowerCase() === "true";
+  });
 }
 
 /**
@@ -830,6 +867,24 @@ export function planAddItemEdits(
   const locations = equipLocationsFor(base);
   const equippedKey = autoEquipLocation(state, locations);
   const equippedLocation = equippedKey === null ? null : LOCATION_DISPLAY[equippedKey]!;
+  // A carried copy joins an identical carried stack; a copy that auto-equips
+  // stays its own row because the equipped state -- and the attack row that
+  // follows it -- belongs to that record alone.
+  if (equippedLocation === null && adornerId === null) {
+    const target = mergeTargetFor(state, library, base.identity.id, null, null);
+    if (target) {
+      return {
+        edits: planSetItemAmountEdits(document, target.identifier, target.amount + amount),
+        identifier: target.identifier,
+        baseId: base.identity.id,
+        adornerId: null,
+        equippedLocation: null,
+        amount: target.amount + amount,
+        registers: false,
+        merged: true,
+      };
+    }
+  }
   const adorner = adornerId !== null ? library.byId.get(adornerId) : undefined;
   const node = renderItemNode({
     identifier,
@@ -849,7 +904,7 @@ export function planAddItemEdits(
     edits.push(...planTreeAppendEdits(document, state, library, base));
     edits.push(...planRegisteredCountEdit(document, state, countDeltaOf(adornerId === null ? [] : [adornerId])));
   }
-  return { edits, identifier, baseId: base.identity.id, adornerId, equippedLocation, amount, registers };
+  return { edits, identifier, baseId: base.identity.id, adornerId, equippedLocation, amount, registers, merged: false };
 }
 
 /**
@@ -893,6 +948,39 @@ export function planRemoveItemEdits(
     }
   }
   return edits;
+}
+
+/**
+ * The raw range of an item's `amount` attribute including the whitespace
+ * before it, for removing the attribute whole.
+ */
+function amountAttrRemovalRange(raw: string, node: Dnd5eNode): { start: number; end: number } | null {
+  const open = raw.slice(node.start, node.openEnd);
+  const match = /\s+amount="[^"]*"/.exec(open);
+  if (!match) return null;
+  return { start: node.start + match.index, end: node.start + match.index + match[0].length };
+}
+
+/**
+ * Plans setting a stored record's amount. The document omits `amount` at 1
+ * (see `renderItemNode`), so raising it inserts or replaces the attribute and
+ * lowering it back to 1 removes the attribute again. Amount is presentation
+ * only: registrations, attunement and equip state do not change with it.
+ */
+export function planSetItemAmountEdits(document: Dnd5eDocument, identifier: string, amount: number): RawEdit[] {
+  if (!Number.isInteger(amount) || amount < 1) {
+    throw engineError("invalid-argument", `invalid item amount '${amount}'`);
+  }
+  const node = itemNodeOf(document, identifier);
+  const raw = document.raw;
+  const range = attrValueRange(raw, node, "amount");
+  if (amount > 1) {
+    if (range) return [{ start: range.start, end: range.end, replacement: String(amount) }];
+    const insertAt = node.selfClosing ? node.openEnd - 2 : node.openEnd - 1;
+    return [{ start: insertAt, end: insertAt, replacement: ` amount="${amount}"` }];
+  }
+  const removal = amountAttrRemovalRange(raw, node);
+  return removal ? [{ start: removal.start, end: removal.end, replacement: "" }] : [];
 }
 
 /** Plans equipping/unequipping an item at a location key ("none" unequips). */
@@ -982,12 +1070,14 @@ export function planEquipItemEdits(
 /**
  * Plans assigning/clearing an item's storage container (a vehicle/cargo slot
  * named in `state.storages`). `storage` null or "" carries the item on the
- * character again. Single location principle: stowing an equipped item
- * unequips it (equipping a stowed item likewise clears its storage; see
- * `planEquipItemEdits`). Attunement is a magical bond, not physical
- * possession, so it persists through stowage -- but a stowed item conveys
- * nothing, so its registration goes with it and comes back when the item is
- * taken out and put to use again.
+ * character again. `amount` moves part of a stack: the moved units split into
+ * a plain record (or join an identical stack already there) while the source
+ * keeps the remainder and its own state. Single location principle: stowing an
+ * equipped item unequips it (equipping a stowed item likewise clears its
+ * storage; see `planEquipItemEdits`). Attunement is a magical bond, not
+ * physical possession, so it persists through stowage -- but a stowed item
+ * conveys nothing, so its registration goes with it and comes back when the
+ * item is taken out and put to use again.
  */
 export function planSetItemStorageEdits(
   state: CharacterState,
@@ -995,12 +1085,45 @@ export function planSetItemStorageEdits(
   library: ElementLibrary,
   identifier: string,
   storage: string | null,
+  /** Units to move; omitted moves the whole record (the historical behavior). */
+  amount?: number,
 ): RawEdit[] {
   const item = state.items.find((i) => i.identifier === identifier);
   if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
   const next = storage ?? "";
   const current = item.storage ?? "";
   if (next === current) return [];
+  const moveAmount = amount ?? item.amount;
+  if (!Number.isInteger(moveAmount) || moveAmount < 1 || moveAmount > item.amount) {
+    throw engineError("invalid-argument", `invalid storage amount '${amount}'`);
+  }
+  if (moveAmount === item.amount) {
+    // Moving the whole record onto an identical free stack consolidates the
+    // two rows; an attuned source keeps its bond, so it moves on its own.
+    if (!item.attuned) {
+      const target = mergeTargetFor(state, library, item.itemId, next === "" ? null : next, identifier);
+      if (target) {
+        return [
+          ...planRemoveItemEdits(state, document, library, identifier),
+          ...planSetItemAmountEdits(document, target.identifier, target.amount + item.amount),
+        ];
+      }
+    }
+    return planWholeStorageEdits(state, document, library, item, next, current);
+  }
+  return planSplitStorageEdits(state, document, library, item, next, moveAmount);
+}
+
+/** The historical whole-record move: set/clear storage, unequip, unregister. */
+function planWholeStorageEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  item: InventoryItemState,
+  next: string,
+  current: string,
+): RawEdit[] {
+  const identifier = item.identifier;
   const edits: RawEdit[] = [];
   if (next === "") {
     edits.push(...planItemChildEdit(document, identifier, "<storage>", "remove"));
@@ -1029,6 +1152,51 @@ export function planSetItemStorageEdits(
       edits.push(...planRegisteredCountEdit(document, state, -countDeltaOf(item.adorners)));
     }
   }
+  return edits;
+}
+
+/**
+ * Moves part of a stack between carried and a container. The moved units join
+ * an identical stack in the destination when there is one, else they become a
+ * new plain record; the source keeps its remaining amount and any equip or
+ * attunement state. Neither side changes registrations: amount does not
+ * register, and a split record lands unequipped with the source still owning
+ * whatever it conveyed.
+ */
+function planSplitStorageEdits(
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  item: InventoryItemState,
+  next: string,
+  moveAmount: number,
+): RawEdit[] {
+  const destination = next === "" ? null : next;
+  const target = mergeTargetFor(state, library, item.itemId, destination, item.identifier);
+  const edits: RawEdit[] = [];
+  if (target) {
+    edits.push(...planSetItemAmountEdits(document, target.identifier, target.amount + moveAmount));
+  } else {
+    const base = baseElementOf(library, item);
+    const adornerId = item.adorners[0] ?? null;
+    const adorner = adornerId !== null ? elementById(library, adornerId) : undefined;
+    const node = renderItemNode({
+      identifier: randomUuid(),
+      name: base?.identity.name ?? item.name,
+      id: item.itemId,
+      amount: moveAmount,
+      equippedLocation: null,
+      attuned: false,
+      adorner: adorner ? { name: adorner.identity.name, id: adorner.identity.id } : null,
+      detailsName: item.detailsName,
+      notes: item.notes,
+      storage: destination,
+      card: item.card,
+      sidebar: item.sidebar,
+    });
+    edits.push(appendItemEdit(document, node));
+  }
+  edits.push(...planSetItemAmountEdits(document, item.identifier, item.amount - moveAmount));
   return edits;
 }
 

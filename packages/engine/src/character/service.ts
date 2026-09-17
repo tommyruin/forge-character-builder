@@ -91,6 +91,7 @@ import {
   planExtractItemEdits,
   planRemoveItemEdits,
   planSetCoinsEdits,
+  planSetItemAmountEdits,
   planSetItemStorageEdits,
   type AddItemOptions,
   type InventoryDto,
@@ -1728,6 +1729,20 @@ export class CharacterService {
     return this.inventoryDto(next, this.library);
   }
 
+  /** Sets a stored record's amount (a positive integer; registrations do not change). */
+  setItemAmount(id: string, identifier: string, amount: number): InventoryDto {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for inventory");
+    }
+    const item = state.items.find((i) => i.identifier === identifier);
+    if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
+    if (item.amount === amount) return this.inventoryDto(state, this.library);
+    const edits = planSetItemAmountEdits(document, identifier, amount);
+    const next = this.applyInventoryPlan(id, state, document, edits);
+    return this.inventoryDto(next, this.library);
+  }
+
   /** Equips/unequips an item at a location key ("none" unequips). */
   equipItem(id: string, identifier: string, location: string): InventoryDto {
     const { state, document } = this.require(id);
@@ -1746,12 +1761,12 @@ export class CharacterService {
   }
 
   /** Assigns/clears an item's storage container ("" or null carries it on the character again). */
-  setItemStorage(id: string, identifier: string, storage: string | null): InventoryDto {
+  setItemStorage(id: string, identifier: string, storage: string | null, amount?: number): InventoryDto {
     const { state, document } = this.require(id);
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
-    const edits = planSetItemStorageEdits(state, document, this.library, identifier, storage);
+    const edits = planSetItemStorageEdits(state, document, this.library, identifier, storage, amount);
     const next = this.applyInventoryPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }

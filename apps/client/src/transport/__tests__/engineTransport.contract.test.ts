@@ -49,7 +49,7 @@ function fakeClient() {
     "addGrantedAbilityScore", "removeGrantedAbilityScore", "getCompanion", "setCompanionName",
     "setCompanionPortrait", "removeCompanionPortrait",
     "getDmGrants",
-    "getInventory", "getItemBaseOptions", "addItem", "removeItem", "extractItem", "equipItem",
+    "getInventory", "getItemBaseOptions", "addItem", "removeItem", "setItemAmount", "extractItem", "equipItem",
     "setItemStorage", "attuneItem", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
     "setAttackVisibility", "moveAttack", "deleteAttack", "generateSheet",
     "getAppearanceSuggestions",

@@ -1352,10 +1352,13 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     inventory: (id: string) => invoke(getClient(), "getInventory", id),
     itemOptions: (id: string, itemId: string) => invoke(getClient(), "getItemBaseOptions", id, itemId),
     addItem: (id: string, itemId: string, amount = 1, baseElementId: string | null = null) => mutateDetail(id, "addItem", [id, { itemId, amount, baseElementId }]),
-    removeItem: (id: string, identifier: string, amount = 1) => mutateDetail(id, "removeItem", [id, identifier, amount]),
+    removeItem: (id: string, identifier: string, amount?: number) =>
+      mutateDetail(id, "removeItem", amount === undefined ? [id, identifier] : [id, identifier, amount]),
+    setItemAmount: (id: string, identifier: string, amount: number) => mutateDetail(id, "setItemAmount", [id, identifier, { amount }]),
     extractItem: (id: string, identifier: string) => mutateDetail(id, "extractItem", [id, identifier]),
     equipItem: (id: string, identifier: string, location: string) => mutateDetail(id, "equipItem", [id, identifier, { location }]),
-    setItemStorage: (id: string, identifier: string, storage: string | null) => mutateDetail(id, "setItemStorage", [id, identifier, { storage }]),
+    setItemStorage: (id: string, identifier: string, storage: string | null, amount?: number) =>
+      mutateDetail(id, "setItemStorage", amount === undefined ? [id, identifier, { storage }] : [id, identifier, { storage, amount }]),
     attuneItem: (id: string, identifier: string, attuned: boolean) => mutateDetail(id, "attuneItem", [id, identifier, { attuned }]),
     setCoins: (id: string, coins: AnyRecord) => mutateDetail(id, "setCoins", [id, coins]),
     attacks: (id: string) => invoke(getClient(), "getAttacks", id),

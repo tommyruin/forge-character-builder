@@ -314,9 +314,13 @@ export interface EngineMethodMap {
     WireObject
   >;
   removeItem: MethodContract<[id: string, identifier: string, amount?: number], WireObject>;
+  setItemAmount: MethodContract<[id: string, identifier: string, request: { amount: number }], WireObject>;
   extractItem: MethodContract<[id: string, identifier: string], WireObject>;
   equipItem: MethodContract<[id: string, identifier: string, request: { location: string }], WireObject>;
-  setItemStorage: MethodContract<[id: string, identifier: string, request: { storage: string | null }], WireObject>;
+  setItemStorage: MethodContract<
+    [id: string, identifier: string, request: { storage: string | null; amount?: number }],
+    WireObject
+  >;
   attuneItem: MethodContract<[id: string, identifier: string, request: { attuned: boolean }], WireObject>;
   setCoins: MethodContract<[id: string, coins: CoinageDto], WireObject>;
   getAttacks: MethodContract<[id: string], WireList>;
@@ -413,6 +417,7 @@ export const ENGINE_METHOD_NAMES = [
   "getItemBaseOptions",
   "addItem",
   "removeItem",
+  "setItemAmount",
   "extractItem",
   "equipItem",
   "setItemStorage",
@@ -514,6 +519,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   getItemBaseOptions: implemented,
   addItem: implemented,
   removeItem: implemented,
+  setItemAmount: implemented,
   extractItem: implemented,
   equipItem: implemented,
   setItemStorage: implemented,
@@ -595,6 +601,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   getItemBaseOptions: "read-only",
   addItem: "character-write",
   removeItem: "character-write",
+  setItemAmount: "character-write",
   extractItem: "character-write",
   equipItem: "character-write",
   setItemStorage: "character-write",
