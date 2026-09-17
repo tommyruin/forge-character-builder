@@ -85,3 +85,37 @@ describe('equipment catalog scrolling', () => {
     );
   });
 });
+
+// The magic base picker stacks a card above the description pane in the
+// details column. The stack replaces the panel as the grid item, so it has to
+// keep the bounded height the panel took as a direct child, or the auto grid
+// row sizes to the description's content and both columns run past the
+// clipped pane with no way to reach their bottoms.
+describe('equipment details stack scrolling', () => {
+  it('bounds the stack the magic base picker sits in', () => {
+    expect(source).toMatch(
+      /showBaseSelector\s*\?\s*\(\s*<div className="fcb-equipment-details">/,
+    );
+    expect(source).not.toContain('className="space-y-4"');
+    expect(css).toMatch(
+      /\.fcb-equipment-details\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*0;[^}]*flex-direction:\s*column;/s,
+    );
+    expect(css).toMatch(
+      /\.fcb-equipment-details\s*>\s*\.fcb-description-panel\s*\{[^}]*min-height:\s*0;[^}]*flex:\s*1 1 auto;/s,
+    );
+  });
+});
+
+// A whole category carrying an equipSetter is not a base choice: the picker
+// belongs to the item, and most items fix their base (Javelin of Lightning) or
+// take none. Gating the card on the pending item keeps it from parking an
+// empty panel over the description for every item in the category.
+describe('equipment base picker gating', () => {
+  it('opens the base picker only when an item offers a real choice', () => {
+    expect(source).toMatch(/const showBaseSelector = Boolean\(baseItem\);/);
+    expect(source).not.toContain('Nothing to choose right now');
+    // The category's equipSetter still routes Add through the per-item options
+    // lookup, which is what adds single-base items directly.
+    expect(source).toMatch(/needsBase \? addMagicItem\(item\) : onAdd\(item, 1\)/);
+  });
+});

@@ -420,8 +420,8 @@ function Catalog({
     categories?.[0] ??
     null;
   const needsBase = Boolean(activeCategory?.equipSetter);
-  const baseSlot = baseItem?.slot ?? activeCategory?.equipSetter ?? null;
-  const showBaseSelector = Boolean(baseItem || needsBase);
+  const showBaseSelector = Boolean(baseItem);
+  const baseSlot = baseItem?.slot ?? null;
   const ruleset = detail?.rulesetMode ?? "all";
   const searchResultKey = debouncedSearch
     ? `${debouncedSearch}\u0000${ruleset}\u0000${searchRequest}`
@@ -989,9 +989,9 @@ function Catalog({
         </div>
 
         {showBaseSelector ? (
-          <div className="space-y-4">
+          <div className="fcb-equipment-details">
             <BaseSelector
-              key={baseItem?.id ?? "none"}
+              key={baseItem.id}
               item={baseItem}
               slot={baseSlot}
               busy={busy}
@@ -1138,7 +1138,7 @@ export function GlobalEquipmentSearchResults({
 // "+1 Longsword"). Only shown when there is a real choice — the catalog adds single-base
 // and baseless items directly. Keyed by item id, so state resets per item.
 function BaseSelector({ item, slot, busy, onAdd }) {
-  const options = item?.options ?? [];
+  const options = item.options;
   const [baseId, setBaseId] = useState(() => options[0]?.id ?? "");
   const label = slot === "weapon" ? "weapon" : "armor";
 
@@ -1148,49 +1148,40 @@ function BaseSelector({ item, slot, busy, onAdd }) {
         <div>
           <h2 className="fcb-panel-title">Base {label}</h2>
           <p className="fcb-panel-subtitle">
-            {item
-              ? `Choose the base ${label} ${item.name} enhances.`
-              : `Magic ${label}s with a single legal base are added straight to your inventory.`}
+            Choose the base {label} {item.name} enhances.
           </p>
         </div>
       </header>
       <div className="fcb-panel-body">
-        {!item && (
-          <p className="fcb-empty-copy">Nothing to choose right now.</p>
-        )}
-        {item && (
-          <>
-            <label className="fcb-field-label block">
-              Base {label} ({options.length})
-              <select
-                className="fcb-input mt-1 block w-full"
-                value={baseId}
-                onChange={(e) => setBaseId(e.target.value)}
-              >
-                {options.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="fcb-button fcb-button-primary mt-3"
-              disabled={busy || !baseId}
-              onClick={() =>
-                onAdd(
-                  item,
-                  1,
-                  baseId,
-                  options.find((o) => o.id === baseId)?.name ?? null,
-                )
-              }
-            >
-              <Icon name="add" />
-              Add to inventory
-            </button>
-          </>
-        )}
+        <label className="fcb-field-label block">
+          Base {label} ({options.length})
+          <select
+            className="fcb-input mt-1 block w-full"
+            value={baseId}
+            onChange={(e) => setBaseId(e.target.value)}
+          >
+            {options.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="fcb-button fcb-button-primary mt-3"
+          disabled={busy || !baseId}
+          onClick={() =>
+            onAdd(
+              item,
+              1,
+              baseId,
+              options.find((o) => o.id === baseId)?.name ?? null,
+            )
+          }
+        >
+          <Icon name="add" />
+          Add to inventory
+        </button>
       </div>
     </section>
   );

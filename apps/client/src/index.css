@@ -4071,6 +4071,25 @@ button:disabled {
   overflow-y: visible;
 }
 
+/* The details column when a card sits above the description pane (the magic
+   base picker). The stack replaces the panel as the grid item, so it has to
+   carry the bounded height the panel took as a direct child: the card keeps
+   its content height and the description keeps the rest, scrolling inside
+   itself. Without min-height: 0 the auto grid row sizes to the description's
+   content, so both columns run past the clipped pane and neither bottom can
+   be reached. */
+.fcb-equipment-details {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fcb-equipment-details > .fcb-description-panel {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 .fcb-description-panel {
   position: sticky;
   top: calc(var(--fcb-sticky-top) + 20px);

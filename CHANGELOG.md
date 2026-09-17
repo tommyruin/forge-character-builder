@@ -21,6 +21,11 @@ project uses [Semantic Versioning](https://semver.org/).
 
 - Delete on a stack removes the whole record. It previously removed a single
   unit without saying so.
+- Equipment's catalog and description panes scroll to the bottom again while a
+  magic weapon's or armor's base is being chosen; the base picker no longer
+  pushes them past the bottom of the window.
+- The Equipment base picker appears only when a magic weapon or armor offers a
+  base choice; single-base items add straight to the inventory.
 
 ## [2.3.0] - 2026-09-16
 
