@@ -138,6 +138,14 @@ the public description plus equipment `rarity` and
   `optional="true"`, and `hasAvailableOptions`, derived from legal candidates.
   Optional and zero-option rows stay visible but do not display an incomplete
   notification; invalidated-choice warnings remain visible.
+- `SelectionRuleDetail` includes `allocatesAbilityScores`, true when resolving
+  the rule raises an ability score. Clients group flagged rules under ability
+  scores wherever the content authored the choice: type-authored improvements
+  (class, 2024 backgrounds, half-feats), `Feat Feature` sub-choices
+  (Fey-Touched, 2014 Resilient) and `Racial Trait` choices (half-elf,
+  dragonmarks). Ancestry pickers that merely bundle stats (Dwarven Subrace,
+  Dragonborn Variant) and the 2024 classes' level-4 "Ability Score
+  Improvement (X N)" feat chooser stay unflagged.
 - Known-spell reconciliation de-duplicates repeated wrapper registrations in
   first-seen order. Preparation rewrites keep cantrips exclusively in
   `<cantrips>` and never serialize them into `<spells>`.

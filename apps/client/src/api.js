@@ -30,9 +30,7 @@ export const BUILD_SECTIONS = [
 export const FEATS_OPTION_ID = 'ID_INTERNAL_OPTION_ALLOW_FEATS';
 export const SPELL_POINTS_OPTION_ID = 'ID_INTERNAL_OPTION_ALLOW_SPELL_POINTS';
 
-export function isImprovementOptionRule(rule) {
-  return rule?.type === 'Class Feature' && /^Improvement Option\b/.test(rule?.name ?? '');
-}
+export { isImprovementOptionRule } from './components/buildSectionRules.js';
 
 export const MANAGE_RULE_TYPES = ['Alignment', 'Deity'];
 export const MAGIC_RULE_TYPES = ['Spell'];

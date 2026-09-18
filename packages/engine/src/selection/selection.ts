@@ -233,6 +233,49 @@ export function selectSupportsFor(state: CharacterState, library: ElementLibrary
   return select ? expandSelectSupports(state, library, select) : undefined;
 }
 
+/**
+ * Whether resolving the rule allocates ability score points. Most sources
+ * author these as `Ability Score Improvement` selects (classes, 2024
+ * backgrounds, half-feats), but racial traits carry their own select type and
+ * a few feats (2014 Resilient's "Resilient (Feat)") hide the choice behind an
+ * oddly named sub-select. The client groups flagged rules under Ability
+ * Scores so every ability bump lands in one place.
+ *
+ * Deliberately not flagged: ancestry pickers such as "Dwarven Subrace" or
+ * "Dragonborn Variant", whose candidates bundle stats without being ability
+ * choices, and the 2024 classes' level-4 "Ability Score Improvement (X N)"
+ * picker, which is a `Feat` select that chooses between the Ability Score
+ * Improvement feat and any other feat — the feat's own nested allocation
+ * carries the flag instead.
+ */
+export function allocatesAbilityScores(
+  state: CharacterState,
+  library: ElementLibrary,
+  rule: SelectionRule,
+): boolean {
+  const select = selectRuleFor(state, library, rule);
+  if (select === undefined) return false;
+  if (select.type === "Ability Score Improvement") return true;
+  if (select.type !== "Feat Feature" && select.type !== "Racial Trait") return false;
+  if (/^(custom\s+)?ability score (increase|improvement)\b/i.test(select.name ?? "")) return true;
+  // A sub-choice whose candidates each raise an ability: its candidates all
+  // carry an ability <stat> (unlike, say, Magic Initiate's spellcasting
+  // ability sub-features, which only rename the caster's ability).
+  const supports = selectSupportsFor(state, library, rule);
+  if (supports === undefined) return false;
+  const candidates = (library.byType.get(select.type) ?? []).filter((candidate) =>
+    matchesSupports(supports, candidate),
+  );
+  return (
+    candidates.length > 0 &&
+    candidates.every((candidate) =>
+      candidate.rules.some(
+        (entry) => entry.kind === "stat" && ABILITY_BY_NAME[entry.name] !== undefined,
+      ),
+    )
+  );
+}
+
 /** Resolves an inline `<item>` for a List wrapper without treating it as a library element. */
 export function selectionListItemForPath(
   state: CharacterState,

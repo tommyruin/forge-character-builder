@@ -5,8 +5,8 @@ import {
   MANAGE_RULE_TYPES,
   MAGIC_RULE_TYPES,
   COMPANION_RULE_TYPES,
-  isImprovementOptionRule,
 } from '../../api';
+import { buildSectionRules } from '../buildSectionRules';
 import { useWorkspace } from '../WorkspaceContext';
 import { ruleNeedsRepick } from '../../hooks/useMigrationIssues';
 import SectionNav from '../SectionNav';
@@ -69,24 +69,10 @@ export default function BuildTab() {
   }, [detail]);
 
   const sections = useMemo(() => {
-    const list = BUILD_SECTIONS.map((s) => {
-      let rules;
-      if (s.key === 'feats') {
-        // The ASI-or-feat "Improvement Option" select is authored as a Class Feature, but it
-        // belongs with feats (picking ASI surfaces the allocation under Ability Scores; picking
-        // Feat surfaces the feat here).
-        rules = detail.selectionRules.filter(
-          (r) => s.types.includes(r.type) || isImprovementOptionRule(r),
-        );
-      } else if (s.key === 'class') {
-        rules = detail.selectionRules.filter(
-          (r) => s.types.includes(r.type) && !isImprovementOptionRule(r),
-        );
-      } else {
-        rules = detail.selectionRules.filter((r) => s.types.includes(r.type));
-      }
-      return { ...s, rules };
-    });
+    const list = BUILD_SECTIONS.map((s) => ({
+      ...s,
+      rules: buildSectionRules(s, detail.selectionRules),
+    }));
     if (groups.other.length > 0)
       list.push({
         key: 'other',

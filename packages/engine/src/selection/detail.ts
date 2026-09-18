@@ -12,6 +12,7 @@ import { evaluateRequirements } from "./expr.js";
 import { computeStatistics } from "../statistics/calculator.js";
 import {
   ENGINE_INTERNAL_ELEMENTS,
+  allocatesAbilityScores,
   hasAvailableSelectionOptions,
   selectRuleFor,
   selectionListItemForPath,
@@ -58,6 +59,9 @@ export interface SelectionRuleDetail {
   previousElementId: string | null;
   previousElementName: string | null;
   spellcastingName: string | null;
+  /** Resolving the rule raises an ability score, so clients group it with
+   *  ability score improvements wherever the source authored the choice. */
+  allocatesAbilityScores: boolean;
 }
 
 export interface CharacterDetail {
@@ -299,6 +303,7 @@ function detailSelectionRules(
           path: here,
         };
         const authoredSelect = library ? selectRuleFor(state, library, selectionRule) : undefined;
+        const allocates = library ? allocatesAbilityScores(state, library, selectionRule) : false;
         let nodeHasAvailableOptions = true;
         if (selectedId === null && library !== undefined) {
           const groupKey = `${here.slice(0, -1).join(".")}|${node.type}|${node.name}|${node.requiredLevel}`;
@@ -357,6 +362,7 @@ function detailSelectionRules(
             previousElementId: invalidation?.previousElementId ?? null,
             previousElementName: invalidation?.previousElementName ?? null,
             spellcastingName: null,
+            allocatesAbilityScores: allocates,
           };
           rules.push(group);
         }
