@@ -190,6 +190,18 @@ the public description plus equipment `rarity` and
   `ingestUploaded` before publishing the supplements-ready state. A character
   source mutation returns the engine's source response and persists local state
   without an unnecessary character-detail refetch.
+- Source identity matches a normalized display name (case, typographic vs
+  straight apostrophes and quotes, collapsed whitespace), so content whose
+  `source` attribute drifts from its Source element's name is still restricted
+  and classified by the Source element's ruleset.
+- `setCharacterSources` creates the `<sources><restricted>` region when the
+  imported document has none; a document without the region no longer rejects
+  the mutation.
+- Content reads that take a character — `equipmentCategories(id?)` and
+  `contentElements({characterId?})` — prune elements from the character's
+  disabled sources as well as the other ruleset, exactly like the selection
+  pickers and `getSpellBrowse`. Without an id they read the whole library
+  (the content-manager view).
 
 ## DTOs
 

@@ -10,6 +10,7 @@ import { isItemContentElement, itemOwnedRegistrationIds } from "../inventory/ite
 import type { ParsedElement } from "../content/parser.js";
 import type { CharacterState, RegisteredElement } from "./state.js";
 import { evaluateRequirements, type RequirementContext } from "../selection/expr.js";
+import { isContentAllowedForCharacter } from "../content/access.js";
 import {
   ENGINE_INTERNAL_ELEMENTS,
   attrValueRange,
@@ -155,6 +156,7 @@ function optionalClassFeatureCandidates(
   for (const element of library.byType.get("Item") ?? []) {
     const category = element.setters.find((s) => s.name === "category")?.value;
     if (category !== OPTIONAL_CLASS_FEATURE_CATEGORY) continue;
+    if (!isContentAllowedForCharacter(state, library, element)) continue;
     const grants = element.rules.filter((rule) => rule.kind === "grant");
     if (grants.length === 0) continue;
     const id = element.identity.id;
@@ -172,6 +174,7 @@ export function getOptionalRules(state: CharacterState, library: ElementLibrary)
   const rules: OptionalRuleDto[] = [];
 
   const options = (library.byType.get("Option") ?? [])
+    .filter((element) => isContentAllowedForCharacter(state, library, element))
     .map((element) => {
       const id = element.identity.id;
       const eligible = evaluateRequirements(element.requirements, ctx);
@@ -264,6 +267,7 @@ export function getCharacterAdjustments(state: CharacterState, library: ElementL
       // entry (the PHB24 camel; other mounts are not listed).
       if (!ADJUSTMENT_CATEGORIES.includes(category) && !(hidden && category === "Mounts & Vehicles")) continue;
       if (restricted.has(element.identity.id)) continue;
+      if (!isContentAllowedForCharacter(state, library, element)) continue;
       out.push({
         key: `item:${element.identity.id}`,
         elementId: element.identity.id,

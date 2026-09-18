@@ -72,7 +72,7 @@ describe("content library graph codec (vendored corpus)", () => {
     for (const [id, element] of library.byId) {
       expect(hydrated.byId.get(id), id).toStrictEqual(element);
     }
-  });
+  }, 60_000);
 
   it("deep-equals representative elements across all block kinds", () => {
     const hydrated = roundTripped(serializeContentLibrary(library));

@@ -6,7 +6,7 @@ import {
   type WireObject,
   type WorkerScope,
 } from "@forge-cb/api";
-import type { AbilityScores } from "./character/state.js";
+import type { AbilityScores, CharacterState } from "./character/state.js";
 import { CharacterService, type CharacterDetails } from "./character/service.js";
 import { createEmptyLibrary, type ElementLibrary } from "./content/library.js";
 import { contentStatus as getContentStatus, ingestContentFiles, patchContentFile, removeContentFiles, replaceContentSet } from "./content/ingestion.js";
@@ -19,6 +19,7 @@ import {
   publicEquipmentDescription,
 } from "./content/equipment/categories.js";
 import type { ParsedElement } from "./content/parser.js";
+import { isContentAllowedForCharacter } from "./content/access.js";
 import { expandDescriptionReferences } from "./content/description.js";
 import { selectionOptions, selectionRuleForSlot } from "./selection/selection.js";
 import { computeStatistics } from "./statistics/calculator.js";
@@ -114,6 +115,23 @@ function normalizeSourceIds(sourceIds: readonly string[]): string[] {
   return [...new Set(sourceIds.map((sourceId) => sourceId.trim()).filter((sourceId) => sourceId !== ""))];
 }
 
+/** The character named by a query's `characterId`, when present. */
+function characterFromQuery(service: CharacterService, query: WireObject): CharacterState | undefined {
+  const characterId = query.characterId;
+  if (typeof characterId !== "string" || characterId === "") return undefined;
+  return service.getCharacter(characterId);
+}
+
+/** Library elements visible to a character, else the whole library. */
+function allowedElements(library: ElementLibrary, state?: CharacterState): readonly ParsedElement[] {
+  if (state === undefined) return [...library.byId.values()];
+  const out: ParsedElement[] = [];
+  for (const element of library.byId.values()) {
+    if (isContentAllowedForCharacter(state, library, element)) out.push(element);
+  }
+  return out;
+}
+
 function characterSourcesResponse(service: CharacterService, library: ElementLibrary, id: string): WireObject {
   const state = service.getCharacter(id);
   const restrictedSourceIds = normalizeSourceIds(state.restrictedSources);
@@ -157,7 +175,7 @@ function contentElementDto(library: ElementLibrary, element: ParsedElement): Wir
   };
 }
 
-function contentQuery(library: ElementLibrary, query: WireObject): WireObject {
+function contentQuery(library: ElementLibrary, query: WireObject, character?: CharacterState): WireObject {
   const text = typeof query.search === "string" ? query.search.trim().toLocaleLowerCase() : "";
   const type = typeof query.type === "string" && query.type !== "" ? query.type : undefined;
   const source = typeof query.source === "string" ? query.source : typeof query.sourceId === "string" ? query.sourceId : undefined;
@@ -184,6 +202,7 @@ function contentQuery(library: ElementLibrary, query: WireObject): WireObject {
   // per-type counts must describe what each type would show under the current
   // source/search scope, so the type pick itself cannot narrow them.
   const scoped = [...library.byId.values()].filter((element) => {
+    if (character !== undefined && !isContentAllowedForCharacter(character, library, element)) return false;
     if (source !== undefined && element.identity.source !== source) return false;
     if (!rulesetAllows(element.identity.id)) return false;
     if (text !== "" && !`${element.identity.name} ${element.identity.id}`.toLocaleLowerCase().includes(text)) return false;
@@ -203,9 +222,21 @@ function contentQuery(library: ElementLibrary, query: WireObject): WireObject {
 
 function restrictedSourceEdits(service: CharacterService, id: string, sourceIds: readonly string[]): { start: number; end: number; replacement: string }[] {
   const document = service.documentOf(id);
-  const restricted = document.root.sources.restricted();
-  if (restricted === null) throw engineError("invalid-argument", "character has no restricted sources region");
   const body = sourceIds.map((sourceId) => `<source id="${sourceId.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}" />`).join("");
+  const sources = document.root.sources;
+  const restricted = sources.restricted();
+  if (restricted === null) {
+    // Imported files predating the region (or a bare <sources />) get one:
+    // replace the existing <sources> element, else insert before </character>.
+    const replacement = `<sources><restricted>${body}</restricted></sources>`;
+    const node = sources.node;
+    if (node !== null) {
+      return [{ start: node.start, end: node.end, replacement }];
+    }
+    const root = document.root.node;
+    const close = root.closeStart ?? root.end;
+    return [{ start: close, end: close, replacement: `\t${replacement}\r\n` }];
+  }
   return [{ start: restricted.node.start, end: restricted.node.end, replacement: `<restricted>${body}</restricted>` }];
 }
 
@@ -315,8 +346,11 @@ export function createEngineMethodHandlers(
         ? null
         : contentElementDto(library, element);
     },
-    equipmentCategories: () => buildEquipmentCategories(library.byId.values()) as unknown as WireList,
-    contentElements: (query) => contentQuery(library, query),
+    equipmentCategories: (characterId) => {
+      const state = typeof characterId === "string" && characterId !== "" ? service.getCharacter(characterId) : undefined;
+      return buildEquipmentCategories(allowedElements(library, state)) as unknown as WireList;
+    },
+    contentElements: (query) => contentQuery(library, query, characterFromQuery(service, query)),
     createCharacter: (name) => objectResult(service.getCharacterDetail(service.createCharacter(name).id)),
     getCharacter: (id) => objectResult(service.getCharacterDetail(id)),
     deleteCharacter: (id) => service.deleteCharacter(id),

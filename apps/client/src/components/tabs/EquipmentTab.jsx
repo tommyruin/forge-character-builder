@@ -430,8 +430,8 @@ function Catalog({
     searchResult.key === searchResultKey ? searchResult : null;
 
   const loadCategories = useCallback(
-    () => api.content.equipmentCategories().then(normalizeEquipmentCategories),
-    [],
+    () => api.content.equipmentCategories(id).then(normalizeEquipmentCategories),
+    [id],
   );
 
   useEffect(() => {
@@ -566,6 +566,7 @@ function Catalog({
         {
           equipmentOnly: true,
           ruleset,
+          characterId: id,
           search: debouncedSearch,
           skip: 0,
           take: 20,
@@ -600,7 +601,7 @@ function Catalog({
         searchRequestGeneration.current += 1;
       }
     };
-  }, [active, debouncedSearch, ruleset, searchRequest, searchResultKey]);
+  }, [active, debouncedSearch, id, ruleset, searchRequest, searchResultKey]);
 
   useEffect(() => {
     if (!active || !debouncedSearch || libraryRevision === 0) {
@@ -617,6 +618,7 @@ function Catalog({
             return api.content.elements({
               equipmentOnly: true,
               ruleset,
+              characterId: id,
               search: debouncedSearch,
               skip: 0,
               take: 20,
@@ -661,6 +663,7 @@ function Catalog({
     active,
     debouncedSearch,
     ensureLibraryRevisionReady,
+    id,
     searchRefreshAttempt,
     libraryRevision,
     ruleset,
@@ -688,6 +691,7 @@ function Catalog({
       take: 100,
       skip,
       ruleset: detail?.rulesetMode ?? "all",
+      characterId: id,
     };
     if (activeCategory.elementType) params.type = activeCategory.elementType;
     if (activeCategory.equipSetter)
@@ -723,7 +727,7 @@ function Catalog({
         categoryPageRequestGeneration.current += 1;
       }
     };
-  }, [active, activeCategory, detail?.rulesetMode, skip]);
+  }, [active, activeCategory, detail?.rulesetMode, id, skip]);
 
   // Every return goes through the shell so the sub-tab bar stays put while the
   // catalog is loading, failing or empty.

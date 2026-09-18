@@ -1044,7 +1044,10 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     },
     types: async () => Object.keys((await contentApi.status()).elementTypes ?? {}),
     sources: async () => invoke(await ensureContentReady(), "contentSources"),
-    equipmentCategories: async () => invoke(await ensureContentReady(), "equipmentCategories"),
+    equipmentCategories: async (characterId?: string) =>
+      characterId === undefined
+        ? invoke(await ensureContentReady(), "equipmentCategories")
+        : invoke(await ensureContentReady(), "equipmentCategories", characterId),
     elements: async (params: AnyRecord = {}) => {
       const result = await invoke(await ensureContentReady(), "contentElements", {
         type: params.type ?? null,
@@ -1055,6 +1058,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         equipSetter: params.equipSetter ?? null,
         itemCategory: params.itemCategory ?? null,
         ruleset: params.ruleset ?? null,
+        characterId: params.characterId ?? null,
         equipmentOnly: Boolean(params.equipmentOnly),
       });
       return result;

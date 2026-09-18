@@ -9,6 +9,7 @@
 
 import { parseAppendsFile, parseElementsFile, type AppendBlock, type ParsedElement } from "./parser.js";
 import { generateItemProxies } from "./proxies.js";
+import { normalizeSourceName } from "./sourceIdentity.js";
 
 /** Engine-baked grant appended to every class element. */
 export const GRANT_MULTICLASSING_PREREQUISITE = "ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE";
@@ -79,11 +80,22 @@ function rulesetSetterValue(element: RulesetElementView | undefined): RulesetTag
   return undefined;
 }
 
-/** Source elements keyed by display name (identity.name), for classification. */
+/**
+ * Source elements keyed by display name (identity.name), for classification.
+ * Exact names win; normalized aliases cover content whose `source` attributes
+ * drift in punctuation, case or whitespace from the Source element's name
+ * (straight vs typographic apostrophes are common in uploaded books).
+ */
 export function rulesetSourcesByName(elements: Iterable<ParsedElement>): Map<string, ParsedElement> {
   const out = new Map<string, ParsedElement>();
+  const aliases: Array<[string, ParsedElement]> = [];
   for (const element of elements) {
-    if (element.identity.type === "Source") out.set(element.identity.name, element);
+    if (element.identity.type !== "Source") continue;
+    out.set(element.identity.name, element);
+    aliases.push([normalizeSourceName(element.identity.name), element]);
+  }
+  for (const [alias, element] of aliases) {
+    if (!out.has(alias)) out.set(alias, element);
   }
   return out;
 }
@@ -97,7 +109,7 @@ export function classifyRuleset(
   const { id, type, source } = element.identity;
   if (id.startsWith("ID_INTERNAL_")) return "shared";
   if (RULESET_SHARED_TYPES.has(type)) return "shared";
-  const sourceElement = sourcesByName?.get(source);
+  const sourceElement = sourcesByName?.get(source) ?? sourcesByName?.get(normalizeSourceName(source));
   const inherited = rulesetSetterValue(sourceElement);
   if (inherited) return inherited;
   if (/_(?:PHB24|DMG24|MM24)_/.test(id)) return "2024";

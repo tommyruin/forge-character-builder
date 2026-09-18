@@ -26,6 +26,14 @@ project uses [Semantic Versioning](https://semver.org/).
   pushes them past the bottom of the window.
 - The Equipment base picker appears only when a magic weapon or armor offers a
   base choice; single-base items add straight to the inventory.
+- Content from disabled sources is hidden in the Equipment catalogue, Additional
+  features, Optional rules and the DM add-spell/add-feat lists, matching the
+  Build choices.
+- A source is disabled together with its content even when its entries spell the
+  source name differently (straight vs typographic apostrophes, capitalisation,
+  repeated spaces).
+- Source choices save on imported characters whose file predates the source
+  settings region.
 
 ## [2.3.0] - 2026-09-16
 

@@ -579,7 +579,7 @@ describe("typed FCB nested adapter", () => {
     const { client, calls } = fakeClient();
     const api = createEngineApi({ client, store: fakeStore() });
 
-    await expect(api.content.equipmentCategories()).resolves.toEqual([
+    await expect(api.content.equipmentCategories("Ada")).resolves.toEqual([
       {
         key: "magic-weapons",
         label: "Magic Weapons",
@@ -588,7 +588,7 @@ describe("typed FCB nested adapter", () => {
         equipSetter: "weapon",
       },
     ]);
-    expect(calls).toContainEqual(["equipmentCategories"]);
+    expect(calls).toContainEqual(["equipmentCategories", "Ada"]);
     expect(calls).not.toContainEqual(["contentStatus"]);
   });
 
@@ -600,6 +600,7 @@ describe("typed FCB nested adapter", () => {
       type: "Magic Item",
       equipSetter: "weapon",
       itemCategory: "Magic Weapons",
+      characterId: "Ada",
     });
 
     expect(calls).toContainEqual([
@@ -613,6 +614,7 @@ describe("typed FCB nested adapter", () => {
         equipSetter: "weapon",
         itemCategory: "Magic Weapons",
         ruleset: null,
+        characterId: "Ada",
         equipmentOnly: false,
       },
     ]);

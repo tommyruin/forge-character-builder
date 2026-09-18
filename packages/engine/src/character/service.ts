@@ -1804,11 +1804,11 @@ export class CharacterService {
 
   /** The base-item options of a magic item (weapon/armor setter targets). */
   getItemBaseOptions(id: string, itemId: string): ItemBaseOptionsDto {
-    this.require(id);
+    const { state } = this.require(id);
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
-    return itemBaseOptions(this.library, itemId);
+    return itemBaseOptions(this.library, itemId, state);
   }
 
   /** The attacks DTO: automatic weapon rows plus manual/calculated/spell rows. */

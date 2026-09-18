@@ -27,6 +27,7 @@ export default function AddFeatModal({ id, open, onClose }) {
             search: q,
             take: 60,
             ruleset: detail?.rulesetMode ?? "all",
+            characterId: id,
           },
           { signal: controller.signal },
         )
@@ -39,7 +40,7 @@ export default function AddFeatModal({ id, open, onClose }) {
       window.clearTimeout(handle);
       controller.abort();
     };
-  }, [detail?.rulesetMode, search, open]);
+  }, [detail?.rulesetMode, id, search, open]);
 
   const add = async (feat) => {
     setAdding(feat.id);

@@ -242,7 +242,7 @@ export interface EngineMethodMap {
   getFastStartSnapshotBuffer: MethodContract<[], ArrayBuffer>;
   contentStatus: MethodContract<[], WireObject>;
   contentSources: MethodContract<[], WireList>;
-  equipmentCategories: MethodContract<[], WireList>;
+  equipmentCategories: MethodContract<[characterId?: string], WireList>;
   contentElements: MethodContract<[query: WireObject], WireObject>;
   contentElement: MethodContract<[id: string], WireObject | null>;
   createCharacter: MethodContract<[name: string], WireObject>;

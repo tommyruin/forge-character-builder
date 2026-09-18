@@ -46,6 +46,10 @@ describe("equipment category UI payloads", () => {
     expect(equipmentSource).toContain("if (activeCategory.elementType)");
     expect(equipmentSource).toContain("params.equipSetter = activeCategory.equipSetter");
     expect(equipmentSource).toContain("params.itemCategory = activeCategory.itemCategory");
-    expect(equipmentSource).toContain("api.content.equipmentCategories()");
+    expect(equipmentSource).toContain("api.content.equipmentCategories(id)");
+  });
+
+  it("scopes catalogue queries to the open character", () => {
+    expect(equipmentSource).toContain("characterId: id");
   });
 });

@@ -31,6 +31,12 @@ import type { CharacterState, RegisteredElement, SumElement } from "../character
 import { computeStatistics } from "../statistics/calculator.js";
 import { engineError } from "../errors.js";
 import { evaluateRequirements, type RequirementContext } from "./expr.js";
+import {
+  isRestrictedForCharacter,
+  isSourceRestricted,
+} from "../content/access.js";
+
+export { isRestrictedForCharacter };
 
 /** A pending selection-rule instance (a wrapper awaiting a registered element). */
 export interface SelectionRule {
@@ -176,31 +182,6 @@ function requirementContext(
 }
 
 export { requirementContext as createRegistrationContext };
-
-function isSourceRestricted(state: CharacterState, library: ElementLibrary, source: string): boolean {
-  if (state.restrictedSources.length === 0) return false;
-  const restricted = new Set(state.restrictedSources);
-  for (const sourceElement of library.sources.values()) {
-    if (sourceElement.identity.name === source && restricted.has(sourceElement.identity.id)) return true;
-  }
-  return false;
-}
-
-/**
- * True when the element can never be offered to this character: it belongs
- * to the other ruleset (2014 vs 2024 mode) or comes from a restricted
- * source. Such elements are pruned from offering and browse lists entirely
- * rather than shown as unavailable.
- */
-export function isRestrictedForCharacter(
-  state: CharacterState,
-  library: ElementLibrary,
-  element: ParsedElement,
-): boolean {
-  if (state.rulesetMode === "2014" && rulesetOf(library, element.identity.id) === "2024") return true;
-  if (state.rulesetMode === "2024" && rulesetOf(library, element.identity.id) === "2014") return true;
-  return isSourceRestricted(state, library, element.identity.source);
-}
 
 function isEligible(
   state: CharacterState,

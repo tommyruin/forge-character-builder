@@ -42,6 +42,7 @@ export default function AddSpellModal({
             search: q,
             take: 60,
             ruleset: detail?.rulesetMode ?? "all",
+            characterId: id,
           },
           { signal: controller.signal },
         )
@@ -54,7 +55,7 @@ export default function AddSpellModal({
       window.clearTimeout(handle);
       controller.abort();
     };
-  }, [detail?.rulesetMode, search, open]);
+  }, [detail?.rulesetMode, id, search, open]);
 
   const add = async (spell) => {
     setBusy(spell.id);

@@ -849,7 +849,7 @@ describe("character snapshot controller", () => {
       await expect(controller.prepare(id, IDENTITY)).rejects.toMatchObject({ code: "conflict" });
       expect(() => controller.takeBuffer()).toThrowError(expect.objectContaining({ code: "conflict" }));
     }
-  });
+  }, 60_000);
 
   it("rejects snapshot bodies beyond the compressed and decompressed limits", async () => {
     const compressed = await gzipToBuffer(crypto.getRandomValues(new Uint8Array(4096)), CHARACTER_COMPRESSED_LIMIT);

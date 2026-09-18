@@ -25,6 +25,7 @@ import { getAttr, childElements, type Dnd5eDocument, type Dnd5eNode } from "../d
 import { engineError } from "../errors.js";
 import { escapeXml } from "../selection/selection.js";
 import { elementById, type ElementLibrary } from "../content/library.js";
+import { isContentAllowedForCharacter } from "../content/access.js";
 import type { ParsedElement, Rule, Setter } from "../content/parser.js";
 import type { CharacterState, Coinage, InventoryItemState } from "../character/state.js";
 import { equipmentMetadata, isPhysicalEquipment, type EquipmentAttunementDto } from "../content/equipment/categories.js";
@@ -413,11 +414,12 @@ export function buildInventoryDto(
 }
 
 /** The base-item options of a magic item (its weapon/armor setter targets). */
-export function itemBaseOptions(library: ElementLibrary, itemId: string): ItemBaseOptionsDto {
+export function itemBaseOptions(library: ElementLibrary, itemId: string, state?: CharacterState): ItemBaseOptionsDto {
   const element = elementById(library, itemId);
   const setter = baseSlotSetter(element);
   if (!element || !setter) return { slot: null, options: [] };
-  const candidates = library.byType.get(setter.name === "weapon" ? "Weapon" : "Armor") ?? [];
+  const candidates = (library.byType.get(setter.name === "weapon" ? "Weapon" : "Armor") ?? [])
+    .filter((candidate) => state === undefined || isContentAllowedForCharacter(state, library, candidate));
   const value = setter.value;
   const matched = /[|,]/.test(value) || value.includes("ID_")
     ? candidates.filter((candidate) => matchesBaseSupports(value, candidate))
