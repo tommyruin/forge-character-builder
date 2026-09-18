@@ -17,7 +17,7 @@ import {
 } from "../selection/selection.js";
 import type { ParsedElement } from "../content/parser.js";
 import { engineError } from "../errors.js";
-import type { MagicAdditionalSpell, MagicCasterBlock } from "./state.js";
+import type { MagicCasterBlock } from "./state.js";
 import { casterModifier } from "./caster-modifiers.js";
 import {
   alwaysPreparedSets,
@@ -30,6 +30,7 @@ import {
   type SpellInfo,
 } from "./spelllist.js";
 import { featureSpellCasters, type FeatureSpellCaster } from "./feature-casters.js";
+import { additionalSpellPool, isDmGrantSource, isGeneratedSpellProxyId } from "./granted-spells.js";
 
 /**
  * Magic DTO projections.
@@ -121,17 +122,6 @@ export function grantedCasterAbility(statistics: Readonly<Record<string, number>
     }
   }
   return best;
-}
-
-/**
- * Whether the character's `<additional>` grants reach no class caster. With at
- * least one caster block the grants ride on the first one (see
- * `buildSpellcastingDto`); with none they need a block of their own.
- */
-export function hasUnprojectedGrants(state: CharacterState): boolean {
-  const magic = state.magic;
-  if (magic === null) return false;
-  return magic.casters.length === 0 && magic.additional.length > 0;
 }
 
 // The public 5e per-slot-level spell point costs; slots of level 6+ can be
@@ -280,7 +270,7 @@ export function buildSpellcastingDto(
 
   const casters: SpellcasterDto[] = [];
   const seenNames = new Set<string>();
-  let grantedProjected = false;
+  let legacyProjected = false;
   for (const block of magic?.casters ?? []) {
     // One caster per spellcasting name: a stale document may still carry a
     // duplicated block (an extension serialized as a caster), which must not
@@ -339,12 +329,15 @@ export function buildSpellcastingDto(
       }
       if (granted.length > 0) spellInfos = [...spellInfos, ...granted].sort(compareSpellInfo);
     }
-    // Granted spells live in <additional> and belong to no single caster, so
-    // they ride on the first caster: always ready, never counted against the
-    // preparation limit, and removable through the DM-grant surface.
-    if (!grantedProjected) {
+    // Non-DM <additional> entries (feature grants serialized by an importer)
+    // still ride on the first caster: always ready, never counted against the
+    // preparation limit. DM grants are partitioned after the class casters: a
+    // class list that already carries one keeps it, the rest gather in the
+    // "Additional Spells" block.
+    if (!legacyProjected) {
       const present = new Set(spellInfos.map((info) => info.id));
       for (const extra of magic?.additional ?? []) {
+        if (isDmGrantSource(extra.source)) continue;
         if (present.has(extra.id)) continue;
         const info = spellInfo(library, extra.id);
         if (info === null) continue;
@@ -352,7 +345,7 @@ export function buildSpellcastingDto(
         spellInfos.push(info);
         alwaysSet.add(info.id);
       }
-      grantedProjected = true;
+      legacyProjected = true;
     }
     // A granted spell the feature also lets the caster cast without a slot
     // (Divine Smite, Hunter's Mark) carries that allowance, as a feature
@@ -382,18 +375,119 @@ export function buildSpellcastingDto(
       resource,
     });
   }
+  // The class lists decide where additional spells live, so the set is taken
+  // before the feature casters join (a feat's pick is not a class list).
+  const classListIds = new Set(casters.flatMap((caster) => caster.knownSpells.map((spell) => spell.id)));
   for (const feature of featureCasters) {
+    // Generated "Additional ... Spell" item proxies are DM grants; they are
+    // partitioned with the rest instead of earning a banner of their own.
+    if (isGeneratedSpellProxyId(feature.elementId)) continue;
     casters.push(featureCasterDto(library, statistics, casterIds, feature, proficiency, abilityModifier));
   }
-  // A character with no caster block never entered the loop above, so nothing
-  // projected the `<additional>` grants: a Barbarian handed Fire Bolt saw it
-  // nowhere at all. They gather into their own slotless block instead of being
-  // dropped. Nothing changes when a class caster exists — the grants still
-  // ride on the first one.
-  if (!grantedProjected && (magic?.additional.length ?? 0) > 0) {
-    casters.push(grantedCasterDto(library, statistics, casterIds, magic!.additional, proficiency, abilityModifier));
+  const partition = partitionAdditionalGrants(additionalSpellPool(state, library), classListIds, statistics);
+  for (const group of partition.groups) {
+    const identifier = grantedCasterIdentifier(partition.groups.length, group.profile);
+    casters.push(grantedCasterDto(casterIds, group.spells, group.profile, identifier));
   }
   return casters;
+}
+
+/**
+ * The spell ids every class caster's projected list carries. A caller that
+ * has to mirror the additional-spell partition (the attack-option sources)
+ * reads them here rather than rebuilding the full-list projection.
+ */
+export function classCasterSpellIds(
+  state: CharacterState,
+  library: ElementLibrary,
+  statistics: Readonly<Record<string, number>>,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const caster of buildSpellcastingDto(state, library, statistics, new Map())) {
+    if (caster.kind !== "class") continue;
+    for (const spell of caster.knownSpells) ids.add(spell.id);
+  }
+  return ids;
+}
+
+/** The header values an additional-spell block prints. */
+export interface AdditionalGrantProfile {
+  ability: string;
+  attackModifier: number;
+  saveDc: number;
+}
+
+export interface AdditionalGrantGroup {
+  profile: AdditionalGrantProfile;
+  spells: SpellInfo[];
+}
+
+export interface AdditionalGrantPartition {
+  /** The spells a class caster's projected list already carries. */
+  onList: SpellInfo[];
+  /** The rest, grouped by the header profile they share. */
+  groups: AdditionalGrantGroup[];
+}
+
+/**
+ * The profile every additional spell prints under today: the character's best
+ * casting ability, that ability's modifier plus proficiency for the attack
+ * bonus, and the same base for the save DC.
+ */
+export function grantedProfile(statistics: Readonly<Record<string, number>>): AdditionalGrantProfile {
+  const ability = grantedCasterAbility(statistics);
+  const proficiency = statistics["proficiency"] ?? 0;
+  const modifier = statistics[`${ability.toLowerCase()}:modifier`] ?? 0;
+  return { ability, attackModifier: proficiency + modifier, saveDc: 8 + proficiency + modifier };
+}
+
+/**
+ * Splits the additional spells by whether a class caster's list already
+ * carries them, then groups the remainder so identical header profiles share
+ * one block. Spell order within a group follows the pool.
+ */
+export function partitionAdditionalGrants(
+  spells: readonly SpellInfo[],
+  classListIds: ReadonlySet<string>,
+  statistics: Readonly<Record<string, number>>,
+): AdditionalGrantPartition {
+  const onList: SpellInfo[] = [];
+  const offList: SpellInfo[] = [];
+  for (const spell of spells) (classListIds.has(spell.id) ? onList : offList).push(spell);
+  const profile = grantedProfile(statistics);
+  return { onList, groups: groupGrantedSpells(offList, () => profile) };
+}
+
+/**
+ * Groups spells by the profile `profileFor` resolves. Exported separately so
+ * the identical-profile rule is testable without a character whose grants
+ * carry different casting values.
+ */
+export function groupGrantedSpells(
+  spells: readonly SpellInfo[],
+  profileFor: (spell: SpellInfo) => AdditionalGrantProfile,
+): AdditionalGrantGroup[] {
+  const groups: AdditionalGrantGroup[] = [];
+  const byKey = new Map<string, AdditionalGrantGroup>();
+  for (const spell of spells) {
+    const profile = profileFor(spell);
+    const key = `${profile.ability}:${profile.attackModifier}:${profile.saveDc}`;
+    let group = byKey.get(key);
+    if (group === undefined) {
+      group = { profile, spells: [] };
+      byKey.set(key, group);
+      groups.push(group);
+    }
+    group.spells.push(spell);
+  }
+  return groups;
+}
+
+/** The block's session key; a lone group keeps the stable granted-caster key. */
+export function grantedCasterIdentifier(groupCount: number, profile: AdditionalGrantProfile): string {
+  return groupCount === 1
+    ? GRANTED_CASTER_KEY
+    : `${GRANTED_CASTER_KEY}:${profile.ability}:${profile.attackModifier}:${profile.saveDc}`;
 }
 
 /**
@@ -444,38 +538,28 @@ function featureCasterDto(
 }
 
 /**
- * Projects the DM grants a character has with no class caster to carry them.
- * Shaped like a feature caster — no slots, nothing to prepare, an attack/DC
- * from proficiency plus the nominated ability — because that is what a granted
- * spell is: always available, and never counted against a preparation limit.
+ * Projects one "Additional Spells" block: the additional spells no class list
+ * carries. Shaped like a feature caster — no slots, nothing to prepare, an
+ * attack/DC from proficiency plus the resolved ability — because that is what
+ * an additional spell is: always available, and never counted against a
+ * preparation limit.
  */
 function grantedCasterDto(
-  library: ElementLibrary,
-  statistics: Readonly<Record<string, number>>,
   casterIds: ReadonlyMap<string, string>,
-  additional: readonly MagicAdditionalSpell[],
-  proficiency: number,
-  abilityModifier: (ability: string) => number,
+  spells: readonly SpellInfo[],
+  profile: AdditionalGrantProfile,
+  identifier: string,
 ): SpellcasterDto {
-  const ability = grantedCasterAbility(statistics);
-  const modifier = abilityModifier(ability);
-  const seen = new Set<string>();
-  const knownSpells: KnownSpellDto[] = [];
-  for (const extra of additional) {
-    if (seen.has(extra.id)) continue;
-    const info = spellInfo(library, extra.id);
-    if (info === null) continue;
-    seen.add(extra.id);
-    knownSpells.push(toKnownSpellDto(info, { prepared: false, always: true }));
-  }
-  knownSpells.sort((left, right) => left.level - right.level || left.name.localeCompare(right.name));
+  const knownSpells = spells
+    .map((info) => toKnownSpellDto(info, { prepared: false, always: true }))
+    .sort((left, right) => left.level - right.level || left.name.localeCompare(right.name));
   return {
-    identifier: casterIds.get(GRANTED_CASTER_KEY) ?? GRANTED_CASTER_KEY,
+    identifier: casterIds.get(identifier) ?? identifier,
     name: GRANTED_CASTER_NAME,
     kind: "feature",
-    ability,
-    attackModifier: proficiency + modifier,
-    saveDc: 8 + proficiency + modifier,
+    ability: profile.ability,
+    attackModifier: profile.attackModifier,
+    saveDc: profile.saveDc,
     requiresPreparation: false,
     allowReplace: false,
     prepareCount: 0,

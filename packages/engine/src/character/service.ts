@@ -123,11 +123,11 @@ import { randomUuid } from "../platform.js";
 import {
   buildSpellcastingDto,
   buildSpellBrowseDto,
-  hasUnprojectedGrants,
   GRANTED_CASTER_KEY,
   type SpellcasterDto,
   type SpellBrowseDto,
 } from "../magic/dto.js";
+import { additionalSpellPool, isGeneratedSpellProxyId } from "../magic/granted-spells.js";
 import {
   planSetPrepared,
   planAddAdditionalSpell,
@@ -1836,15 +1836,17 @@ export class CharacterService {
         state.magicCasterIds.set(caster.name, randomUuid());
       }
     }
-    // DM grants with no class caster to ride on project their own block, which
-    // likewise has no caster name to key an id by.
-    if (hasUnprojectedGrants(state) && !state.magicCasterIds.has(GRANTED_CASTER_KEY)) {
+    // Additional spells project their own block whenever no class list carries
+    // them, which likewise has no caster name to key an id by.
+    if (this.library === undefined) return;
+    if (additionalSpellPool(state, this.library).length > 0 && !state.magicCasterIds.has(GRANTED_CASTER_KEY)) {
       state.magicCasterIds.set(GRANTED_CASTER_KEY, randomUuid());
     }
     // Feature casters (Magic Initiate and friends) exist without a `<magic>`
-    // region, so their ids are seeded outside the block above.
-    if (this.library === undefined) return;
+    // region, so their ids are seeded outside the block above. Generated
+    // "Additional ... Spell" proxies are additional spells, not features.
     for (const caster of featureSpellCasters(state, this.library)) {
+      if (isGeneratedSpellProxyId(caster.elementId)) continue;
       if (!state.magicCasterIds.has(caster.key)) {
         state.magicCasterIds.set(caster.key, randomUuid());
       }

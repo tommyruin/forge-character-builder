@@ -38,6 +38,7 @@ import {
   type DescriptionCard,
   type LayoutRun,
 } from "./card-layout.js";
+import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 export type SheetMode = "lite" | "full";
 
@@ -2035,7 +2036,27 @@ function weightDisplay(weight: string): string {
 // Spellcasting pages
 // ---------------------------------------------------------------------------
 
-const SPELL_PAGE_TOP_ROWS = 57;
+// The writer draws a spell page top-down: a caster header band, then whole
+// level sections (a 24pt band, 12pt rows, a 12pt closing strip). The model
+// budgets in those same rows and reads the geometry from the template
+// contract the writer draws against, so the two cannot drift apart; the page
+// leaves a 12pt bottom margin.
+const SPELL_ROW_HEIGHT = SHEET_TEMPLATE_CONTRACT.spellList.rowHeight;
+const SPELL_HEADER_ROWS = (10 + SHEET_TEMPLATE_CONTRACT.spellHeader.height + 10) / SPELL_ROW_HEIGHT;
+const SPELL_SECTION_BAND_ROWS =
+  (SHEET_TEMPLATE_CONTRACT.spellList.topHeight + SHEET_TEMPLATE_CONTRACT.spellList.endHeight) / SPELL_ROW_HEIGHT;
+const SPELL_PAGE_TOP_ROWS = (SHEET_TEMPLATE_CONTRACT.pageHeight - 12) / SPELL_ROW_HEIGHT;
+
+/** The writer's own formula: two spells sit in the level band, three per row after. */
+function spellRowCount(spells: number): number {
+  return Math.max(0, Math.ceil((spells - 2) / 3));
+}
+
+/** The rows a drawn section consumes; the writer skips a block with no spells. */
+function spellSectionRows(spells: number): number {
+  return spells === 0 ? 0 : SPELL_SECTION_BAND_ROWS + spellRowCount(spells);
+}
+
 /** The archetype element name per class (for "Druid, Circle of the Stars"). */
 /** Registered archetype id -> display name. */
 function archetypeNames(state: CharacterState, library: ElementLibrary): Map<string, string> {
@@ -2246,7 +2267,6 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     const levels: Array<{
       level: number;
       slots: number;
-      rows: number;
       prepared: KnownSpellDto[];
       full: KnownSpellDto[];
     }> = [];
@@ -2264,17 +2284,20 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       const full = spells.filter(
         (spell) => spell.level === level && !spell.isPrepared && !spell.isAlwaysPrepared,
       );
-      levels.push({ level, slots, rows: Math.ceil((1 + prepared.length + full.length) / 3), prepared, full });
+      levels.push({ level, slots, prepared, full });
     }
     // A caster without cantrips absorbs its first spell level into the
     // cantrips section (observed: the Paladin's 1st-level spells
     // render under CANTRIPS).
     const absorbFirstLevel = cantrips.length === 0 && levels.length > 0;
-    const cantripRows = absorbFirstLevel ? levels[0]!.rows : Math.ceil((1 + cantrips.length) / 3);
+    const cantripSpellCount = absorbFirstLevel
+      ? levels[0]!.prepared.length + levels[0]!.full.length
+      : cantrips.length;
+    const cantripSectionRows = spellSectionRows(cantripSpellCount);
     // The spell point reference block (title, level/cost table, footnote)
     // consumes 38pt between the header and the first section.
-    const spellPointRows = caster.resource.mode === "spellPoints" ? 38 / 12 : 0;
-    const casterHeaderRows = 1 + 2.5 + 1 + 4.5 + cantripRows + 3 + spellPointRows;
+    const spellPointRows = caster.resource.mode === "spellPoints" ? 38 / SPELL_ROW_HEIGHT : 0;
+    const casterHeaderRows = SPELL_HEADER_ROWS + spellPointRows + cantripSectionRows;
     if (row + casterHeaderRows > SPELL_PAGE_TOP_ROWS + 0.001 && pageSections.length > 0) {
       flush();
       row = 0;
@@ -2308,9 +2331,8 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
             : []),
         ],
       });
-      row += 1 + 2.5;
       section("caster-name").rows.push({ kind: "tokens", tokens: name.split(/\s+/) });
-      row += 1 + 4.5 + spellPointRows;
+      row += SPELL_HEADER_ROWS + spellPointRows;
       return sections;
     };
     const levelSection = (level: {
@@ -2342,9 +2364,10 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
         tokens: cantrips.flatMap((spell) => spell.name.split(/\s+/)),
       });
     }
-    row += cantripRows + 3;
+    row += cantripSectionRows;
     for (const level of levels) {
-      if (row + level.rows + 3 > SPELL_PAGE_TOP_ROWS + 0.001 && pageSections.length > 0) {
+      const sectionRows = spellSectionRows(level.prepared.length + level.full.length);
+      if (row + sectionRows > SPELL_PAGE_TOP_ROWS + 0.001 && pageSections.length > 0) {
         // The level block moves whole to a continuation page (it is never
         // split and never dropped); the caster header is stamped again there.
         flush();
@@ -2358,7 +2381,7 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
         tokens: levelTokens(level, grid.sectionTop),
       });
       layoutSections.push(levelSection(level));
-      row += level.rows + 3;
+      row += sectionRows;
     }
   }
   flush();

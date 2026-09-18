@@ -316,18 +316,21 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
     Charisma sub-feature, else the first class caster's ability, else
     Intelligence). It is read-only: `setPrepared` and the grant mutations
     return 404 for it. A character with no `<magic>` block still gets its
-    feature casters. A `"feature"` caster is also how DM grants reach a
-    character with no caster block to carry them: when `<magic><additional>`
-    holds spells and there is no class caster, they project as one block named
-    `"Additional Spells"` of the same slotless read-only shape. Its spells are
-    always prepared and never counted in `currentPreparedCount`. A grant names
-    no ability, so the block reports the character's highest of Intelligence,
-    Wisdom and Charisma (ties in that order) — a display default, not a rules
-    claim. Unlike a feat's spells these stay DM grants: `removeGrantedSpell`
-    still removes them, being keyed by spell id and never by caster. With at
-    least one class caster the grants continue to ride on the first block and
-    no such block appears. Spell cards keep filing granted spells under the
-    `<additional>` entry's own `source`.
+    feature casters. A `"feature"` caster is also how additional spells reach
+    the sheet: the `<magic><additional>` entries and the generated
+    "Additional ... Spell" item proxies belong to no caster block, so any the
+    class casters' projected lists do not already carry project as one or more
+    blocks named `"Additional Spells"` of the same slotless read-only shape.
+    A spell a class list already has stays there instead, with no block; the
+    same spell never appears twice. Blocks group by their printed header — all
+    spells sharing one ability, attack bonus and save DC — so grants whose
+    casting values differ never share a block. Their spells are always prepared
+    and never counted in `currentPreparedCount`. A grant names no ability, so
+    the block reports the character's highest of Intelligence, Wisdom and
+    Charisma (ties in that order) — a display default, not a rules claim.
+    Unlike a feat's spells these stay DM grants: `removeGrantedSpell` still
+    removes them, being keyed by spell id and never by caster. Spell cards keep
+    filing granted spells under the `<additional>` entry's own `source`.
 - `KnownSpellDto`: `{id, name, source, isPrepared, isChosen, level, school,
   isRitual, isConcentration, isAlwaysPrepared, castingTime, components, range,
   duration, description, usage?, usageNote?}`

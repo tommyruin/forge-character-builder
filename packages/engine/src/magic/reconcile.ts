@@ -8,7 +8,8 @@ import { spellInfo, canonicalSourceRank, alwaysPreparedSets } from "./spelllist.
 import { applySpellRiders, damageWithBonus, ATTACK_ROLL_RIDER_IDS } from "./spell-riders.js";
 import { featureSpellCasters } from "./feature-casters.js";
 import { casterModifier } from "./caster-modifiers.js";
-import { grantedCasterAbility, GRANTED_CASTER_KEY, GRANTED_CASTER_NAME } from "./dto.js";
+import { classCasterSpellIds, grantedCasterIdentifier, partitionAdditionalGrants, GRANTED_CASTER_NAME } from "./dto.js";
+import { additionalSpellPool, isGeneratedSpellProxyId } from "./granted-spells.js";
 import type { MagicAdditionalSpell, MagicCasterBlock, MagicSpellEntry, MagicState } from "./state.js";
 
 /**
@@ -616,6 +617,11 @@ export function buildMagicAttackOptions(
   };
   const registered = new Set(state.sum.elements.map((entry) => entry.id));
   const nameOf = (id: string): string | undefined => library.byId.get(id)?.identity.name;
+  // DM grants follow the sheet's partition: a class list that already carries
+  // one keeps it, the rest gather in the "Additional Spells" sources below.
+  const classListIds = classCasterSpellIds(state, library, statistics);
+  const grantPartition = partitionAdditionalGrants(additionalSpellPool(state, library), classListIds, statistics);
+  const onListGrantIds = new Set(grantPartition.onList.map((spell) => spell.id));
 
   // Caster blocks and feature casters project the same attack rows; only the
   // attack modifier and save DC differ (a feature caster has no per-caster statistics).
@@ -641,7 +647,9 @@ export function buildMagicAttackOptions(
     const grants = [...(granted.get(block.name) ?? [])].filter(
       (id) => (spellInfo(library, id)?.level ?? 0) <= maxSlotLevel,
     );
-    const additional = index === 0 ? magic!.additional.map((spell) => spell.id) : [];
+    const additional = index === 0
+      ? magic!.additional.map((spell) => spell.id).filter((id) => onListGrantIds.has(id))
+      : [];
     sources.push({
       identifier: casterIds.get(block.name) ?? block.name,
       name: block.name,
@@ -652,6 +660,9 @@ export function buildMagicAttackOptions(
     });
   }
   for (const feature of featureCasters) {
+    // Generated "Additional ... Spell" item proxies are DM grants, projected
+    // through the additional sources below, not as feature sources.
+    if (isGeneratedSpellProxyId(feature.elementId)) continue;
     sources.push({
       identifier: casterIds.get(feature.key) ?? feature.key,
       name: feature.name,
@@ -661,18 +672,18 @@ export function buildMagicAttackOptions(
       spellIds: [...new Set([...feature.cantripIds, ...feature.spellIds])],
     });
   }
-  // DM grants ride on the first caster block when there is one; with none they
-  // stand as their own source, so a granted attack cantrip is still offered as
-  // an attack option (the spellcasting DTO projects the matching block).
-  if (magic !== null && magic.casters.length === 0 && magic.additional.length > 0) {
-    const ability = grantedCasterAbility(statistics);
+  // Additional spells no class list carries stand as their own sources, so a
+  // granted attack cantrip is still offered as an attack option (the
+  // spellcasting DTO projects the matching block).
+  for (const group of grantPartition.groups) {
+    const identifier = grantedCasterIdentifier(grantPartition.groups.length, group.profile);
     sources.push({
-      identifier: casterIds.get(GRANTED_CASTER_KEY) ?? GRANTED_CASTER_KEY,
+      identifier: casterIds.get(identifier) ?? identifier,
       name: GRANTED_CASTER_NAME,
-      ability,
-      attackModifier: proficiency + abilityModifier(ability),
-      saveDc: 8 + proficiency + abilityModifier(ability),
-      spellIds: [...new Set(magic.additional.map((spell) => spell.id))],
+      ability: group.profile.ability,
+      attackModifier: group.profile.attackModifier,
+      saveDc: group.profile.saveDc,
+      spellIds: group.spells.map((spell) => spell.id),
     });
   }
   // Spell Sniper's range applies to attack rolls only, so save rows are built

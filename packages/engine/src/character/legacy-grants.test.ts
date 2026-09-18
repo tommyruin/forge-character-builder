@@ -100,9 +100,11 @@ describe("legacy dm-grants migration", () => {
     const service = new CharacterService(undefined, library);
     const { id } = service.importCharacterXml("legacy-spell-row", legacyWizardXml());
 
-    const casterOf = () =>
-      service.getSpellcasting(id).find((candidate) => candidate.name === "Wizard")!;
-    const granted = casterOf().knownSpells.find((spell) => spell.id === SPELL);
+    // The wizard does not know Invisibility, so the grant stands in the
+    // Additional Spells block rather than the wizard's own list.
+    const grantedCaster = () =>
+      service.getSpellcasting(id).find((candidate) => candidate.name === "Additional Spells")!;
+    const granted = grantedCaster().knownSpells.find((spell) => spell.id === SPELL);
     expect(granted).toBeDefined();
     expect(granted!.isAlwaysPrepared).toBe(true);
     // Always-ready means it never consumes a preparation slot.
@@ -112,7 +114,11 @@ describe("legacy dm-grants migration", () => {
     expect(
       service.getDmGrants(id).some((grant) => grant.kind === "spell" && grant.id === SPELL),
     ).toBe(false);
-    expect(casterOf().knownSpells.some((spell) => spell.id === SPELL)).toBe(false);
+    expect(
+      service.getSpellcasting(id).some((caster) =>
+        caster.knownSpells.some((spell) => spell.id === SPELL),
+      ),
+    ).toBe(false);
   });
 
   it("preserves the recorded feat choice and keeps the grant removable", () => {

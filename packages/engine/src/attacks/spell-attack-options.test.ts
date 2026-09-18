@@ -293,7 +293,9 @@ describe("Known Spell options for a level-3 Draconic Sorcerer", () => {
     const ids = spellOptions(service, id).map((option) => option.spellId);
     expect(ids).not.toContain(HOLD_PERSON);
     expect(ids).not.toContain(CURE_WOUNDS);
-    expect(optionFor(service, id, FIRE_BOLT)).toMatchObject({ casterName: "Sorcerer", bonus: "+5 CHA vs AC" });
+    // Fire Bolt is not one of the sorcerer's known spells, so its grant lives
+    // in the Additional Spells block, whose profile is the best casting ability.
+    expect(optionFor(service, id, FIRE_BOLT)).toMatchObject({ casterName: "Additional Spells", bonus: "+5 CHA vs AC" });
   });
 
   it("creates a row from a saving-throw spell and keeps it through export and import", () => {
@@ -333,6 +335,9 @@ describe("Known Spell options for a level-3 Draconic Sorcerer", () => {
 describe("a class caster handed an attack spell by the DM", () => {
   it("uses an attuned caster-specific bonus in the Magic tab, row, breakdown and saved file", () => {
     const { service, id } = build2024("PactKeeper", "ID_WOTC_PHB24_CLASS_WARLOCK", 3);
+    // The spell must be one of the warlock's own: a grant no class list carries
+    // would stand in the Additional Spells block, without the class bonuses.
+    learn(service, id, MIND_SLIVER);
     service.addGrantedSpell(id, { spellId: MIND_SLIVER });
     service.addItem(id, { itemId: "ID_WOTC_DMG_MAGIC_ITEM_ROD_OF_THE_PACT_KEEPER_1", amount: 1 });
     service.attuneItem(id, service.getCharacter(id).items.at(-1)!.identifier, true);
@@ -374,12 +379,12 @@ describe("a class caster handed an attack spell by the DM", () => {
     expect(spellOptions(service, id).filter((s) => s.casterName === "Cleric").map((s) => s.spellId)).toEqual([burningHands]);
   });
 
-  it("offers the grant on the first class caster and can add it as a row", () => {
+  it("offers the grant through its own Additional Spells block and can add it as a row", () => {
     const { service, id } = build2024("ClericGrantAttack", CLERIC, 2);
     service.addGrantedSpell(id, { spellId: FIRE_BOLT });
-    const caster = service.getSpellcasting(id)[0]!;
+    const caster = service.getSpellcasting(id).find((entry) => entry.name === "Additional Spells")!;
     const option = optionFor(service, id, FIRE_BOLT);
-    expect(option).toMatchObject({ casterName: "Cleric", casterIdentifier: caster.identifier });
+    expect(option).toMatchObject({ casterName: "Additional Spells", casterIdentifier: caster.identifier });
     const rows = service.createAttack(id, {
       mode: "spell",
       casterIdentifier: option.casterIdentifier,
