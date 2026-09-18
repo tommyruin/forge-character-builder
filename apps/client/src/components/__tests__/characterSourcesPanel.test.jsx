@@ -4,11 +4,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   formatSourceReleaseDate,
+  getNewlyDisabledOverrideSources,
   getSourceGroupState,
   getToggleableSourceIds,
   getVisibleSourceGroups,
 } from "../tabs/manage/characterSources.js";
 import {
+  OverrideDisableDialog,
   SourceActionsFooter,
   SourceGroupList,
 } from "../tabs/manage/CharacterSourcesPanel.jsx";
@@ -253,5 +255,123 @@ describe("character sources panel", () => {
     expect(getToggleableSourceIds(groups)).toEqual(["supplement", "playtest"]);
     expect(getToggleableSourceIds(undefined)).toEqual([]);
     expect(panelSource).toContain("Disable all");
+  });
+
+  it("detects only newly disabled sources that replace bundled content", () => {
+    const overrideGroups = [
+      {
+        name: "Wizards of the Coast",
+        canToggle: true,
+        sources: [
+          {
+            id: "phb24",
+            name: "Player’s Handbook (2024)",
+            canToggle: true,
+            overridesBundledCore: true,
+          },
+          { id: "supplement", name: "Supplement Rules", canToggle: true },
+        ],
+      },
+    ];
+    expect(
+      getNewlyDisabledOverrideSources(overrideGroups, [], ["phb24"]),
+    ).toHaveLength(1);
+    expect(
+      getNewlyDisabledOverrideSources(overrideGroups, ["phb24"], [
+        "phb24",
+        "supplement",
+      ]),
+    ).toHaveLength(0);
+    expect(
+      getNewlyDisabledOverrideSources(overrideGroups, [], ["supplement"]),
+    ).toHaveLength(0);
+    expect(getNewlyDisabledOverrideSources(undefined, [], ["phb24"])).toEqual(
+      [],
+    );
+  });
+
+  it("badges a source whose imported files replace bundled content", () => {
+    const overrideGroups = [
+      {
+        name: "Wizards of the Coast",
+        canToggle: true,
+        sources: [
+          {
+            id: "phb24",
+            name: "Player’s Handbook (2024)",
+            author: "Wizards of the Coast",
+            canToggle: true,
+            isPlaytest: false,
+            overridesBundledCore: true,
+            hasElements: true,
+          },
+          {
+            id: "supplement",
+            name: "Supplement Rules",
+            author: "Community",
+            canToggle: true,
+            isPlaytest: false,
+            hasElements: true,
+          },
+        ],
+      },
+    ];
+    const markup = renderToStaticMarkup(
+      createElement(SourceGroupList, {
+        groups: overrideGroups,
+        restrictedSourceIds: [],
+        search: "",
+        disabled: false,
+        onToggleGroup: vi.fn(),
+        onToggleSource: vi.fn(),
+      }),
+    );
+    expect(markup).toContain("Replaces bundled content");
+    expect(markup).toContain("fcb-badge-override");
+    // The built-in note survives an import and says the imported copy
+    // replaces the built-in one in place.
+    expect(markup).toContain("Imported: Player’s Handbook (2024).");
+    expect(markup).toContain("replaces the built-in one in place");
+    expect(css).toMatch(
+      /\.fcb-badge-override\s*\{[^}]*var\(--fcb-warning/s,
+    );
+  });
+
+  it("asks yes or no before disabling a source that replaces bundled content", () => {
+    const markup = renderToStaticMarkup(
+      createElement(OverrideDisableDialog, {
+        pending: {
+          nextIds: ["phb24"],
+          sources: [{ id: "phb24", name: "Player’s Handbook (2024)" }],
+        },
+        onCancel: vi.fn(),
+        onConfirm: vi.fn(),
+      }),
+    );
+    expect(markup).toContain("Disable bundled content?");
+    expect(markup).toContain("Player’s Handbook (2024)");
+    expect(markup).toContain("its imported files replace");
+    expect(markup).toContain("No, keep enabled");
+    expect(markup).toContain("Yes, disable");
+
+    const plural = renderToStaticMarkup(
+      createElement(OverrideDisableDialog, {
+        pending: {
+          nextIds: ["a", "b"],
+          sources: [
+            { id: "a", name: "Book A" },
+            { id: "b", name: "Book B" },
+          ],
+        },
+        onCancel: vi.fn(),
+        onConfirm: vi.fn(),
+      }),
+    );
+    expect(plural).toContain("their imported files replace");
+
+    // Every draft change goes through the confirmation.
+    expect(panelSource).toContain("getNewlyDisabledOverrideSources");
+    expect(panelSource).toMatch(/requestDraftChange\(/);
+    expect(panelSource).toMatch(/<OverrideDisableDialog/);
   });
 });

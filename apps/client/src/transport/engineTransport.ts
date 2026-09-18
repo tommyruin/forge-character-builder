@@ -1359,7 +1359,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     removeItem: (id: string, identifier: string, amount?: number) =>
       mutateDetail(id, "removeItem", amount === undefined ? [id, identifier] : [id, identifier, amount]),
     setItemAmount: (id: string, identifier: string, amount: number) => mutateDetail(id, "setItemAmount", [id, identifier, { amount }]),
-    extractItem: (id: string, identifier: string) => mutateDetail(id, "extractItem", [id, identifier]),
+    extractItem: (id: string, identifier: string, selections?: Record<string, string>) =>
+      mutateDetail(id, "extractItem", selections === undefined ? [id, identifier] : [id, identifier, selections]),
     equipItem: (id: string, identifier: string, location: string) => mutateDetail(id, "equipItem", [id, identifier, { location }]),
     setItemStorage: (id: string, identifier: string, storage: string | null, amount?: number) =>
       mutateDetail(id, "setItemStorage", amount === undefined ? [id, identifier, { storage }] : [id, identifier, { storage, amount }]),

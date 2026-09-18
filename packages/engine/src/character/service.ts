@@ -1791,13 +1791,17 @@ export class CharacterService {
     return this.inventoryDto(next, this.library!);
   }
 
-  /** Extracts an item's contents (packs) into new inventory items. */
-  extractItem(id: string, identifier: string): InventoryDto {
+  /**
+   * Extracts one unit of an item's contents (packs) into new inventory items,
+   * crediting the pack's extra gold and fixed items and appending the selected
+   * candidate for each choice (`selections` maps a choice label to an item id).
+   */
+  extractItem(id: string, identifier: string, selections?: Readonly<Record<string, string>>): InventoryDto {
     const { state, document } = this.require(id);
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
-    const edits = planExtractItemEdits(state, document, this.library, identifier);
+    const edits = planExtractItemEdits(state, document, this.library, identifier, selections);
     const next = this.applyInventoryPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }

@@ -1,4 +1,4 @@
-import type { ParsedElement } from "../parser.js";
+import type { PackExtras, ParsedElement } from "../parser.js";
 
 export interface EquipmentCategoryDto {
   key: string;
@@ -276,7 +276,41 @@ export function publicEquipmentDescription(
 ): string {
   if (element === undefined) return "";
   const authored = nonEmptyDescription(authoredDescription ?? element.descriptionXml) ?? "";
-  return `${equipmentStatBlock(element, resolve)}${authored}`;
+  return `${equipmentStatBlock(element, resolve)}${packExtrasNote(authored, element.extras, resolve)}`;
+}
+
+/** Joins names as "a, b and c". */
+function formatList(values: readonly string[]): string {
+  if (values.length <= 1) return values[0] ?? "";
+  return `${values.slice(0, -1).join(", ")} and ${values.at(-1)}`;
+}
+
+function escapeNoteText(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+/**
+ * Replaces the pack prose's "Note: this pack doesn't include ..." paragraph
+ * with the extraction behaviour the engine now implements, derived from the
+ * reviewed <extras>. The note belongs to the book's bookkeeping, so it has to
+ * agree with what Extract grants — also for uploaded and homebrew packs that
+ * override the shipped element without updating the prose.
+ */
+function packExtrasNote(description: string, extras: PackExtras | undefined, resolve?: ElementResolver): string {
+  if (extras === undefined || description === "") return description;
+  const clauses: string[] = [];
+  const granted = [
+    ...extras.items.map((entry) => resolve?.(entry.id)?.identity.name ?? entry.id),
+    ...(extras.gold > 0 ? [`${extras.gold} GP`] : []),
+  ];
+  if (granted.length > 0) clauses.push(`grants ${formatList(granted)}`);
+  const choices = extras.choices.map((choice) => choice.label).filter(Boolean);
+  if (choices.length > 0) clauses.push(`offers a choice of ${formatList(choices)}`);
+  if (clauses.length === 0) return description;
+  const body = escapeNoteText(`Extracting this pack also ${clauses.join(", and ")}.`);
+  const note = `<p><b>Note:</b> ${body}</p>`;
+  const replaced = description.replace(/<p><b>Note:<\/b>[\s\S]*?<\/p>/, note);
+  return replaced === description ? `${description}${note}` : replaced;
 }
 
 export function equipmentMetadata(

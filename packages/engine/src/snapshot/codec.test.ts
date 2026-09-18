@@ -166,6 +166,6 @@ describe("gzipToBuffer and gunzipBounded", () => {
     expect(CONTENT_DECOMPRESSED_LIMIT).toBe(128 * 1024 * 1024);
     expect(CHARACTER_COMPRESSED_LIMIT).toBe(4 * 1024 * 1024);
     expect(CHARACTER_DECOMPRESSED_LIMIT).toBe(32 * 1024 * 1024);
-    expect(PARSER_VERSION).toBe("9");
+    expect(PARSER_VERSION).toBe("11");
   });
 });

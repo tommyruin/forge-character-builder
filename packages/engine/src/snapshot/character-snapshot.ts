@@ -267,13 +267,24 @@ function checkRules(value: unknown, path: string): void {
   });
 }
 
+/** Extract/extras entries: an item id with a content amount. */
+function checkExtractEntries(value: unknown, path: string): void {
+  if (!Array.isArray(value)) throwBad("invalid-structure", `${path}: expected an array`);
+  value.forEach((entry, index) => {
+    const context = `${path}[${index}]`;
+    const record = checkRecord(entry, context, ["id", "amount"], []);
+    checkString(record.id, `${context}.id`);
+    checkNumber(record.amount, `${context}.amount`);
+  });
+}
+
 /** The grant targets recorded in level registrations (lighter than full rules). */
 function checkParsedElement(value: unknown, path: string): void {
   const record = checkRecord(
     value,
     path,
     ["identity", "setters", "rules", "supports", "compendiumHidden", "children", "declaredBy"],
-    ["descriptionXml", "rulesXml", "requirements", "prerequisite", "multiclass", "spellcasting", "extract", "sheets"],
+    ["descriptionXml", "rulesXml", "requirements", "prerequisite", "multiclass", "spellcasting", "extract", "extras", "overridesBundledCore", "sheets"],
   );
   const identity = checkRecord(record.identity, `${path}.identity`, ["id", "name", "type", "source"], []);
   checkString(identity.id, `${path}.identity.id`);
@@ -317,15 +328,20 @@ function checkParsedElement(value: unknown, path: string): void {
     if (block.allowReplace !== undefined) checkBoolean(block.allowReplace, `${path}.spellcasting.allowReplace`);
     if (block.extension !== undefined) checkBoolean(block.extension, `${path}.spellcasting.extension`);
   }
-  if (record.extract !== undefined) {
-    if (!Array.isArray(record.extract)) throwBad("invalid-structure", `${path}.extract: expected an array`);
-    record.extract.forEach((entry, index) => {
-      const context = `${path}.extract[${index}]`;
-      const extract = checkRecord(entry, context, ["id", "amount"], []);
-      checkString(extract.id, `${context}.id`);
-      checkNumber(extract.amount, `${context}.amount`);
+  if (record.extract !== undefined) checkExtractEntries(record.extract, `${path}.extract`);
+  if (record.extras !== undefined) {
+    const extras = checkRecord(record.extras, `${path}.extras`, ["gold", "items", "choices"], []);
+    checkNumber(extras.gold, `${path}.extras.gold`);
+    checkExtractEntries(extras.items, `${path}.extras.items`);
+    if (!Array.isArray(extras.choices)) throwBad("invalid-structure", `${path}.extras.choices: expected an array`);
+    extras.choices.forEach((choice, index) => {
+      const context = `${path}.extras.choices[${index}]`;
+      const choiceRecord = checkRecord(choice, context, ["label", "candidates"], []);
+      checkString(choiceRecord.label, `${context}.label`);
+      checkExtractEntries(choiceRecord.candidates, `${context}.candidates`);
     });
   }
+  if (record.overridesBundledCore !== undefined) checkBoolean(record.overridesBundledCore, `${path}.overridesBundledCore`);
   if (record.sheets !== undefined) {
     if (!Array.isArray(record.sheets)) throwBad("invalid-structure", `${path}.sheets: expected an array`);
     record.sheets.forEach((sheet, sheetIndex) => {

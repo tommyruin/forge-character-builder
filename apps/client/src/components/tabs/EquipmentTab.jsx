@@ -173,11 +173,11 @@ export default function EquipmentTab() {
     }
   };
 
-  const extractItem = async (item) => {
+  const extractItem = async (item, selections) => {
     const before = inventory;
     try {
       const result = await mutate(() =>
-        api.characters.extractItem(id, item.identifier),
+        api.characters.extractItem(id, item.identifier, selections),
       );
       flashChangedRows(before, result);
       setExtracting(null);
@@ -1552,9 +1552,20 @@ export function InventoryActionButtons({
 
 export function ExtractEquipmentModal({ item, busy, onClose, onConfirm }) {
   const contents = item?.extractableContents ?? [];
+  const extras = item?.extractableExtras ?? { gold: 0, items: [], choices: [] };
+  const [selections, setSelections] = useState({});
+  useEffect(() => {
+    setSelections({});
+  }, [item]);
   const close = () => {
     if (!busy) onClose();
   };
+  const setChoice = (label, value) =>
+    setSelections((current) => ({ ...current, [label]: value }));
+  // Unset choices stay manual (the engine skips them); only real picks travel.
+  const chosen = Object.fromEntries(
+    Object.entries(selections).filter(([, value]) => value !== ""),
+  );
 
   return (
     <Modal
@@ -1577,6 +1588,46 @@ export function ExtractEquipmentModal({ item, busy, onClose, onConfirm }) {
           </li>
         ))}
       </ul>
+      {(extras.items.length > 0 || extras.gold > 0) && (
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium">Also added automatically:</p>
+          <ul className="divide-y divide-[var(--fcb-border-soft)] rounded border border-[var(--fcb-border-soft)]">
+            {extras.items.map((extra) => (
+              <li
+                key={extra.itemId}
+                className="flex items-center justify-between gap-4 px-3 py-2"
+              >
+                <span>{extra.name}</span>
+                <strong className="tabular-nums">×{extra.amount}</strong>
+              </li>
+            ))}
+            {extras.gold > 0 && (
+              <li className="flex items-center justify-between gap-4 px-3 py-2">
+                <span>Gold</span>
+                <strong className="tabular-nums">+{extras.gold} GP</strong>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+      {extras.choices.map((choice) => (
+        <label key={choice.label} className="mt-4 block text-sm">
+          <span className="mb-1 block font-medium">{choice.label}</span>
+          <select
+            className="fcb-select"
+            value={selections[choice.label] ?? ""}
+            disabled={busy}
+            onChange={(event) => setChoice(choice.label, event.target.value)}
+          >
+            <option value="">Choose later (add manually)</option>
+            {choice.candidates.map((candidate) => (
+              <option key={candidate.itemId} value={candidate.itemId}>
+                {candidate.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ))}
       <div className="fcb-toolbar mt-4 justify-end">
         <button
           type="button"
@@ -1590,7 +1641,7 @@ export function ExtractEquipmentModal({ item, busy, onClose, onConfirm }) {
           type="button"
           className="fcb-button fcb-button-primary"
           disabled={busy}
-          onClick={() => onConfirm(item)}
+          onClick={() => onConfirm(item, chosen)}
         >
           {busy ? "Extracting…" : "Extract"}
         </button>

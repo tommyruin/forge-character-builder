@@ -309,7 +309,7 @@ describe("browser corpus manifest", () => {
       "system/system-unarmed-riders.xml",
     ]);
     expect(files).toHaveLength(148);
-    expect(files.reduce((total, file) => total + file.bytes.byteLength, 0)).toBe(3691042);
+    expect(files.reduce((total, file) => total + file.bytes.byteLength, 0)).toBe(3695066);
     const manifest = createContentManifest(files);
     expect(manifest.source).toBe("apps/client/public/content");
     expect(manifest.sourceCategories).toEqual([
@@ -319,7 +319,7 @@ describe("browser corpus manifest", () => {
       "Player’s Handbook (2024)",
       "System Reference Document",
     ]);
-    expect(manifest.digest).toBe("5e0f58e71d1a17d671fc4a63c17678739d8aedfdad48c1379305d373076e2d65");
+    expect(manifest.digest).toBe("ceb5dfd9fc4750afc3ea7629f9240425b0f56a4ba3305fda2d7ef26b3340b4cc");
     expect(createHash("sha256").update(paths.join("\n")).digest("hex"))
       .toBe("6f8117ec7b37687b7cb4655584cd814783c1b9fb74132d241cb03859918771dc");
     // The raw corpus tree is never bundled.

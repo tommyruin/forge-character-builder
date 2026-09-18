@@ -90,3 +90,27 @@ export function getToggleableSourceIds(groups) {
   }
   return ids;
 }
+
+/**
+ * The overriding sources a draft change would newly disable. Disabling one of
+ * these also hides the bundled core content its imported files replace, so the
+ * panel asks for confirmation before applying the change.
+ */
+export function getNewlyDisabledOverrideSources(
+  groups,
+  currentRestrictedSourceIds,
+  nextRestrictedSourceIds,
+) {
+  const current = new Set(
+    normalizeRestrictedSourceIds(currentRestrictedSourceIds),
+  );
+  const next = new Set(normalizeRestrictedSourceIds(nextRestrictedSourceIds));
+  const sources = [];
+  for (const group of Array.isArray(groups) ? groups : []) {
+    for (const source of group?.sources ?? []) {
+      if (!source?.canToggle || !source?.overridesBundledCore) continue;
+      if (!current.has(source.id) && next.has(source.id)) sources.push(source);
+    }
+  }
+  return sources;
+}

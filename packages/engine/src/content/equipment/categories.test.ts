@@ -241,4 +241,40 @@ describe("equipment stat blocks", () => {
       "11 + &lt;Dex&gt; &amp; more",
     );
   });
+
+  it("rewrites a pack's omission note from its extras", () => {
+    const pack = element("pack", "Item", [{ name: "category", value: "Equipment Packs" }]);
+    pack.descriptionXml = `<p>You will receive:</p><p class="indent">• Mace</p><p><b>Note:</b> This pack doesn't include Chain Shirt, Shield, Holy Symbol and 7 GP.</p>`;
+    pack.extras = {
+      gold: 7,
+      items: [
+        { id: "chain-shirt", amount: 1 },
+        { id: "shield", amount: 1 },
+      ],
+      choices: [{ label: "Holy Symbol", candidates: [{ id: "amulet", amount: 1 }] }],
+    };
+    const named = (id: string, name: string): ParsedElement => ({
+      ...element(id, "Armor", []),
+      identity: { id, name, type: "Armor", source: "Test" },
+    });
+    const resolve = (id: string): ParsedElement | undefined =>
+      id === "chain-shirt" ? named(id, "Chain Shirt") : id === "shield" ? named(id, "Shield") : undefined;
+
+    const description = publicEquipmentDescription(pack, resolve);
+
+    expect(description).not.toContain("doesn't include");
+    expect(description).toContain(
+      "Extracting this pack also grants Chain Shirt, Shield and 7 GP, and offers a choice of Holy Symbol.",
+    );
+  });
+
+  it("appends the extraction note when the prose has none", () => {
+    const pack = element("pack", "Item", [{ name: "category", value: "Equipment Packs" }]);
+    pack.descriptionXml = "<p>You will receive a Mace.</p>";
+    pack.extras = { gold: 8, items: [], choices: [] };
+
+    expect(publicEquipmentDescription(pack)).toBe(
+      '<p>You will receive a Mace.</p><p><b>Note:</b> Extracting this pack also grants 8 GP.</p>',
+    );
+  });
 });

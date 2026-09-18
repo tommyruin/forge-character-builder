@@ -5,7 +5,7 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { type ElementLibrary } from "../content/library.js";
+import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { parseDnd5e } from "../dnd5e/document.js";
 import { buildInventoryDto, type InventoryItemDto } from "./inventory.js";
@@ -292,6 +292,7 @@ describe("inventory remove and extract", () => {
       "Rope, Hempen (50 feet)",
     ]);
     expect(pack.extractableContents.find((c) => c.itemId === "ID_WOTC_PHB_ITEM_TORCH")!.amount).toBe(10);
+    expect(pack.extractableExtras).toEqual({ gold: 0, items: [], choices: [] });
     dto = service.extractItem(id, pack.identifier);
     expect(dto.items.some((i) => i.itemId === PACK)).toBe(false);
     expect(dto.items).toHaveLength(8);
@@ -306,6 +307,123 @@ describe("inventory remove and extract", () => {
     expect(() => service.extractItem(id, dto.items[0]!.identifier)).toThrow(
       "Inventory item 'Longsword' cannot be extracted.",
     );
+  });
+});
+
+const CUSTOM_PACK = "ID_TEST_PACK_EXTRAS";
+const CUSTOM_PACK_XML = `<?xml version="1.0" encoding="utf-8"?>
+<elements>
+\t<element name="Test Pack" type="Item" source="Pack Extras Test" id="${CUSTOM_PACK}">
+\t\t<description><p>A test pack with noted shortfalls.</p></description>
+\t\t<setters>
+\t\t\t<set name="category">Equipment Packs</set>
+\t\t\t<set name="cost">—</set>
+\t\t\t<set name="weight">—</set>
+\t\t</setters>
+\t\t<extract>
+\t\t\t<item amount="2">ID_WOTC_PHB_ITEM_TORCH</item>
+\t\t</extract>
+\t\t<extras gold="7">
+\t\t\t<item>ID_WOTC_PHB24_ARMOR_SHIELD</item>
+\t\t\t<choice label="Holy Symbol">
+\t\t\t\t<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET</item>
+\t\t\t\t<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM</item>
+\t\t\t\t<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY</item>
+\t\t\t</choice>
+\t\t</extras>
+\t</element>
+</elements>
+`;
+
+let customLibraryPromise: Promise<ElementLibrary> | null = null;
+const customLibrary = (): Promise<ElementLibrary> => {
+  customLibraryPromise ??= (async () => {
+    const withPack = await buildCorpusLibrary();
+    const files = new Map(withPack.fileContents);
+    files.set("testdata/scratch/pack-extras-test.xml", CUSTOM_PACK_XML);
+    replaceLibraryFiles(withPack, files);
+    return withPack;
+  })();
+  return customLibraryPromise;
+};
+
+describe("pack extras extraction", () => {
+  const SHIELD = "ID_WOTC_PHB24_ARMOR_SHIELD";
+  const AMULET = "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET";
+  const EMBLEM = "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM";
+  const RELIQUARY = "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY";
+  const customService = async (): Promise<CharacterService> =>
+    new CharacterService(undefined, await customLibrary());
+
+  it("adds fixed items and gold, and appends the selected choice", async () => {
+    const service = await customService();
+    const id = service.createCharacter("Extras Char").id;
+    let dto = service.addItem(id, { itemId: CUSTOM_PACK, amount: 1, baseElementId: null });
+    const pack = byItemId(dto, CUSTOM_PACK)!;
+    expect(pack.isExtractable).toBe(true);
+    expect(pack.extractableExtras).toEqual({
+      gold: 7,
+      items: [{ itemId: SHIELD, name: "Shield", amount: 1 }],
+      choices: [
+        {
+          label: "Holy Symbol",
+          candidates: [
+            { itemId: AMULET, name: "Amulet", amount: 1 },
+            { itemId: EMBLEM, name: "Emblem", amount: 1 },
+            { itemId: RELIQUARY, name: "Reliquary", amount: 1 },
+          ],
+        },
+      ],
+    });
+
+    dto = service.extractItem(id, pack.identifier, { "Holy Symbol": AMULET });
+    expect(byItemId(dto, CUSTOM_PACK)).toBeUndefined();
+    expect(dto.coins.gold).toBe(7);
+    expect(byItemId(dto, SHIELD)!.amount).toBe(1);
+    expect(byItemId(dto, AMULET)).toBeDefined();
+    expect(byItemId(dto, EMBLEM)).toBeUndefined();
+    expect(dto.items.find((item) => item.itemId === "ID_WOTC_PHB_ITEM_TORCH")!.amount).toBe(2);
+  });
+
+  it("skips unset choices and rejects candidates the pack does not offer", async () => {
+    const service = await customService();
+    const id = service.createCharacter("Manual Choice").id;
+    const dto = service.addItem(id, { itemId: CUSTOM_PACK, amount: 1, baseElementId: null });
+    const pack = byItemId(dto, CUSTOM_PACK)!;
+    expect(() => service.extractItem(id, pack.identifier, { "Holy Symbol": SHIELD })).toThrow(
+      `'${SHIELD}' is not a candidate for Holy Symbol`,
+    );
+    const extracted = service.extractItem(id, pack.identifier);
+    expect(extracted.items.some((item) => item.itemId === AMULET)).toBe(false);
+    expect(extracted.coins.gold).toBe(7);
+  });
+
+  it("consumes one unit per extraction and credits each unit's extras", async () => {
+    const service = await customService();
+    const id = service.createCharacter("Stack Extras").id;
+    const dto = service.addItem(id, { itemId: CUSTOM_PACK, amount: 2, baseElementId: null });
+    const pack = byItemId(dto, CUSTOM_PACK)!;
+    expect(pack.amount).toBe(2);
+
+    const first = service.extractItem(id, pack.identifier);
+    expect(byItemId(first, CUSTOM_PACK)!.amount).toBe(1);
+    expect(first.coins.gold).toBe(7);
+    expect(first.items.filter((item) => item.itemId === SHIELD)).toHaveLength(1);
+
+    const second = service.extractItem(id, pack.identifier);
+    expect(byItemId(second, CUSTOM_PACK)).toBeUndefined();
+    expect(second.coins.gold).toBe(14);
+    expect(second.items.filter((item) => item.itemId === SHIELD)).toHaveLength(2);
+  });
+
+  it("credits nothing when the pack is deleted without extracting", async () => {
+    const service = await customService();
+    const id = service.createCharacter("Deleted Pack").id;
+    let dto = service.addItem(id, { itemId: CUSTOM_PACK, amount: 1, baseElementId: null });
+    const pack = byItemId(dto, CUSTOM_PACK)!;
+    dto = service.removeItem(id, pack.identifier);
+    expect(dto.items).toHaveLength(0);
+    expect(dto.coins.gold).toBe(0);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll } from "vitest";
-import { classifyRuleset, rulesetSourcesByName, type ElementLibrary } from "../content/library.js";
+import { classifyRuleset, createEmptyLibrary, replaceLibraryFiles, rulesetSourcesByName, type ElementLibrary } from "../content/library.js";
 import { parseElementsFile } from "../content/parser.js";
 import {
   serializeContentLibrary,
@@ -89,6 +89,58 @@ describe("content library graph codec (vendored corpus)", () => {
     const warlock = hydrated.byId.get("ID_WOTC_PHB_CLASS_WARLOCK")!;
     expect(warlock.multiclass).toBeDefined();
     expect(warlock.rules[warlock.rules.length - 1]).toEqual(library.byId.get("ID_WOTC_PHB_CLASS_WARLOCK")!.rules.at(-1));
+  });
+
+  it("round-trips a pack's extras block with gold, fixed items, and choices", () => {
+    const synthetic = createEmptyLibrary();
+    replaceLibraryFiles(synthetic, [
+      [
+        "testdata/pack-extras.xml",
+        `<elements>
+          <element name="Pack" type="Item" source="Sample" id="ID_PACK_EXTRAS">
+            <extract><item amount="2">ID_ITEM_A</item></extract>
+            <extras gold="7">
+              <item>ID_ITEM_B</item>
+              <choice label="Holy Symbol">
+                <item>ID_ITEM_C</item>
+                <item>ID_ITEM_D</item>
+              </choice>
+            </extras>
+          </element>
+        </elements>`,
+      ],
+    ]);
+    const hydrated = roundTripped(serializeContentLibrary(synthetic));
+    expect(hydrated.byId.get("ID_PACK_EXTRAS")!.extras).toEqual({
+      gold: 7,
+      items: [{ id: "ID_ITEM_B", amount: 1 }],
+      choices: [
+        {
+          label: "Holy Symbol",
+          candidates: [
+            { id: "ID_ITEM_C", amount: 1 },
+            { id: "ID_ITEM_D", amount: 1 },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("round-trips the bundled-core override mark", () => {
+    const synthetic = createEmptyLibrary();
+    replaceLibraryFiles(synthetic, [
+      [
+        "core/sources.xml",
+        `<elements><element name="Book" type="Source" source="Core" id="ID_SOURCE_X"><setters><set name="core">true</set></setters></element></elements>`,
+      ],
+      [
+        "imports/phb/source.xml",
+        `<elements><element name="Book" type="Source" source="Core" id="ID_SOURCE_X"><setters><set name="core">false</set></setters></element></elements>`,
+      ],
+    ]);
+    expect(synthetic.byId.get("ID_SOURCE_X")!.overridesBundledCore).toBe(true);
+    const hydrated = roundTripped(serializeContentLibrary(synthetic));
+    expect(hydrated.byId.get("ID_SOURCE_X")!.overridesBundledCore).toBe(true);
   });
 
   it("preserves duplicate-id overridden entries within a byType list", () => {

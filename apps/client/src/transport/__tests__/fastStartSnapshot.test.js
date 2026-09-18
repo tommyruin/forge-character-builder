@@ -55,7 +55,7 @@ describe('Local Fast Start snapshot identity', () => {
     });
 
     expect(FAST_START_SCHEMA_VERSION).toBe(2);
-    expect(FAST_START_PARSER_REVISION).toBe('finalized-library-v9');
+    expect(FAST_START_PARSER_REVISION).toBe('finalized-library-v11');
     expect(currentIdentity.key).not.toBe(legacyIdentity.key);
     await expect(
       validateFastStartRecord(legacyRecord, currentIdentity),

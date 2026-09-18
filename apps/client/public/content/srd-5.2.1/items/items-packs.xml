@@ -35,6 +35,13 @@
 			<item amount="10">ID_WOTC_PHB24_ITEM_PARCHMENT</item>
 			<item>ID_WOTC_PHB24_ITEM_ROBE</item>
 		</extract>
+		<extras gold="8">
+			<choice label="Holy Symbol">
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET</item>
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM</item>
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY</item>
+			</choice>
+		</extras>
 	</element>
 
 	<element name="Background Equipment Pack (Criminal)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL">
@@ -60,6 +67,8 @@
 			<item amount="2">ID_WOTC_PHB24_ITEM_POUCH</item>
 			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
 		</extract>
+		<extras gold="15">
+		</extras>
 	</element>
 
 	<element name="Background Equipment Pack (Sage)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE">
@@ -85,6 +94,8 @@
 			<item amount="8">ID_WOTC_PHB24_ITEM_PARCHMENT</item>
 			<item>ID_WOTC_PHB24_ITEM_ROBE</item>
 		</extract>
+		<extras gold="8">
+		</extras>
 	</element>
 
 	<element name="Background Equipment Pack (Soldier)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER">
@@ -112,6 +123,12 @@
 			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
 			<item>ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS</item>
 		</extract>
+		<extras gold="14">
+			<choice label="Gaming Set">
+				<item>ID_WOTC_PHB24_ITEM_TOOL_DICE_SET</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_PLAYING_CARDS_SET</item>
+			</choice>
+		</extras>
 	</element>
 	<element name="Class Equipment Pack (Barbarian)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN">
 		<description>
@@ -132,6 +149,8 @@
 			<item amount="4">ID_WOTC_PHB24_WEAPON_HANDAXE</item>
 			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
 		</extract>
+		<extras gold="15">
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Bard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD">
@@ -151,6 +170,21 @@
 			<item amount="2">ID_WOTC_PHB24_WEAPON_DAGGER</item>
 			<item>ID_WOTC_PHB24_ITEM_ENTERTAINERS_PACK</item>
 		</extract>
+		<extras gold="19">
+			<item>ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER</item>
+			<choice label="Musical Instrument">
+				<item>ID_WOTC_PHB24_INSTRUMENT_BAGPIPES</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_DRUM</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_DULCIMER</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_FLUTE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_HORN</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_LUTE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_LYRE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_PANFLUTE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_SHAWM</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_VIOL</item>
+			</choice>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Cleric)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC">
@@ -170,6 +204,15 @@
 			<item>ID_WOTC_PHB24_WEAPON_MACE</item>
 			<item>ID_WOTC_PHB24_ITEM_PRIESTS_PACK</item>
 		</extract>
+		<extras gold="7">
+			<item>ID_WOTC_PHB24_ARMOR_MEDIUM_CHAIN_SHIRT</item>
+			<item>ID_WOTC_PHB24_ARMOR_SHIELD</item>
+			<choice label="Holy Symbol">
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET</item>
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM</item>
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY</item>
+			</choice>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Druid)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID">
@@ -193,6 +236,10 @@
 			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
 			<item>ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT</item>
 		</extract>
+		<extras gold="9">
+			<item>ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER</item>
+			<item>ID_WOTC_PHB24_ARMOR_SHIELD</item>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Fighter, Option A)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1">
@@ -216,6 +263,9 @@
 			<item amount="8">ID_WOTC_PHB24_WEAPON_JAVELIN</item>
 			<item>ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK</item>
 		</extract>
+		<extras gold="4">
+			<item>ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL</item>
+		</extras>
 	</element>
 	<element name="Class Equipment Pack (Fighter, Option B)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2">
 		<description>
@@ -242,6 +292,9 @@
 			<item>ID_WOTC_PHB24_ITEM_QUIVER</item>
 			<item>ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK</item>
 		</extract>
+		<extras gold="11">
+			<item>ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER</item>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Monk)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK">
@@ -263,6 +316,37 @@
 			<item amount="5">ID_WOTC_PHB24_WEAPON_DAGGER</item>
 			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
 		</extract>
+		<extras gold="11">
+			<choice label="Artisan's Tools or Musical Instrument">
+				<item>ID_WOTC_PHB24_ITEM_TOOL_ALCHEMISTS_SUPPLIES</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_BREWERS_SUPPLIES</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_CARTOGRAPHERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_COBBLERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_GLASSBLOWERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_JEWELERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_LEATHERWORKERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_MASONS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_PAINTERS_SUPPLIES</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_POTTERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_SMITHS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_TINKERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_WEAVERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_ITEM_TOOL_WOODCARVERS_TOOLS</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_BAGPIPES</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_DRUM</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_DULCIMER</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_FLUTE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_HORN</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_LUTE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_LYRE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_PANFLUTE</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_SHAWM</item>
+				<item>ID_WOTC_PHB24_INSTRUMENT_VIOL</item>
+			</choice>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Paladin)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN">
@@ -284,6 +368,15 @@
 			<item amount="6">ID_WOTC_PHB24_WEAPON_JAVELIN</item>
 			<item>ID_WOTC_PHB24_ITEM_PRIESTS_PACK</item>
 		</extract>
+		<extras gold="9">
+			<item>ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL</item>
+			<item>ID_WOTC_PHB24_ARMOR_SHIELD</item>
+			<choice label="Holy Symbol">
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET</item>
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM</item>
+				<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY</item>
+			</choice>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Ranger)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER">
@@ -313,6 +406,9 @@
 			<item>ID_WOTC_PHB24_ITEM_DRUIDIC_FOCUS_SPRIG_OF_MISTLETOE</item>
 			<item>ID_WOTC_PHB24_ITEM_EXPLORERS_PACK</item>
 		</extract>
+		<extras gold="7">
+			<item>ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER</item>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Rogue)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE">
@@ -342,6 +438,9 @@
 			<item>ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS</item>
 			<item>ID_WOTC_PHB24_ITEM_BURGLARS_PACK</item>
 		</extract>
+		<extras gold="8">
+			<item>ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER</item>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Sorcerer)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER">
@@ -365,6 +464,8 @@
 			<item>ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL</item>
 			<item>ID_WOTC_PHB24_ITEM_DUNGEONEERS_PACK</item>
 		</extract>
+		<extras gold="28">
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Warlock)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK">
@@ -390,6 +491,9 @@
 			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
 			<item>ID_WOTC_PHB24_ITEM_SCHOLARS_PACK</item>
 		</extract>
+		<extras gold="15">
+			<item>ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER</item>
+		</extras>
 	</element>
 
 	<element name="Class Equipment Pack (Wizard)" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD">
@@ -415,6 +519,8 @@
 			<item>ID_WOTC_PHB24_ITEM_BOOK</item>
 			<item>ID_WOTC_PHB24_ITEM_SCHOLARS_PACK</item>
 		</extract>
+		<extras gold="5">
+		</extras>
 	</element>
 	<element name="Burglar's Pack" type="Item" source="Player’s Handbook (2024)" id="ID_WOTC_PHB24_ITEM_BURGLARS_PACK">
 		<description>

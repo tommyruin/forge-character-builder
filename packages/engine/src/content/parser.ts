@@ -160,6 +160,28 @@ export interface ExtractEntry {
 }
 
 /**
+ * One <choice> of an <extras> block: an item the pack description leaves to
+ * the player (a Holy Symbol form, an instrument, a gaming set). The candidates
+ * are what the Extract prompt offers; `label` names the choice in the UI.
+ */
+export interface PackChoice {
+  label: string;
+  candidates: ExtractEntry[];
+}
+
+/**
+ * The <extras> block of an item element: what the pack's prose says it leaves
+ * out and the character should still receive when the pack is extracted — the
+ * fixed items, the gold, and the player choices. The block is authored in the
+ * reviewed map and injected by scripts/build-srd-content.mjs.
+ */
+export interface PackExtras {
+  gold: number;
+  items: ExtractEntry[];
+  choices: PackChoice[];
+}
+
+/**
  * One <description> child of a <sheet> block. Sheets may carry several
  * descriptions gated by character level; the sheet picks the one with the
  * highest level attribute not exceeding the character level (missing level
@@ -215,6 +237,14 @@ export interface ParsedElement {
   spellcasting?: SpellcastingBlock;
   /** The <extract> block of an item element (its contents, e.g. packs). */
   extract?: ExtractEntry[];
+  /** The <extras> block of a pack element (fixed items, gold, choices). */
+  extras?: PackExtras;
+  /**
+   * Source elements only: this definition replaced a bundled core stub (an
+   * uploaded book whose source file overrides the built-in copy). Assigned by
+   * the library at ingest, never parsed from a file.
+   */
+  overridesBundledCore?: boolean;
   /** The <sheet> blocks: character-sheet presentation (declaration order). */
   sheets: ParsedSheetEntry[];
   /** Nested <element> definitions (registered when the parent is registered). */
@@ -332,6 +362,7 @@ export function parseElement(node: XmlNode, declaredBy: string): ParsedElement {
   let compendiumHidden = false;
   let multiclass: MulticlassBlock | undefined;
   let extract: ExtractEntry[] | undefined;
+  let extras: PackExtras | undefined;
   let spellcasting: SpellcastingBlock | undefined;
   const sheets: ParsedSheetEntry[] = [];
 
@@ -354,6 +385,25 @@ export function parseElement(node: XmlNode, declaredBy: string): ParsedElement {
           id: textContent(itemNode),
           amount: numberAttr(itemNode, "amount") ?? 1,
         }));
+        break;
+      case "extras":
+        // gold is the pack's shortfall; direct <item> children are added with
+        // the extraction, <choice> candidates are offered by the Extract
+        // prompt (and skipped when the player leaves the choice unset).
+        extras = {
+          gold: numberAttr(child, "gold") ?? 0,
+          items: childElements(child, "item").map((itemNode) => ({
+            id: textContent(itemNode),
+            amount: numberAttr(itemNode, "amount") ?? 1,
+          })),
+          choices: childElements(child, "choice").map((choiceNode) => ({
+            label: choiceNode.attrs.label ?? "",
+            candidates: childElements(choiceNode, "item").map((itemNode) => ({
+              id: textContent(itemNode),
+              amount: numberAttr(itemNode, "amount") ?? 1,
+            })),
+          })),
+        };
         break;
       case "spellcasting": {
         const listNode = childElements(child, "list")[0];
@@ -452,6 +502,7 @@ export function parseElement(node: XmlNode, declaredBy: string): ParsedElement {
     compendiumHidden,
     multiclass,
     extract,
+    extras,
     spellcasting,
     sheets,
     children,

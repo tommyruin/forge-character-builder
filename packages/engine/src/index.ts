@@ -43,6 +43,7 @@ export {
   planSetItemStorageEdits,
   planAttuneItemEdits,
   planSetCoinsEdits,
+  planAddCoinsEdits,
   planExtractItemEdits,
   LOCATION_DISPLAY,
   type InventoryItemDto,
@@ -50,6 +51,9 @@ export {
   type ItemBaseOptionsDto,
   type AddItemOptions,
   type AddItemPlan,
+  type ExtractEntryDto,
+  type PackChoiceDto,
+  type PackExtrasDto,
 } from "./inventory/inventory.js";
 export * from "./magic/dto.js";
 

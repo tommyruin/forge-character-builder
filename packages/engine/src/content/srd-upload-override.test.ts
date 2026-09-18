@@ -13,6 +13,8 @@ import { createEmptyLibrary, replaceLibraryFiles, type ElementLibrary } from "./
 import { ingestContentFiles } from "./ingestion.js";
 import { encodeBase64 } from "../platform.js";
 import { SYSTEM_ROOT } from "../testing/corpus.js";
+import { CharacterService } from "../character/service.js";
+import { createEngineMethodHandlers } from "../worker-handlers.js";
 
 const PUBLIC_ROOT = fileURLToPath(new URL("../../../../apps/client/public/content/", import.meta.url));
 const PHB_2014 = fileURLToPath(new URL("../../../../third-party/elements/testdata/core/players-handbook/", import.meta.url));
@@ -70,5 +72,119 @@ describe("importing the Player's Handbook over the shipped SRD content", () => {
     expect(library.byId.get("ID_WOTC_PHB24_CLASS_WIZARD")?.descriptionXml).toContain("Most Wizards share a scholarly approach");
     expect(library.byId.has("ID_WOTC_PHB24_RACE_AASIMAR")).toBe(true);
     expect((library.byType.get("Class") ?? []).filter((element) => element.identity.id === "ID_WOTC_PHB24_CLASS_WIZARD")).toHaveLength(1);
+  });
+
+  it("keeps the reviewed pack extras when an upload redefines the pack", async () => {
+    const PACK = "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC";
+    expect(library.byId.get(PACK)?.extras?.gold).toBe(7);
+    await upload(library, PHB_2024, "items/items-packs.xml");
+    const pack = library.byId.get(PACK)!;
+    // The upload replaced the element but the reviewed extras survive: the
+    // corpus pack file has no <extras>, and stripping it would drop the
+    // fixed items and gold the Extract surface grants.
+    expect(pack.extras?.gold).toBe(7);
+    expect(pack.extras?.items.map((entry) => entry.id)).toEqual([
+      "ID_WOTC_PHB24_ARMOR_MEDIUM_CHAIN_SHIRT",
+      "ID_WOTC_PHB24_ARMOR_SHIELD",
+    ]);
+    expect(pack.extras?.choices[0]?.label).toBe("Holy Symbol");
+  });
+
+  it("lets an upload's own extras override the inherited block", () => {
+    const scratch = createEmptyLibrary();
+    const shipped = `<elements><element name="Pack" type="Item" source="SRD" id="ID_PACK_X"><extras gold="7"><item>ID_A</item></extras></element></elements>`;
+    const upload = `<elements><element name="Pack" type="Item" source="Homebrew" id="ID_PACK_X"><extras gold="3"><item>ID_B</item></extras></element></elements>`;
+    replaceLibraryFiles(scratch, [
+      ["srd-5.2.1/items-packs.xml", shipped],
+      ["imports/homebrew/packs.xml", upload],
+    ]);
+    expect(scratch.byId.get("ID_PACK_X")!.extras).toEqual({
+      gold: 3,
+      items: [{ id: "ID_B", amount: 1 }],
+      choices: [],
+    });
+  });
+
+  it("inherits extras when the override restates the same extracted contents", () => {
+    const scratch = createEmptyLibrary();
+    const shipped = `<elements><element name="Pack" type="Item" source="SRD" id="ID_PACK_X"><extract><item>ID_A</item><item amount="2">ID_B</item></extract><extras gold="7"><item>ID_C</item></extras></element></elements>`;
+    const upload = `<elements><element name="Pack" type="Item" source="Homebrew" id="ID_PACK_X"><extract><item amount="2">ID_B</item><item>ID_A</item></extract></element></elements>`;
+    replaceLibraryFiles(scratch, [
+      ["srd-5.2.1/items-packs.xml", shipped],
+      ["imports/homebrew/packs.xml", upload],
+    ]);
+    expect(scratch.byId.get("ID_PACK_X")!.extras?.gold).toBe(7);
+  });
+
+  it("does not inherit extras when the override changes the extracted contents", () => {
+    const scratch = createEmptyLibrary();
+    const shipped = `<elements><element name="Pack" type="Item" source="SRD" id="ID_PACK_X"><extract><item>ID_A</item></extract><extras gold="7"><item>ID_B</item></extras></element></elements>`;
+    const differentItems = `<elements><element name="Pack" type="Item" source="Homebrew" id="ID_PACK_X"><extract><item>ID_C</item></extract></element></elements>`;
+    replaceLibraryFiles(scratch, [
+      ["srd-5.2.1/items-packs.xml", shipped],
+      ["imports/homebrew/packs.xml", differentItems],
+    ]);
+    expect(scratch.byId.get("ID_PACK_X")!.extras).toBeUndefined();
+
+    const changedAmount = `<elements><element name="Pack" type="Item" source="Homebrew" id="ID_PACK_X"><extract><item amount="2">ID_A</item></extract></element></elements>`;
+    replaceLibraryFiles(scratch, [
+      ["srd-5.2.1/items-packs.xml", shipped],
+      ["imports/homebrew/packs.xml", changedAmount],
+    ]);
+    expect(scratch.byId.get("ID_PACK_X")!.extras).toBeUndefined();
+  });
+
+  it("does not inherit extras across a type change", () => {
+    const scratch = createEmptyLibrary();
+    const shipped = `<elements><element name="Pack" type="Item" source="SRD" id="ID_PACK_X"><extract><item>ID_A</item></extract><extras gold="7"><item>ID_B</item></extras></element></elements>`;
+    const upload = `<elements><element name="Pack" type="Magic Item" source="Homebrew" id="ID_PACK_X"><extract><item>ID_A</item></extract></element></elements>`;
+    replaceLibraryFiles(scratch, [
+      ["srd-5.2.1/items-packs.xml", shipped],
+      ["imports/homebrew/packs.xml", upload],
+    ]);
+    expect(scratch.byId.get("ID_PACK_X")!.extras).toBeUndefined();
+  });
+
+  it("marks a source whose upload replaced the bundled core stub", async () => {
+    const PHB24 = "ID_WOTC_SOURCE_PLAYERS_HANDBOOK_2024";
+    const DMG = "ID_WOTC_SOURCE_DUNGEON_MASTERS_GUIDE";
+    expect(library.sources.get(PHB24)?.overridesBundledCore).toBeUndefined();
+    expect(library.sources.get(DMG)?.overridesBundledCore).toBeUndefined();
+
+    await upload(library, PHB_2024, "source.xml");
+
+    expect(library.sources.get(PHB24)?.overridesBundledCore).toBe(true);
+    expect(library.sources.get(DMG)?.overridesBundledCore).toBeUndefined();
+
+    // The Source panel DTO carries the mark so it can badge the row and ask
+    // before disabling it.
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("override-source").id;
+    const handlers = createEngineMethodHandlers(service, library);
+    const response = handlers.getCharacterSources!(id) as {
+      groups: Array<{ sources: Array<Record<string, unknown>> }>;
+    };
+    const flat = response.groups.flatMap((group) => group.sources);
+    expect(flat.find((source) => source.id === PHB24)).toMatchObject({
+      canToggle: true,
+      overridesBundledCore: true,
+    });
+    expect(flat.find((source) => source.id === DMG)).toMatchObject({
+      overridesBundledCore: false,
+    });
+  });
+
+  it("clears the mark when the bundled stub is the only definition again", () => {
+    const scratch = createEmptyLibrary();
+    const stub = `<elements><element name="Book" type="Source" source="Core" id="ID_SOURCE_X"><setters><set name="core">true</set></setters></element></elements>`;
+    const upload = `<elements><element name="Book" type="Source" source="Core" id="ID_SOURCE_X"><setters><set name="core">false</set></setters></element></elements>`;
+    replaceLibraryFiles(scratch, [
+      ["core/sources.xml", stub],
+      ["imports/phb/source.xml", upload],
+    ]);
+    expect(scratch.byId.get("ID_SOURCE_X")!.overridesBundledCore).toBe(true);
+
+    replaceLibraryFiles(scratch, [["core/sources.xml", stub]]);
+    expect(scratch.byId.get("ID_SOURCE_X")!.overridesBundledCore).toBeUndefined();
   });
 });

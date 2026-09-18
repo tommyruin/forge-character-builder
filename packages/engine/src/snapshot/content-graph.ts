@@ -20,6 +20,8 @@ import type {
   ExtractEntry,
   GrantRule,
   MulticlassBlock,
+  PackChoice,
+  PackExtras,
   ParsedElement,
   ParsedSheetEntry,
   RequireRule,
@@ -420,6 +422,8 @@ function serializeElement(element: ParsedElement): ParsedElement {
   setEncodedOptional(out, element, "multiclass", element.multiclass, (value) => serializeMulticlass(value as MulticlassBlock));
   setEncodedOptional(out, element, "spellcasting", element.spellcasting, (value) => serializeSpellcasting(value as SpellcastingBlock));
   setEncodedOptional(out, element, "extract", element.extract, (value) => (value as ExtractEntry[]).map(serializeExtractEntry));
+  setEncodedOptional(out, element, "extras", element.extras, (value) => serializeExtras(value as PackExtras));
+  setEncodedOptional(out, element, "overridesBundledCore", element.overridesBundledCore);
   return out;
 }
 
@@ -517,6 +521,17 @@ function serializeExtractEntry(entry: ExtractEntry): ExtractEntry {
   return { id: entry.id, amount: entry.amount };
 }
 
+function serializeExtras(extras: PackExtras): PackExtras {
+  return {
+    gold: extras.gold,
+    items: extras.items.map(serializeExtractEntry),
+    choices: extras.choices.map((choice) => ({
+      label: choice.label,
+      candidates: choice.candidates.map(serializeExtractEntry),
+    })),
+  };
+}
+
 function decodeElements(value: unknown, context: string): ParsedElement[] {
   if (!Array.isArray(value)) fail(context, "expected an array");
   return value.map((entry, i) => decodeElement(entry, `${context}[${i}]`));
@@ -527,7 +542,7 @@ function decodeElement(value: unknown, context: string): ParsedElement {
   expectKeys(
     record,
     ["identity", "setters", "rules", "supports", "compendiumHidden", "children", "declaredBy"],
-    ["descriptionXml", "rulesXml", "requirements", "prerequisite", "multiclass", "spellcasting", "extract", "sheets"],
+    ["descriptionXml", "rulesXml", "requirements", "prerequisite", "multiclass", "spellcasting", "extract", "extras", "overridesBundledCore", "sheets"],
     context,
   );
   const identityRecord = expectRecord(record.identity, `${context}.identity`);
@@ -559,6 +574,8 @@ function decodeElement(value: unknown, context: string): ParsedElement {
   setDecodedOptional(element, record, "multiclass", context, decodeMulticlass);
   setDecodedOptional(element, record, "spellcasting", context, decodeSpellcasting);
   setDecodedOptional(element, record, "extract", context, decodeExtract);
+  setDecodedOptional(element, record, "extras", context, decodeExtras);
+  setDecodedOptional(element, record, "overridesBundledCore", context, expectBoolean);
   return element;
 }
 
@@ -709,6 +726,25 @@ function decodeExtract(value: unknown, context: string): ExtractEntry[] {
       amount: expectNumber(record.amount, `${context}[${i}].amount`),
     };
   });
+}
+
+function decodeExtras(value: unknown, context: string): PackExtras {
+  const record = expectRecord(value, context);
+  expectKeys(record, ["gold", "items", "choices"], [], context);
+  if (!Array.isArray(record.choices)) fail(`${context}.choices`, "expected an array");
+  const choices: PackChoice[] = record.choices.map((entry, i) => {
+    const choice = expectRecord(entry, `${context}.choices[${i}]`);
+    expectKeys(choice, ["label", "candidates"], [], `${context}.choices[${i}]`);
+    return {
+      label: expectString(choice.label, `${context}.choices[${i}].label`),
+      candidates: decodeExtract(choice.candidates, `${context}.choices[${i}].candidates`),
+    };
+  });
+  return {
+    gold: expectNumber(record.gold, `${context}.gold`),
+    items: decodeExtract(record.items, `${context}.items`),
+    choices,
+  };
 }
 
 function fail(context: string, detail: string): never {

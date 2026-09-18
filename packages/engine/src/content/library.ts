@@ -7,7 +7,7 @@
  * base content). This ordering is the documented baseline.
  */
 
-import { parseAppendsFile, parseElementsFile, type AppendBlock, type ParsedElement } from "./parser.js";
+import { parseAppendsFile, parseElementsFile, type AppendBlock, type ExtractEntry, type PackExtras, type ParsedElement } from "./parser.js";
 import { generateItemProxies } from "./proxies.js";
 import { normalizeSourceName } from "./sourceIdentity.js";
 
@@ -425,6 +425,37 @@ export function createEmptyLibrary(): ElementLibrary {
   };
 }
 
+/** True when the element's setter of that name is "true" (case-insensitive). */
+function setterIsTrue(element: ParsedElement, name: string): boolean {
+  return element.setters.find((setter) => setter.name === name)?.value.trim().toLocaleLowerCase() === "true";
+}
+
+/** Deep-copies a pack's extras so an inherited block is not aliased. */
+function clonePackExtras(extras: PackExtras): PackExtras {
+  return {
+    gold: extras.gold,
+    items: extras.items.map((entry) => ({ ...entry })),
+    choices: extras.choices.map((choice) => ({
+      label: choice.label,
+      candidates: choice.candidates.map((entry) => ({ ...entry })),
+    })),
+  };
+}
+
+/**
+ * True when two definitions extract the same contents (id and amount,
+ * order-insensitive): the property the reviewed <extras> complement.
+ */
+function sameExtractContents(a: readonly ExtractEntry[], b: readonly ExtractEntry[]): boolean {
+  if (a.length !== b.length) return false;
+  const key = (entries: readonly ExtractEntry[]): string =>
+    entries
+      .map((entry) => `${entry.id}:${entry.amount}`)
+      .sort()
+      .join("\n");
+  return key(a) === key(b);
+}
+
 /** Replace the XML file set and hydrate the supplied library object in place. */
 export function replaceLibraryFiles(
   library: ElementLibrary,
@@ -476,6 +507,29 @@ export function replaceLibraryFiles(
           message: `duplicate element id ${id}`,
           detail: `overrides the definition from ${declaredBy}`,
         });
+      }
+      // The reviewed pack <extras> belong to the pack's contents: an uploaded
+      // book that restates the same pack without the block (the corpus file
+      // has none) must not strip the fixed items and gold Extract grants. A
+      // definition carrying its own <extras> wins, and a redefinition whose
+      // type or extracted contents differ is a different pack and inherits
+      // nothing.
+      const previous = byId.get(id);
+      if (
+        previous?.extras !== undefined &&
+        element.extras === undefined &&
+        previous.identity.type === element.identity.type &&
+        sameExtractContents(previous.extract ?? [], element.extract ?? [])
+      ) {
+        element.extras = clonePackExtras(previous.extras);
+      }
+      // An uploaded book's Source element replaces the bundled core stub: mark
+      // it so the Source panel can badge it and warn that disabling it also
+      // hides the bundled copy. Chained overrides keep the mark.
+      if (element.identity.type === "Source" && previous?.identity.type === "Source") {
+        if (!setterIsTrue(element, "core") && (setterIsTrue(previous, "core") || previous.overridesBundledCore === true)) {
+          element.overridesBundledCore = true;
+        }
       }
       declaredIn.set(id, relative);
       byId.set(id, element);

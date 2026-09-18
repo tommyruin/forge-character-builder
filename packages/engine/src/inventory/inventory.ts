@@ -26,9 +26,32 @@ import { engineError } from "../errors.js";
 import { escapeXml } from "../selection/selection.js";
 import { elementById, type ElementLibrary } from "../content/library.js";
 import { isContentAllowedForCharacter } from "../content/access.js";
-import type { ParsedElement, Rule, Setter } from "../content/parser.js";
+import type { ExtractEntry, PackExtras, ParsedElement, Rule, Setter } from "../content/parser.js";
 import type { CharacterState, Coinage, InventoryItemState } from "../character/state.js";
 import { equipmentMetadata, isPhysicalEquipment, type EquipmentAttunementDto } from "../content/equipment/categories.js";
+
+export interface ExtractEntryDto {
+  itemId: string;
+  name: string;
+  amount: number;
+}
+
+/** One <choice> of a pack's <extras> block: the candidates the picker offers. */
+export interface PackChoiceDto {
+  label: string;
+  candidates: ExtractEntryDto[];
+}
+
+/**
+ * What a pack grants beyond its <extract> contents: fixed items, gold, and
+ * player choices. `choices` candidates are picked at extraction; an unset
+ * choice is skipped and stays manual.
+ */
+export interface PackExtrasDto {
+  gold: number;
+  items: ExtractEntryDto[];
+  choices: PackChoiceDto[];
+}
 
 export interface InventoryItemDto {
   identifier: string;
@@ -61,7 +84,9 @@ export interface InventoryItemDto {
   rarity: string | null;
   attunement: EquipmentAttunementDto;
   isExtractable: boolean;
-  extractableContents: Array<{ itemId: string; name: string; amount: number }>;
+  extractableContents: ExtractEntryDto[];
+  /** The pack's fixed items, gold, and choices (empty for non-pack items). */
+  extractableExtras: PackExtrasDto;
   /**
    * True when an attack row already exists for this record. Equipping a weapon
    * creates one automatically; this is what tells the Equipment tab whether a
@@ -310,15 +335,39 @@ export function itemBenefitsActive(
   return isWearableElement(base) ? item.equipped : true;
 }
 
-/** The extract block contents of an item's effective element. */
-function extractOf(library: ElementLibrary, item: InventoryItemState): Array<{ itemId: string; name: string; amount: number }> {
-  const element = effectiveElement(library, item);
-  const entries = element?.extract ?? [];
+/** Maps extract entries to their DTO shape (name resolved from the library). */
+function extractEntriesOf(library: ElementLibrary, entries: ExtractEntry[]): ExtractEntryDto[] {
   return entries.map((entry) => ({
     itemId: entry.id,
     name: library.byId.get(entry.id)?.identity.name ?? "",
     amount: entry.amount,
   }));
+}
+
+/** The extract block contents of an item's effective element. */
+function extractOf(library: ElementLibrary, item: InventoryItemState): ExtractEntryDto[] {
+  return extractEntriesOf(library, effectiveElement(library, item)?.extract ?? []);
+}
+
+/** True when an element carries anything an extraction would grant. */
+function hasPackExtras(element: ParsedElement | undefined): boolean {
+  const extras = element?.extras;
+  if (extras === undefined) return false;
+  return extras.gold > 0 || extras.items.length > 0 || extras.choices.length > 0;
+}
+
+/** The <extras> block of an item's effective element (empty when absent). */
+function extrasOf(library: ElementLibrary, item: InventoryItemState): PackExtrasDto {
+  const extras: PackExtras | undefined = effectiveElement(library, item)?.extras;
+  if (extras === undefined) return { gold: 0, items: [], choices: [] };
+  return {
+    gold: extras.gold,
+    items: extractEntriesOf(library, extras.items),
+    choices: extras.choices.map((choice) => ({
+      label: choice.label,
+      candidates: extractEntriesOf(library, choice.candidates),
+    })),
+  };
 }
 
 /** The slots occupied by an equipped item (two-handed occupies both hands). */
@@ -393,8 +442,9 @@ export function buildInventoryDto(
       description: metadata.description,
       rarity: metadata.rarity,
       attunement: metadata.attunement,
-      isExtractable: (base?.extract ?? []).length > 0 || (element?.extract ?? []).length > 0,
+      isExtractable: (base?.extract ?? []).length > 0 || (element?.extract ?? []).length > 0 || hasPackExtras(base) || hasPackExtras(element),
       extractableContents: extractOf(library, item),
+      extractableExtras: extrasOf(library, item),
       hasAttackRow: state.attacks.some((row) => row.identifier === item.identifier),
     };
   });
@@ -1265,38 +1315,92 @@ export function planSetCoinsEdits(document: Dnd5eDocument, coins: Coinage): RawE
   return edits;
 }
 
-/** Plans extracting an item's contents (packs): removes it, adds contents. */
+/**
+ * Plans adding a coin delta to the current totals. `planSetCoinsEdits`
+ * replaces the values wholesale; the extraction path needs the add form so a
+ * pack's gold credits exactly once per extraction, in the same edit batch
+ * that consumes the pack unit.
+ */
+export function planAddCoinsEdits(state: CharacterState, document: Dnd5eDocument, delta: Partial<Coinage>): RawEdit[] {
+  const next: Coinage = { ...state.coins };
+  for (const [coin, amount] of Object.entries(delta)) {
+    if (amount === undefined) continue;
+    if (!Number.isInteger(amount) || amount < 0) {
+      throw engineError("invalid-argument", `invalid coin amount '${amount}'`);
+    }
+    next[coin as keyof Coinage] += amount;
+  }
+  return planSetCoinsEdits(document, next);
+}
+
+/** Appends one extracted content record (a plain carried item). */
+function appendExtractedItemEdits(
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  id: string,
+  amount: number,
+): RawEdit[] {
+  const content = library.byId.get(id);
+  if (!content) return [];
+  const node = renderItemNode({
+    identifier: randomUuid(),
+    name: content.identity.name,
+    id: content.identity.id,
+    amount,
+    equippedLocation: null,
+    attuned: false,
+    adorner: null,
+    detailsName: "",
+    notes: "",
+  });
+  return [appendItemEdit(document, node)];
+}
+
+/**
+ * Plans extracting one unit of an item's contents (packs): decrements the
+ * record (removing it with the last unit), adds the <extract> contents, the
+ * <extras> fixed items, the gold, and the selected candidates for the pack's
+ * choices. An unset choice is skipped and stays manual.
+ */
 export function planExtractItemEdits(
   state: CharacterState,
   document: Dnd5eDocument,
   library: ElementLibrary,
   identifier: string,
+  /** Chosen candidate id per choice label. */
+  selections?: Readonly<Record<string, string>>,
 ): RawEdit[] {
   const item = state.items.find((i) => i.identifier === identifier);
   if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
   const element = effectiveElement(library, item);
   const extract = element?.extract ?? [];
-  if (extract.length === 0) {
+  const extras = element?.extras;
+  if (extract.length === 0 && !hasPackExtras(element)) {
     throw engineError("conflict", `Inventory item '${item.name}' cannot be extracted.`);
   }
   const edits: RawEdit[] = [];
-  for (const entry of extract) {
-    const content = library.byId.get(entry.id);
-    if (!content) continue;
-    const node = renderItemNode({
-      identifier: randomUuid(),
-      name: content.identity.name,
-      id: content.identity.id,
-      amount: entry.amount,
-      equippedLocation: null,
-      attuned: false,
-      adorner: null,
-      detailsName: "",
-      notes: "",
-    });
-    edits.push(appendItemEdit(document, node));
+  for (const entry of extract) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount));
+  for (const entry of extras?.items ?? []) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount));
+  for (const choice of extras?.choices ?? []) {
+    const chosenId = selections?.[choice.label];
+    if (chosenId === undefined) continue;
+    const candidate = choice.candidates.find((entry) => entry.id === chosenId);
+    if (candidate === undefined) {
+      throw engineError("invalid-argument", `'${chosenId}' is not a candidate for ${choice.label}`);
+    }
+    edits.push(...appendExtractedItemEdits(document, library, candidate.id, candidate.amount));
   }
+  if ((extras?.gold ?? 0) > 0) {
+    edits.push(...planAddCoinsEdits(state, document, { gold: extras!.gold }));
+  }
+  // One unit per extraction: decrement the record, remove it at the last one.
   const node = itemNodeOf(document, identifier);
-  edits.push(removeNodeEdit(document.raw, node));
+  if (item.amount > 1) {
+    const range = attrValueRange(document.raw, node, "amount");
+    if (range === null) throw engineError("conflict", `item '${item.name}' has no amount attribute to decrement`);
+    edits.push({ start: range.start, end: range.end, replacement: String(item.amount - 1) });
+  } else {
+    edits.push(removeNodeEdit(document.raw, node));
+  }
   return edits;
 }

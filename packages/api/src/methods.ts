@@ -315,7 +315,7 @@ export interface EngineMethodMap {
   >;
   removeItem: MethodContract<[id: string, identifier: string, amount?: number], WireObject>;
   setItemAmount: MethodContract<[id: string, identifier: string, request: { amount: number }], WireObject>;
-  extractItem: MethodContract<[id: string, identifier: string], WireObject>;
+  extractItem: MethodContract<[id: string, identifier: string, selections?: Record<string, string>], WireObject>;
   equipItem: MethodContract<[id: string, identifier: string, request: { location: string }], WireObject>;
   setItemStorage: MethodContract<
     [id: string, identifier: string, request: { storage: string | null; amount?: number }],

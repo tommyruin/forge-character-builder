@@ -52,6 +52,8 @@ function sourceDto(source: ParsedElement, library: ElementLibrary): WireObject {
     // A built-in stub of a book: only the System Reference Document part of it
     // ships, and an uploaded copy of the book replaces it in place.
     isIncomplete: sourceSetter(source, "incomplete").toLocaleLowerCase() === "true",
+    // An uploaded book replaced the bundled core stub of this source.
+    overridesBundledCore: source.overridesBundledCore === true,
     information: sourceSetter(source, "information"),
     hasElements,
     canToggle: sourceSetter(source, "core").toLocaleLowerCase() !== "true",
@@ -428,7 +430,7 @@ export function createEngineMethodHandlers(
     addItem: (id, request) => objectResult(service.addItem(id, request)),
     removeItem: (id, identifier, amount) => objectResult(service.removeItem(id, identifier, amount)),
     setItemAmount: (id, identifier, request) => objectResult(service.setItemAmount(id, identifier, request.amount)),
-    extractItem: (id, identifier) => objectResult(service.extractItem(id, identifier)),
+    extractItem: (id, identifier, selections) => objectResult(service.extractItem(id, identifier, selections)),
     equipItem: (id, identifier, request) => objectResult(service.equipItem(id, identifier, request.location)),
     setItemStorage: (id, identifier, request) => objectResult(service.setItemStorage(id, identifier, request.storage, request.amount)),
     attuneItem: (id, identifier, request) => objectResult(service.attuneItem(id, identifier, request.attuned)),

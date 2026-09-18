@@ -577,6 +577,7 @@ async function draftMap(corpus, inventory) {
     excludedFiles: EXCLUDED_FILES,
     renames,
     edits: existing?.edits ?? {},
+    packExtras: existing?.packExtras ?? {},
     toleratedEmptySelects: existing?.toleratedEmptySelects ?? {},
     unmappedChapters: {
       ...edition.unmappedChapters,
@@ -653,6 +654,30 @@ export function trimDescription(element) {
   return { source: `${source.slice(0, open + "<description>".length)}${next}${source.slice(close)}`, trimmed: removed > 0 ? 1 : 0 };
 }
 
+/**
+ * Renders one reviewed packExtras entry as the element's <extras> block: the
+ * gold and fixed items the pack prose says it omits, plus the player choices
+ * the Extract prompt offers. The block is appended after the element's own
+ * children, before </element>.
+ */
+function renderPackExtras(extras) {
+  const lines = [`\t\t<extras${(extras.gold ?? 0) > 0 ? ` gold="${extras.gold}"` : ""}>`];
+  for (const item of extras.items ?? []) lines.push(`\t\t\t<item>${item}</item>`);
+  for (const choice of extras.choices ?? []) {
+    lines.push(`\t\t\t<choice label="${escapeXml(choice.label ?? "")}">`);
+    for (const candidate of choice.candidates ?? []) lines.push(`\t\t\t\t<item>${candidate}</item>`);
+    lines.push("\t\t\t</choice>");
+  }
+  lines.push("\t\t</extras>");
+  return lines.join("\n");
+}
+
+function injectPackExtras(source, extras) {
+  const close = source.lastIndexOf("</element>");
+  if (close === -1) return source;
+  return `${source.slice(0, close).trimEnd()}\n${renderPackExtras(extras)}\n\t${source.slice(close)}`;
+}
+
 const relativeSrd = (path) => path.slice(ROOT.length + 1);
 
 let shippedCache;
@@ -704,7 +729,7 @@ async function buildOutputs(corpus, map) {
   );
   const byId = new Map(elements.map((element) => [element.id, element]));
   const retained = new Set();
-  const report = { droppedNamed: [], droppedOwned: [], tierAWouldDrop: [], unresolvedGrants: [], emptySelects: [], denylist: [], trimmed: 0 };
+  const report = { droppedNamed: [], droppedOwned: [], tierAWouldDrop: [], unresolvedGrants: [], emptySelects: [], denylist: [], packExtras: [], trimmed: 0 };
 
   // Roots: named-type elements the map keeps. Everything else is kept only
   // when a retained element owns it — by grant id, or by a select whose
@@ -782,11 +807,15 @@ async function buildOutputs(corpus, map) {
     if (kept.every((node) => node.kind === "info")) continue;
     let text = "";
     for (const node of kept) {
+      let source = node.source;
       if (node.kind === "element" && edition.trims[node.type] !== undefined) {
-        const { source, trimmed } = trimDescription(node);
-        report.trimmed += trimmed;
-        text += `${node.leading}${source}`;
-      } else text += `${node.leading}${node.source}`;
+        const trimmed = trimDescription(node);
+        report.trimmed += trimmed.trimmed;
+        source = trimmed.source;
+      }
+      const packExtras = node.kind === "element" ? map.packExtras?.[node.id] : undefined;
+      if (packExtras) source = injectPackExtras(source, packExtras);
+      text += `${node.leading}${source}`;
     }
     text = applyEdits(applyRenames(text, map.renames), map.edits, path);
     const header =
@@ -814,6 +843,25 @@ async function buildOutputs(corpus, map) {
 
   // Referential integrity against the retained set plus the shipped baseline.
   const known = new Set([...retained, ...(await shippedIds())]);
+  // Every reviewed packExtras entry must point at a retained pack and at
+  // items the edition ships; a typo would otherwise ship as a dead grant.
+  for (const [packId, extras] of Object.entries(map.packExtras ?? {})) {
+    if (!retained.has(packId) || map.excluded[packId]) {
+      report.packExtras.push(`packExtras ${packId}: the pack element is not retained`);
+      continue;
+    }
+    for (const itemId of extras.items ?? []) {
+      if (!known.has(itemId)) report.packExtras.push(`packExtras ${packId}: fixed item ${itemId} is not retained or shipped`);
+    }
+    for (const choice of extras.choices ?? []) {
+      if (!choice.label) report.packExtras.push(`packExtras ${packId}: choice without a label`);
+      for (const candidateId of choice.candidates ?? []) {
+        if (!known.has(candidateId)) {
+          report.packExtras.push(`packExtras ${packId}: choice "${choice.label ?? ""}" candidate ${candidateId} is not retained or shipped`);
+        }
+      }
+    }
+  }
   const retainedElements = elements.filter((element) => retained.has(element.id));
   for (const element of retainedElements) {
     for (const grantId of element.grants) if (!known.has(grantId)) report.unresolvedGrants.push(`${element.path}: ${element.id} grants ${grantId}`);
@@ -915,6 +963,10 @@ function printReport(report, retained) {
     console.log(`DENYLIST HITS: ${report.denylist.length}`);
     report.denylist.forEach((line) => console.log(`  ${line}`));
   }
+  if (report.packExtras.length) {
+    console.log(`PACK EXTRAS ISSUES: ${report.packExtras.length}`);
+    report.packExtras.forEach((line) => console.log(`  ${line}`));
+  }
   if (args.has("--verbose")) {
     report.droppedNamed.forEach((line) => console.log(`  dropped: ${line}`));
     report.droppedOwned.forEach((line) => console.log(`  dropped(owned): ${line}`));
@@ -938,7 +990,7 @@ async function run(key) {
   const { outputs, report, retained } = await buildOutputs(corpus, map);
   console.log(`== ${edition.title} ==`);
   printReport(report, retained);
-  const failures = report.unresolvedGrants.length + report.emptySelects.length + report.denylist.length;
+  const failures = report.unresolvedGrants.length + report.emptySelects.length + report.denylist.length + report.packExtras.length;
   let ok = failures === 0;
   if (command === "build") {
     for (const [name] of await existingOutputs()) if (!outputs.has(name)) await unlink(join(OUTPUT_DIR, name));

@@ -62,6 +62,210 @@
       "from": "<tr><td> 1</td><td>Aasimar</td></tr>",
       "to": "<tr><td> 1</td><td>Roll again.</td></tr>",
       "why": "SRD 5.2.1 Reincarnate rolls again on a 1; Aasimar is not an SRD species"
+    },
+    "ranger-starting-equipment-gold-typo": {
+      "file": "classes/class-ranger.xml",
+      "from": "Explorer's Pack, and 7 CP; or (B) 150 GP",
+      "to": "Explorer's Pack, and 7 GP; or (B) 150 GP",
+      "why": "the corpus prints the ranger's starting gold as copper; the pack note and the SRD text say 7 GP"
+    },
+    "monk-starting-equipment-gold-typo": {
+      "file": "classes/class-monk.xml",
+      "from": "Explorer's Pack, and ll GP; or (B) 50 GP",
+      "to": "Explorer's Pack, and 11 GP; or (B) 50 GP",
+      "why": "the corpus prints the monk's starting gold as 'll'; the pack note and the SRD text say 11 GP"
+    }
+  },
+  "packExtras": {
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_ACOLYTE": {
+      "gold": 8,
+      "items": [],
+      "choices": [
+        {
+          "label": "Holy Symbol",
+          "candidates": [
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET",
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM",
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY"
+          ]
+        }
+      ]
+    },
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_CRIMINAL": {
+      "gold": 15,
+      "items": [],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SAGE": {
+      "gold": 8,
+      "items": [],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_BACKGROUND_EQUIPMENT_PACK_SOLDIER": {
+      "gold": 14,
+      "items": [],
+      "choices": [
+        {
+          "label": "Gaming Set",
+          "candidates": [
+            "ID_WOTC_PHB24_ITEM_TOOL_DICE_SET",
+            "ID_WOTC_PHB24_ITEM_TOOL_PLAYING_CARDS_SET"
+          ]
+        }
+      ]
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARBARIAN": {
+      "gold": 15,
+      "items": [],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_BARD": {
+      "gold": 19,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER"
+      ],
+      "choices": [
+        {
+          "label": "Musical Instrument",
+          "candidates": [
+            "ID_WOTC_PHB24_INSTRUMENT_BAGPIPES",
+            "ID_WOTC_PHB24_INSTRUMENT_DRUM",
+            "ID_WOTC_PHB24_INSTRUMENT_DULCIMER",
+            "ID_WOTC_PHB24_INSTRUMENT_FLUTE",
+            "ID_WOTC_PHB24_INSTRUMENT_HORN",
+            "ID_WOTC_PHB24_INSTRUMENT_LUTE",
+            "ID_WOTC_PHB24_INSTRUMENT_LYRE",
+            "ID_WOTC_PHB24_INSTRUMENT_PANFLUTE",
+            "ID_WOTC_PHB24_INSTRUMENT_SHAWM",
+            "ID_WOTC_PHB24_INSTRUMENT_VIOL"
+          ]
+        }
+      ]
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_CLERIC": {
+      "gold": 7,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_MEDIUM_CHAIN_SHIRT",
+        "ID_WOTC_PHB24_ARMOR_SHIELD"
+      ],
+      "choices": [
+        {
+          "label": "Holy Symbol",
+          "candidates": [
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET",
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM",
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY"
+          ]
+        }
+      ]
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_DRUID": {
+      "gold": 9,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER",
+        "ID_WOTC_PHB24_ARMOR_SHIELD"
+      ],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_1": {
+      "gold": 4,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL"
+      ],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_FIGHTER_2": {
+      "gold": 11,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER"
+      ],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_MONK": {
+      "gold": 11,
+      "items": [],
+      "choices": [
+        {
+          "label": "Artisan's Tools or Musical Instrument",
+          "candidates": [
+            "ID_WOTC_PHB24_ITEM_TOOL_ALCHEMISTS_SUPPLIES",
+            "ID_WOTC_PHB24_ITEM_TOOL_BREWERS_SUPPLIES",
+            "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+            "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_CARTOGRAPHERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_COBBLERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS",
+            "ID_WOTC_PHB24_ITEM_TOOL_GLASSBLOWERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_JEWELERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_LEATHERWORKERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_MASONS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_PAINTERS_SUPPLIES",
+            "ID_WOTC_PHB24_ITEM_TOOL_POTTERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_SMITHS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_TINKERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_WEAVERS_TOOLS",
+            "ID_WOTC_PHB24_ITEM_TOOL_WOODCARVERS_TOOLS",
+            "ID_WOTC_PHB24_INSTRUMENT_BAGPIPES",
+            "ID_WOTC_PHB24_INSTRUMENT_DRUM",
+            "ID_WOTC_PHB24_INSTRUMENT_DULCIMER",
+            "ID_WOTC_PHB24_INSTRUMENT_FLUTE",
+            "ID_WOTC_PHB24_INSTRUMENT_HORN",
+            "ID_WOTC_PHB24_INSTRUMENT_LUTE",
+            "ID_WOTC_PHB24_INSTRUMENT_LYRE",
+            "ID_WOTC_PHB24_INSTRUMENT_PANFLUTE",
+            "ID_WOTC_PHB24_INSTRUMENT_SHAWM",
+            "ID_WOTC_PHB24_INSTRUMENT_VIOL"
+          ]
+        }
+      ]
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_PALADIN": {
+      "gold": 9,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL",
+        "ID_WOTC_PHB24_ARMOR_SHIELD"
+      ],
+      "choices": [
+        {
+          "label": "Holy Symbol",
+          "candidates": [
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET",
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM",
+            "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY"
+          ]
+        }
+      ]
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_RANGER": {
+      "gold": 7,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_LIGHT_STUDDED_LEATHER"
+      ],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_ROGUE": {
+      "gold": 8,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER"
+      ],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_SORCERER": {
+      "gold": 28,
+      "items": [],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WARLOCK": {
+      "gold": 15,
+      "items": [
+        "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER"
+      ],
+      "choices": []
+    },
+    "ID_WOTC_PHB24_ITEM_CLASS_EQUIPMENT_PACK_WIZARD": {
+      "gold": 5,
+      "items": [],
+      "choices": []
     }
   },
   "toleratedEmptySelects": {

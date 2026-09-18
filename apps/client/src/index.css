@@ -1724,6 +1724,20 @@ button:disabled {
   flex: 0 0 auto;
 }
 
+/* A source whose imported files replace a bundled core stub: the badge makes
+   it visible that disabling it also hides the bundled content. */
+.fcb-badge-override {
+  padding: 1px 6px;
+  border: 1px solid var(--fcb-warning-border);
+  border-radius: 999px;
+  background: var(--fcb-warning-bg);
+  color: var(--fcb-warning-text);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
 .fcb-source-actions-footer p {
   margin: 10px 0 0;
 }

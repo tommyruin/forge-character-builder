@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../api";
+import Modal from "../../Modal";
 import {
   normalizeRestrictedSourceIds,
   readDefaultRestrictedSourceIds,
@@ -8,6 +9,7 @@ import {
 import { useWorkspace } from "../../WorkspaceContext";
 import {
   formatSourceReleaseDate,
+  getNewlyDisabledOverrideSources,
   getSourceGroupState,
   getToggleableSourceIds,
   getVisibleSourceGroups,
@@ -42,11 +44,14 @@ function builtInDocument(source) {
 /**
  * An (i) beside a group whose books ship as built-in stubs: only their System
  * Reference Document content is included, and importing the book fills in the
- * rest in place. Rendered as a native disclosure so it needs no state.
+ * rest in place. Rendered as a native disclosure so it needs no state. An
+ * imported copy keeps the note (and says so) because disabling it still hides
+ * the bundled copy it replaced.
  */
 export function BuiltInSourcesNote({ groupName, sources }) {
   const stubs = sources.filter((source) => source.isIncomplete);
-  if (stubs.length === 0) return null;
+  const overrides = sources.filter((source) => source.overridesBundledCore);
+  if (stubs.length === 0 && overrides.length === 0) return null;
   const documents = [...new Set(stubs.map(builtInDocument))];
   return (
     <details className="fcb-source-group-info">
@@ -58,9 +63,21 @@ export function BuiltInSourcesNote({ groupName, sources }) {
         <span aria-hidden="true">i</span>
       </summary>
       <p className="fcb-source-group-note fcb-muted-copy text-xs">
-        Built in: {stubs.map((source) => source.name).join(", ")}. The built-in
-        copy of each contains only the content published in{" "}
-        {documents.join(" and ")}.
+        {stubs.length > 0 && (
+          <>
+            Built in: {stubs.map((source) => source.name).join(", ")}. The
+            built-in copy of each contains only the content published in{" "}
+            {documents.join(" and ")}.
+          </>
+        )}
+        {stubs.length > 0 && overrides.length > 0 ? " " : null}
+        {overrides.length > 0 && (
+          <>
+            Imported: {overrides.map((source) => source.name).join(", ")}. Each
+            imported copy replaces the built-in one in place, so disabling it
+            also hides the bundled content.
+          </>
+        )}
       </p>
     </details>
   );
@@ -172,6 +189,14 @@ export function SourceGroupList({
                         {source.isPlaytest && (
                           <span className="fcb-badge">Playtest</span>
                         )}
+                        {source.overridesBundledCore && (
+                          <span
+                            className="fcb-badge fcb-badge-override"
+                            title="The imported copy replaces the built-in book in place; disabling it also hides the bundled content."
+                          >
+                            Replaces bundled content
+                          </span>
+                        )}
                       </span>
                       <span className="fcb-muted-copy block break-words text-xs">
                         {source.author || "Unknown author"}
@@ -187,6 +212,41 @@ export function SourceGroupList({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Confirmation before a draft change disables a book whose imported files
+ * replaced the bundled copy: turning it off also hides that bundled content,
+ * so the user says yes or no before the draft changes.
+ */
+export function OverrideDisableDialog({ pending, onCancel, onConfirm }) {
+  const sources = pending?.sources ?? [];
+  const names = sources.map((source) => source.name).join(", ");
+  const pronoun = sources.length === 1 ? "its" : "their";
+  return (
+    <Modal
+      open={Boolean(pending)}
+      title="Disable bundled content?"
+      onClose={onCancel}
+    >
+      <p>
+        Disabling <strong>{names}</strong> also hides the built-in System
+        Reference Document content {pronoun} imported files replace.
+      </p>
+      <div className="fcb-toolbar mt-4 justify-end">
+        <button type="button" className="fcb-button" onClick={onCancel}>
+          No, keep enabled
+        </button>
+        <button
+          type="button"
+          className="fcb-button fcb-button-primary"
+          onClick={onConfirm}
+        >
+          Yes, disable
+        </button>
+      </div>
+    </Modal>
   );
 }
 
@@ -282,6 +342,7 @@ export default function CharacterSourcesPanel() {
   const [saving, setSaving] = useState(false);
   const [savingDefault, setSavingDefault] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingOverride, setPendingOverride] = useState(null);
   const requestNumber = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -319,14 +380,27 @@ export default function CharacterSourcesPanel() {
 
   const dirty = !sameIds(draftSourceIds, appliedSourceIds);
 
+  // A draft change that disables an importing source asks first: turning it
+  // off also hides the bundled content its imported files replace.
+  const requestDraftChange = (nextIds) => {
+    const newlyDisabled = getNewlyDisabledOverrideSources(
+      sources?.groups,
+      draftSourceIds,
+      nextIds,
+    );
+    if (newlyDisabled.length > 0) {
+      setPendingOverride({ nextIds, sources: newlyDisabled });
+      return;
+    }
+    setDraftSourceIds(nextIds);
+  };
+
   const toggleSource = (source) => {
     if (!source.canToggle) return;
-    setDraftSourceIds((current) => {
-      const ids = new Set(current);
-      if (ids.has(source.id)) ids.delete(source.id);
-      else ids.add(source.id);
-      return [...ids];
-    });
+    const ids = new Set(draftSourceIds);
+    if (ids.has(source.id)) ids.delete(source.id);
+    else ids.add(source.id);
+    requestDraftChange([...ids]);
   };
 
   const toggleGroup = (group, state) => {
@@ -334,15 +408,13 @@ export default function CharacterSourcesPanel() {
       .filter((source) => source.canToggle)
       .map((source) => source.id);
     if (!toggleableIds.length) return;
-    setDraftSourceIds((current) => {
-      const ids = new Set(current);
-      if (state.allEnabled || state.mixed) {
-        toggleableIds.forEach((id) => ids.add(id));
-      } else {
-        toggleableIds.forEach((id) => ids.delete(id));
-      }
-      return [...ids];
-    });
+    const ids = new Set(draftSourceIds);
+    if (state.allEnabled || state.mixed) {
+      toggleableIds.forEach((id) => ids.add(id));
+    } else {
+      toggleableIds.forEach((id) => ids.delete(id));
+    }
+    requestDraftChange([...ids]);
   };
 
   const apply = async () => {
@@ -495,7 +567,7 @@ export default function CharacterSourcesPanel() {
                 className="fcb-button"
                 disabled={busy || saving || savingDefault}
                 onClick={() =>
-                  setDraftSourceIds(getToggleableSourceIds(sources?.groups))
+                  requestDraftChange(getToggleableSourceIds(sources?.groups))
                 }
               >
                 Disable all
@@ -504,7 +576,7 @@ export default function CharacterSourcesPanel() {
                 type="button"
                 className="fcb-button"
                 disabled={busy || saving || savingDefault}
-                onClick={() => setDraftSourceIds(defaultSourceIds)}
+                onClick={() => requestDraftChange(defaultSourceIds)}
               >
                 Use default
               </button>
@@ -571,6 +643,14 @@ export default function CharacterSourcesPanel() {
         onApply={apply}
         onDiscard={() => setDraftSourceIds(appliedSourceIds)}
         onSaveDefault={saveDefault}
+      />
+      <OverrideDisableDialog
+        pending={pendingOverride}
+        onCancel={() => setPendingOverride(null)}
+        onConfirm={() => {
+          if (pendingOverride) setDraftSourceIds(pendingOverride.nextIds);
+          setPendingOverride(null);
+        }}
       />
     </div>
   );

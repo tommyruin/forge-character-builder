@@ -39,4 +39,4 @@ export const CHARACTER_LOAD_SCHEMA_VERSION = 1;
  * instead of resurrecting the previous finalization's output. The engine's
  * finalization-revision test pins the library digest to this value.
  */
-export const SNAPSHOT_PARSER_VERSION = "9";
+export const SNAPSHOT_PARSER_VERSION = "11";

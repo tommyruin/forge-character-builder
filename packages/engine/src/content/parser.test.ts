@@ -169,6 +169,43 @@ describe("element parser", () => {
     expect(select.optional).toBe(false);
     expect(select.expand).toBe(true);
   });
+
+  it("captures a pack's extras block with gold, fixed items, and choices", () => {
+    const xml = `<elements>
+      <element name="Pack" type="Item" source="S" id="ID_PACK_1">
+        <extract>
+          <item amount="2">ID_ITEM_A</item>
+        </extract>
+        <extras gold="7">
+          <item>ID_ITEM_B</item>
+          <item amount="3">ID_ITEM_C</item>
+          <choice label="Holy Symbol">
+            <item>ID_ITEM_D</item>
+            <item>ID_ITEM_E</item>
+          </choice>
+        </extras>
+      </element>
+      <element name="Plain" type="Item" source="S" id="ID_PACK_2" />
+    </elements>`;
+    const [pack, plain] = parseElementsFile(xml, "packs.xml");
+    expect(pack!.extras).toEqual({
+      gold: 7,
+      items: [
+        { id: "ID_ITEM_B", amount: 1 },
+        { id: "ID_ITEM_C", amount: 3 },
+      ],
+      choices: [
+        {
+          label: "Holy Symbol",
+          candidates: [
+            { id: "ID_ITEM_D", amount: 1 },
+            { id: "ID_ITEM_E", amount: 1 },
+          ],
+        },
+      ],
+    });
+    expect(plain!.extras).toBeUndefined();
+  });
 });
 
 export type { ParsedElement };
