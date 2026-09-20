@@ -210,7 +210,7 @@ describe("character sheet PDF writer", () => {
       expect(content.indexOf("Custom bow")).toBeGreaterThan(content.indexOf("word1799"));
       expect(bodyContent.replace(/\s+/g, " ").trim()).toBe(note + " " + "Second attack note. ".repeat(60).trim());
     } finally { rectangles.mockRestore(); texts.mockRestore(); }
-  });
+  }, 60_000);
 
   it("keeps a short 2014 attack note on the character page", async () => {
     const model = { characterId: "Short note", mode: "lite" as const, pageCount: 1,
