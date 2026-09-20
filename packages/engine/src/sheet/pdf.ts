@@ -367,6 +367,8 @@ export interface CharacterSheetTemplateBundle {
 export interface CharacterSheetWriteOptions {
   /** Show ability modifiers in the larger character ability boxes. */
   emphasizeAbilityModifiers?: boolean;
+  /** Include overflow attack-note pages (default true). */
+  includeAttackNotes?: boolean;
   /** The line signed at the foot of every template page. */
   footerText?: string;
   /** The scheme the templates were recoloured to; labels and values follow it. */
@@ -1318,6 +1320,61 @@ function drawEquipmentRichText(
   );
 }
 
+interface AttackNoteCard { title: string; text: string }
+
+/** Wrap literal user text using the selected face, including unbroken words. */
+function attackNoteLines(text: string, font: PDFFont, size: number, width: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (font.widthOfTextAtSize(candidate, size) <= width) { line = candidate; continue; }
+    if (line) { lines.push(line); line = ""; }
+    for (const char of word) {
+      if (line && font.widthOfTextAtSize(line + char, size) > width) { lines.push(line); line = ""; }
+      line += char;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function addAttackNotePages(
+  output: PDFDocument, cards: readonly AttackNoteCard[], fonts: SheetFonts,
+  colours: SheetLabelColours, footerText: string,
+): void {
+  const x = 32, width = 548, padding = 12, bottom = 48, lineHeight = 11;
+  let page: PDFPage | undefined;
+  let top = 0;
+  const newPage = (): PDFPage => {
+    const next = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    next.drawRectangle({ x, y: 738, width, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
+    next.drawText("ATTACK NOTES", { x: x + padding, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
+    drawSheetFooter(next, fonts, footerText);
+    top = 724;
+    return next;
+  };
+  for (const card of cards) {
+    const lines = attackNoteLines(card.text, fonts.regular, 8, width - padding * 2);
+    let offset = 0;
+    while (offset < lines.length) {
+      const title = card.title + (offset > 0 ? " (continued)" : "");
+      const wrappedTitle = attackNoteLines(title, fonts.titles, 10, width - padding * 2);
+      const titleLines = wrappedTitle.length <= 3 ? wrappedTitle : [...wrappedTitle.slice(0, 2), ellipsizeSpellText(wrappedTitle.slice(2).join(" "), fonts.titles, 10, width - padding * 2)];
+      const headerHeight = titleLines.length * 12 + 12;
+      if (!page || top - bottom < headerHeight + padding * 2 + lineHeight * 2) page = newPage();
+      const count = Math.min(lines.length - offset, Math.floor((top - bottom - headerHeight - padding * 2) / lineHeight));
+      const height = headerHeight + padding * 2 + count * lineHeight;
+      page.drawRectangle({ x, y: top - height, width, height, color: rgb(1, 1, 1), borderColor: rgb(...colours.lines), borderWidth: 1 });
+      page.drawRectangle({ x, y: top - headerHeight, width, height: headerHeight, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
+      titleLines.forEach((line, index) => page!.drawText(line, { x: x + padding, y: top - 16 - index * 12, size: 10, font: fonts.titles, color: rgb(...colours.cream) }));
+      lines.slice(offset, offset + count).forEach((line, index) => page!.drawText(line, { x: x + padding, y: top - headerHeight - padding - 8 - index * lineHeight, size: 8, font: fonts.regular, color: rgb(...colours.text) }));
+      offset += count;
+      top -= height + 14;
+    }
+  }
+}
+
 async function addCardPage(
   output: PDFDocument,
   template: Uint8Array,
@@ -1731,19 +1788,22 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       labels: detailsLabels.labels.map((label) => ({ ...label, text: label.text === "SCORE" ? "MODIFIER" : label.text === "MODIFIER" ? "SCORE" : label.text })),
     };
   }
-  const attackNoteRows: SheetRow[] = [];
-  const attackNotes: SheetSection = { title: "Attack notes", rows: attackNoteRows };
+  const attackNotes: AttackNoteCard[] = [];
   const detailsArt = await artworkFor(bundle.details);
   for (const [name, field] of detailsArt.fields) {
     if (!/^details_attack(?:[1-4])?_description$/.test(name) || !values[name]) continue;
     const value = values[name]!.split(/\r?\n/).map(winAnsiText).join("\n");
     const measure = (text: string, size: number): number => fonts.regular.widthOfTextAtSize(text, size);
+    // Match the writer's single-line path before considering multiline overflow.
+    if (!field.multiline && drawnNumberSize(value, field.rect, field.base, fonts.regular) > 0) continue;
     const size = fitMultilineFontSize(value, field.rect.width, field.rect.height, field.base, 0.25, measure);
     if (size >= 4.5 && value.split(/\s+/).every((word) => measure(word, size) <= field.rect.width - 4)) continue;
     const row = name.match(/attack([1-4])_/)?.[1];
     const title = row ? `Attack ${row}: ${values[`details_attack${row}_weapon`] || "Notes"}` : "General attack notes";
-    attackNoteRows.push({ kind: "tokens", tokens: [title + ".", ...value.split(/\s+/)] });
-    values[name] = "See attack notes";
+    if (options.includeAttackNotes !== false) {
+      attackNotes.push({ title, text: value });
+    }
+    values[name] = options.includeAttackNotes === false ? "Long note omitted" : "See attack notes";
   }
   const images = model.images ?? {};
   const fragments: FragmentCache = new Map();
@@ -1783,16 +1843,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         ));
         if (next !== undefined) continuations.push(next);
       }
-      if (attackNotes.rows.length > 0) {
-        let remaining: readonly FeatureFlowLine[] = featureFlowLines(attackNotes, 520, 8, fontMeasure(fonts), true);
-        do {
-          const notesPage = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-          notesPage.drawText("ATTACK NOTES", { x: 40, y: PAGE_HEIGHT - 40, size: 12, font: fonts.titles });
-          const next = drawFeatureFlow(notesPage, remaining, fonts, 40, PAGE_HEIGHT - 65, 520, 50, 8, 10);
-          drawSheetFooter(notesPage, fonts, footerText);
-          remaining = next?.lines ?? [];
-        } while (remaining.length > 0);
-      }
+      addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
       continue;
     }
     if (modelPage.templateKind === "background") {

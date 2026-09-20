@@ -672,6 +672,9 @@ describe("typed FCB nested adapter", () => {
     expect(bytes).toEqual(new Uint8Array([37, 80, 68, 70]));
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: true }]);
     expect(sheetRenderer).toHaveBeenCalledOnce();
+    await renderedApi.characters.sheetBytes("Ada", { lite: true, include: { attackNotes: false, notes: true } });
+    expect(sheetRenderer).toHaveBeenLastCalledWith(expect.anything(), expect.any(String), expect.objectContaining({ includeAttackNotes: false }));
+    expect(calls).toContainEqual(["generateSheet", "Ada", { lite: true, include: { notes: true } }]);
     const sheetUrl = await renderedApi.characters.sheet("Ada", { lite: true });
     expect(sheetUrl).toMatch(/^blob:/);
     URL.revokeObjectURL(sheetUrl);

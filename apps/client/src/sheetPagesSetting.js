@@ -8,11 +8,12 @@
 
 export const SHEET_PAGES_STORAGE_KEY = 'fcb-sheet-pages';
 
-export const SHEET_PAGE_NAMES = ['background', 'notes', 'spellCards', 'itemCards'];
+export const SHEET_PAGE_NAMES = ['background', 'notes', 'attackNotes', 'spellCards', 'itemCards'];
 
 export const SHEET_PAGE_LABELS = {
   background: 'Appearance & portrait',
   notes: 'Notes',
+  attackNotes: 'Attack notes',
   spellCards: 'Spell cards',
   itemCards: 'Item cards',
 };
@@ -20,6 +21,7 @@ export const SHEET_PAGE_LABELS = {
 export const SHEET_PAGE_TIPS = {
   background: 'The portrait, appearance, backstory and background feature page.',
   notes: 'The dedicated page for notes that outgrow the appearance page.',
+  attackNotes: 'Extra pages for long attack notes. Unticking leaves a short omission label; your notes stay saved.',
   spellCards: 'One card per known spell, with its full description.',
   itemCards: 'One card per carried item that carries a description.',
 };

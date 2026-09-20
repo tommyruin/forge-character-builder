@@ -104,6 +104,11 @@ describe("sheet render worker", () => {
       const content = await (await doc.getPage(1)).getTextContent();
       const items = content.items.filter((item) => "str" in item);
       expect(items.find((item) => item.str === "+4")!.height).toBeGreaterThan(items.find((item) => item.str === "18")!.height);
+      const longNotes = modelFor("Notes");
+      const withoutNotes = await request({ id: 4, model: { ...longNotes, formValues: { ...longNotes.formValues, details_attack1_description: "Long attack prose. ".repeat(100) } }, templateBase: SHEET_BASE, includeAttackNotes: false }) as { bytes: ArrayBuffer };
+      const notesDoc = await getDocument({ data: new Uint8Array(withoutNotes.bytes) }).promise;
+      expect(notesDoc.numPages).toBe(1);
+      expect((await (await notesDoc.getPage(1)).getTextContent()).items.some((item) => "str" in item && item.str === "Long note omitted")).toBe(true);
     } finally {
       vi.stubGlobal("fetch", previousFetch);
       vi.stubGlobal("location", previousLocation);

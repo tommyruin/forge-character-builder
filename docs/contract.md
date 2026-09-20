@@ -591,4 +591,15 @@ not. Recognized free-cast allowances explicitly say “free cast” or “free c
 Generated spell attack descriptions stay on spell cards; attack cells retain
 custom overrides and structured level, beam-count or warning information. Notes
 that cannot fit an attack cell refer to an appended attack-notes continuation,
-which preserves the complete text in attack-row order.
+which preserves the complete text in attack-row order. Each overflow attack uses
+a bordered card with the selected accent, line and text colours and sheet fonts.
+Bodies stay at 8pt; cards repeat their attack title with “continued” when a note
+spans pages.
+
+`CharacterSheetWriteOptions` and the dedicated render-worker request also accept
+`includeAttackNotes?: boolean` (default `true`). The client exposes it as
+`include.attackNotes` in its shared page preference, strips that renderer-only
+flag before `generateSheet`, and forwards it to the renderer. When disabled,
+overflowing cells say “Long note omitted” and generate no attack-note pages;
+character data is unchanged. Short single-line notes stay in their original
+cells. This choice is included in the PDF cache key.

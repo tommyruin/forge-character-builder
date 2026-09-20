@@ -82,7 +82,7 @@ describe('SheetTab floating controls', () => {
     expect(previewSource).toContain('libraryRevision');
     expect(cacheSource).toContain('SHEET_RENDERER_REVISION');
     expect(sheetCacheKey('hero', 4, false, 7)).toBe(
-      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+spellCards+itemCards#scores#full`,
+      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+attackNotes+spellCards+itemCards#scores#full`,
     );
     expect(
       sheetCacheKey('hero', 4, false, 7),
@@ -103,7 +103,7 @@ describe('SheetTab floating controls', () => {
         '2014',
         'crimson/gold/ink',
         'cinzelDecorative/spectral/helvetica/helvetica',
-        'background+notes+-spellCards+itemCards',
+        'background+notes+attackNotes+-spellCards+itemCards',
       ),
     );
   });

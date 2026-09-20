@@ -18,7 +18,7 @@ function memoryStorage(initial = {}) {
 
 describe('sheet pages setting', () => {
   it('prints every page by default and ignores unknown or malformed stored values', () => {
-    expect(DEFAULT_SHEET_PAGES).toEqual({ background: true, notes: true, spellCards: true, itemCards: true });
+    expect(DEFAULT_SHEET_PAGES).toEqual({ background: true, notes: true, attackNotes: true, spellCards: true, itemCards: true });
     const malformed = createSheetPagesSettingStore({ storage: memoryStorage({ [SHEET_PAGES_STORAGE_KEY]: '{not json' }) });
     expect(malformed.getSnapshot()).toEqual(DEFAULT_SHEET_PAGES);
     const partial = createSheetPagesSettingStore({
@@ -44,7 +44,7 @@ describe('sheet pages setting', () => {
     store.toggle('background');
     expect(store.getSnapshot()).toEqual({ ...DEFAULT_SHEET_PAGES, itemCards: false, background: false });
     expect(JSON.parse(storage.map.get(SHEET_PAGES_STORAGE_KEY)))
-      .toEqual({ background: false, notes: true, spellCards: true, itemCards: false });
+      .toEqual({ background: false, notes: true, attackNotes: true, spellCards: true, itemCards: false });
     expect(notified).toBe(2);
     store.toggle('background');
     expect(store.getSnapshot().background).toBe(true);
@@ -52,13 +52,23 @@ describe('sheet pages setting', () => {
   });
 
   it('keys the cache on the selection, distinguishing every combination', () => {
-    expect(sheetPagesKey(DEFAULT_SHEET_PAGES)).toBe('background+notes+spellCards+itemCards');
+    expect(sheetPagesKey(DEFAULT_SHEET_PAGES)).toBe('background+notes+attackNotes+spellCards+itemCards');
     expect(sheetPagesKey({ ...DEFAULT_SHEET_PAGES, spellCards: false }))
-      .toBe('background+notes+-spellCards+itemCards');
+      .toBe('background+notes+attackNotes+-spellCards+itemCards');
     expect(sheetPagesKey({ ...DEFAULT_SHEET_PAGES, spellCards: false }))
       .not.toBe(sheetPagesKey({ ...DEFAULT_SHEET_PAGES, itemCards: false }));
     // An unknown or missing flag resolves to the default, so the key is stable.
     expect(sheetPagesKey({ spellCards: false })).toBe(sheetPagesKey({ ...DEFAULT_SHEET_PAGES, spellCards: false }));
+  });
+
+  it('persists the attack-notes page choice and changes the PDF cache key', () => {
+    const storage = memoryStorage();
+    const store = createSheetPagesSettingStore({ storage });
+    expect(store.getSnapshot().attackNotes).toBe(true);
+    const before = sheetPagesKey(store.getSnapshot());
+    store.toggle('attackNotes');
+    expect(createSheetPagesSettingStore({ storage }).getSnapshot().attackNotes).toBe(false);
+    expect(sheetPagesKey(store.getSnapshot())).not.toBe(before);
   });
 
   it('syncs a change made in another tab', () => {

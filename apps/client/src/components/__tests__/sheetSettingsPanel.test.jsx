@@ -15,7 +15,9 @@ describe('SheetSettingsPanel', () => {
     }
     // The chosen value wears its own face; the default title face is Cinzel Decorative.
     expect(markup).toContain(`font-family:${sheetFaceFontFamily('cinzelDecorative').replace(/"/g, '&quot;')}`);
-    expect(markup).not.toMatch(/save/i);
+    for (const button of markup.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)) {
+      expect(button[1]).not.toMatch(/\bsave\b/i);
+    }
   });
 
   it('explains every colour part and typeface role with a tip', () => {
@@ -49,12 +51,12 @@ describe('SheetSettingsPanel', () => {
   });
 
   it('offers each optional page as a checkbox, on by default', () => {
-    for (const label of ['Appearance &amp; portrait', 'Notes', 'Spell cards', 'Item cards']) {
+    for (const label of ['Appearance &amp; portrait', 'Notes', 'Attack notes', 'Spell cards', 'Item cards']) {
       expect(markup).toContain(`aria-label="${label}"`);
     }
-    // Four page checkboxes on, plus ability emphasis off by default.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(5);
-    expect(markup.match(/checked=""/g)).toHaveLength(4);
+    // Five page checkboxes on, plus ability emphasis off by default.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(6);
+    expect(markup.match(/checked=""/g)).toHaveLength(5);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
   });

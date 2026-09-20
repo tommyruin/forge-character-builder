@@ -170,6 +170,74 @@ describe("character sheet PDF writer", () => {
     }
   });
 
+  it.each((["2014", "2024"] as const).flatMap((edition) => (["spectral", "helvetica", "alegreyaSans"] as const).map((body) => ({ edition, body }))))("styles attack continuation cards with the selected colours on $edition in $body", async ({ edition, body }) => {
+    const rectangles = vi.spyOn(PDFPage.prototype, "drawRectangle");
+    const texts = vi.spyOn(PDFPage.prototype, "drawText");
+    try {
+      const note = Array.from({ length: 1800 }, (_, i) => `word${i}`).join(" ");
+      const model = { characterId: "Styled notes", mode: "lite" as const, pageCount: 1,
+        formValues: { details_attack1_weapon: "Custom blade", details_attack1_description: note,
+          details_attack2_weapon: "Custom bow", details_attack2_description: "Second attack note. ".repeat(60) },
+        pages: [{ page: 1, templateKind: "details" as const, sections: [] }] };
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition, { ...DEFAULT_SHEET_FONTS, body }), {
+        colours: { accent: "ocean", lines: "silver", text: "navy" },
+      });
+      const headings = texts.mock.calls.map(([text], index) => ({ text, page: texts.mock.contexts[index] }))
+        .filter(({ text }) => text === "ATTACK NOTES");
+      expect(headings.length).toBeGreaterThan(1);
+      for (const { page } of headings) {
+        const boxes = rectangles.mock.calls.filter((_, index) => rectangles.mock.contexts[index] === page);
+        expect(boxes.some(([box]) => box?.color && "red" in box.color && box.color.red === 0.12)).toBe(true);
+        expect(boxes.some(([box]) => box?.borderColor && "red" in box.borderColor && box.borderColor.red === 0.58)).toBe(true);
+      }
+      expect(texts.mock.calls.some(([text]) => text.includes("Custom blade (continued)"))).toBe(true);
+      const bodyInk = texts.mock.calls.find(([text]) => text.startsWith("word0 "))?.[1]?.color;
+      expect(bodyInk).toMatchObject({ red: 0.1, green: 0.14, blue: 0.3 });
+      const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
+      let content = "";
+      let bodyContent = "";
+      for (let i = 2; i <= doc.numPages; i++) {
+        const items = (await (await doc.getPage(i)).getTextContent()).items;
+        for (const item of items) if ("str" in item) {
+          expect(item.transform[4]).toBeGreaterThanOrEqual(24);
+          expect(item.transform[4] + item.width).toBeLessThanOrEqual(588);
+          if (/word\d/.test(item.str)) expect(item.height).toBe(8);
+          content += item.str + " ";
+          if (item.height === 8) bodyContent += item.str + " ";
+        }
+      }
+      expect(content.match(/word\d+/g)).toEqual(note.split(" "));
+      expect(content.indexOf("Custom bow")).toBeGreaterThan(content.indexOf("word1799"));
+      expect(bodyContent.replace(/\s+/g, " ").trim()).toBe(note + " " + "Second attack note. ".repeat(60).trim());
+    } finally { rectangles.mockRestore(); texts.mockRestore(); }
+  });
+
+  it("keeps a short 2014 attack note on the character page", async () => {
+    const model = { characterId: "Short note", mode: "lite" as const, pageCount: 1,
+      formValues: { details_attack1_description: "Versatile" },
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }] };
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle("2014"));
+    const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
+    expect(doc.numPages).toBe(1);
+    const text = (await (await doc.getPage(1)).getTextContent()).items.map((item) => "str" in item ? item.str : "").join(" ");
+    expect(text).toContain("Versatile");
+    expect(text).not.toContain("See attack notes");
+  });
+
+  it.each(["2014", "2024"] as const)("can omit attack continuation pages on %s without a dangling reference", async (edition) => {
+    const note = "A custom attack note. ".repeat(80);
+    const model = { characterId: "Optional notes", mode: "lite" as const, pageCount: 1,
+      formValues: { details_attack1_description: note },
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }] };
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition), { includeAttackNotes: false });
+    const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
+    expect(doc.numPages).toBe(1);
+    const text = (await (await doc.getPage(1)).getTextContent()).items.map((item) => "str" in item ? item.str : "").join(" ");
+    expect(text).toContain("Long note omitted");
+    expect(text).not.toContain("See attack notes");
+    expect(model.formValues.details_attack1_description).toBe(note);
+  });
+
   it("emits a deterministic browser-readable PDF", () => {
     const model = {
       characterId: "Ada",
@@ -374,7 +442,7 @@ describe("character sheet PDF writer", () => {
 
     const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
     const document = await PDFDocument.load(pdf, { updateMetadata: false });
-    expect(document.getPageCount()).toBe(7);
+    expect(document.getPageCount()).toBe(6);
     // The bundle is flattened: no interactive form fields or annotations survive.
     expect(document.getForm().getFields()).toHaveLength(0);
     expect(document.getPages().flatMap((page) => page.node.Annots()?.asArray() ?? [])).toHaveLength(0);
@@ -388,22 +456,22 @@ describe("character sheet PDF writer", () => {
         .join(" ");
     };
 
-    // After the feature continuation, page 4 is the equipment page: the character's items and its headings.
-    const pageThree = await textOf(4);
+    // Page 3 is the equipment page: the character's items and its headings.
+    const pageThree = await textOf(3);
     expect(pageThree).toContain("ITEM DESCRIPTIONS & NOTES");
     expect(pageThree).toContain("Longsword");
     expect(pageThree).toContain("Potion of Healing");
 
-    // Page 6 is the spell-cards page: every granted spell earns a card, with
+    // Page 5 is the spell-cards page: every granted spell earns a card, with
     // its description rendered alongside the name.
-    const pageFive = await textOf(6);
+    const pageFive = await textOf(5);
     for (const spell of ["Bless", "Command", "Cure Wounds", "Divine Favor", "Heroism", "Shield of Faith"]) {
       expect(pageFive).toContain(spell);
     }
     expect(pageFive.replace(/\s+/g, "")).toContain("Youblessuptothreecreatures");
 
-    // Page 7 is the item-cards page.
-    const pageSix = await textOf(7);
+    // Page 6 is the item-cards page.
+    const pageSix = await textOf(6);
     expect(pageSix).toContain("Longsword");
 
     const liteModel = buildCharacterSheetModel(state, library, { mode: "lite" });
@@ -414,7 +482,7 @@ describe("character sheet PDF writer", () => {
       "spell-list",
     ]);
     const litePdf = await writeCharacterSheetPdfWithTemplateBundle(liteModel, fullTemplateBundle());
-    expect((await PDFDocument.load(litePdf)).getPageCount()).toBe(liteModel.pageCount + 1);
+    expect((await PDFDocument.load(litePdf)).getPageCount()).toBe(liteModel.pageCount);
   }, 120_000);
 
   it("centres the spell header values in their art and signs the sheet", async () => {
