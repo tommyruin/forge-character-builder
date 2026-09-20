@@ -52,10 +52,11 @@ describe('SheetSettingsPanel', () => {
     for (const label of ['Appearance &amp; portrait', 'Notes', 'Spell cards', 'Item cards']) {
       expect(markup).toContain(`aria-label="${label}"`);
     }
-    // Four page checkboxes, every one ticked: the default sheet prints them all.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(4);
+    // Four page checkboxes on, plus ability emphasis off by default.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(5);
     expect(markup.match(/checked=""/g)).toHaveLength(4);
     expect(markup).toContain('Sheet pages');
+    expect(markup).toContain('Emphasize ability modifiers');
   });
 
   it('maps every face to a browser font stack', () => {

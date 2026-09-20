@@ -717,7 +717,7 @@
    },
    {
     "text": "INSPIRATION",
-    "x": 310,
+    "x": 296,
     "y": 460,
     "size": 3.8,
     "font": "captions",
@@ -727,13 +727,11 @@
    },
    {
     "text": "EXHAUSTION",
-    "x": 353,
+    "x": 335,
     "y": 460,
-    "size": 3.8,
+    "size": 3.4,
     "font": "captions",
-    "color": "lines",
-    "align": "center",
-    "width": 35
+    "color": "text"
    },
    {
     "text": "RACIAL TRAITS",

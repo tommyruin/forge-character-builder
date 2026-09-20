@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -35,7 +36,7 @@ function modelFor(characterId: string) {
         sections: [{ title: "features", rows: [] }],
       },
     ],
-    formValues: { details_character_name: characterId, details_build: "Level 1" },
+    formValues: { details_character_name: characterId, details_build: "Level 1", details_str_score: "18", details_str_modifier: "+4" },
   };
 }
 
@@ -98,6 +99,11 @@ describe("sheet render worker", () => {
       expect(new TextDecoder().decode(new Uint8Array(firstBytes))).toMatch(/^%PDF-1\./);
       expect(secondBytes).toEqual(firstBytes);
       expect(firstBytes.byteLength).toBeGreaterThan(10_000);
+      const emphasized = await request({ id: 3, model: modelFor("Ada"), templateBase: SHEET_BASE, emphasizeAbilityModifiers: true }) as { bytes: ArrayBuffer };
+      const doc = await getDocument({ data: new Uint8Array(emphasized.bytes) }).promise;
+      const content = await (await doc.getPage(1)).getTextContent();
+      const items = content.items.filter((item) => "str" in item);
+      expect(items.find((item) => item.str === "+4")!.height).toBeGreaterThan(items.find((item) => item.str === "18")!.height);
     } finally {
       vi.stubGlobal("fetch", previousFetch);
       vi.stubGlobal("location", previousLocation);

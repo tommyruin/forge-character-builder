@@ -13,10 +13,10 @@
 const cache = new Map(); // key -> Uint8Array
 let order = [];
 const MAX_ENTRIES = 4;
-export const SHEET_RENDERER_REVISION = 'pdf-canvas-v4';
+export const SHEET_RENDERER_REVISION = 'pdf-canvas-v5';
 
-export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica', pages = 'background+notes+spellCards+itemCards') {
-  return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${pages}#${lite ? 'lite' : 'full'}`;
+export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica', pages = 'background+notes+spellCards+itemCards', emphasizeAbilityModifiers = false) {
+  return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${pages}#${emphasizeAbilityModifiers ? 'modifiers' : 'scores'}#${lite ? 'lite' : 'full'}`;
 }
 
 export function getCachedSheet(key) {

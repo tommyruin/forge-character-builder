@@ -41,6 +41,7 @@ export interface SheetRenderRequest {
   templateBase: string;
   /** Which template set to render against; the default set when omitted. */
   templateSet?: SheetTemplateSet;
+  emphasizeAbilityModifiers?: boolean;
   /** The colour names the templates are recoloured to; the defaults for any part omitted. */
   colours?: Partial<SheetColours>;
   /** The typeface names per role; the defaults for any role omitted. */
@@ -118,6 +119,7 @@ export function startSheetRenderWorker(scope: SheetRenderWorkerScope): void {
           ? writeCharacterSheetPdf(request.model)
           : await writeCharacterSheetPdfWithTemplateBundle(request.model, template, {
             footerText: request.footerText,
+            emphasizeAbilityModifiers: request.emphasizeAbilityModifiers === true,
             colours,
             brandImage: typeof request.brandImage === "string" ? request.brandImage : undefined,
           });

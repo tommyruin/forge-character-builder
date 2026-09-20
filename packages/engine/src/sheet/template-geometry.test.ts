@@ -28,6 +28,11 @@ async function pagesOf(set: string) {
 }
 
 describe("sheet template geometry", () => {
+  it.each([...SHEET_TEMPLATE_SETS])("provides six printable exhaustion markers on %s", async (set) => {
+    const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.files.details)))).getForm();
+    expect(form.getFields().filter((field) => /^details_exhaustion_[1-6]$/.test(field.getName()))).toHaveLength(6);
+  });
+
   // A panel title printed inside a panel's top edge lands on body content that
   // was laid out for a title at the foot. Both sets label at the foot; this
   // keeps them there.
@@ -108,7 +113,7 @@ describe("sheet template geometry", () => {
       // Room for two 6pt lines of the longest property list, in the NOTES
       // column, raised just far enough over its row that the wrapped first
       // line reads as level with the single-line values beside it.
-      expect({ x: notes.x, width: notes.width, height: notes.height }, name).toEqual({ x: 496, width: 86, height: 21 });
+      expect({ x: notes.x, width: notes.width, height: notes.height }, name).toEqual({ x: 476, width: 106, height: 21 });
       expect(notes.y + notes.height, name).toBeCloseTo(weapon.y + weapon.height + 0.9, 5);
       // Proud of the row, but never by enough to read as a line of its own.
       expect(notes.y + notes.height - (weapon.y + weapon.height), name).toBeGreaterThan(0);

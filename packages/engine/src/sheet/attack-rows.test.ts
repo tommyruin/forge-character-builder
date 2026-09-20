@@ -101,6 +101,17 @@ const roundTrip = (service: CharacterService, id: string): string => {
 };
 
 describe("sheet attack rows", () => {
+  it("omits generated spell prose but preserves a custom note through reload", async () => {
+    const lib = await library();
+    const service = new CharacterService(undefined, lib);
+    const id = service.createCharacter("Concise spell notes").id;
+    const row = await makeFireBoltWizard(service, id);
+    expect(service.getAttacks(id).find((attack) => attack.id === row)!.description.length).toBeGreaterThan(0);
+    expect(sheetAttackFields(service, lib, id)["details_attack1_description"]).toBe("");
+    service.updateAttack(id, row, { description: "Aim at the rope" });
+    expect(sheetAttackFields(service, lib, roundTrip(service, id))["details_attack1_description"]).toBe("Aim at the rope");
+  });
+
   it("prints a round-tripped spell row's current damage after a level-up", async () => {
     const lib = await library();
     const service = new CharacterService(undefined, lib);

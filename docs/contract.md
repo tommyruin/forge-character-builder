@@ -163,7 +163,7 @@ the public description plus equipment `rarity` and
   registered feature selections, so Ranger Favored Enemy and Natural Explorer
   prose precede their selected values even when an imported `.dnd5e` sum is
   reversed. The PDF writer uses an 8pt feature baseline, bounded adaptive
-  fitting, and continuation pages for feature prose and card descriptions.
+  fitting down to 6pt, and continuation pages for feature prose and card descriptions.
 - The Sheet tab and split preview make the PDF canvas the bounded scroll owner.
   Sheet cache keys include the renderer revision, content/library revision, and
   mutation tick, so profile or layout changes cannot reuse stale PDFs.
@@ -575,3 +575,20 @@ schema: 1, codec: "gzip-json"}` (exported from `@forge-cb/engine` as
   Map/Set). `sha256Hex`/`sha256HexSync` are lowercase hex SHA-256. Both the prepared
   snapshot and diagnostics `finalStateDigest` use the session-map normalization
   described above.
+
+### PDF display options
+
+The client PDF render options and `CharacterSheetWriteOptions` accept optional
+`emphasizeAbilityModifiers: boolean` (default `false`). The dedicated render
+worker swaps the six character ability scores and modifiers in their visual
+boxes, including the 2024 captions; model values and character exports are
+unchanged. The browser preference uses `fcb-sheet-ability-emphasis`, applies to
+full and split previews and PDF downloads, and participates in PDF cache identity.
+
+Both template sets contain six blank exhaustion checkboxes. Spell-list sections
+with slots draw one empty circle per slot; spell points and slotless sections do
+not. Recognized free-cast allowances explicitly say “free cast” or “free casts”.
+Generated spell attack descriptions stay on spell cards; attack cells retain
+custom overrides and structured level, beam-count or warning information. Notes
+that cannot fit an attack cell refer to an appended attack-notes continuation,
+which preserves the complete text in attack-row order.

@@ -274,6 +274,7 @@ function workerPort(): ClientWorkerPort {
 /** Per-render choices passed through to the sheet worker. */
 export interface SheetRenderOptions {
   templateSet?: "2014" | "2024";
+  emphasizeAbilityModifiers?: boolean;
   colours?: { accent?: string; lines?: string; text?: string };
   fonts?: { titles?: string; captions?: string; body?: string; numbers?: string };
   brandImage?: string;
@@ -804,6 +805,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         templateBase: sheetTemplateBase,
         templateSet: render.templateSet,
         colours: render.colours,
+        emphasizeAbilityModifiers: render.emphasizeAbilityModifiers,
         fonts: render.fonts,
         brandImage: render.brandImage,
         footerText: render.footerText,
@@ -1385,6 +1387,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       });
       return renderSheetBytes(model, {
         templateSet: typeof opts.templateSet === "string" ? (opts.templateSet as SheetRenderOptions["templateSet"]) : undefined,
+        emphasizeAbilityModifiers: opts.emphasizeAbilityModifiers === true,
         colours: typeof opts.colours === "object" && opts.colours !== null ? (opts.colours as SheetRenderOptions["colours"]) : undefined,
         fonts: typeof opts.fonts === "object" && opts.fonts !== null ? (opts.fonts as SheetRenderOptions["fonts"]) : undefined,
         brandImage: typeof opts.brandImage === "string" ? opts.brandImage : undefined,

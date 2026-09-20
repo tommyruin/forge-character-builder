@@ -267,7 +267,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 124
+    "width": 114
    },
    {
     "text": "MODIFIER",
@@ -287,7 +287,7 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 54
+    "width": 44
    },
    {
     "text": "SAVING THROW",
@@ -313,7 +313,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 124
+    "width": 114
    },
    {
     "text": "MODIFIER",
@@ -333,7 +333,7 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 54
+    "width": 44
    },
    {
     "text": "SAVING THROW",
@@ -375,7 +375,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 124
+    "width": 114
    },
    {
     "text": "MODIFIER",
@@ -395,7 +395,7 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 54
+    "width": 44
    },
    {
     "text": "SAVING THROW",
@@ -415,17 +415,17 @@
    },
    {
     "text": "INTELLIGENCE",
-    "x": 158,
+    "x": 148,
     "y": 621,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 124
+    "width": 114
    },
    {
     "text": "MODIFIER",
-    "x": 176,
+    "x": 166,
     "y": 576,
     "size": 3.6,
     "font": "captions",
@@ -435,17 +435,17 @@
    },
    {
     "text": "SCORE",
-    "x": 218,
+    "x": 208,
     "y": 580,
     "size": 3.6,
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 54
+    "width": 44
    },
    {
     "text": "SAVING THROW",
-    "x": 202,
+    "x": 192,
     "y": 564,
     "size": 4.4,
     "font": "captions",
@@ -453,7 +453,7 @@
    },
    {
     "text": "Arcana",
-    "x": 206,
+    "x": 196,
     "y": 553,
     "size": 5.4,
     "font": "notes",
@@ -461,7 +461,7 @@
    },
    {
     "text": "History",
-    "x": 206,
+    "x": 196,
     "y": 542,
     "size": 5.4,
     "font": "notes",
@@ -469,7 +469,7 @@
    },
    {
     "text": "Investigation",
-    "x": 206,
+    "x": 196,
     "y": 531,
     "size": 5.4,
     "font": "notes",
@@ -477,7 +477,7 @@
    },
    {
     "text": "Nature",
-    "x": 206,
+    "x": 196,
     "y": 520,
     "size": 5.4,
     "font": "notes",
@@ -485,7 +485,7 @@
    },
    {
     "text": "Religion",
-    "x": 206,
+    "x": 196,
     "y": 509,
     "size": 5.4,
     "font": "notes",
@@ -493,17 +493,17 @@
    },
    {
     "text": "WISDOM",
-    "x": 158,
+    "x": 148,
     "y": 481,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 124
+    "width": 114
    },
    {
     "text": "MODIFIER",
-    "x": 176,
+    "x": 166,
     "y": 436,
     "size": 3.6,
     "font": "captions",
@@ -513,17 +513,17 @@
    },
    {
     "text": "SCORE",
-    "x": 218,
+    "x": 208,
     "y": 440,
     "size": 3.6,
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 54
+    "width": 44
    },
    {
     "text": "SAVING THROW",
-    "x": 202,
+    "x": 192,
     "y": 424,
     "size": 4.4,
     "font": "captions",
@@ -531,7 +531,7 @@
    },
    {
     "text": "Animal Handling",
-    "x": 206,
+    "x": 196,
     "y": 413,
     "size": 5.4,
     "font": "notes",
@@ -539,7 +539,7 @@
    },
    {
     "text": "Insight",
-    "x": 206,
+    "x": 196,
     "y": 402,
     "size": 5.4,
     "font": "notes",
@@ -547,7 +547,7 @@
    },
    {
     "text": "Medicine",
-    "x": 206,
+    "x": 196,
     "y": 391,
     "size": 5.4,
     "font": "notes",
@@ -555,7 +555,7 @@
    },
    {
     "text": "Perception",
-    "x": 206,
+    "x": 196,
     "y": 380,
     "size": 5.4,
     "font": "notes",
@@ -563,7 +563,7 @@
    },
    {
     "text": "Survival",
-    "x": 206,
+    "x": 196,
     "y": 369,
     "size": 5.4,
     "font": "notes",
@@ -571,17 +571,17 @@
    },
    {
     "text": "CHARISMA",
-    "x": 158,
+    "x": 148,
     "y": 341,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 124
+    "width": 114
    },
    {
     "text": "MODIFIER",
-    "x": 176,
+    "x": 166,
     "y": 296,
     "size": 3.6,
     "font": "captions",
@@ -591,17 +591,17 @@
    },
    {
     "text": "SCORE",
-    "x": 218,
+    "x": 208,
     "y": 300,
     "size": 3.6,
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 54
+    "width": 44
    },
    {
     "text": "SAVING THROW",
-    "x": 202,
+    "x": 192,
     "y": 284,
     "size": 4.4,
     "font": "captions",
@@ -609,7 +609,7 @@
    },
    {
     "text": "Deception",
-    "x": 206,
+    "x": 196,
     "y": 273,
     "size": 5.4,
     "font": "notes",
@@ -617,7 +617,7 @@
    },
    {
     "text": "Intimidation",
-    "x": 206,
+    "x": 196,
     "y": 262,
     "size": 5.4,
     "font": "notes",
@@ -625,7 +625,7 @@
    },
    {
     "text": "Performance",
-    "x": 206,
+    "x": 196,
     "y": 251,
     "size": 5.4,
     "font": "notes",
@@ -633,7 +633,7 @@
    },
    {
     "text": "Persuasion",
-    "x": 206,
+    "x": 196,
     "y": 240,
     "size": 5.4,
     "font": "notes",
@@ -647,7 +647,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 124
+    "width": 114
    },
    {
     "text": "ARMOR",
@@ -657,12 +657,12 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 256
+    "width": 236
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 244,
-    "y": 193,
+    "x": 42,
+    "y": 185,
     "size": 3.4,
     "font": "captions",
     "color": "text"
@@ -670,26 +670,26 @@
    {
     "text": "PROFICIENCIES, TRAINING & LANGUAGES",
     "x": 26,
-    "y": 166,
+    "y": 158,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 256
+    "width": 236
    },
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
-    "x": 290,
+    "x": 270,
     "y": 621,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 296
+    "width": 316
    },
    {
     "text": "NAME",
-    "x": 294,
+    "x": 274,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -697,7 +697,7 @@
    },
    {
     "text": "RANGE",
-    "x": 364,
+    "x": 344,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -705,7 +705,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 394,
+    "x": 374,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -713,7 +713,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 430,
+    "x": 410,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -721,7 +721,7 @@
    },
    {
     "text": "NOTES",
-    "x": 496,
+    "x": 476,
     "y": 605,
     "size": 3.8,
     "font": "captions",
@@ -729,28 +729,28 @@
    },
    {
     "text": "CLASS FEATURES",
-    "x": 290,
+    "x": 270,
     "y": 481,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 296
+    "width": 316
    },
    {
     "text": "SPECIES TRAITS",
-    "x": 290,
-    "y": 217,
+    "x": 270,
+    "y": 181,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 146
+    "width": 166
    },
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 444,
-    "y": 217,
+    "y": 181,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -760,7 +760,7 @@
    {
     "text": "EXHAUSTION",
     "x": 448,
-    "y": 170.5,
+    "y": 144,
     "size": 3.4,
     "font": "captions",
     "color": "lines"
@@ -768,7 +768,7 @@
    {
     "text": "ENCOUNTER NOTES",
     "x": 444,
-    "y": 139,
+    "y": 113,
     "size": 6.2,
     "font": "titles",
     "color": "accent",

@@ -365,6 +365,8 @@ export interface CharacterSheetTemplateBundle {
 }
 
 export interface CharacterSheetWriteOptions {
+  /** Show ability modifiers in the larger character ability boxes. */
+  emphasizeAbilityModifiers?: boolean;
   /** The line signed at the foot of every template page. */
   footerText?: string;
   /** The scheme the templates were recoloured to; labels and values follow it. */
@@ -1029,10 +1031,9 @@ interface FeatureContinuation {
 }
 
 const DEFAULT_FEATURE_FONT_SIZE = 8;
-// A sheet belongs on its page: feature prose shrinks as far as it must to stay
-// there. Only prose too long to fit even this small is continued on a further
-// page rather than printed illegibly.
-const MIN_FEATURE_FONT_SIZE = 4.4;
+// Preserve readable print: modest fitting is allowed, then prose continues
+// on another page at the normal size instead of falling below 6pt.
+const MIN_FEATURE_FONT_SIZE = 6;
 const FEATURE_PARAGRAPH_GAP = 1.2;
 // One feature is set off from the next by rather more than the breath between
 // its own paragraphs, so the eye finds the boundaries. It is a fraction of the
@@ -1594,9 +1595,10 @@ function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: nu
   return `${prefix}...`;
 }
 
-/** A free-cast allowance short enough to sit beside a spell name: "1/Long Rest" → "1/LR". */
+/** Clarify recognized free casts while retaining unrecognized authored allowances. */
 function compactUsage(usage: string): string {
-  return usage.replace(/\s*Long Rest/gi, "LR").replace(/\s*Short Rest/gi, "SR");
+  return usage.replace(/^(\d+)\s*\/\s*(Long Rest|Short Rest|LR|SR)$/i, (_, count: string, rest: string) =>
+    `${count} free ${count === "1" ? "cast" : "casts"}/${/^(Long Rest|LR)$/i.test(rest) ? "LR" : "SR"}`);
 }
 
 async function addSpellListPage(
@@ -1654,6 +1656,11 @@ async function addSpellListPage(
           font: fonts.regular,
           color: rgb(1, 1, 1),
         });
+        const labelWidth = fonts.regular.widthOfTextAtSize(`${spellSection.slots} SPELL SLOTS`, 5.5);
+        for (let slot = 0; slot < spellSection.slots; slot++) {
+          page.drawCircle({ x: slotTextX + labelWidth + 9 + slot * 9, y: topY + textBaseline + 2,
+            size: 2.7, borderColor: rgb(1, 1, 1), borderWidth: 0.7 });
+        }
       }
       spellSection.spells.forEach((spell, index) => {
         const firstRow = index < 2;
@@ -1711,7 +1718,33 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
 
   const output = await PDFDocument.create();
   const fonts = await timed("embedFonts", () => embedSheetFonts(output, bundle.faces));
-  const values = model.formValues ?? {};
+  const values = { ...model.formValues };
+  let detailsLabels = bundle.labels[files.details];
+  if (options.emphasizeAbilityModifiers === true) {
+    for (const ability of ["str", "dex", "con", "int", "wis", "cha"]) {
+      const score = `details_${ability}_score`;
+      const modifier = `details_${ability}_modifier`;
+      [values[score], values[modifier]] = [values[modifier] ?? "", values[score] ?? ""];
+    }
+    if (detailsLabels !== undefined) detailsLabels = {
+      ...detailsLabels,
+      labels: detailsLabels.labels.map((label) => ({ ...label, text: label.text === "SCORE" ? "MODIFIER" : label.text === "MODIFIER" ? "SCORE" : label.text })),
+    };
+  }
+  const attackNoteRows: SheetRow[] = [];
+  const attackNotes: SheetSection = { title: "Attack notes", rows: attackNoteRows };
+  const detailsArt = await artworkFor(bundle.details);
+  for (const [name, field] of detailsArt.fields) {
+    if (!/^details_attack(?:[1-4])?_description$/.test(name) || !values[name]) continue;
+    const value = values[name]!.split(/\r?\n/).map(winAnsiText).join("\n");
+    const measure = (text: string, size: number): number => fonts.regular.widthOfTextAtSize(text, size);
+    const size = fitMultilineFontSize(value, field.rect.width, field.rect.height, field.base, 0.25, measure);
+    if (size >= 4.5 && value.split(/\s+/).every((word) => measure(word, size) <= field.rect.width - 4)) continue;
+    const row = name.match(/attack([1-4])_/)?.[1];
+    const title = row ? `Attack ${row}: ${values[`details_attack${row}_weapon`] || "Notes"}` : "General attack notes";
+    attackNoteRows.push({ kind: "tokens", tokens: [title + ".", ...value.split(/\s+/)] });
+    values[name] = "See attack notes";
+  }
   const images = model.images ?? {};
   const fragments: FragmentCache = new Map();
   await yieldToEventLoop(true);
@@ -1723,7 +1756,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         details_features: "",
         details_proficiencies_languages: "",
       });
-      drawTemplateText(page, bundle.labels[files.details], fonts, labelInk);
+      drawTemplateText(page, detailsLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       drawSheetFooter(page, fonts, footerText);
       const continuations = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects));
@@ -1734,7 +1767,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           details_features: "",
           details_proficiencies_languages: "",
         });
-        drawTemplateText(continuationPage, bundle.labels[files.details], fonts, labelInk);
+        drawTemplateText(continuationPage, detailsLabels, fonts, labelInk);
         await timed("brandImage", () => drawBrandImage(output, continuationPage, continuationRects, brandImage, colours));
         drawSheetFooter(continuationPage, fonts, footerText);
         const next = timed("richText:details", () => drawFeatureFlow(
@@ -1749,6 +1782,16 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           continuation.lineHeight,
         ));
         if (next !== undefined) continuations.push(next);
+      }
+      if (attackNotes.rows.length > 0) {
+        let remaining: readonly FeatureFlowLine[] = featureFlowLines(attackNotes, 520, 8, fontMeasure(fonts), true);
+        do {
+          const notesPage = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+          notesPage.drawText("ATTACK NOTES", { x: 40, y: PAGE_HEIGHT - 40, size: 12, font: fonts.titles });
+          const next = drawFeatureFlow(notesPage, remaining, fonts, 40, PAGE_HEIGHT - 65, 520, 50, 8, 10);
+          drawSheetFooter(notesPage, fonts, footerText);
+          remaining = next?.lines ?? [];
+        } while (remaining.length > 0);
       }
       continue;
     }

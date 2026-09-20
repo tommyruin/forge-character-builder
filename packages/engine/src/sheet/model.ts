@@ -16,7 +16,7 @@ import type { CharacterState } from "../character/state.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { ParsedElement, ParsedSheetEntry, SheetDescription } from "../content/parser.js";
 import { computeInlineValues, computeStatistics, type StatisticsValues } from "../statistics/calculator.js";
-import { buildAttacksDto } from "../attacks/attacks.js";
+import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
 import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type InventoryItemDto } from "../inventory/inventory.js";
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
 import { createRegistrationContext } from "../selection/selection.js";
@@ -341,6 +341,15 @@ export function buildCharacterSheetModel(
  * list more than once (two content sources, or a class list alongside an
  * always-prepared grant); the prepared entry wins so its mark survives.
  */
+/** Keep generated spell prose on its card, while preserving authored attack notes. */
+function sheetAttackNote(attack: AttackDto, library: ElementLibrary): string {
+  if (attack.kind !== "spell" || attack.overriddenFields.includes("description")) return attack.description;
+  const element = attack.source ? library.byId.get(attack.source.spellId) : undefined;
+  const level = element ? (spellInfo(library, element.identity.id)?.level ?? 0) : 0;
+  return [level > 0 ? `Level ${level} spell` : "", attack.source?.warning ?? "",
+    (attack.source?.beamCount ?? 0) > 1 ? `${attack.source!.beamCount} beams` : ""].filter(Boolean).join("; ");
+}
+
 /** A spell as the spell page layout draws it. */
 function layoutSpell(spell: KnownSpellDto): SheetSpellListSection["spells"][number] {
   return {
@@ -715,7 +724,7 @@ function buildFormValues(
     set(`details_attack${row}_range`, attack.range);
     set(`details_attack${row}_attack`, attack.bonus);
     set(`details_attack${row}_damage`, attack.damage);
-    set(`details_attack${row}_description`, attack.description);
+    set(`details_attack${row}_description`, sheetAttackNote(attack, library));
   }
   set("details_attack_description", state.attacksDescription);
 

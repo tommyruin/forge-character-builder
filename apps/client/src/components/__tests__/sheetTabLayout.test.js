@@ -72,7 +72,7 @@ describe('SheetTab floating controls', () => {
   it('requests and caches the lite sheet in the split-view Live Sheet (deployed-site behavior)', () => {
     expect(previewSource).toContain('lite: true');
     expect(previewSource).toContain(
-      'sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey)',
+      'sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey, emphasizeAbilityModifiers)',
     );
     expect(previewSource).not.toContain('lite: false');
   });
@@ -82,7 +82,7 @@ describe('SheetTab floating controls', () => {
     expect(previewSource).toContain('libraryRevision');
     expect(cacheSource).toContain('SHEET_RENDERER_REVISION');
     expect(sheetCacheKey('hero', 4, false, 7)).toBe(
-      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+spellCards+itemCards#full`,
+      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+spellCards+itemCards#scores#full`,
     );
     expect(
       sheetCacheKey('hero', 4, false, 7),

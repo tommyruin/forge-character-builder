@@ -3,6 +3,7 @@ import useSheetTemplateSetting from '../../../hooks/useSheetTemplateSetting';
 import useSheetColoursSetting from '../../../hooks/useSheetColoursSetting';
 import useSheetFontsSetting from '../../../hooks/useSheetFontsSetting';
 import useSheetPagesSetting from '../../../hooks/useSheetPagesSetting';
+import useSheetAbilitySetting from '../../../hooks/useSheetAbilitySetting';
 import FilterSelect from '../../FilterSelect';
 import Icon from '../../Icon';
 import { ensureSheetFontFaces, sheetFaceFontFamily } from '../../../sheetFontFaces.js';
@@ -71,6 +72,7 @@ export default function SheetSettingsPanel() {
   const mismatchedEdition = (rulesetMode === '2014' || rulesetMode === '2024') && rulesetMode !== templateSet;
   const { colours, theme, setColours, setTheme, palette, themes, themeNames } = useSheetColoursSetting();
   const { pages, togglePage, pageNames, pageLabels, pageTips } = useSheetPagesSetting();
+  const { emphasizeAbilityModifiers, setEmphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { fonts, setFonts, faces, faceNames, roles } = useSheetFontsSetting();
   useEffect(() => {
     ensureSheetFontFaces();
@@ -96,6 +98,11 @@ export default function SheetSettingsPanel() {
             ))}
           </div>
           <p className="fcb-muted-copy text-sm">{TEMPLATE_SET_LABELS[templateSet]}</p>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={emphasizeAbilityModifiers}
+              onChange={(event) => setEmphasizeAbilityModifiers(event.target.checked)} />
+            <span>Emphasize ability modifiers</span>
+          </label>
           {mismatchedEdition && (
             <div className="fcb-sheet-set-mismatch space-y-2">
               <p className="fcb-muted-copy text-sm">

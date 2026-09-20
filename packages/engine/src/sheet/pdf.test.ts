@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { SpellResourceDto } from "@forge-cb/api";
-import { PDFArray, PDFDocument, PDFName, PDFStream, decodePDFRawStream } from "pdf-lib";
+import { PDFArray, PDFDocument, PDFPage, PDFName, PDFStream, decodePDFRawStream } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { encodeBase64 } from "../platform.js";
@@ -70,11 +70,11 @@ describe("character sheet PDF writer", () => {
     const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
     const content = await (await doc.getPage(1)).getTextContent();
     const items = content.items.filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item);
-    const markers = items.filter((item) => item.str === "1/LR");
+    const markers = items.filter((item) => item.str === "1 free cast/LR");
     expect(markers).toHaveLength(5);
     for (let i = 0; i < 5; i++) {
       const column = i < 2 ? i + 1 : (i - 2) % 3;
-      const name = items.find((item) => item.str.startsWith(`${i} `))!;
+      const name = items.find((item) => item.str.startsWith(`${i} Wondrous`))!;
       expect(name.str).toMatch(/\.\.\.$/);
       const marker = markers.find((item) => Math.abs(item.transform[5] - name.transform[5]) < 2 &&
         item.transform[4] >= name.transform[4] + name.width - 0.01 && item.transform[4] - name.transform[4] - name.width < 4)!;
@@ -82,6 +82,93 @@ describe("character sheet PDF writer", () => {
       expect(marker.transform[4] + marker.width).toBeLessThanOrEqual([228, 417, 582][column]! + 0.01);
     }
   }, 120_000);
+
+  it.each(["2014", "2024"] as const)("preserves overflowing attack notes and emphasizes modifiers on %s", async (edition) => {
+    const note = Array.from({ length: 160 }, (_, i) => `note${i}`).join(" ");
+    const model = {
+      characterId: "Readable", mode: "lite" as const, pageCount: 1,
+      formValues: { details_str_score: "18", details_str_modifier: "+4", details_dex_score: "10", details_dex_modifier: "+0", details_int_score: "8", details_int_modifier: "-1", details_attack1_weapon: "Custom blade", details_attack1_description: note },
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
+    };
+    const bytes = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition), { emphasizeAbilityModifiers: true });
+    const doc = await getDocument({ data: new Uint8Array(bytes) }).promise;
+    const first = await (await doc.getPage(1)).getTextContent();
+    const items = first.items.filter((item) => "str" in item);
+    expect(items.find((item) => item.str === "+4")!.height).toBeGreaterThan(items.find((item) => item.str === "18")!.height);
+    for (const [score, modifier] of [["10", "+0"], ["8", "-1"]]) {
+      expect(items.find((item) => item.str === modifier)!.height).toBeGreaterThan(items.find((item) => item.str === score)!.height);
+    }
+    expect(items.map((item) => item.str).join(" ")).toContain("See attack notes");
+    expect(doc.numPages).toBeGreaterThan(1);
+    let rest = "";
+    for (let page = 2; page <= doc.numPages; page++) {
+      rest += (await (await doc.getPage(page)).getTextContent()).items.map((item) => "str" in item ? item.str : "").join(" ");
+    }
+    expect(rest.replace(/\s+/g, " ")).toContain(note);
+    expect(model.formValues.details_str_score).toBe("18");
+  }, 120_000);
+
+  it.each(["2014", "2024"] as const)("draws exact slot trackers and respects spell resources on %s", async (edition) => {
+    const circles = vi.spyOn(PDFPage.prototype, "drawCircle");
+    try {
+      for (const [level, slots, points, expected] of [[1, 4, false, 4], [3, 2, false, 2], [0, 0, false, 0], [1, 0, false, 0], [1, 4, true, 0]] as const) {
+        circles.mockClear();
+        const resource: SpellResourceDto = points
+          ? { mode: "spellPoints", currentPoints: 4, maximumPoints: 4, costs: [{ spellLevel: 1, points: 2, oncePerLongRest: false }], shared: false, canUseSpellPoints: true }
+          : { mode: "slots", canUseSpellPoints: false };
+        const model = { characterId: "Slots", mode: "full" as const, pageCount: 1, pages: [{
+          page: 1, templateKind: "spell-list" as const, sections: [], spellcasting: [{
+            name: "Caster", ability: "Wisdom", attackBonus: "+4", saveDc: "12", prepareCount: "3", resource,
+            sections: [{ level, slots, spells: [{ name: "Test spell", prepared: true, alwaysPrepared: false }] }],
+          }],
+        }] };
+        await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition));
+        const trackers = circles.mock.calls.filter(([options]) => options?.size === 2.7);
+        expect(trackers).toHaveLength(expected);
+        for (const [options] of trackers) expect(options?.borderWidth).toBeGreaterThan(0);
+      }
+    } finally { circles.mockRestore(); }
+  });
+
+  it.each(["2014", "2024"] as const)("keeps all crowded feature text at least 6pt on %s", async (edition) => {
+    const tokens = Array.from({ length: 350 }, (_, i) => `feature${i}`);
+    const model = { characterId: "Crowded", mode: "lite" as const, pageCount: 1, pages: [{
+      page: 1, templateKind: "details" as const, sections: [{ title: "features", rows: [{ kind: "tokens" as const, tokens }] }],
+    }] };
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition));
+    const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
+    const text = [];
+    for (let page = 1; page <= doc.numPages; page++) {
+      const items = (await (await doc.getPage(page)).getTextContent()).items;
+      for (const item of items) if ("str" in item && /feature\d/.test(item.str)) {
+        expect(item.height).toBeGreaterThanOrEqual(6);
+        text.push(item.str);
+      }
+    }
+    expect(text.join(" ").replace(/\s+/g, " ")).toBe(tokens.join(" "));
+  });
+
+  it.each(["spectral", "helvetica", "alegreyaSans"] as const)("fits both armor contributions in the 2024 strip using %s", async (body) => {
+    const bundle = localTemplateBundle("2024", { ...DEFAULT_SHEET_FONTS, body });
+    const form = (await PDFDocument.load(bundle.details)).getForm();
+    const field = form.getTextField("details_armor_conditional");
+    expect(field.isMultiline()).toBe(true);
+    const rect = field.acroField.getWidgets()[0]!.getRectangle();
+    const model = { characterId: "Armor", mode: "lite" as const, pageCount: 1,
+      formValues: { details_armor_conditional: "Ring of Protection +1\nCloak of Protection +1" },
+      pages: [{ page: 1, templateKind: "details" as const, sections: [] }] };
+    const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, bundle)) }).promise;
+    const content = await (await doc.getPage(1)).getTextContent();
+    for (const text of ["Ring of Protection +1", "Cloak of Protection +1"]) {
+      const item = content.items.find((item) => "str" in item && item.str === text);
+      expect(item).toBeDefined();
+      if (!item || !("str" in item)) throw new Error("Missing armor text");
+      expect(item.transform[4]).toBeGreaterThanOrEqual(rect.x);
+      expect(item.transform[4] + item.width).toBeLessThanOrEqual(rect.x + rect.width);
+      expect(item.transform[5]).toBeGreaterThanOrEqual(rect.y);
+      expect(item.transform[5] + item.height).toBeLessThanOrEqual(rect.y + rect.height);
+    }
+  });
 
   it("emits a deterministic browser-readable PDF", () => {
     const model = {
@@ -287,7 +374,7 @@ describe("character sheet PDF writer", () => {
 
     const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
     const document = await PDFDocument.load(pdf, { updateMetadata: false });
-    expect(document.getPageCount()).toBe(6);
+    expect(document.getPageCount()).toBe(7);
     // The bundle is flattened: no interactive form fields or annotations survive.
     expect(document.getForm().getFields()).toHaveLength(0);
     expect(document.getPages().flatMap((page) => page.node.Annots()?.asArray() ?? [])).toHaveLength(0);
@@ -301,22 +388,22 @@ describe("character sheet PDF writer", () => {
         .join(" ");
     };
 
-    // Page 3 is the equipment page: the character's items and its headings.
-    const pageThree = await textOf(3);
+    // After the feature continuation, page 4 is the equipment page: the character's items and its headings.
+    const pageThree = await textOf(4);
     expect(pageThree).toContain("ITEM DESCRIPTIONS & NOTES");
     expect(pageThree).toContain("Longsword");
     expect(pageThree).toContain("Potion of Healing");
 
-    // Page 5 is the spell-cards page: every granted spell earns a card, with
+    // Page 6 is the spell-cards page: every granted spell earns a card, with
     // its description rendered alongside the name.
-    const pageFive = await textOf(5);
+    const pageFive = await textOf(6);
     for (const spell of ["Bless", "Command", "Cure Wounds", "Divine Favor", "Heroism", "Shield of Faith"]) {
       expect(pageFive).toContain(spell);
     }
     expect(pageFive.replace(/\s+/g, "")).toContain("Youblessuptothreecreatures");
 
-    // Page 6 is the item-cards page.
-    const pageSix = await textOf(6);
+    // Page 7 is the item-cards page.
+    const pageSix = await textOf(7);
     expect(pageSix).toContain("Longsword");
 
     const liteModel = buildCharacterSheetModel(state, library, { mode: "lite" });
@@ -327,7 +414,7 @@ describe("character sheet PDF writer", () => {
       "spell-list",
     ]);
     const litePdf = await writeCharacterSheetPdfWithTemplateBundle(liteModel, fullTemplateBundle());
-    expect((await PDFDocument.load(litePdf)).getPageCount()).toBe(liteModel.pageCount);
+    expect((await PDFDocument.load(litePdf)).getPageCount()).toBe(liteModel.pageCount + 1);
   }, 120_000);
 
   it("centres the spell header values in their art and signs the sheet", async () => {
@@ -432,7 +519,7 @@ describe("character sheet PDF writer", () => {
         expect(spell, `${ruleset} ${name}`).toBeDefined();
         const nameRight = spell!.transform[4] + spell!.width;
         const marker = items.find((item) =>
-          item.str === "1/LR" && Math.abs(item.transform[5] - spell!.transform[5]) < 2 &&
+          item.str === "1 free cast/LR" && Math.abs(item.transform[5] - spell!.transform[5]) < 2 &&
           item.transform[4] >= nameRight && item.transform[4] - nameRight < 12);
         expect(marker, `${ruleset} ${name} marker`).toBeDefined();
         expect(marker!.transform[4] + marker!.width, `${ruleset} ${name} marker fits`).toBeLessThanOrEqual(cellRight(spell!.transform[4]));
@@ -802,7 +889,7 @@ describe("character sheet PDF writer", () => {
     // over the row's full pitch.
     for (let row = 1; row <= 4; row += 1) {
       const rect = rectOf(`details_attack${row}_description`);
-      expect({ width: rect.width, height: rect.height }, `row ${row} cell`).toEqual({ width: 86, height: 21 });
+      expect({ width: rect.width, height: rect.height }, `row ${row} cell`).toEqual({ width: 106, height: 21 });
     }
     // A note's lines are the drawn items inside its own cell; picking them by
     // text alone would catch a weapon name that reads as part of a note.

@@ -584,9 +584,10 @@ async function details2014(edition) {
   [["details_speed_walking", "SPEED", 224], ["details_speed_fly", "FLY", 267], ["details_speed_climb", "CLIMB", 310], ["details_speed_swim", "SWIM", 353]].forEach(([name, caption, x]) => {
     s.captioned(name, caption, x, 470, 35, 10, { align: "center", captionAlign: "center", size: 7 });
   });
-  s.captioned("details_vision", "VISION", 224, 448, 78, 10, { size: 7 });
-  s.captioned("details_inspiration", style.inspiration, 310, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-  s.captioned("details_exhaustion", "EXHAUSTION", 353, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
+  s.captioned("details_vision", "VISION", 224, 448, 66, 10, { size: 7 });
+  s.captioned("details_inspiration", style.inspiration, 296, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
+  s.label("EXHAUSTION", 335, 460, { size: 3.4 });
+  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, 450, 6, { marker: "square" });
   s.text("details_resistances", 224, 404, 164, 38, { multiline: true, size: 6, box: "none" });
   s.block(style.traits, "details_additional_notes", 213, 196, 182, 188);
 
@@ -711,10 +712,10 @@ async function details2024(edition) {
   s.label("HEROIC INSPIRATION", vitalX(6), vitalY + 4.5, { size: Math.min(4.6, inspirationW / 16), align: "center", width: inspirationW });
 
   // Two columns of ability panels, each on a grey backing panel.
-  const panelW = 124;
+  const panelW = 114;
   const heights = { str: 88, dex: 110, con: 98, int: 132, wis: 132, cha: 121 };
   const columnDepth = Math.max(heights.str + heights.dex + heights.con, heights.int + heights.wis + heights.cha) + 16;
-  s.panel(22, 632 - columnDepth - 4, 264, columnDepth + 8);
+  s.panel(22, 632 - columnDepth - 4, 244, columnDepth + 8);
   let top = 632;
   for (const key of ["str", "dex", "con"]) {
     abilityPanel2024(s, key, ABILITY_NAME[key].toUpperCase(), 26, top - heights[key], panelW, heights[key], key === "con" ? (rowY, x, width) => {
@@ -726,7 +727,7 @@ async function details2024(edition) {
   const leftBottom = top + 8;
   top = 632;
   for (const key of ["int", "wis", "cha"]) {
-    abilityPanel2024(s, key, ABILITY_NAME[key].toUpperCase(), 158, top - heights[key], panelW, heights[key]);
+    abilityPanel2024(s, key, ABILITY_NAME[key].toUpperCase(), 148, top - heights[key], panelW, heights[key]);
     top -= heights[key] + 8;
   }
   const rightBottom = top + 8;
@@ -738,29 +739,19 @@ async function details2024(edition) {
 
   // Both columns: armor, then equipment training, proficiencies and languages.
   const armorTop = rightBottom - 8;
-  inner = s.section("ARMOR", 26, armorTop - 38, 256, 38, { size: 5.6 });
-  s.text("details_equipped_armor", inner.x + 3, inner.y + 2, 107, 10, { size: 6.5 });
-  s.text("details_armor_conditional", inner.x + 116, inner.y + 2, 84, 10, { size: 5.5 });
-  s.check("details_armor_stealth_disadvantage", inner.x + 206, inner.y + 3, 6);
-  s.label("STEALTH DISADV.", inner.x + 214, inner.y + 4, { size: 3.4 });
-  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 60, 256, armorTop - 38 - 8 - 60);
+  inner = s.section("ARMOR", 26, armorTop - 46, 236, 46, { size: 5.6 });
+  s.text("details_equipped_armor", inner.x + 3, inner.y + 14, 91, 10, { size: 6.5 });
+  s.text("details_armor_conditional", inner.x + 100, inner.y + 2, 124, 27, { size: 6, multiline: true, box: "none" });
+  s.check("details_armor_stealth_disadvantage", inner.x + 3, inner.y + 3, 6);
+  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 4, { size: 3.4 });
+  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 60, 236, armorTop - 46 - 8 - 60);
 
   // The right-hand area.
-  const areaX = 290;
-  const areaW = 296;
+  const areaX = 270;
+  const areaW = 316;
   inner = s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 500, areaW, 132);
-  // The band runs 504..604 between the column captions and the panel's foot,
-  // and the columns share the 288pt between 294 and 582 with 2pt gutters. Both
-  // budgets are spent on the NOTES column, because it is the only cell holding
-  // a phrase rather than a token: a 2024 property list with a "Mastery: <Name>"
-  // suffix runs to 52 characters ("Reach, Special, Special Lance, Heavy,
-  // Mastery: Topple"), while the widest name the SRD weapons offer needs 58pt
-  // and the widest damage string ("1d10+0 bludgeoning") 68pt. NAME keeps 68 and
-  // DAMAGE 64 — every SRD weapon name and every damage string but a versatile
-  // warhammer's still prints at its full 7pt — and NOTES takes the 20pt freed,
-  // which is what carries the longest property list at a full 6pt in every
-  // body face rather than shrinking it to 4.75pt as a 66pt column did.
-  const columns = [["NAME", 294, 68], ["RANGE", 364, 28], ["ATK / DC", 394, 34], ["DAMAGE & TYPE", 430, 64], ["NOTES", 496, 86]];
+  // Reclaimed ability-panel width gives attack notes another 20pt.
+  const columns = [["NAME", 274, 68], ["RANGE", 344, 28], ["ATK / DC", 374, 34], ["DAMAGE & TYPE", 410, 64], ["NOTES", 476, 106]];
   columns.forEach(([caption, x]) => s.label(caption, x, 605, { size: 3.8, color: "lines" }));
   for (let row = 1; row <= 4; row += 1) {
     const y = 594 - (row - 1) * 21;
@@ -769,43 +760,21 @@ async function details2024(edition) {
     s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
-    // The notes cell alone wraps: a 2024 property list with a mastery suffix
-    // ("Heavy, Reach, Two-Handed, Mastery: Cleave") is far too long for one
-    // line of this column, and a single-line cell clips the overflow through
-    // the middle of the second line. It keeps the row's whole 21pt pitch — the
-    // shortest cell that holds three wrapped lines at the writer's 4.5pt floor,
-    // so even a hand-written note never clips — but sits 0.9pt proud of the
-    // row's own top, which is what makes its first line read as level with the
-    // rest of the row rather than sinking below it.
-    //
-    // The offset is the difference between the two ways the writer places a
-    // line. A single-line value is centred on its box by cap height, at
-    // `y + height/2 - capRatio*size/2`; a wrapped cell's first baseline is a
-    // fixed inset from its top, `top - 2 - size`. Sharing the top (604) put the
-    // 6pt note's baseline 0.5pt under the 7pt values' and its cap top 1.2pt
-    // under theirs. Optically centring the 6pt line on the same 594..604 band
-    // wants a baseline of `599 - 3*capRatio`, so a top of `607 - 3*capRatio`:
-    // 604.85 for Helvetica (cap 0.718), 605.02 for Spectral (0.660), 605.08 for
-    // Alegreya Sans (0.641). The rect is one number for every face and has to
-    // stay under the column captions at 605, so it takes 604.9 — the value that
-    // balances the worst baseline error against the worst cap-top error across
-    // the three body faces, holding both inside half a point.
-    //
-    // It carries no rule of its own: one would strike through the wrapped line,
-    // and the four ruled columns still mark the row.
+    // Match the first baseline to the adjacent values; overflow continues in the writer.
     s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
   }
   // The free-text note under the rows is prose, so it wraps too, filling what
   // is left between the last row's notes cell and the foot of the panel. The
   // rows took 5pt of it to spread over the band the fourth row used to leave
   // blank; 16pt still holds two lines of the user's own attack notes.
-  s.text("details_attack_description", 294, 504, 288, 16, { multiline: true, size: 6, box: "none" });
-  s.block("CLASS FEATURES", "details_features", areaX, 236, areaW, 256);
-  s.block(style.traits, "details_additional_notes", areaX, 60, 146, 168);
-  s.block("CONDITIONS & EXHAUSTION", "details_conditions", 444, 158, 142, 70, { size: 5.5 });
-  s.text("details_exhaustion", 448, 162, 134, 8, { size: 5.5, box: "none" });
-  s.label("EXHAUSTION", 448, 170.5, { size: 3.4, color: "lines" });
-  s.block("ENCOUNTER NOTES", "details_encounter_box", 444, 60, 142, 90, { size: 5.5 });
+  s.text("details_attack_description", 274, 504, 308, 16, { multiline: true, size: 6, box: "none" });
+  s.block("CLASS FEATURES", "details_features", areaX, 200, areaW, 292);
+  s.block(style.traits, "details_additional_notes", areaX, 60, 166, 132);
+  s.section("CONDITIONS & EXHAUSTION", 444, 132, 142, 60);
+  s.text("details_conditions", 448, 155, 134, 17, { multiline: true, size: 5.5, box: "none" });
+  s.label("EXHAUSTION", 448, 144, { size: 3.4, color: "lines" });
+  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 490 + (i - 1) * 14, 142, 7, { marker: "square" });
+  s.block("ENCOUNTER NOTES", "details_encounter_box", 444, 60, 142, 64, { size: 5.5 });
   return finish(doc, s);
 }
 
