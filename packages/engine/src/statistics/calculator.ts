@@ -494,6 +494,9 @@ const ENGINE_BAKED_STAT_ELEMENTS: ReadonlySet<string> = new Set([
   "ID_INTERNAL_GRANTS_ARMOR_CLASS_BASE",
   "ID_INTERNAL_GRANTS_ARMOR_CLASS_DEXTERITY_MODIFIER",
   "ID_INTERNAL_GRANTS_HP_CONSTITUTION_MODIFIER",
+  // Its tiered ":max" bumps are computed in code (abilityMaxTier) so the cap
+  // rises whether or not the loaded content carries the grant.
+  "ID_INTERNAL_GRANTS_ABILITY_SCORE_MAXIMUM_OVER_20",
   "ID_INTERNAL_GRANTS_MULTICLASS_SPELLCASTING",
   "ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FULL",
   "ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_HALF",
@@ -796,6 +799,61 @@ export interface StatContributorCollector {
   out: Array<{ key: string; value: number; label: string; elementId: string }>;
 }
 
+/** The ":max" raise a ":max:extra" total grants: its whole value, up to 10. */
+function abilityMaxTier(extra: number): number {
+  return Math.max(0, Math.min(10, Math.floor(extra)));
+}
+
+interface CappedIncrease {
+  bonus: number;
+  /** The source's own ":max:extra" (its "to a maximum of 20 + extra"). */
+  extra: number;
+}
+
+/**
+ * Ability bonuses that carry their own maximum: an element with both a bonus
+ * to an ability and a base ":max:extra" for it ("your Strength increases by
+ * 2, to a maximum of 22"). Per ability, sorted by cap, lowest first. Raises
+ * written without bonus="base" ("as does your maximum") are not caps; they
+ * lift every source's maximum alike.
+ */
+function cappedAbilityIncreases(
+  sources: readonly RuleSource[],
+  passes: (source: RuleSource) => boolean,
+  values: StatisticsValues,
+): Map<string, CappedIncrease[]> {
+  const caps = new Map<RuleSource["element"], Map<string, number>>();
+  for (const source of sources) {
+    const match = /^([a-z]+):max:extra$/.exec(source.rule.name);
+    if (match === null || !ABILITIES.includes(match[1] as (typeof ABILITIES)[number])) continue;
+    if (source.rule.bonus !== "base" || !passes(source)) continue;
+    const byAbility = caps.get(source.element) ?? new Map<string, number>();
+    const extra = abilityMaxTier(resolveValue(source.rule.value, values));
+    byAbility.set(match[1]!, Math.max(byAbility.get(match[1]!) ?? 0, extra));
+    caps.set(source.element, byAbility);
+  }
+  const increases = new Map<RuleSource["element"], Map<string, CappedIncrease>>();
+  for (const source of sources) {
+    const ability = source.rule.name;
+    const extra = caps.get(source.element)?.get(ability);
+    if (extra === undefined || !passes(source)) continue;
+    const byAbility = increases.get(source.element) ?? new Map<string, CappedIncrease>();
+    const increase = byAbility.get(ability) ?? { bonus: 0, extra };
+    increase.bonus += resolveValue(source.rule.value, values);
+    byAbility.set(ability, increase);
+    increases.set(source.element, byAbility);
+  }
+  const byAbility = new Map<string, CappedIncrease[]>();
+  for (const perElement of increases.values()) {
+    for (const [ability, increase] of perElement) {
+      if (increase.bonus <= 0) continue;
+      byAbility.set(ability, [...(byAbility.get(ability) ?? []), increase]);
+    }
+  }
+  for (const list of byAbility.values()) list.sort((left, right) => left.extra - right.extra);
+  return byAbility;
+}
+
 export function computeStatistics(
   state: CharacterState,
   library: ElementLibrary,
@@ -917,21 +975,39 @@ export function computeStatistics(
     if (!passesRuleGates(source, ruleCtx)) continue;
     apply(source);
   }
-  // ":max" bumps evaluate after every ":max:extra" total exists — the
-  // internal over-20 grant's tiers gate on them.
+  // ":max" rules (a manual's "+2, as does your maximum") add to the seeded
+  // 20; the highest ":max:extra" base ("to a maximum of 24") then raises the
+  // cap by that much, up to 30 — the internal Ability Score Maximum Over 20
+  // grant's tiers, which the shipped content does not carry.
   for (const source of allRules) {
     if (!ABILITY_MAX_KEY.test(source.rule.name)) continue;
     if (!passesRuleGates(source, ruleCtx)) continue;
     apply(source);
   }
+  for (const ability of ABILITIES) {
+    values[`${ability}:max`] = (values[`${ability}:max`] ?? 20) + abilityMaxTier(values[`${ability}:max:extra`] ?? 0);
+  }
+  const cappedIncreases = cappedAbilityIncreases(allRules, (source) => passesRuleGates(source, ruleCtx), values);
 
   for (const ability of ABILITIES) {
     const base = state.abilities[ability];
     const bonus = values[ability] ?? 0;
     const scoreSet = values[`${ability}:score:set`] ?? 0;
     const max = values[`${ability}:max`] ?? 20;
-    // The final score clamps to ":max"; a ":score:set" override bypasses the cap.
-    const score = Math.max(Math.min(base + bonus, max), scoreSet);
+    // Bonuses clamp to ":max". A source that says "increases by N, to a
+    // maximum of X" then adds its own bonus only up to its own X, lowest cap
+    // first, so a small cap cannot ride on a larger one (Primal Champion, a
+    // bonus capped at 22 and an epic boon take 20 to 25, not 27). Its X is the
+    // cap with its own extra in place of the winning one, so stacking raises
+    // still lift it. A ":score:set" override bypasses the cap.
+    const winningExtra = abilityMaxTier(baseValue.get(`${ability}:max:extra`) ?? 0);
+    const capped = cappedIncreases.get(ability) ?? [];
+    let score = Math.min(base + bonus - capped.reduce((sum, increase) => sum + increase.bonus, 0), max);
+    for (const increase of capped) {
+      const ownMax = Math.min(max, max - winningExtra + increase.extra);
+      score = Math.max(score, Math.min(score + increase.bonus, ownMax));
+    }
+    score = Math.max(score, scoreSet);
     finalScores[ability] = score;
     values[`${ability}:score`] = score;
     const mod = abilityModifier(score);

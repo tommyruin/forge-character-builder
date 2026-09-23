@@ -42,6 +42,14 @@ project uses [Semantic Versioning](https://semver.org/).
 - The 2014 Bard's Bardic Inspiration die is d6/d8/d10/d12 by level instead of
   the sum of those dice, and a feature count that grows by level keeps growing
   instead of dropping back to 1.
+- Ability scores rise above 20 in the shipped content: a level-20 barbarian's
+  Primal Champion takes Strength 20 to 24 (maximum 25). The engine now works out
+  the raised maximum itself instead of relying on an internal grant only the
+  full corpus carries.
+- A bonus that says "to a maximum of X" stops at its own X even when another
+  feature allows a higher maximum, so two bonuses capped at different
+  maximums each stop at their own. Raises that say "as does your maximum"
+  still stack.
 - Delete on a stack removes the whole record. It previously removed a single
   unit without saying so.
 - Equipment's catalog and description panes scroll to the bottom again while a
