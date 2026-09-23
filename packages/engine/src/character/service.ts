@@ -1217,7 +1217,7 @@ export class CharacterService {
       return this.changeMulticlassSelection(id, state, document, rule, selectionId);
     }
     // Adjacent same-name wrappers form one numbered selection group.
-    const targetRule = selectionRuleForSlot(state, ruleIdentifier, number);
+    const targetRule = selectionRuleForSlot(state, ruleIdentifier, number, this.library);
     if (!targetRule) throw engineError("not-found", `selection rule '${ruleIdentifier}' not found`);
     const edits = planSelectionEdits(document, state, this.library, targetRule, selectionId, number);
     const rndhpEdit =
@@ -1258,7 +1258,7 @@ export class CharacterService {
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for selections");
     }
-    const rule = selectionRuleForSlot(state, ruleIdentifier, number);
+    const rule = selectionRuleForSlot(state, ruleIdentifier, number, this.library);
     if (!rule) throw engineError("not-found", `selection rule '${ruleIdentifier}' not found`);
     if (!rule.hasSelection) return state;
     if (rule.type === "Multiclass") {

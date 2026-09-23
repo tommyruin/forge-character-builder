@@ -190,6 +190,8 @@ function isEligible(
   ctx: RequirementContext,
   candidate: ParsedElement,
   allowedRegisteredId?: string,
+  authored = authoredSelectResolution(state, library, rule),
+  supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined,
 ): boolean {
   if (candidate.identity.type !== rule.type) return false;
   if (isRestrictedForCharacter(state, library, candidate)) return false;
@@ -199,33 +201,145 @@ function isEligible(
     candidate.identity.id !== allowedRegisteredId &&
     !allowsDuplicate(candidate)
   ) return false;
-  const supports = selectSupportsFor(state, library, rule);
+  // A wrapper that could belong to more than one authored rule must not fall
+  // through to an unrestricted picker. Keep its saved value in the character,
+  // but fail closed for any new choice until its identity is unambiguous.
+  if (authored.hasCandidates && (authored.select === undefined || !authored.active)) return false;
   if (supports !== undefined && !matchesSupports(supports, candidate)) return false;
   return true;
 }
 
+interface AuthoredSelectResolution {
+  /** Whether the owning element authors any select with this wrapper's type/name/level. */
+  hasCandidates: boolean;
+  /** The authored select that spawned the wrapper, when it can be identified. */
+  select?: SelectRule;
+  /** Owner path + owner id + rule index: distinct for selects sharing a label. */
+  identity?: string;
+  /** Whether the identified select's level and requirements hold now. */
+  active: boolean;
+}
+
+/**
+ * Identifies the authored select behind a wrapper. Several selects on one
+ * element can share a type, name and level while filtering differently (the
+ * 2014 Arcane Trickster's one free Wizard spell and two Enchantment/Illusion
+ * spells), so the label alone is not an identity:
+ *
+ * 1. a checksum matching exactly one candidate slot names that select;
+ * 2. otherwise (old or foreign checksums) the wrapper's position in the run
+ *    of same-label siblings, when that run has exactly the shape the active
+ *    candidates would emit;
+ * 3. otherwise the sole candidate, if there is only one.
+ *
+ * Anything else stays unresolved: callers keep its saved value but offer no
+ * new picks rather than guessing a filter.
+ */
+function authoredSelectResolution(
+  state: CharacterState,
+  library: ElementLibrary,
+  rule: SelectionRule,
+): AuthoredSelectResolution {
+  if (rule.path.length < 2) return { hasCandidates: false, active: false };
+  const parentPath = rule.path.slice(0, -1);
+  const parent = elementAtPath(state.elements, parentPath);
+  const parentId = parent?.id || parent?.registered;
+  const element = parentId ? library.byId.get(parentId) : undefined;
+  if (parent === null || parentId === undefined || element === undefined) {
+    return { hasCandidates: false, active: false };
+  }
+
+  const candidates = element.rules.flatMap((candidate, ruleIndex) =>
+    candidate.kind === "select" &&
+    candidate.type === rule.type &&
+    (candidate.name ?? candidate.type) === rule.name &&
+    (candidate.level ?? 1) === rule.requiredLevel
+      ? [{ select: candidate, ruleIndex }]
+      : [],
+  );
+  if (candidates.length === 0) return { hasCandidates: false, active: false };
+
+  let ctx: RequirementContext | undefined;
+  const isActive = (select: SelectRule): boolean =>
+    selectEligible(select, state, (ctx ??= requirementContext(state, library)));
+  const resolved = (select: SelectRule, ruleIndex: number, active = isActive(select)): AuthoredSelectResolution => ({
+    hasCandidates: true,
+    select,
+    identity: `${parentPath.join(".")}|${parentId}#${ruleIndex}`,
+    active,
+  });
+
+  const wrapper = elementAtPath(state.elements, rule.path);
+  const checksum = wrapper?.checksum ?? "";
+  if (checksum !== "") {
+    const matches = candidates.filter(({ select }) => {
+      const count = select.number ?? 1;
+      for (let number = 1; number <= count; number++) {
+        if (selectionRuleChecksum(parentId, select, number) === checksum) return true;
+      }
+      return false;
+    });
+    if (matches.length === 1) return resolved(matches[0]!.select, matches[0]!.ruleIndex);
+  }
+
+  const active = candidates.filter(({ select }) => isActive(select));
+  const sameLabel = parent.children.filter((node) =>
+    node.requiredLevel === rule.requiredLevel && node.type === rule.type && node.name === rule.name,
+  );
+  const expected = active.flatMap(({ select, ruleIndex }) => {
+    const count = select.number ?? 1;
+    return Array.from({ length: count }, (_, slot) => ({
+      select,
+      ruleIndex,
+      number: count > 1 ? slot + 1 : undefined,
+    }));
+  });
+  const position = wrapper === null ? -1 : sameLabel.indexOf(wrapper);
+  if (
+    position >= 0 &&
+    sameLabel.length === expected.length &&
+    sameLabel.every((node, index) => node.number === undefined || node.number === expected[index]!.number)
+  ) {
+    const match = expected[position]!;
+    return resolved(match.select, match.ruleIndex, true);
+  }
+
+  // A sole candidate keeps the pre-identity behavior for old checksums,
+  // including partial saved groups (an inactive one still groups, but offers
+  // nothing new).
+  if (candidates.length === 1) return resolved(candidates[0]!.select, candidates[0]!.ruleIndex);
+  return { hasCandidates: true, active: false };
+}
+
+/**
+ * The key that decides which adjacent wrappers form one numbered group:
+ * the authored select's identity when the owning element authors one, the
+ * parent-scoped label (type, name, required level) for wrappers no element
+ * authors or when no library is at hand, and null for a wrapper whose
+ * authored select is ambiguous — that one never merges with a neighbour.
+ */
+export function selectionRuleGroupKey(
+  state: CharacterState,
+  library: ElementLibrary | undefined,
+  rule: SelectionRule,
+): string | null {
+  if (library !== undefined) {
+    const resolution = authoredSelectResolution(state, library, rule);
+    if (resolution.hasCandidates) return resolution.identity ?? null;
+  }
+  return `${rule.path.slice(0, -1).join(".")}|${rule.type}|${rule.name}|${rule.requiredLevel}`;
+}
+
 /**
  * The select rule that spawned the wrapper (its supports filter), found on
- * the granting element's rules; undefined when the wrapper is engine-baked.
+ * the granting element's rules; undefined when the wrapper is engine-baked
+ * or its authored select cannot be identified (see authoredSelectResolution).
  * $(spellcasting:list) and $(spellcasting:slots) references in the supports
  * are expanded against the character (the select's spellcasting name and the
  * caster's highest spell-slot level; see expandSelectSupports).
  */
 export function selectRuleFor(state: CharacterState, library: ElementLibrary, rule: SelectionRule): SelectRule | undefined {
-  if (rule.path.length < 2) return undefined;
-  const parent = elementAtPath(state.elements, rule.path.slice(0, -1));
-  const parentId = parent?.id || parent?.registered;
-  if (!parentId) return undefined;
-  const element = library.byId.get(parentId);
-  if (!element) return undefined;
-  for (const candidate of element.rules) {
-    if (candidate.kind !== "select") continue;
-    if (candidate.type !== rule.type) continue;
-    if (candidate.name !== undefined && candidate.name !== rule.name) continue;
-    if ((candidate.level ?? 1) !== rule.requiredLevel) continue;
-    return candidate;
-  }
-  return undefined;
+  return authoredSelectResolution(state, library, rule).select;
 }
 
 export function selectSupportsFor(state: CharacterState, library: ElementLibrary, rule: SelectionRule): string | undefined {
@@ -700,7 +814,7 @@ function maxSpellSlotLevel(state: CharacterState): number {
  * by id), its level setter value (selects carry numeric level tags such
  * as the cantrip level "0"), and its school setter value.
  */
-function matchesSupports(selectSupports: string, candidate: ParsedElement): boolean {
+export function matchesSupports(selectSupports: string, candidate: ParsedElement): boolean {
   const have = new Set(candidate.supports.map((tag) => tag.trim()));
   have.add(candidate.identity.id);
   const level = candidate.setters.find((setter) => setter.name === "level")?.value;
@@ -847,44 +961,81 @@ export function selectionRuleForSlot(
   state: CharacterState,
   identifier: string,
   number?: number,
+  library?: ElementLibrary,
 ): SelectionRule | null {
   const rule = selectionRuleFor(state, identifier);
   if (!rule || number === undefined) return rule;
-  return selectionSlotRule(state, rule, number);
+  return selectionSlotRule(state, rule, number, library);
 }
 
 /** The numbered wrapper selected by a request; slots are clamped to the group. */
-export function selectionSlotRule(state: CharacterState, rule: SelectionRule, number: number): SelectionRule {
-  const parent = rule.path.slice(0, -1);
-  const index = rule.path[rule.path.length - 1] ?? 0;
-  let nodes = state.elements;
-  for (const i of parent) {
-    const node = nodes[i];
-    if (node === undefined) return rule;
-    nodes = node.children;
-  }
-  const member = nodes[index];
-  if (member === undefined || member.requiredLevel === undefined) return rule;
-  const same = (candidate: (typeof nodes)[number]): boolean =>
-    candidate.requiredLevel === member.requiredLevel && candidate.type === member.type && candidate.name === member.name;
-  let start = index;
-  while (start > 0 && same(nodes[start - 1]!)) start--;
-  let end = index + 1;
-  while (end < nodes.length && same(nodes[end]!)) end++;
+export function selectionSlotRule(
+  state: CharacterState,
+  rule: SelectionRule,
+  number: number,
+  library?: ElementLibrary,
+): SelectionRule {
+  const group = wrapperGroup(state, rule, library);
   const requestedSlot = Number.isFinite(number) ? Math.trunc(number) : 1;
-  const slot = Math.max(0, Math.min(requestedSlot - 1, end - start - 1));
-  const target = nodes[start + slot]!;
-  const targetPath = [...parent, start + slot];
-  const identifier = state.selectionRuleIds.get(targetPath.join(".")) ?? rule.identifier;
-  const registered = target.registered ?? "";
+  return group[Math.max(0, Math.min(requestedSlot - 1, group.length - 1))] ?? rule;
+}
+
+/**
+ * The adjacent numbered slots belonging to one authored select, in slot
+ * order. Same-label neighbours spawned by a different select (the 2014 Arcane
+ * Trickster's free and school-restricted level-3 spells) form their own group.
+ */
+export function selectionRuleGroup(
+  state: CharacterState,
+  library: ElementLibrary,
+  rule: SelectionRule,
+): SelectionRule[] {
+  return wrapperGroup(state, rule, library);
+}
+
+/**
+ * Adjacent wrappers sharing the rule's type, name, required level and group
+ * key (selectionRuleGroupKey); an ambiguous wrapper is a group of its own.
+ */
+function wrapperGroup(state: CharacterState, rule: SelectionRule, library?: ElementLibrary): SelectionRule[] {
+  const parentPath = rule.path.slice(0, -1);
+  const memberIndex = rule.path[rule.path.length - 1] ?? 0;
+  const siblings = parentPath.length === 0 ? state.elements : elementAtPath(state.elements, parentPath)?.children;
+  const member = siblings?.[memberIndex];
+  if (siblings === undefined || member === undefined || member.requiredLevel === undefined) return [rule];
+  const key = selectionRuleGroupKey(state, library, rule);
+  if (key === null) return [rule];
+  const same = (index: number): boolean => {
+    const candidate = siblings[index]!;
+    if (candidate.requiredLevel !== member.requiredLevel || candidate.type !== member.type || candidate.name !== member.name) {
+      return false;
+    }
+    return selectionRuleGroupKey(state, library, ruleForNode(state, candidate, [...parentPath, index], "")) === key;
+  };
+  let start = memberIndex;
+  while (start > 0 && same(start - 1)) start--;
+  let end = memberIndex + 1;
+  while (end < siblings.length && same(end)) end++;
+  return siblings
+    .slice(start, end)
+    .map((node, offset) => ruleForNode(state, node, [...parentPath, start + offset], rule.identifier));
+}
+
+function ruleForNode(
+  state: CharacterState,
+  node: RegisteredElement,
+  path: number[],
+  fallbackIdentifier: string,
+): SelectionRule {
+  const registered = node.registered ?? "";
   return {
-    identifier,
-    type: target.type,
-    name: target.name,
-    requiredLevel: target.requiredLevel ?? rule.requiredLevel,
+    identifier: state.selectionRuleIds.get(path.join(".")) ?? fallbackIdentifier,
+    type: node.type,
+    name: node.name,
+    requiredLevel: node.requiredLevel ?? 1,
     hasSelection: registered !== "",
     selectedElementIds: registered !== "" ? [registered] : [],
-    path: targetPath,
+    path,
   };
 }
 
@@ -907,13 +1058,16 @@ export function selectionOptions(
     }));
   }
   const requirementCtx = ctx ?? requirementContext(state, library);
+  const authored = authoredSelectResolution(state, library, rule);
+  const supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined;
+  if (authored.hasCandidates && (authored.select === undefined || !authored.active)) return [];
   // Reopening a filled rule must keep its current value in the option list. For a
   // numbered group the rule passed here is the individual slot, so this also
   // permits replacing that slot without making the other slots selectable twice.
   const allowedRegisteredId = rule.selectedElementIds.find((id): id is string => id !== null);
   const out: SelectionOption[] = [];
   for (const candidate of library.byType.get(rule.type) ?? []) {
-    if (!isEligible(state, library, rule, requirementCtx, candidate, allowedRegisteredId)) continue;
+    if (!isEligible(state, library, rule, requirementCtx, candidate, allowedRegisteredId, authored, supports)) continue;
     out.push({
       id: candidate.identity.id,
       name: candidate.identity.name,
@@ -945,9 +1099,12 @@ export function hasAvailableSelectionOptions(
     return (select?.items?.length ?? 0) > 0;
   }
   const requirementCtx = ctx ?? requirementContext(state, library);
+  const authored = authoredSelectResolution(state, library, rule);
+  const supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined;
+  if (authored.hasCandidates && (authored.select === undefined || !authored.active)) return false;
   const allowedRegisteredId = rule.selectedElementIds.find((id): id is string => id !== null);
   return (library.byType.get(rule.type) ?? []).some((candidate) =>
-    isEligible(state, library, rule, requirementCtx, candidate, allowedRegisteredId),
+    isEligible(state, library, rule, requirementCtx, candidate, allowedRegisteredId, authored, supports),
   );
 }
 

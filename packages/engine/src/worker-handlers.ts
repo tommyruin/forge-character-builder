@@ -372,7 +372,7 @@ export function createEngineMethodHandlers(
     getCharacterSources: (id) => characterSourcesResponse(service, library, id),
     getSelectionOptions: (id, ruleId, request) => {
       const state = service.getCharacter(id);
-      const rule = selectionRuleForSlot(state, ruleId, request?.number);
+      const rule = selectionRuleForSlot(state, ruleId, request?.number, library);
       if (rule === null) return [];
       return selectionOptions(state, library, rule).map((option) => ({
         id: option.id,

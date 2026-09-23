@@ -19,6 +19,14 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Spell choices browse by school: a caster whose spell list is limited to
+  certain schools lists its spells again, and its cantrip choices browse every
+  school.
+- Same-named choices that one feature authors with different filters no longer
+  merge: a free pick beside school-restricted picks, picks of different spell
+  levels, and options that differ between the 2014 and 2024 rules each keep
+  their own list. Saved choices are kept; a choice whose rule can no longer be
+  identified keeps its pick but offers nothing new.
 - Delete on a stack removes the whole record. It previously removed a single
   unit without saying so.
 - Equipment's catalog and description panes scroll to the bottom again while a

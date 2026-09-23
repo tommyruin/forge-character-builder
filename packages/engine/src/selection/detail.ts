@@ -13,6 +13,7 @@ import { computeStatistics } from "../statistics/calculator.js";
 import {
   ENGINE_INTERNAL_ELEMENTS,
   allocatesAbilityScores,
+  selectionRuleGroupKey,
   hasAvailableSelectionOptions,
   selectRuleFor,
   selectionListItemForPath,
@@ -266,7 +267,11 @@ function detailSelectionRules(
     return invalidations.splice(index, 1)[0]!;
   };
   const availableOptionsByGroup = new Map<string, boolean>();
-  const availabilityStateKey = library ? selectionAvailabilityStateKey(state) : null;
+  // The library is refreshed in place, so its revision scopes the shared
+  // cache: group keys name authored rules by index within their element.
+  const availabilityStateKey = library
+    ? `${library.revision ?? 0}|${selectionAvailabilityStateKey(state)}`
+    : null;
   const sharedAvailabilityCache = library
     ? (selectionAvailabilityCache.get(library) ?? new Map<string, boolean>())
     : null;
@@ -275,6 +280,7 @@ function detailSelectionRules(
   }
   const walk = (nodes: RegisteredElement[], path: number[]): void => {
     let group: SelectionRuleDetail | null = null;
+    let currentGroupKey: string | null = null;
     let groupHasEmptySlot = false;
     let groupHasAvailableOptions = false;
     for (let i = 0; i < nodes.length; i++) {
@@ -302,16 +308,19 @@ function detailSelectionRules(
           selectedElementIds: selectedId ? [selectedId] : [],
           path: here,
         };
+        // A group is tied to the source select that spawned its wrappers.
+        // Ambiguous legacy wrappers stay separate so similar labels cannot
+        // merge two different authored choices.
+        const wrapperGroupKey = selectionRuleGroupKey(state, library, selectionRule) ?? `unresolved:${key}`;
         const authoredSelect = library ? selectRuleFor(state, library, selectionRule) : undefined;
         const allocates = library ? allocatesAbilityScores(state, library, selectionRule) : false;
         let nodeHasAvailableOptions = true;
         if (selectedId === null && library !== undefined) {
-          const groupKey = `${here.slice(0, -1).join(".")}|${node.type}|${node.name}|${node.requiredLevel}`;
-          const cached = availableOptionsByGroup.get(groupKey);
+          const cached = availableOptionsByGroup.get(wrapperGroupKey);
           if (cached !== undefined) {
             nodeHasAvailableOptions = cached;
           } else {
-            const cacheKey = `${availabilityStateKey}|${groupKey}`;
+            const cacheKey = `${availabilityStateKey}|${wrapperGroupKey}`;
             const shared = sharedAvailabilityCache?.get(cacheKey);
             if (shared !== undefined) {
               nodeHasAvailableOptions = shared;
@@ -319,11 +328,11 @@ function detailSelectionRules(
               nodeHasAvailableOptions = hasAvailableSelectionOptions(state, library, selectionRule);
               sharedAvailabilityCache?.set(cacheKey, nodeHasAvailableOptions);
             }
-            availableOptionsByGroup.set(groupKey, nodeHasAvailableOptions);
+            availableOptionsByGroup.set(wrapperGroupKey, nodeHasAvailableOptions);
           }
         }
         const invalidation = takeInvalidation(node, selectedId);
-        if (group && group.name === node.name && group.type === node.type && group.requiredLevel === node.requiredLevel) {
+        if (group && currentGroupKey === wrapperGroupKey) {
           group.selectionCount += 1;
           group.selectedElementIds.push(selectedId);
           group.selectedElementNames.push(selectedName);
@@ -364,6 +373,7 @@ function detailSelectionRules(
             spellcastingName: null,
             allocatesAbilityScores: allocates,
           };
+          currentGroupKey = wrapperGroupKey;
           rules.push(group);
         }
       } else {

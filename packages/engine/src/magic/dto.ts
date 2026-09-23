@@ -7,11 +7,11 @@ import type {
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
 import {
-  evaluateSupportsExpression,
+  matchesSupports,
   isRestrictedForCharacter,
   selectionOptions,
+  selectionRuleGroup,
   selectionRuleFor,
-  selectionSlotRule,
   spellListExtensions,
   spellSlotCeilingFor,
 } from "../selection/selection.js";
@@ -587,38 +587,6 @@ function spellcastingNameFor(
   return null;
 }
 
-/** The adjacent same-name/type/level rule group containing the node at path. */
-function spellRuleGroup(
-  state: CharacterState,
-  path: number[],
-): { groupPath: number[]; groupNodes: { registered: string | null }[] } {
-  const parent = path.slice(0, -1);
-  const index = path[path.length - 1]!;
-  let nodes: { id: string; registered: string | null; requiredLevel?: number; type?: string; name?: string; children: { id: string }[] }[] = state.elements as never;
-  for (const i of parent) {
-    const node = nodes[i];
-    if (node === undefined) break;
-    nodes = node.children as never;
-  }
-  const node = nodes[index];
-  if (node === undefined || node.requiredLevel === undefined) {
-    return { groupPath: path, groupNodes: [] };
-  }
-  let start = index;
-  while (start > 0 && sameRule(nodes[start - 1]!, node)) start--;
-  let end = index + 1;
-  while (end < nodes.length && sameRule(nodes[end]!, node)) end++;
-  const groupPath = [...parent, start];
-  return {
-    groupPath,
-    groupNodes: nodes.slice(start, end).map((member) => ({ registered: member.registered ?? null })),
-  };
-}
-
-function sameRule(left: { requiredLevel?: number; type?: string; name?: string }, right: { requiredLevel?: number; type?: string; name?: string }): boolean {
-  return left.requiredLevel === right.requiredLevel && left.type === right.type && left.name === right.name;
-}
-
 /**
  * Builds the spell-browse DTO for a Spell selection rule.
  * Errors: unknown rule and non-Spell rule are 404s.
@@ -635,13 +603,12 @@ export function buildSpellBrowseDto(
   if (rule.type !== "Spell") {
     throw engineError("not-found", `Selection rule '${ruleId}' is not a Spell rule.`);
   }
-  // The browsed rule is the whole adjacent same-name group (the wizard's
-  // level-1 cantrip group carries three slots, one per wrapper).
-  const { groupPath, groupNodes } = spellRuleGroup(state, rule.path);
-  const selectedIds = groupNodes.map((node) => {
-    const registered = node.registered ?? null;
-    return registered === "" ? null : registered;
-  });
+  // The browsed rule is the whole adjacent group spawned by one authored
+  // select (the wizard's level-1 cantrip group carries three slots, one per
+  // wrapper); a same-name group from a different select browses separately.
+  const groupRules = selectionRuleGroup(state, library, rule);
+  const groupPath = groupRules[0]?.path ?? rule.path;
+  const selectedIds = groupRules.map((slot) => slot.selectedElementIds[0] ?? null);
   // A Spell rule under a spellcasting feature browses that caster's list; a
   // rule with no such ancestor (racial traits, feats — the Astral Elf's
   // Astral Fire, the High Elf wizard cantrip) has no caster block at all and
@@ -672,8 +639,7 @@ export function buildSpellBrowseDto(
   const spells: SpellBrowseEntryDto[] = [];
   const isCantripRule = rule.name.startsWith("Cantrip");
   const eligibleIds = new Set<string>();
-  for (let number = 1; number <= groupNodes.length; number++) {
-    const slotRule = selectionSlotRule(state, rule, number);
+  for (const slotRule of groupRules) {
     for (const option of selectionOptions(state, library, slotRule)) eligibleIds.add(option.id);
   }
 
@@ -753,18 +719,14 @@ export function buildSpellBrowseDto(
   const extensionIds = new Set(extensions.spellIds);
   const onBrowseList = (element: ParsedElement): boolean => {
     if (extensionIds.has(element.identity.id)) return true;
-    const have = new Set(element.supports.map((tag) => tag.trim()));
-    have.add(element.identity.id);
-    const level = element.setters.find((setter) => setter.name === "level")?.value;
-    if (level !== undefined) have.add(level.trim());
-    return listExpressions.some((expression) => evaluateSupportsExpression(expression, have));
+    return listExpressions.some((expression) => matchesSupports(expression, element));
   };
 
   for (const element of library.byType.get("Spell") ?? []) {
     const info = spellInfo(library, element.identity.id);
     if (info === null) continue;
     if (isCantripRule ? info.level !== 0 : info.level === 0) continue;
-    if (!onBrowseList(element)) continue;
+    if (!onBrowseList(element) && !eligibleIds.has(info.id) && !selectedSlots.has(info.id)) continue;
     if (isRestrictedForCharacter(state, library, element)) continue;
     const selectedNumber = selectedSlots.get(info.id) ?? null;
     let status: string;
