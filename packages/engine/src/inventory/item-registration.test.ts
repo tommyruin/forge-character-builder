@@ -262,23 +262,28 @@ describe.each(["2014", "2024"])("item registrations (%s rules)", (mode) => {
     expect(wornXml).toContain("<equipped>true</equipped>");
     expect(childIds(nodeSubtree(wornXml, GOGGLES_OF_NIGHT)!)).toEqual([VISION_LESSER_DARKVISION]);
     expect(registeredCount(wornXml)).toBe(carriedCount + 1);
-    // The gate under test is that the sense arrives at all; the range itself
-    // is the sum of the granted Vision element's base and the item's own rule.
-    expect(computeStatistics(service.getCharacter(id), library)["darkvision:range"]).toBeGreaterThanOrEqual(60);
+    // The granted Vision element only names the sense (its base range is 0);
+    // the goggles' own rule supplies the 60 feet.
+    const darkvision = (): number => computeStatistics(service.getCharacter(id), library)["darkvision:range"] ?? 0;
+    expect(darkvision()).toBe(60);
     expect(conditionTokens(service, id, library)).toContain("Darkvision");
 
     service.setItemStorage(id, goggles.identifier, "#1");
     expect(sumIds(service.exportCharacterXml(id))).not.toContain(GOGGLES_OF_NIGHT);
+    expect(darkvision()).toBe(0);
 
     service.setItemStorage(id, goggles.identifier, null);
     expect(sumIds(service.exportCharacterXml(id))).not.toContain(GOGGLES_OF_NIGHT);
+    expect(darkvision()).toBe(0);
 
     service.equipItem(id, goggles.identifier, "worn");
     expect(sumIds(service.exportCharacterXml(id))).toContain(GOGGLES_OF_NIGHT);
+    expect(darkvision()).toBe(60);
     service.equipItem(id, goggles.identifier, "none");
     const removedXml = service.exportCharacterXml(id);
     expect(sumIds(removedXml)).not.toContain(GOGGLES_OF_NIGHT);
     expect(registeredCount(removedXml)).toBe(carriedCount);
+    expect(darkvision()).toBe(0);
 
     service.equipItem(id, goggles.identifier, "worn");
     service.removeItem(id, goggles.identifier);
@@ -286,6 +291,7 @@ describe.each(["2014", "2024"])("item registrations (%s rules)", (mode) => {
     expect(sumIds(goneXml)).not.toContain(GOGGLES_OF_NIGHT);
     expect(nodeSubtree(goneXml, GOGGLES_OF_NIGHT)).toBeNull();
     expect(registeredCount(goneXml)).toBe(carriedCount);
+    expect(darkvision()).toBe(0);
   });
 
   it("activates a slotless attunement item on attunement alone", () => {

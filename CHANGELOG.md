@@ -27,6 +27,21 @@ project uses [Semantic Versioning](https://semver.org/).
   levels, and options that differ between the 2014 and 2024 rules each keep
   their own list. Saved choices are kept; a choice whose rule can no longer be
   identified keeps its pick but offers nothing new.
+- Goggles of Night grant 60 feet of darkvision, not 120, and add 60 feet to
+  darkvision a character already has. Other features that grant darkvision the
+  same way give their stated range as well.
+- Statistics that several features set as a base value now take the highest
+  one, and keep every other bonus to that statistic. A feature that grants 60
+  feet of darkvision, or 30 more to darkvision already there, takes a dwarf's
+  60 feet to 90; counts with a "minimum of 1" floor such as 2024 Sear Undead
+  follow the ability modifier; and a DC that can come from either of two
+  statistics no longer comes out 0.
+- Walking and other movement speeds take the higher of the character's own
+  speed and one a feature or item sets: the 2024 Wood Elf walks 35 feet, not
+  65, and Boots of Striding and Springing give a dwarf 30 feet, not 55.
+- The 2014 Bard's Bardic Inspiration die is d6/d8/d10/d12 by level instead of
+  the sum of those dice, and a feature count that grows by level keeps growing
+  instead of dropping back to 1.
 - Delete on a stack removes the whole record. It previously removed a single
   unit without saying so.
 - Equipment's catalog and description panes scroll to the bottom again while a

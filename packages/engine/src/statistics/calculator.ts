@@ -5,7 +5,10 @@
  * whose keys are the engine-computed base statistics plus every content
  * `<stat>` rule name from registered elements. Semantics:
  *  - engine-computed keys always exist (level, ability scores, ac, hp, ...);
- *  - content stat rules ADD to their key unless bonus="base", which REPLACES;
+ *  - content stat rules ADD to their key; rules sharing a named bonus
+ *    bucket do not stack (the largest counts), and bonus="base" is such a
+ *    bucket for the key's base value: the first base replaces the engine's
+ *    seed, the highest base wins, and every other contribution adds on top;
  *  - stat rules with level="N" apply only when the owning class level >= N;
  *  - rule values are either numeric literals or references to other keys
  *    already in the map (e.g. "proficiency", "level:wizard"); references
@@ -196,24 +199,21 @@ export function multiclassSlotProgression(
   return rates;
 }
 
-/**
- * The pinned corpus diverges for the lesser
- * darkvision element (observed value 60 via the grung fixtures; the corpus
- * says 0). Baked here so the fixtures hold.
- */
-const LESSER_DARKVISION = "ID_VISION_LESSER_DARKVISION";
-
-/** The UA 2019 artificer's infusions and tinkering features count only
- * the intelligence modifier (the corpus adds +1). */
+/** Engine-authored rule sets that replace an element's corpus stat rules.
+ * The UA 2019 artificer's infusions and tinkering features count only the
+ * intelligence modifier (the corpus adds +1); its infusion counts are the
+ * running totals a base rule holds at each level. The 2014 bard's
+ * inspiration die is one "bardic inspiration" bucket, so the largest die
+ * reached is the die. */
 const ARTIFICER_FEATURE_RULES: Record<string, StatRule[]> = {
   ID_WOTC_UA20190228_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM: [
     { kind: "stat", name: "infusions:vanish", value: "intelligence:modifier" },
     { kind: "stat", name: "infusions:count", value: "3", bonus: "base", level: 2 },
-    { kind: "stat", name: "infusions:count", value: "1", bonus: "base", level: 4 },
-    { kind: "stat", name: "infusions:count", value: "1", bonus: "base", level: 7 },
-    { kind: "stat", name: "infusions:count", value: "1", bonus: "base", level: 11 },
-    { kind: "stat", name: "infusions:count", value: "1", bonus: "base", level: 15 },
-    { kind: "stat", name: "infusions:count", value: "1", bonus: "base", level: 19 },
+    { kind: "stat", name: "infusions:count", value: "4", bonus: "base", level: 4 },
+    { kind: "stat", name: "infusions:count", value: "5", bonus: "base", level: 7 },
+    { kind: "stat", name: "infusions:count", value: "6", bonus: "base", level: 11 },
+    { kind: "stat", name: "infusions:count", value: "7", bonus: "base", level: 15 },
+    { kind: "stat", name: "infusions:count", value: "8", bonus: "base", level: 19 },
     { kind: "stat", name: "infusions:items", value: "2", bonus: "base", level: 2 },
     { kind: "stat", name: "infusions:items", value: "3", bonus: "base", level: 6 },
     { kind: "stat", name: "infusions:items", value: "4", bonus: "base", level: 11 },
@@ -224,10 +224,10 @@ const ARTIFICER_FEATURE_RULES: Record<string, StatRule[]> = {
   ],
   ID_WOTC_PHB_CLASS_FEATURE_BARD_BARDIC_INSPIRATION: [
     { kind: "stat", name: "bardic-inspiration:count", value: "charisma:modifier" },
-    { kind: "stat", name: "bardic-inspiration:dice", value: "6" },
-    { kind: "stat", name: "bardic-inspiration:dice", value: "8", level: 5 },
-    { kind: "stat", name: "bardic-inspiration:dice", value: "10", level: 10 },
-    { kind: "stat", name: "bardic-inspiration:dice", value: "12", level: 15 },
+    { kind: "stat", name: "bardic-inspiration:dice", value: "6", bonus: "bardic inspiration" },
+    { kind: "stat", name: "bardic-inspiration:dice", value: "8", bonus: "bardic inspiration", level: 5 },
+    { kind: "stat", name: "bardic-inspiration:dice", value: "10", bonus: "bardic inspiration", level: 10 },
+    { kind: "stat", name: "bardic-inspiration:dice", value: "12", bonus: "bardic inspiration", level: 15 },
   ],
   ID_WOTC_SCAG_ARCHETYPE_FEATURE_BLADESINGING_BLADESONG: [
     { kind: "stat", name: "bladesong:intelligence", value: "intelligence:modifier" },
@@ -466,9 +466,6 @@ export function validTreeIds(state: CharacterState, library: ElementLibrary): Se
 function resolveStatElement(id: string, library: ElementLibrary): { element: ParsedElement; baked?: StatRule; bakedRules?: StatRule[] } | null {
   const element = elementById(library, id) ?? ENGINE_INTERNAL_ELEMENTS.get(id);
   if (element) {
-    if (id === LESSER_DARKVISION) {
-      return { element, baked: { kind: "stat", name: "darkvision:range", value: "60", bonus: "base" } };
-    }
     // ASI identities are captured without their +1 rules; bake them.
     const asi = BAKED_ASI[id];
     if (asi !== undefined) {
@@ -834,6 +831,11 @@ export function computeStatistics(
     rollsTotal += hpValues.reduce((sum, roll) => sum + roll, 0);
   }
 
+  // The engine's own values before any content rule: a key's first base
+  // rule replaces its seed (the seeds stand in for the internal level
+  // elements' base rules).
+  const seeds: Readonly<StatisticsValues> = { ...values };
+
   const appliedKeys = new Set<string>();
   const { rules: allRules, validRegistered } = ruleSources(state, library, appliedKeys);
   const equipped = equippedInfo(state, library);
@@ -846,6 +848,10 @@ export function computeStatistics(
   // largest contribution in the bucket counts (two sources of magic-armor
   // "enhancement" or expertise "double" yield one bonus, not two).
   const bonusBucketMax = new Map<string, number>();
+  // The winning base value per key. Base rules compete (a feature's "30, or
+  // +30 if you already have it" sits beside a race's 60) instead of the last
+  // one applied erasing the others and every contribution before it.
+  const baseValue = new Map<string, number>();
   const apply = (source: RuleSource): void => {
     const rule = source.rule;
     appliedKeys.add(rule.name);
@@ -860,7 +866,12 @@ export function computeStatistics(
       });
     }
     if (rule.bonus === "base") {
-      values[rule.name] = resolveValue(rule.value, values);
+      const value = resolveValue(rule.value, values);
+      const previous = baseValue.get(rule.name);
+      const current = previous ?? seeds[rule.name] ?? 0;
+      const next = previous === undefined ? value : Math.max(previous, value);
+      values[rule.name] = (values[rule.name] ?? 0) + (next - current);
+      baseValue.set(rule.name, next);
     } else if (rule.bonus !== undefined) {
       const bucket = `${rule.name}\u0000${rule.bonus}`;
       const value = resolveValue(rule.value, values);
@@ -992,13 +1003,25 @@ export function computeStatistics(
 
   values.initiative = (values.initiative ?? 0) + abilityModifier(finalScores.dexterity!);
 
-  const innate = values["innate speed"] ?? 0;
-  values["innate speed:calculation"] = innate + (values["innate speed:misc"] ?? 0);
-  values.speed = (values["innate speed:calculation"] ?? 0) + (values["speed:misc"] ?? 0) + (values.speed ?? 0);
+  // A movement speed is its innate calculation, or a content base that beats
+  // it (Boots of Striding and Springing's 30, the 2024 wood elf's 35), plus
+  // its misc pool and any other contributions — the internal level element's
+  // `speed = innate speed:calculation` base rule, computed here.
+  const assembleSpeed = (key: string, innateCalculation: number): void => {
+    const base = baseValue.get(key);
+    const added = (values[key] ?? 0) - (base ?? seeds[key] ?? 0);
+    const winner = Math.max(innateCalculation, base ?? Number.NEGATIVE_INFINITY);
+    values[key] = winner + (values[`${key}:misc`] ?? 0) + added;
+    baseValue.set(key, winner);
+  };
+  const innateCalculation = (values["innate speed"] ?? 0) + (values["innate speed:misc"] ?? 0);
+  values["innate speed:calculation"] = innateCalculation;
+  assembleSpeed("speed", innateCalculation);
   for (const source of deferredMovementRules) apply(source);
   for (const mode of ["fly", "climb", "swim", "burrow"]) {
-    values[`innate speed:${mode}:calculation`] = (values[`innate speed:${mode}`] ?? 0) + (values[`innate speed:${mode}:misc`] ?? 0);
-    values[`speed:${mode}`] = (values[`innate speed:${mode}:calculation`] ?? 0) + (values[`speed:${mode}:misc`] ?? 0) + (values[`speed:${mode}`] ?? 0);
+    const modeCalculation = (values[`innate speed:${mode}`] ?? 0) + (values[`innate speed:${mode}:misc`] ?? 0);
+    values[`innate speed:${mode}:calculation`] = modeCalculation;
+    assembleSpeed(`speed:${mode}`, modeCalculation);
   }
 
   const dexMod = abilityModifier(finalScores.dexterity!);
