@@ -11,6 +11,8 @@ import { collectBundledFiles, collectCorpusXml, corpusContentManifestPlugin, cre
 // clone fetches separately (npm run corpus:fetch); without it the check skips.
 const CORPUS_ROOT = fileURLToPath(new URL("../../../third-party/elements/", import.meta.url));
 const corpusPresent = existsSync(join(CORPUS_ROOT, "testdata"));
+const PUBLIC_ROOT = fileURLToPath(new URL("../public/content/", import.meta.url));
+const SYSTEM_ROOT = join(PUBLIC_ROOT, "system");
 
 function registerDevMiddleware(options) {
   let middleware;
@@ -152,6 +154,51 @@ describe("browser corpus manifest", () => {
     } finally {
       await rm(root, { force: true, recursive: true });
     }
+  });
+
+  it("adds the system elements to a corpus-style root, filtered by the profile", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fcb-content-corpus-"));
+    const systemRoot = await mkdtemp(join(tmpdir(), "fcb-content-system-"));
+    try {
+      await mkdir(join(root, "testdata", "core"), { recursive: true });
+      await writeFile(join(root, "testdata", "core", "internal.xml"), "<elements />");
+      const systemXml = "<elements><element name=\"system\" /></elements>";
+      for (const name of ["system-elements.xml", "system-elements-extended.xml", "system-proxies.xml"]) {
+        await writeFile(join(systemRoot, name), systemXml);
+      }
+      await writeFile(join(systemRoot, "notes.txt"), "not content");
+
+      const middleware = registerDevMiddleware({ corpusRoot: root, systemRoot, basePath: "/", profile: "full" });
+      const manifest = JSON.parse((await request(middleware, "/content/manifest.json")).body.toString());
+      expect(manifest.files.map(({ path }) => path)).toEqual([
+        "testdata/core/internal.xml",
+        "system/system-elements-extended.xml",
+        "system/system-elements.xml",
+        "system/system-proxies.xml",
+      ]);
+      const served = await request(middleware, "/content/system/system-proxies.xml");
+      expect(served.statusCode).toBe(200);
+      expect(served.body.toString()).toBe(systemXml);
+
+      // reviewed-test names its system files; the extended identities are not among them.
+      const reviewed = await collectBundledFiles(root, "reviewed-test", systemRoot);
+      expect(reviewed.map(({ path }) => path)).toEqual([
+        "testdata/core/internal.xml",
+        "system/system-elements.xml",
+        "system/system-proxies.xml",
+      ]);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+      await rm(systemRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("keeps the public-base set unchanged when the system root is the shipped one", async () => {
+    const plain = await collectBundledFiles(PUBLIC_ROOT);
+    const withSystem = await collectBundledFiles(PUBLIC_ROOT, "public-base", SYSTEM_ROOT);
+    expect(withSystem.map(({ path, sha256 }) => `${path}:${sha256}`)).toEqual(
+      plain.map(({ path, sha256 }) => `${path}:${sha256}`),
+    );
   });
 
   it("pins the public-base path set and digest", async () => {
@@ -329,10 +376,17 @@ describe("browser corpus manifest", () => {
   it.skipIf(!corpusPresent)("keeps the broad fixture compatibility set under the explicit reviewed-test profile", async () => {
     // The corpus root holds testdata only; the system elements ship under
     // apps/client/public/content/system and are collected from there.
-    const files = await collectCorpusXml(CORPUS_ROOT, "reviewed-test");
+    const corpus = await collectCorpusXml(CORPUS_ROOT, "reviewed-test");
+    expect(corpus).toHaveLength(52);
+    expect(corpus.some(({ path }) => path.startsWith("system/"))).toBe(false);
+    const files = await collectBundledFiles(CORPUS_ROOT, "reviewed-test", SYSTEM_ROOT);
     const paths = files.map(({ path }) => path);
-    expect(paths).toHaveLength(52);
-    expect(paths.some((path) => path.startsWith("system/"))).toBe(false);
+    expect(paths).toHaveLength(55);
+    expect(paths.slice(52)).toEqual([
+      "system/system-elements.xml",
+      "system/system-proxies.xml",
+      "system/system-unarmed-riders.xml",
+    ]);
     expect(paths).toEqual(expect.arrayContaining([
       "testdata/supplements/extra-life/one-grung-above.xml",
       "testdata/supplements/xanathars-guide-to-everything/source.xml",

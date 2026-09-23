@@ -50,6 +50,9 @@ project uses [Semantic Versioning](https://semver.org/).
   feature allows a higher maximum, so two bonuses capped at different
   maximums each stop at their own. Raises that say "as does your maximum"
   still stack.
+- The local `full` and `reviewed-test` content profiles load the engine's system
+  elements again, so characters built against the corpus have their speed and
+  item grants (such as Goggles of Night).
 - Delete on a stack removes the whole record. It previously removed a single
   unit without saying so.
 - Equipment's catalog and description panes scroll to the bottom again while a

@@ -62,13 +62,29 @@ export function createContentManifest(files, basePath = "/", profile = "public-b
   };
 }
 
-/** Collect the profile-selected files of the content root (the system elements live there too). */
-export async function collectBundledFiles(corpusRoot, profile = "public-base") {
-  return collectCorpusXml(corpusRoot, profile);
+/**
+ * Collect the profile-selected files of the content root, plus the engine's
+ * system elements from `systemRoot` as `system/<name>`. The shipped content
+ * root already holds them (they are skipped as duplicates); the local corpus
+ * profiles walk the corpus instead, which has none.
+ */
+export async function collectBundledFiles(corpusRoot, profile = "public-base", systemRoot) {
+  const files = await collectCorpusXml(corpusRoot, profile);
+  if (systemRoot === undefined) return files;
+  const selectedProfile = resolveContentProfile(profile);
+  const present = new Set(files.map((file) => file.path));
+  const names = await readdir(systemRoot).catch(() => []);
+  for (const name of [...names].sort()) {
+    const path = `system/${name}`;
+    if (!XML.test(name) || present.has(path) || !selectedProfile.includes(path)) continue;
+    const bytes = await readFile(join(systemRoot, name));
+    files.push({ path, bytes, sha256: createHash("sha256").update(bytes).digest("hex") });
+  }
+  return files;
 }
 
-async function collectContentAssets(corpusRoot, basePath, profile) {
-  const files = await collectBundledFiles(corpusRoot, profile);
+async function collectContentAssets(corpusRoot, basePath, profile, systemRoot) {
+  const files = await collectBundledFiles(corpusRoot, profile, systemRoot);
   return {
     files,
     manifest: createContentManifest(files, basePath, profile),
@@ -116,10 +132,10 @@ function sendNotFound(response) {
   response.end("Not found\n");
 }
 
-function devContentMiddleware({ corpusRoot, basePath, profile }) {
+function devContentMiddleware({ corpusRoot, basePath, profile, systemRoot }) {
   let contentPromise;
   const loadContent = () => {
-    contentPromise ??= collectContentAssets(corpusRoot, basePath, profile).then(({ files, manifest }) => ({
+    contentPromise ??= collectContentAssets(corpusRoot, basePath, profile, systemRoot).then(({ files, manifest }) => ({
       filesByPath: new Map(files.map((file) => [file.path, file.bytes])),
       manifestBytes: manifestBytes(manifest),
     }));
@@ -171,6 +187,7 @@ function devContentMiddleware({ corpusRoot, basePath, profile }) {
 
 export function corpusContentManifestPlugin({
   corpusRoot = resolve(process.cwd(), "public", "content"),
+  systemRoot,
   basePath = process.env.PUBLIC_BASE_PATH || "/",
   profile = process.env.VITE_FCB_CONTENT_PROFILE ?? "public-base",
 } = {}) {
@@ -181,12 +198,12 @@ export function corpusContentManifestPlugin({
       publicDir = config.publicDir || null;
     },
     async generateBundle() {
-      const { files, manifest } = await collectContentAssets(corpusRoot, basePath, profile);
-      // Files that already live under public/content are copied by Vite; only
-      // the rest (a corpus profile served from elsewhere) are emitted.
-      const copiedByVite = publicDir !== null && resolve(corpusRoot) === resolve(publicDir, "content");
+      const { files, manifest } = await collectContentAssets(corpusRoot, basePath, profile, systemRoot);
+      // Files that already live under public/content (the shipped content and
+      // the system elements) are copied by Vite; only the rest (a corpus
+      // profile served from elsewhere) are emitted.
       for (const file of files) {
-        if (copiedByVite && existsSync(join(corpusRoot, file.path))) continue;
+        if (publicDir !== null && existsSync(join(publicDir, "content", file.path))) continue;
         this.emitFile({ type: "asset", fileName: `content/${file.path}`, source: file.bytes });
       }
       this.emitFile({
@@ -196,7 +213,7 @@ export function corpusContentManifestPlugin({
       });
     },
     configureServer(server) {
-      const middleware = devContentMiddleware({ corpusRoot, basePath, profile });
+      const middleware = devContentMiddleware({ corpusRoot, basePath, profile, systemRoot });
       middleware.warm();
       server.middlewares.use(middleware);
     },
