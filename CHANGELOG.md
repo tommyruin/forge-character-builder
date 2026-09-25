@@ -77,6 +77,8 @@ project uses [Semantic Versioning](https://semver.org/).
   still stops at 20 when Primal Champion or an epic boon raises the cap:
   Strength 20 with an Ability Score Improvement and Primal Champion is 24, not
   25.
+- The Sources panel counts a book's rules even when its entries spell the book's
+  name differently, instead of reporting "No rules loaded".
 
 ## [2.3.0] - 2026-09-16
 

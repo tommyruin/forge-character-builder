@@ -115,6 +115,24 @@ describe("engine worker handlers", () => {
     ]));
   });
 
+  // Van Richten's Guide To Ravenloft names itself "Guide To", but its
+  // Wereraven traits say "Guide to"; the book still has rules loaded.
+  it("counts a book's elements whose source name is spelled differently", async () => {
+    const ravenloft = await buildCorpusLibrary((path) =>
+      path.includes("van-richtens-guide-to-ravenloft/")
+      && (path.endsWith("/source.xml") || path.endsWith("/lycanthropy-wereraven.xml")));
+    const service = new CharacterService(undefined, ravenloft);
+    service.createCharacter("source-spelling");
+    const handlers = createEngineMethodHandlers(service, ravenloft);
+    const response = handlers.getCharacterSources!("source-spelling") as {
+      groups: Array<{ sources: Array<Record<string, unknown>> }>;
+    };
+    const sources = response.groups.flatMap((group) => group.sources);
+    expect(sources).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "ID_WOTC_SOURCE_VAN_RICHTENS_GUIDE_TO_RAVENLOFT", hasElements: true }),
+    ]));
+  }, 120_000);
+
   it("collects the non-toggleable sources into a leading Core group", () => {
     const service = new CharacterService(undefined, library);
     service.createCharacter("source-core-group");

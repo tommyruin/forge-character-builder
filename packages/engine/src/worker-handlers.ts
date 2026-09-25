@@ -20,6 +20,7 @@ import {
 } from "./content/equipment/categories.js";
 import type { ParsedElement } from "./content/parser.js";
 import { isContentAllowedForCharacter } from "./content/access.js";
+import { normalizeSourceName, sourceNamesWithElements } from "./content/sourceIdentity.js";
 import { expandDescriptionReferences } from "./content/description.js";
 import { selectionOptions, selectionRuleForSlot } from "./selection/selection.js";
 import { computeStatistics } from "./statistics/calculator.js";
@@ -39,9 +40,8 @@ function sourceSetter(source: Pick<ParsedElement, "setters"> | undefined, name: 
 
 function sourceDto(source: ParsedElement, library: ElementLibrary): WireObject {
   const name = source.identity.name;
-  const hasElements = [...library.byId.values()].some(
-    (element) => element.identity.type !== "Source" && element.identity.source === name,
-  );
+  // Entries may spell the book's name differently ("Guide to" for "Guide To").
+  const hasElements = sourceNamesWithElements(library).has(normalizeSourceName(name));
   return {
     id: source.identity.id,
     name,

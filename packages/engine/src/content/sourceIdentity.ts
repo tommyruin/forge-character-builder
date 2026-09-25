@@ -55,3 +55,23 @@ export function isSourceNameRestricted(
   }
   return false;
 }
+
+const elementSourceNamesCache = new WeakMap<
+  ElementLibrary,
+  { revision: number; names: Set<string> }
+>();
+
+/** Normalized source names that at least one non-Source element carries. */
+export function sourceNamesWithElements(library: ElementLibrary): Set<string> {
+  const revision = library.revision ?? 0;
+  let cached = elementSourceNamesCache.get(library);
+  if (cached === undefined || cached.revision !== revision) {
+    const names = new Set<string>();
+    for (const element of library.byId.values()) {
+      if (element.identity.type !== "Source") names.add(normalizeSourceName(element.identity.source));
+    }
+    cached = { revision, names };
+    elementSourceNamesCache.set(library, cached);
+  }
+  return cached.names;
+}
