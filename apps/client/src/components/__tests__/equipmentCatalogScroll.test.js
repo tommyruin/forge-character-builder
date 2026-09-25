@@ -104,6 +104,14 @@ describe('equipment details stack scrolling', () => {
       /\.fcb-equipment-details\s*>\s*\.fcb-description-panel\s*\{[^}]*min-height:\s*0;[^}]*flex:\s*1 1 auto;/s,
     );
   });
+
+  // Flex items shrink by default: on a short window the card gave up height
+  // to the description and clipped its own Add button out of reach.
+  it('keeps the base picker card at its content height', () => {
+    expect(css).toMatch(
+      /\.fcb-equipment-details\s*>\s*:not\(\.fcb-description-panel\)\s*\{[^}]*flex:\s*0 0 auto;/s,
+    );
+  });
 });
 
 // A whole category carrying an equipSetter is not a base choice: the picker

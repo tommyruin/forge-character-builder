@@ -68,6 +68,8 @@ project uses [Semantic Versioning](https://semver.org/).
   repeated spaces).
 - Source choices save on imported characters whose file predates the source
   settings region.
+- The base picker keeps its Add button in reach on short windows; it no longer
+  gives up height to the description pane beside it.
 
 ## [2.3.0] - 2026-09-16
 

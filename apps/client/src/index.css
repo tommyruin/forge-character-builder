@@ -4104,6 +4104,12 @@ button:disabled {
   flex: 1 1 auto;
 }
 
+/* The card never shrinks: squeezed below its content height it clips its own
+   Add button out of reach on short windows (768px and below). */
+.fcb-equipment-details > :not(.fcb-description-panel) {
+  flex: 0 0 auto;
+}
+
 .fcb-description-panel {
   position: sticky;
   top: calc(var(--fcb-sticky-top) + 20px);
