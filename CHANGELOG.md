@@ -70,6 +70,13 @@ project uses [Semantic Versioning](https://semver.org/).
   settings region.
 - The base picker keeps its Add button in reach on short windows; it no longer
   gives up height to the description pane beside it.
+- Build's Ability Scores total shows a score above 20 once a feature raises the
+  maximum, matching the sheet, and previews an edited score against that
+  maximum instead of a fixed 20.
+- A bonus with no maximum of its own, such as an Ability Score Improvement,
+  still stops at 20 when Primal Champion or an epic boon raises the cap:
+  Strength 20 with an Ability Score Improvement and Primal Champion is 24, not
+  25.
 
 ## [2.3.0] - 2026-09-16
 

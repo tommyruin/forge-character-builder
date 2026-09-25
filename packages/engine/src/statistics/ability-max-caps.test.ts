@@ -19,6 +19,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createEmptyLibrary, replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules } from "../selection/selection.js";
+import { buildCharacterDetail } from "../selection/detail.js";
 import { computeStatistics, type StatisticsValues } from "./calculator.js";
 import { seededRng } from "../testing/character-factory.js";
 import { SYSTEM_ROOT } from "../testing/corpus.js";
@@ -31,11 +32,15 @@ const capped = (bonus: number, extra: number): string =>
 
 const TRAITS: Record<string, string> = {
   CHAMPION: capped(4, 4),
+  /** The 2024 Primal Champion as shipped: +4, to a maximum of 25. */
+  CHAMPION_2024: capped(4, 5),
   BLESSING: capped(2, 2),
   BOON: capped(1, 10),
   ORB: stat("strength", "2") + stat("strength:max:extra", "2"),
   MANUAL: stat("strength", "2") + stat("strength:max", "2"),
   RACIAL: stat("strength", "2"),
+  /** An Ability Score Improvement pick: +1 with no maximum of its own. */
+  PLAIN: stat("strength", "1"),
 };
 const RACES: Record<string, string[]> = {
   CHAMPION: ["CHAMPION"],
@@ -46,6 +51,9 @@ const RACES: Record<string, string[]> = {
   MANUAL_TWICE: ["MANUAL", "MANUAL_AGAIN"],
   RACIAL: ["RACIAL"],
   RACIAL_CHAMPION: ["RACIAL", "CHAMPION"],
+  PLAIN_CHAMPION: ["PLAIN", "CHAMPION_2024"],
+  PLAIN_CHAMPION_BOON: ["PLAIN", "CHAMPION_2024", "BOON"],
+  PLAIN_CHAMPION_ORB: ["PLAIN", "CHAMPION", "ORB"],
 };
 
 describe("ability maximums (synthetic content)", () => {
@@ -89,6 +97,12 @@ describe("ability maximums (synthetic content)", () => {
     ["MANUAL_TWICE", 20, 24, 24],
     ["RACIAL", 20, 20, 20],
     ["RACIAL_CHAMPION", 18, 24, 24],
+    // A plain +1 stops at 20 even once a capped source raises the maximum.
+    ["PLAIN_CHAMPION", 20, 24, 25],
+    ["PLAIN_CHAMPION", 19, 24, 25],
+    ["PLAIN_CHAMPION_BOON", 20, 25, 30],
+    // A stacking raise ("as does your maximum") still lifts it.
+    ["PLAIN_CHAMPION_ORB", 20, 26, 26],
   ])("%s from Strength %i reaches %i (cap %i)", (race, strength, score, cap) => {
     const values = statsFor(race, strength);
     expect(values["strength:score"]).toBe(score);
@@ -125,5 +139,10 @@ describe("ability maximums (shipped content)", () => {
     expect(values["strength:max"]).toBe(25);
     expect(values["strength:score"]).toBe(24);
     expect(values["constitution:score"]).toBe(22);
+    // Build's Ability Scores section reads the same capped score.
+    const strength = buildCharacterDetail(service.getCharacter(id), library).abilities.find((ability) => ability.name === "Strength")!;
+    expect(strength.finalScore).toBe(24);
+    expect(strength.maximum).toBe(25);
+    expect(strength.modifier).toBe(7);
   });
 });

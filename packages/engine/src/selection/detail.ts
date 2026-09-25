@@ -32,6 +32,8 @@ export interface AbilityDetail {
   baseScore: number;
   additionalScore: number;
   finalScore: number;
+  /** The highest this score can reach: 20 unless a feature raises it. */
+  maximum: number;
   modifier: number;
   additionalSummary: string;
   bonusSources: AbilityBonusSource[];
@@ -394,11 +396,16 @@ export function buildCharacterDetail(
   library?: ElementLibrary,
 ): CharacterDetail {
   const bonuses = abilityBonuses(state, library);
+  const statistics = library ? computeStatistics(state, library) : null;
   const abilities: AbilityDetail[] = ABILITIES.map(({ key, name, abbreviation }) => {
     const base = state.abilities[key as keyof CharacterState["abilities"]];
     const sources = bonuses.get(key) ?? [];
     const additional = sources.reduce((sum, source) => sum + source.value, 0);
-    const final = base + additional;
+    // The calculator's score applies every maximum (20, or higher once a
+    // feature such as Primal Champion raises it); the plain sum is the
+    // fallback only when there is no library to compute from.
+    const maximum = statistics?.[`${key}:max`] ?? 20;
+    const final = statistics?.[`${key}:score`] ?? Math.min(base + additional, maximum);
     const summary = sources.map((source) => `${source.source} (${source.value})`).join(", ");
     return {
       name,
@@ -406,6 +413,7 @@ export function buildCharacterDetail(
       baseScore: base,
       additionalScore: additional,
       finalScore: final,
+      maximum,
       modifier: abilityModifier(final),
       additionalSummary: summary,
       bonusSources: sources,
@@ -414,7 +422,6 @@ export function buildCharacterDetail(
 
   const dexModifier = abilityModifier(state.abilities.dexterity);
 
-  const statistics = library ? computeStatistics(state, library) : null;
   const statValue = (key: string, fallback: number): number => statistics?.[key] ?? fallback;
   const loadIssues = library ? buildLoadIssues(state, library) : [];
 

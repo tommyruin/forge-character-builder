@@ -64,9 +64,15 @@ function signedLabel(value) {
   return `${value >= 0 ? '+' : ''}${value}`;
 }
 
-function previewFinalScore(ability, baseScore) {
+// The saved score comes from the engine, which applies every maximum; an
+// edited, not yet applied score is previewed against the ability's maximum,
+// which features such as Primal Champion raise above 20.
+export function previewFinalScore(ability, baseScore) {
+  if (baseScore === ability.baseScore && typeof ability.finalScore === 'number') {
+    return ability.finalScore;
+  }
   const total = baseScore + ability.additionalScore;
-  return Math.min(total, 20);
+  return Math.min(total, ability.maximum ?? 20);
 }
 
 function bonusSourcesFor(ability) {

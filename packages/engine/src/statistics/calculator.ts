@@ -994,15 +994,18 @@ export function computeStatistics(
     const bonus = values[ability] ?? 0;
     const scoreSet = values[`${ability}:score:set`] ?? 0;
     const max = values[`${ability}:max`] ?? 20;
-    // Bonuses clamp to ":max". A source that says "increases by N, to a
-    // maximum of X" then adds its own bonus only up to its own X, lowest cap
-    // first, so a small cap cannot ride on a larger one (Primal Champion, a
-    // bonus capped at 22 and an epic boon take 20 to 25, not 27). Its X is the
-    // cap with its own extra in place of the winning one, so stacking raises
-    // still lift it. A ":score:set" override bypasses the cap.
+    // Bonuses without a maximum of their own clamp to ":max" less the winning
+    // ":max:extra" — an Ability Score Improvement still cannot take a score
+    // past 20 just because Primal Champion raised the cap. A source that says
+    // "increases by N, to a maximum of X" then adds its own bonus only up to
+    // its own X, lowest cap first, so a small cap cannot ride on a larger one
+    // (Primal Champion, a bonus capped at 22 and an epic boon take 20 to 25,
+    // not 27). Its X is the cap with its own extra in place of the winning
+    // one, so stacking raises still lift it. A ":score:set" override bypasses
+    // the cap.
     const winningExtra = abilityMaxTier(baseValue.get(`${ability}:max:extra`) ?? 0);
     const capped = cappedIncreases.get(ability) ?? [];
-    let score = Math.min(base + bonus - capped.reduce((sum, increase) => sum + increase.bonus, 0), max);
+    let score = Math.min(base + bonus - capped.reduce((sum, increase) => sum + increase.bonus, 0), max - winningExtra);
     for (const increase of capped) {
       const ownMax = Math.min(max, max - winningExtra + increase.extra);
       score = Math.max(score, Math.min(score + increase.bonus, ownMax));
