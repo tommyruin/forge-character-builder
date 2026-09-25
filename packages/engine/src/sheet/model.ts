@@ -702,14 +702,21 @@ function buildFormValues(
   set("equipment_page_magic_items", sidebars.join("\n\n"));
 
   const seenSheetAttackIds = new Set<string>();
-  const sheetAttacks = buildAttacksDto(state, library)
+  const displayedAttacks = buildAttacksDto(state, library)
     .filter((entry) => entry.isDisplayed)
     .filter((entry) => {
       if (seenSheetAttackIds.has(entry.id)) return false;
       seenSheetAttackIds.add(entry.id);
       return true;
-    })
-    .slice(0, 4);
+    });
+  // Both layouts have four attack rows. Later attacks lead the free-text
+  // notes under them, which continue onto an attack-note page when long, so
+  // no displayed attack drops off the sheet.
+  const sheetAttacks = displayedAttacks.slice(0, 4);
+  const moreAttacks = displayedAttacks.slice(4).map((attack) => {
+    const details = [attack.range, attack.bonus, attack.damage].filter((part) => part !== "");
+    return details.length > 0 ? `${attack.name}: ${details.join(", ")}` : attack.name;
+  });
   for (const [index, attack] of sheetAttacks.entries()) {
     const number = index === 0 ? "" : ` ${index + 1}`;
     // The document's attack/damage attributes are whatever was current when the
@@ -726,7 +733,12 @@ function buildFormValues(
     set(`details_attack${row}_damage`, attack.damage);
     set(`details_attack${row}_description`, sheetAttackNote(attack, library));
   }
-  set("details_attack_description", state.attacksDescription);
+  set(
+    "details_attack_description",
+    [moreAttacks.length > 0 ? `More attacks: ${moreAttacks.join("; ")}.` : "", state.attacksDescription]
+      .filter((part) => part !== "")
+      .join("\n"),
+  );
 
   // The details page carries one spellcasting block, which belongs to the
   // character's class caster; a feature caster only fills it when there is no
@@ -2299,9 +2311,13 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     // cantrips section (observed: the Paladin's 1st-level spells
     // render under CANTRIPS).
     const absorbFirstLevel = cantrips.length === 0 && levels.length > 0;
-    const cantripSpellCount = absorbFirstLevel
-      ? levels[0]!.prepared.length + levels[0]!.full.length
-      : cantrips.length;
+    // A slot level with no spells chosen still prints its band and slot
+    // circles, which the writer draws at a one-spell block's height.
+    const drawnSpellCount = (level: { slots: number; prepared: KnownSpellDto[]; full: KnownSpellDto[] }): number => {
+      const count = level.prepared.length + level.full.length;
+      return count === 0 && level.slots > 0 && caster.resource.mode === "slots" ? 1 : count;
+    };
+    const cantripSpellCount = absorbFirstLevel ? drawnSpellCount(levels[0]!) : cantrips.length;
     const cantripSectionRows = spellSectionRows(cantripSpellCount);
     // The spell point reference block (title, level/cost table, footnote)
     // consumes 38pt between the header and the first section.
@@ -2362,7 +2378,7 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     });
     if (absorbFirstLevel) {
       const first = levels.shift()!;
-      const grid = advanceSpellGrid(gridGeometry, first.prepared.length + first.full.length);
+      const grid = advanceSpellGrid(gridGeometry, drawnSpellCount(first));
       gridGeometry = grid.next;
       section("cantrips").rows.push({ kind: "tokens", tokens: levelTokens(first, grid.sectionTop) });
       layoutSections.push(levelSection(first));
@@ -2375,7 +2391,7 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     }
     row += cantripSectionRows;
     for (const level of levels) {
-      const sectionRows = spellSectionRows(level.prepared.length + level.full.length);
+      const sectionRows = spellSectionRows(drawnSpellCount(level));
       if (row + sectionRows > SPELL_PAGE_TOP_ROWS + 0.001 && pageSections.length > 0) {
         // The level block moves whole to a continuation page (it is never
         // split and never dropped); the caster header is stamped again there.
@@ -2383,7 +2399,7 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
         row = 0;
         layoutSections = emitCasterHeader();
       }
-      const grid = advanceSpellGrid(gridGeometry, level.prepared.length + level.full.length);
+      const grid = advanceSpellGrid(gridGeometry, drawnSpellCount(level));
       gridGeometry = grid.next;
       section(`spells-${level.level}`).rows.push({
         kind: "tokens",

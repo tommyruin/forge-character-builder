@@ -28,7 +28,7 @@ describe("spell-list page filling", () => {
     // re-stamped header) to a second page.
     const { service, id } = buildCharacter(library, {
       id: "SpellPageFill",
-      classId: ID.CLASS_WIZARD,
+      classId: ID.CLASS_FIGHTER,
       levels: 17,
     });
     const perLevel: Readonly<Record<number, number>> = { 0: 4, 1: 9, 2: 8, 3: 7, 4: 6, 5: 5, 6: 4, 7: 3, 8: 2, 9: 1 };
@@ -81,6 +81,37 @@ describe("spell-list page filling", () => {
         // The 9th-level block stays on the page, above the 12pt bottom margin.
         expect(drawn!.transform[5], `${set} ${name} above the margin`).toBeGreaterThanOrEqual(12);
       }
+    }
+  }, 180_000);
+
+  it("prints every slot level's circles even with no spells chosen there", async () => {
+    // A 17th-level wizard with no spells picked still has 4/3/3/3/2/1/1/1/1
+    // slots to track; a level with slots but nothing chosen keeps its band.
+    const { service, id } = buildCharacter(library, { id: "EmptySlotLevels", classId: ID.CLASS_WIZARD, levels: 17 });
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, {
+      mode: "full",
+      include: { background: false, notes: false, spellCards: false, itemCards: false },
+    });
+    const wizard = model.pages
+      .filter((page) => page.templateKind === "spell-list")
+      .flatMap((page) => page.spellcasting ?? [])
+      .filter((caster) => caster.name === "Wizard");
+    expect(wizard.flatMap((caster) => caster.sections).filter((section) => section.level > 0).map((section) => section.slots))
+      .toEqual([4, 3, 3, 3, 2, 1, 1, 1, 1]);
+    const spellPage = model.pages.findIndex((page) => page.templateKind === "spell-list") + 1;
+
+    for (const set of ["2014", "2024"] as const) {
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(set));
+      const browserPdf = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+      const content = await (await browserPdf.getPage(spellPage)).getTextContent();
+      const labels = content.items
+        .filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item)
+        .map((item) => item.str)
+        .filter((text) => /SPELL SLOT/.test(text));
+      expect(labels, set).toEqual([
+        "4 SPELL SLOTS", "3 SPELL SLOTS", "3 SPELL SLOTS", "3 SPELL SLOTS", "2 SPELL SLOTS",
+        "1 SPELL SLOT", "1 SPELL SLOT", "1 SPELL SLOT", "1 SPELL SLOT",
+      ]);
     }
   }, 180_000);
 });

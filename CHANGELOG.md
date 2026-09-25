@@ -81,6 +81,11 @@ project uses [Semantic Versioning](https://semver.org/).
   name differently, instead of reporting "No rules loaded".
 - The 2014 Bard can use Bardic Inspiration at least once per long rest whatever
   the Charisma modifier.
+- Attacks past the sheet's four attack rows lead the attack notes under them
+  ("More attacks: …"), continuing onto an attack-note page when long, instead
+  of being left off.
+- A spell level with slots but no spells chosen keeps its band and slot circles
+  on the spell page, and a single slot reads "1 SPELL SLOT".
 
 ## [2.3.0] - 2026-09-16
 

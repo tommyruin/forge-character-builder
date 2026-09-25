@@ -112,6 +112,35 @@ describe("sheet attack rows", () => {
     expect(sheetAttackFields(service, lib, roundTrip(service, id))["details_attack1_description"]).toBe("Aim at the rope");
   });
 
+  it("lists attacks past the fourth row ahead of the free-text notes", async () => {
+    const lib = await library();
+    const service = new CharacterService(undefined, lib);
+    const id = service.createCharacter("Six attacks").id;
+    for (let index = 1; index <= 6; index += 1) {
+      service.createAttack(id, {
+        mode: "manual",
+        name: `Blade ${index}`, range: "5 ft", bonus: "+4", damage: `1d${index + 3} slashing`, description: null,
+      });
+    }
+    const model = buildCharacterSheetModel(service.getCharacter(id), lib, { mode: "full", canonical: false });
+    const fields: Record<string, string> = {};
+    const walk = (node: unknown): void => {
+      if (node === null || typeof node !== "object") return;
+      for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+        if (key.startsWith("details_attack") && typeof value === "string") fields[key] = value;
+        else walk(value);
+      }
+    };
+    walk(model);
+    const shown = service.getAttacks(id).filter((attack) => attack.isDisplayed).map((attack) => attack.name);
+    expect(shown.length).toBeGreaterThan(4);
+    expect(fields["details_attack4_weapon"]).toBe(shown[3]);
+    const rest = shown.slice(4);
+    expect(fields["details_attack_description"]).toMatch(/^More attacks: /);
+    for (const name of rest) expect(fields["details_attack_description"]).toContain(name);
+    expect(fields["details_attack_description"]).toContain("Blade 6: 5 ft, +4, 1d9 slashing");
+  });
+
   it("prints a round-tripped spell row's current damage after a level-up", async () => {
     const lib = await library();
     const service = new CharacterService(undefined, lib);

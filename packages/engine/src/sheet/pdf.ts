@@ -1,5 +1,5 @@
 import type { SpellResourceDto } from "@forge-cb/api";
-import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection } from "./model.js";
+import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection, SheetSpellListSection } from "./model.js";
 import type { LayoutRun } from "./card-layout.js";
 import { measuredTextWidth, winAnsiText } from "./text.js";
 import { decodeBase64 } from "../platform.js";
@@ -1691,7 +1691,11 @@ async function addSpellListPage(
     // and the first level section, so sections start 38pt lower with it.
     let sectionTop = headerY - (caster.resource.mode === "spellPoints" ? 48 : 10);
     const { topHeight, rowHeight, endHeight, columns, slotTextX, textBaseline } = SPELL_LIST;
-    for (const spellSection of caster.sections.filter((section) => section.spells.length > 0)) {
+    // A slot level prints even with no spells chosen: its circles still track
+    // the slots, which a character can spend on a higher-level casting.
+    const hasSlots = (section: SheetSpellListSection): boolean =>
+      section.level > 0 && caster.resource.mode === "slots" && section.slots > 0;
+    for (const spellSection of caster.sections.filter((section) => section.spells.length > 0 || hasSlots(section))) {
       // The level band holds the first two spells; every further three fill a row.
       const rows = Math.ceil(Math.max(0, spellSection.spells.length - 2) / 3);
       const topY = sectionTop - topHeight;
@@ -1705,15 +1709,16 @@ async function addSpellListPage(
       drawTemplateText(page, bundle.labels[SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[spellSection.level] ?? SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[0]!], fonts, colours, 0, topY);
       // A feature caster's level block has no slots to count (its spells are
       // cast free or from another caster's slots), so it prints no label.
-      if (spellSection.level > 0 && caster.resource.mode === "slots" && spellSection.slots > 0) {
-        page.drawText(`${spellSection.slots} SPELL SLOTS`, {
+      if (hasSlots(spellSection)) {
+        const slotLabel = `${spellSection.slots} SPELL ${spellSection.slots === 1 ? "SLOT" : "SLOTS"}`;
+        page.drawText(slotLabel, {
           x: slotTextX,
           y: topY + textBaseline,
           size: 5.5,
           font: fonts.regular,
           color: rgb(1, 1, 1),
         });
-        const labelWidth = fonts.regular.widthOfTextAtSize(`${spellSection.slots} SPELL SLOTS`, 5.5);
+        const labelWidth = fonts.regular.widthOfTextAtSize(slotLabel, 5.5);
         for (let slot = 0; slot < spellSection.slots; slot++) {
           page.drawCircle({ x: slotTextX + labelWidth + 9 + slot * 9, y: topY + textBaseline + 2,
             size: 2.7, borderColor: rgb(1, 1, 1), borderWidth: 0.7 });
