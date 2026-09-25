@@ -204,7 +204,8 @@ export function multiclassSlotProgression(
  * intelligence modifier (the corpus adds +1); its infusion counts are the
  * running totals a base rule holds at each level. The 2014 bard's
  * inspiration die is one "bardic inspiration" bucket, so the largest die
- * reached is the die. */
+ * reached is the die, and its uses are the Charisma modifier with a floor of
+ * one. */
 const ARTIFICER_FEATURE_RULES: Record<string, StatRule[]> = {
   ID_WOTC_UA20190228_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM: [
     { kind: "stat", name: "infusions:vanish", value: "intelligence:modifier" },
@@ -223,7 +224,9 @@ const ARTIFICER_FEATURE_RULES: Record<string, StatRule[]> = {
     { kind: "stat", name: "magical tinkering:objects", value: "intelligence:modifier" },
   ],
   ID_WOTC_PHB_CLASS_FEATURE_BARD_BARDIC_INSPIRATION: [
-    { kind: "stat", name: "bardic-inspiration:count", value: "charisma:modifier" },
+    // "Your Charisma modifier (a minimum of once)": the higher base wins.
+    { kind: "stat", name: "bardic-inspiration:count", value: "1", bonus: "base" },
+    { kind: "stat", name: "bardic-inspiration:count", value: "charisma:modifier", bonus: "base" },
     { kind: "stat", name: "bardic-inspiration:dice", value: "6", bonus: "bardic inspiration" },
     { kind: "stat", name: "bardic-inspiration:dice", value: "8", bonus: "bardic inspiration", level: 5 },
     { kind: "stat", name: "bardic-inspiration:dice", value: "10", bonus: "bardic inspiration", level: 10 },

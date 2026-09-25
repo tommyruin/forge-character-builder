@@ -175,6 +175,15 @@ describe("base rules (corpus content)", () => {
     expect(statsOf(service, id)["bardic-inspiration:dice"]).toBe(10);
   });
 
+  it("a 2014 bard inspires at least once, else Charisma modifier times", () => {
+    const { service, id } = classAt("ID_WOTC_PHB_CLASS_BARD", 1, "2014");
+    expect(statsOf(service, id)["bardic-inspiration:count"]).toBe(2);
+    service.setAbilities(id, { strength: 10, dexterity: 10, constitution: 12, intelligence: 14, wisdom: 10, charisma: 11 });
+    expect(statsOf(service, id)["bardic-inspiration:count"]).toBe(1);
+    service.setAbilities(id, { strength: 10, dexterity: 10, constitution: 12, intelligence: 14, wisdom: 10, charisma: 8 });
+    expect(statsOf(service, id)["bardic-inspiration:count"]).toBe(1);
+  });
+
   it("the UA 2019 artificer knows 3, 4, then 5 infusions", () => {
     const { service, id } = classAt("ID_WOTC_UA20190228_CLASS_ARTIFICER", 2, "2014");
     expect(statsOf(service, id)["infusions:count"]).toBe(3);

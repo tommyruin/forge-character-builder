@@ -79,6 +79,8 @@ project uses [Semantic Versioning](https://semver.org/).
   25.
 - The Sources panel counts a book's rules even when its entries spell the book's
   name differently, instead of reporting "No rules loaded".
+- The 2014 Bard can use Bardic Inspiration at least once per long rest whatever
+  the Charisma modifier.
 
 ## [2.3.0] - 2026-09-16
 
