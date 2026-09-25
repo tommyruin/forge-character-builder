@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-25
+
 ### Added
 
 - The inventory Qty column has minus and plus controls: a stack's amount
