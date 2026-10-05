@@ -395,6 +395,17 @@ function Catalog({
   const searchContainer = useRef(null);
   const [page, setPage] = useState(null);
   const [skip, setSkip] = useState(0);
+  const [equipmentKind, setEquipmentKind] = useState("");
+  const [rarity, setRarity] = useState("");
+  const [proficiency, setProficiency] = useState("");
+  const [priceCeiling, setPriceCeiling] = useState("");
+  const shoppingFilters = useMemo(() => ({
+    equipmentKind: equipmentKind || undefined,
+    rarity: rarity || undefined,
+    proficiency: proficiency || undefined,
+    maxPriceGp: priceCeiling === "" ? undefined : Number(priceCeiling),
+  }), [equipmentKind, rarity, proficiency, priceCeiling]);
+  useEffect(() => { setSkip(0); }, [shoppingFilters]);
   // The magic item awaiting a base-weapon/armor choice, with its legal base options
   // preloaded (distinct from `inspected`, which only drives the description panel).
   const [baseItem, setBaseItem] = useState(null);
@@ -424,7 +435,7 @@ function Catalog({
   const baseSlot = baseItem?.slot ?? null;
   const ruleset = detail?.rulesetMode ?? "all";
   const searchResultKey = debouncedSearch
-    ? `${debouncedSearch}\u0000${ruleset}\u0000${searchRequest}`
+    ? `${debouncedSearch}\u0000${ruleset}\u0000${searchRequest}\u0000${JSON.stringify(shoppingFilters)}`
     : null;
   const activeSearchResult =
     searchResult.key === searchResultKey ? searchResult : null;
@@ -565,6 +576,7 @@ function Catalog({
       .elements(
         {
           equipmentOnly: true,
+          ...shoppingFilters,
           ruleset,
           characterId: id,
           search: debouncedSearch,
@@ -601,7 +613,7 @@ function Catalog({
         searchRequestGeneration.current += 1;
       }
     };
-  }, [active, debouncedSearch, id, ruleset, searchRequest, searchResultKey]);
+  }, [active, debouncedSearch, id, ruleset, searchRequest, searchResultKey, shoppingFilters, detail]);
 
   useEffect(() => {
     if (!active || !debouncedSearch || libraryRevision === 0) {
@@ -617,6 +629,7 @@ function Catalog({
             api.content.clearCache?.();
             return api.content.elements({
               equipmentOnly: true,
+              ...shoppingFilters,
               ruleset,
               characterId: id,
               search: debouncedSearch,
@@ -669,6 +682,7 @@ function Catalog({
     ruleset,
     searchResultKey,
     searchRefreshController,
+    shoppingFilters,
   ]);
 
   useEffect(() => {
@@ -692,6 +706,7 @@ function Catalog({
       skip,
       ruleset: detail?.rulesetMode ?? "all",
       characterId: id,
+      ...shoppingFilters,
     };
     if (activeCategory.elementType) params.type = activeCategory.elementType;
     if (activeCategory.equipSetter)
@@ -727,7 +742,7 @@ function Catalog({
         categoryPageRequestGeneration.current += 1;
       }
     };
-  }, [active, activeCategory, detail?.rulesetMode, id, skip]);
+  }, [active, activeCategory, detail, id, skip, shoppingFilters, libraryRevision]);
 
   // Every return goes through the shell so the sub-tab bar stays put while the
   // catalog is loading, failing or empty.
@@ -898,6 +913,30 @@ function Catalog({
                   )}
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-2 mb-3 lg:grid-cols-4">
+                <label className="fcb-field-label">Type
+                  <select className="fcb-input block w-full" value={equipmentKind} onChange={event => setEquipmentKind(event.target.value)}>
+                    <option value="">All types</option>
+                    {["Simple weapon", "Martial weapon", "Light armor", "Medium armor", "Heavy armor", "Shield", "Tools", "Musical Instruments"].map(value => <option key={value}>{value}</option>)}
+                  </select>
+                </label>
+                <label className="fcb-field-label">Rarity
+                  <select className="fcb-input block w-full" value={rarity} onChange={event => setRarity(event.target.value)}>
+                    <option value="">All rarities</option>
+                    {["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"].map(value => <option key={value}>{value}</option>)}
+                  </select>
+                </label>
+                <label className="fcb-field-label">Proficiency
+                  <select className="fcb-input block w-full" value={proficiency} onChange={event => setProficiency(event.target.value)}>
+                    <option value="">Any proficiency</option>
+                    <option value="proficient">Proficient</option>
+                    <option value="not-proficient">Not proficient</option>
+                  </select>
+                </label>
+                <label className="fcb-field-label">Maximum price (gp)
+                  <input type="number" min="0" step="0.01" className="fcb-input block w-full" placeholder="Any price" value={priceCeiling} onChange={event => setPriceCeiling(event.target.value)} />
+                </label>
+              </div>
               {baseError && <p className="fcb-alert mb-3">{baseError}</p>}
               <div
                 className="fcb-scroll-panel fcb-mobile-list-panel fcb-equipment-results rounded border border-[var(--fcb-border-soft)]"
@@ -927,13 +966,14 @@ function Catalog({
                             onInspect={inspectItem}
                             className="block w-full text-left"
                           >
-                            <span className="font-semibold">{item.name}</span>
+                            <EquipmentName item={item} />
                             {ownedCounts.has(item.id) && (
                               <span className="fcb-owned-badge">
                                 ×{ownedCounts.get(item.id)} owned
                               </span>
                             )}
                           </InspectableItemButton>
+                          <EquipmentSummary item={item} />
                         </td>
                         <td
                           className="text-xs text-[var(--fcb-text-muted)]"
@@ -1091,13 +1131,14 @@ export function GlobalEquipmentSearchResults({
                     onInspect={onInspect}
                     className="fcb-global-equipment-name"
                   >
-                    <span className="font-semibold">{item.name}</span>
+                    <EquipmentName item={item} />
                     {ownedCounts.has(item.id) && (
                       <span className="fcb-owned-badge">
                         ×{ownedCounts.get(item.id)} owned
                       </span>
                     )}
                   </InspectableItemButton>
+                  <EquipmentSummary item={item} />
                   <span className="fcb-global-equipment-source">
                     {item.source}
                   </span>
@@ -1166,11 +1207,12 @@ function BaseSelector({ item, slot, busy, onAdd }) {
           >
             {options.map((o) => (
               <option key={o.id} value={o.id}>
-                {o.name}
+                {o.name} — {o.equipmentKind ?? o.category} · {o.displayPrice}
               </option>
             ))}
           </select>
         </label>
+        <EquipmentSummary item={options.find(option => option.id === baseId) ?? {}} />
         <button
           className="fcb-button fcb-button-primary mt-3"
           disabled={busy || !baseId}
@@ -1273,7 +1315,7 @@ function Inventory({
                           onInspect={inspectItem}
                           className="fcb-inventory-item-name text-left"
                         >
-                          <span className="font-semibold">{item.name}</span>
+                          <EquipmentName item={item} />
                           <span className="fcb-inventory-item-type ml-2 text-xs text-[var(--fcb-text-faint)]">
                             {item.type}
                           </span>
@@ -1305,6 +1347,7 @@ function Inventory({
                           />
                         </span>
                       </div>
+                      <EquipmentSummary item={item} />
                       {item.notes ? (
                         <div className="text-xs italic text-[var(--fcb-text-faint)]">
                           {item.notes}
@@ -1756,4 +1799,21 @@ function ActionButton({ label, icon, ...props }) {
       <span className="fcb-inventory-action-label">{label}</span>
     </button>
   );
+}
+
+function EquipmentName({ item }) {
+  return item.isProficient ? <strong><em>{item.name}</em></strong> : <span className="font-semibold">{item.name}</span>;
+}
+
+function EquipmentSummary({ item }) {
+  const status = {
+    proficient: "Proficient",
+    "not-proficient": "Not proficient",
+    "base-dependent": "Depends on base item",
+    unknown: "Proficiency unknown",
+  }[item.proficiencyStatus];
+  return <div className="text-xs text-[var(--fcb-text-muted)] mt-1">
+    {[item.equipmentKind ?? item.category, item.displayPrice ?? "Not listed", item.rarity].filter(Boolean).join(" · ")}
+    {status && <span aria-label={`Proficiency: ${status}`}> · {status}</span>}
+  </div>;
 }

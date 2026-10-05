@@ -301,7 +301,7 @@ export function buildSpellcastingDto(
       // Full-list casters: the always-prepared grants first (level, name),
       // then the character's own cantrips, then the class list (levels 1..max)
       // in plain name order (captured: Aid sorts before Bless for the paladin).
-      const all = fullCasterList(library, block.name, maxLevel);
+      const all = fullCasterList(library, block.name, maxLevel, state);
       const alwaysInfos = [...alwaysSet]
         .map((id) => spellInfo(library, id))
         .filter((info): info is SpellInfo => info !== null && info.level <= maxLevel)
@@ -329,6 +329,10 @@ export function buildSpellcastingDto(
       }
       if (granted.length > 0) spellInfos = [...spellInfos, ...granted].sort(compareSpellInfo);
     }
+    spellInfos = spellInfos.filter(info => {
+      const element = library.byId.get(info.id);
+      return element !== undefined && !isRestrictedForCharacter(state, library, element);
+    });
     // Non-DM <additional> entries (feature grants serialized by an importer)
     // still ride on the first caster: always ready, never counted against the
     // preparation limit. DM grants are partitioned after the class casters: a

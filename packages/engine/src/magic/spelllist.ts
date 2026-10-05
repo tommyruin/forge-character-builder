@@ -1,3 +1,4 @@
+import { isContentAllowedForCharacter } from "../content/access.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState, RegisteredElement } from "../character/state.js";
 import type { MagicCasterBlock } from "./state.js";
@@ -108,10 +109,12 @@ export function fullCasterList(
   library: ElementLibrary,
   casterName: string,
   maxSpellLevel: number,
+  state?: CharacterState,
 ): SpellInfo[] {
   const listTag = casterName;
   const spells: SpellInfo[] = [];
   for (const element of library.byType.get("Spell") ?? []) {
+    if (state !== undefined && !isContentAllowedForCharacter(state, library, element)) continue;
     if (!onList(library, element.identity.id, listTag)) continue;
     const info = spellInfo(library, element.identity.id);
     if (info === null || info.level > maxSpellLevel) continue;

@@ -14,7 +14,9 @@
  * beside them, armor, hit points and senses in the middle, attacks along the
  * bottom and features on the right, every section titled on its lower edge.
  * The 2024 set groups each ability's saving throw and skills beneath its
- * score, as the 2024 rules present them, with titles on the upper edge.
+ * score, as the 2024 rules present them, with titles on the upper edge. The
+ * 2024 Hybrid set keeps the 2024 page but restores the classic ability
+ * column, saving throws and skills list, and splits the features by origin.
  *
  * The templates carry artwork and fields only. Every title, caption and ribbon
  * is recorded in the set's labels.json and drawn by the writer at render time
@@ -92,6 +94,8 @@ const EDITION = {
     marker: "circle",
   },
 };
+// The hybrid set prints 2024 rules on the classic ability column.
+EDITION["2024-hybrid"] = { ...EDITION["2024"] };
 
 // SVG path helpers. drawSvgPath places the path's origin at the given point
 // with y running downwards, so every path is authored from its top-left corner.
@@ -326,11 +330,11 @@ class Sheet {
    * An ability shield: the name on the brow, the score in the body and the
    * modifier in a roundel over the tip.
    */
-  abilityShield(prefix, key, caption, cx, top, { width = 54, height = 65 } = {}) {
+  abilityShield(prefix, key, caption, cx, top, { width = 54, height = 65, captionSize = 4.2 } = {}) {
     const x = cx - width / 2;
     this.path(shieldPath(width, height), x, top, { fill: FILL, stroke: ACCENT, lineWidth: 1 });
     this.path(shieldPath(width - 5.2, height - 5), x + 2.6, top - 2.5, { stroke: GOLD, lineWidth: 0.35 });
-    this.display(caption, x, top - 10, { size: 4.2, align: "center", width });
+    this.display(caption, x, top - 10, { size: captionSize, align: "center", width });
     // A heater shield's optical centre sits above its bounding box's, and the
     // writer centres the digits on this rectangle, so it is derived from the
     // height rather than pinned — the 65pt and 62pt shields then agree.
@@ -645,9 +649,11 @@ function abilityPanel2024(s, key, caption, x, y, width, height, extra) {
   if (extra) extra(rowY, x, width);
 }
 
-async function details2024(edition) {
-  const style = EDITION[edition];
-  const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
+/**
+ * The 2024 character page's title band, identity header, armor class, hit
+ * points and vitals row, shared by the 2024 and 2024 Hybrid layouts.
+ */
+function characterHeader2024(s, edition, style) {
   pageChrome(s, "CHARACTER", edition);
 
   // Identity, level, armor class and hit points across the top.
@@ -710,6 +716,12 @@ async function details2024(edition) {
   s.diamond(vitalX(6) + inspirationW / 2, vitalY + 32, 8, WHITE);
   s.text("details_inspiration", vitalX(6) + inspirationW / 2 - 16, vitalY + 26, 32, 12, { align: "center", size: 12, box: "none" });
   s.label("HEROIC INSPIRATION", vitalX(6), vitalY + 4.5, { size: Math.min(4.6, inspirationW / 16), align: "center", width: inspirationW });
+}
+
+async function details2024(edition) {
+  const style = EDITION[edition];
+  const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
+  characterHeader2024(s, edition, style);
 
   // Two columns of ability panels, each on a grey backing panel.
   const panelW = 114;
@@ -779,13 +791,103 @@ async function details2024(edition) {
 }
 
 // ---------------------------------------------------------------------------
-// Background, companion, inventory and spellcasting pages, shared by both sets.
+// Character page, 2024 Hybrid arrangement: the 2024 page with the classic
+// ability column — six shields, then saving throws and an alphabetical skills
+// list — in place of the per-ability panels. The width that frees widens the
+// weapons table and the features, which split into class, subclass and feat
+// boxes.
+// ---------------------------------------------------------------------------
+
+async function detailsHybrid(edition) {
+  const style = EDITION[edition];
+  const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
+  characterHeader2024(s, edition, style);
+
+  // Column A: the six ability shields on a grey backing panel.
+  const columnTop = 632;
+  const columnBottom = 300;
+  const shieldH = 48;
+  const shieldPitch = (columnTop - 2 - shieldH - columnBottom) / 5;
+  s.panel(23, columnBottom - 6, 68, columnTop - columnBottom + 8);
+  ABILITIES.forEach(([key, caption], index) => {
+    // The brow takes the name at up to 5.6pt, the 2024 panels' size.
+    const captionSize = Math.min(5.6, 48 / MEASURE.display.widthOfTextAtSize(caption, 1));
+    s.abilityShield("details", key, caption, 57, columnTop - 2 - index * shieldPitch, { width: 58, height: shieldH, captionSize });
+  });
+
+  // Column B: saving throws, with their notes, over the skills list.
+  const bx = 96;
+  const bw = 126;
+  const saves = s.section("SAVING THROWS", bx, 516, bw, columnTop - 516);
+  ABILITIES.forEach(([key], index) => {
+    const y = 601 - index * 11.5;
+    s.check(`details_${key}_save_proficiency`, bx + 6, y, 6.5);
+    s.text(`details_${key}_save_total`, bx + 16, y - 1, 20, 9, { align: "center", size: 8 });
+    s.note(ABILITY_NAME[key], bx + 40, y + 1, { size: 6.5 });
+  });
+  s.label("SAVING THROW NOTES", saves.x + 2, 533, { size: 4.6, color: "lines" });
+  s.text("details_saving_throws", saves.x + 2, saves.y, saves.width - 4, 12, { multiline: true, size: 6, box: "none" });
+  s.section("SKILLS", bx, columnBottom, bw, 510 - columnBottom);
+  SKILLS.forEach(([key, caption, ability], index) => {
+    const y = 484 - index * 10.2;
+    s.check(`details_${key}_proficiency`, bx + 5, y, 6);
+    s.check(`details_${key}_expertise`, bx + 12.5, y, 6);
+    s.text(`details_${key}_total`, bx + 20, y - 1.5, 18, 9, { align: "center", size: 7 });
+    s.note(caption, bx + 41, y + 0.5, { size: 6.2 });
+    s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, bx + 41 + s.textWidth(caption, "captionLight", 6.2) + 2, y + 0.5, { size: 5, color: "lines" });
+  });
+
+  // Beneath both columns: senses, armor, then training and languages.
+  const lw = 196;
+  let inner = s.section("SENSES & RESISTANCES", 26, 228, lw, 64);
+  s.label("VISION", inner.x + 2, inner.y + inner.height - 8, { size: 4.6, color: "lines" });
+  s.text("details_vision", inner.x + 26, inner.y + inner.height - 10, inner.width - 30, 10, { size: 7 });
+  s.text("details_resistances", inner.x + 2, inner.y, inner.width - 4, inner.height - 14, { multiline: true, size: 6, box: "none" });
+  inner = s.section("ARMOR", 26, 172, lw, 50);
+  s.text("details_equipped_armor", inner.x + 3, inner.y + 15, 86, 10, { size: 7 });
+  s.check("details_armor_stealth_disadvantage", inner.x + 3, inner.y + 2, 6);
+  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 3, { size: 4.6 });
+  s.text("details_armor_conditional", inner.x + 94, inner.y + 1, inner.width - 97, inner.height - 1, { multiline: true, size: 6, box: "none" });
+  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 60, lw, 104);
+
+  // The right-hand area, 40pt wider than the 2024 page's.
+  const areaX = 230;
+  const areaW = 356;
+  s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 500, areaW, 132);
+  const columns = [["NAME", 234, 82], ["RANGE", 318, 32], ["ATK / DC", 352, 36], ["DAMAGE & TYPE", 390, 72], ["NOTES", 464, 118]];
+  columns.forEach(([caption, x]) => s.label(caption, x, 605, { size: 5, color: "lines" }));
+  for (let row = 1; row <= 4; row += 1) {
+    const y = 594 - (row - 1) * 21;
+    const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
+    s.text(`details_attack${row}_weapon`, nx, y, nw, 10, { size: 7 });
+    s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
+    s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
+    s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
+    s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
+  }
+  s.text("details_attack_description", 234, 504, 348, 16, { multiline: true, size: 6, box: "none" });
+  // The writer flows class, subclass and feat rows into their own boxes when
+  // the template has a subclass box.
+  s.block("CLASS FEATURES", "details_features", areaX, 356, areaW, 136);
+  s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, 272, areaW, 76);
+  s.block("FEATS", "details_feats", areaX, 200, areaW, 64);
+  s.block(style.traits, "details_additional_notes", areaX, 60, 206, 132);
+  s.section("CONDITIONS & EXHAUSTION", 444, 132, 142, 60);
+  s.text("details_conditions", 448, 155, 134, 17, { multiline: true, size: 6, box: "none" });
+  s.label("EXHAUSTION", 448, 144, { size: 4.6, color: "lines" });
+  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 494 + (i - 1) * 14, 142, 7, { marker: "square" });
+  s.block("ENCOUNTER NOTES", "details_encounter_box", 444, 60, 142, 64, { size: 6 });
+  return finish(doc, s);
+}
+
+// ---------------------------------------------------------------------------
+// Background, companion, inventory and spellcasting pages, shared by every set.
 // ---------------------------------------------------------------------------
 
 async function backgroundTemplate(edition) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
-  masthead(s, edition, edition === "2024" ? "APPEARANCE" : "BACKGROUND", "background_character_name", "CHARACTER NAME", [
+  masthead(s, edition, edition !== "2014" ? "APPEARANCE" : "BACKGROUND", "background_character_name", "CHARACTER NAME", [
     ["background_age", "AGE", 289, 66, 0],
     ["background_height", "HEIGHT", 363, 72, 0],
     ["background_weight", "WEIGHT", 443, 72, 0],
@@ -808,7 +910,7 @@ async function backgroundTemplate(edition) {
   s.text("background_feature_name", 45, 183.5, 144, 13, { size: 8, align: "center", box: "none" });
   s.text("background_feature", 42, 96, 151, 84, { multiline: true, size: 6.5, box: "none" });
   s.block("TRINKET", "background_trinket", 27, 34, 182, 46, { size: 6.5, style: "caption" });
-  s.section(edition === "2024" ? "BACKSTORY & PERSONALITY" : "BACKGROUND STORY", 214, 215, 372, 250, { style: "caption" });
+  s.section(edition !== "2014" ? "BACKSTORY & PERSONALITY" : "BACKGROUND STORY", 214, 215, 372, 250, { style: "caption" });
   s.text("background_story", 224, 222, 354, 240, { multiline: true, size: 6.5, box: "none" });
   s.section("ADDITIONAL FEATURES", 214, 27, 372, 180, { style: "caption" });
   s.text("background_additional_features", 222, 35, 358, 162, { multiline: true, size: 6.5, box: "none" });
@@ -978,7 +1080,8 @@ async function cardTemplate(kind, edition) {
 
 async function buildSet(edition) {
   const files = new Map();
-  files.set(C.files.details, await (edition === "2024" ? details2024 : details2014)(edition));
+  const details = { "2014": details2014, "2024": details2024, "2024-hybrid": detailsHybrid }[edition];
+  files.set(C.files.details, await details(edition));
   files.set(C.files.background, await backgroundTemplate(edition));
   files.set(C.files.companion, await companionTemplate(edition));
   files.set(C.files.equipment, await equipmentTemplate(edition));

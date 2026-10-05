@@ -11,6 +11,7 @@ import { useWorkspace } from '../../WorkspaceContext';
 
 const TEMPLATE_SET_LABELS = {
   2014: 'Classic layout for the 2014 rules: ability scores, saving throws and skills in their own columns.',
+  '2024-hybrid': '2024 Hybrid: a narrow ability column with separate saving throws and skills.',
   2024: 'Layout for the 2024 rules: each ability carries its saving throw and skills.',
 };
 
@@ -69,7 +70,7 @@ export default function SheetSettingsPanel() {
   // is no character to compare the layout against.
   const workspace = useWorkspace();
   const rulesetMode = workspace?.detail?.rulesetMode;
-  const mismatchedEdition = (rulesetMode === '2014' || rulesetMode === '2024') && rulesetMode !== templateSet;
+  const mismatchedEdition = (rulesetMode === '2014' || rulesetMode === '2024') && rulesetMode !== (templateSet === '2024-hybrid' ? '2024' : templateSet);
   const { colours, theme, setColours, setTheme, palette, themes, themeNames } = useSheetColoursSetting();
   const { pages, togglePage, pageNames, pageLabels, pageTips } = useSheetPagesSetting();
   const { emphasizeAbilityModifiers, setEmphasizeAbilityModifiers } = useSheetAbilitySetting();
@@ -87,13 +88,13 @@ export default function SheetSettingsPanel() {
           <div className="fcb-sheet-set-toggle" role="group" aria-label="Sheet layout">
             {templateSets.map((candidate) => (
               <button
-                key={candidate}
+                key={candidate === '2024-hybrid' ? '2024 Hybrid' : candidate}
                 type="button"
                 className={`fcb-sheet-set-option${candidate === templateSet ? ' is-active' : ''}`}
                 onClick={() => setTemplateSet(candidate)}
                 aria-pressed={candidate === templateSet}
               >
-                {candidate}
+                {candidate === '2024-hybrid' ? '2024 Hybrid' : candidate}
               </button>
             ))}
           </div>

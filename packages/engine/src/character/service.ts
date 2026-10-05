@@ -1,3 +1,4 @@
+import { isContentAllowedForCharacter } from "../content/access.js";
 /**
  * Character lifecycle operations over an in-memory, multi-id character store.
  *
@@ -1349,6 +1350,44 @@ export class CharacterService {
         "changing or removing this multiclass selection requires it to still be the character's most recent level — level up or remove later levels first",
       );
     }
+  }
+
+  /** Source restriction changes clear spell choices and preparation atomically. */
+  applySourceEdits(id: string, edits: RawEdit[]): string[] {
+    const { state: before, document: original } = this.require(id);
+    if (this.library === undefined) { this.applyRegionEdits(id, edits); return []; }
+    let document = parseDnd5e(applyRawEdits(original.raw, edits));
+    let state = this.remap(document, before, id);
+    const removed = new Set<string>();
+    const disallowed = (spellId: string): boolean => {
+      const element = this.library!.byId.get(spellId);
+      return element?.identity.type === "Spell" && !isContentAllowedForCharacter(state, this.library!, element);
+    };
+    for (;;) {
+      const rule = pendingSelectionRules(state).find(candidate => candidate.type === "Spell"
+        && candidate.selectedElementIds.some(disallowed));
+      if (rule === undefined) break;
+      for (const spellId of rule.selectedElementIds) removed.add(this.library.byId.get(spellId)?.identity.name ?? spellId);
+      const plan = planSelectionEdits(document, state, this.library, rule, null);
+      document = parseDnd5e(applyRawEdits(document.raw, plan));
+      state = this.remap(document, state, id);
+    }
+    const removals: RawEdit[] = [];
+    const walk = (node: Dnd5eNode): void => {
+      const spellId = getAttr(node, "id") ?? "";
+      if (disallowed(spellId) && (node.name === "spell" || getAttr(node, "type") === "Spell")) {
+        removed.add(this.library!.byId.get(spellId)?.identity.name ?? spellId);
+        removals.push({ start: node.start, end: node.end, replacement: "" });
+        return;
+      }
+      for (const nested of childElements(node)) walk(nested);
+    };
+    walk(document.root.node);
+    document = parseDnd5e(applyRawEdits(document.raw, removals));
+    state = this.remap(document, state, id);
+    // Preparation-only removals also remove dormant serialized full-list entries.
+    this.reconcileMagicRegion(id, document, state);
+    return [...removed].sort();
   }
 
   /** Applies raw byte-range edits to the document and re-maps state. */

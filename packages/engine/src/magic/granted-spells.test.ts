@@ -300,14 +300,17 @@ describe("an imported Additional Spell proxy", () => {
     expect(cleric.knownSpells.some((spell) => GRANTED_NAMES.includes(spell.name))).toBe(false);
   });
 
-  it("prints one Additional Spells banner, not one per proxy item", async () => {
+  it("prints the proxies' spells once, in the class list that shares their casting statistics", async () => {
     const { service, id } = await importFixture("GrantedProxiesSheet", await fixtureXml());
     const layouts = sheetModel(service, id).pages
       .filter((page) => page.templateKind === "spell-list")
-      .flatMap((page) => page.spellcasting ?? [])
-      .map((layout) => layout.name);
+      .flatMap((page) => page.spellcasting ?? []);
 
-    expect(layouts).toEqual(["Cleric, Life Domain", "Additional Spells"]);
+    expect(layouts.map((layout) => layout.name)).toEqual(["Cleric, Life Domain"]);
+    const granted = layouts[0]!.sections.flatMap((section) => section.spells)
+      .filter((spell) => GRANTED_NAMES.includes(spell.name));
+    expect(granted.map((spell) => spell.name).sort()).toEqual(GRANTED_NAMES);
+    expect(granted.every((spell) => spell.usage?.startsWith("[Additional Spells") === true)).toBe(true);
   });
 
   it("still gathers item-only proxies when no <additional> entry carries them", async () => {

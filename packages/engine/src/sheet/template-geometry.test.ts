@@ -56,13 +56,29 @@ describe("sheet template geometry", () => {
   });
 
   // The edition label is how a printed page says which rules it was laid out
-  // for; a page without one reads as the other edition's sheet.
+  // for; a page without one reads as the other edition's sheet. The 2024
+  // Hybrid set lays 2024 rules out on the classic ability column, so its pages
+  // say 2024.
+  const RULES_EDITION: Record<string, string> = { "2014": "2014", "2024": "2024", "2024-hybrid": "2024" };
   it.each([...SHEET_TEMPLATE_SETS])("labels every %s page with its edition", async (set) => {
+    expect(RULES_EDITION[set], set).toBeDefined();
     const missing: string[] = [];
     for (const { file, text } of await pagesOf(set)) {
-      if (!(text?.labels ?? []).some((label) => label.text === `${set} RULES`)) missing.push(file);
+      if (!(text?.labels ?? []).some((label) => label.text === `${RULES_EDITION[set]} RULES`)) missing.push(file);
     }
     expect(missing).toEqual([]);
+  });
+
+  // The hybrid character page is the 2024 page with a different ability
+  // arrangement: the writer fills it from the same values, so it must carry
+  // every 2024 field, plus the boxes that split features by origin.
+  it("gives the 2024 Hybrid character page every 2024 field and the split feature boxes", async () => {
+    const names = async (set: string) => new Set((await PDFDocument.load(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.files.details))))
+      .getForm().getFields().map((field) => field.getName()));
+    const modern = await names("2024");
+    const hybrid = await names("2024-hybrid");
+    expect([...modern].filter((name) => !hybrid.has(name))).toEqual([]);
+    expect([...hybrid].filter((name) => !modern.has(name)).sort()).toEqual(["details_feats", "details_subclass_features"]);
   });
 
   it("sizes every field from its own default appearance", async () => {

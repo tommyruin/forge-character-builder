@@ -1,3 +1,4 @@
+import { registrationCount } from "./registration-count.js";
 /**
  * Character surfaces: optional rules, adjustments, controls, ruleset modes,
  * and load issues.
@@ -1026,8 +1027,7 @@ function planElementsCountEdits(document: Dnd5eDocument, state: CharacterState, 
   if (!elementsNode) return [];
   const raw = document.raw;
   const edits: RawEdit[] = [];
-  const itemCount = countItemNodes(state.elements);
-  const registered = state.levelCount + filledWrapperCount(state.elements) + state.options.size + itemCount + itemDelta;
+  const registered = registrationCount(state) + itemDelta;
   const rc = attrValueRange(raw, elementsNode, "registered-count");
   if (rc) edits.push({ start: rc.start, end: rc.end, replacement: String(registered) });
   return edits;
@@ -1045,17 +1045,6 @@ export function countItemNodes(nodes: RegisteredElement[]): number {
   return count;
 }
 
-function filledWrapperCount(nodes: RegisteredElement[]): number {
-  let count = 0;
-  const walk = (list: RegisteredElement[]): void => {
-    for (const node of list) {
-      if (node.requiredLevel !== undefined && (node.registered ?? "") !== "") count++;
-      walk(node.children);
-    }
-  };
-  walk(nodes);
-  return count;
-}
 
 function resolveElementType(library: ElementLibrary, id: string): string {
   return library.byId.get(id)?.identity.type ?? ENGINE_INTERNAL_ELEMENTS.get(id)?.identity.type ?? "";

@@ -152,9 +152,9 @@ function characterSourcesResponse(service: CharacterService, library: ElementLib
   };
 }
 
-function contentElementDto(library: ElementLibrary, element: ParsedElement): WireObject {
+function contentElementDto(library: ElementLibrary, element: ParsedElement, state?: CharacterState): WireObject {
   const resolve = (id: string): ParsedElement | undefined => library.byId.get(id);
-  const metadata = equipmentMetadata(element, resolve);
+  const metadata = equipmentMetadata(element, resolve, state);
   // Reference-only descriptions (`<div element="ID_X"/>`) strip to empty
   // before the emptiness test, so expand first and hand the expanded prose to
   // the composer — which prefixes the weapon/armour stat block to it.
@@ -168,6 +168,7 @@ function contentElementDto(library: ElementLibrary, element: ParsedElement): Wir
     name: element.identity.name,
     type: element.identity.type,
     source: element.identity.source,
+    ...metadata,
     description: description || null,
     rarity: metadata.rarity,
     attunement: metadata.attunement,
@@ -211,6 +212,21 @@ function contentQuery(library: ElementLibrary, query: WireObject, character?: Ch
     if (equipmentOnly && !isPhysicalEquipment(element)) return false;
     if (itemCategory !== undefined && (!isPhysicalEquipment(element) || !matchesItemCategory(element, itemCategory))) return false;
     if (equipSetter !== undefined && (!isPhysicalEquipment(element) || !matchesEquipSetter(element, equipSetter))) return false;
+    if (query.equipmentKind || query.rarity || query.proficiency || query.maxPriceGp !== undefined) {
+      if (!isPhysicalEquipment(element)) return false;
+      const metadata = equipmentMetadata(element, id => library.byId.get(id), character);
+      if (typeof query.equipmentKind === "string" && query.equipmentKind !== "") {
+        const kind = metadata.equipmentKind?.toLowerCase() ?? "";
+        const wanted = query.equipmentKind.toLowerCase();
+        if (!(wanted === "simple weapon" || wanted === "martial weapon"
+          ? kind.startsWith(wanted.split(" ")[0]!) && kind.endsWith("weapon") : kind === wanted)) return false;
+      }
+      if (query.rarity && metadata.rarity?.toLowerCase() !== String(query.rarity).toLowerCase()) return false;
+      if (query.proficiency === "proficient" && metadata.isProficient !== true) return false;
+      if (query.proficiency === "not-proficient" && metadata.isProficient !== false) return false;
+      if (typeof query.maxPriceGp === "number" && (!Number.isFinite(query.maxPriceGp) || query.maxPriceGp < 0
+        || metadata.priceGp === null || metadata.priceGp > query.maxPriceGp)) return false;
+    }
     return true;
   });
   const typeCounts: Record<string, number> = {};
@@ -218,7 +234,7 @@ function contentQuery(library: ElementLibrary, query: WireObject, character?: Ch
     typeCounts[element.identity.type] = (typeCounts[element.identity.type] ?? 0) + 1;
   }
   const all = type === undefined ? scoped : scoped.filter((element) => element.identity.type === type);
-  const elements = all.slice(offset, offset + requestedLimit).map((element) => contentElementDto(library, element));
+  const elements = all.slice(offset, offset + requestedLimit).map((element) => contentElementDto(library, element, character));
   return { elements, items: elements, total: all.length, offset, limit: requestedLimit, typeCounts };
 }
 
@@ -366,8 +382,8 @@ export function createEngineMethodHandlers(
       )),
     setCharacterSources: (id, request) => {
       const sourceIds = normalizeSourceIds(request.restrictedSourceIds);
-      service.applyRegionEdits(id, restrictedSourceEdits(service, id, sourceIds));
-      return characterSourcesResponse(service, library, id);
+      const removedSpellNames = service.applySourceEdits(id, restrictedSourceEdits(service, id, sourceIds));
+      return { ...characterSourcesResponse(service, library, id), removedSpellNames };
     },
     getCharacterSources: (id) => characterSourcesResponse(service, library, id),
     getSelectionOptions: (id, ruleId, request) => {

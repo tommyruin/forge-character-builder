@@ -1,3 +1,5 @@
+import type { EquipmentShoppingMetadataDto } from "@forge-cb/api";
+import { registrationCount } from "../character/registration-count.js";
 /**
  * Inventory operations: DTO construction and .dnd5e document edit planning.
  *
@@ -53,7 +55,7 @@ export interface PackExtrasDto {
   choices: PackChoiceDto[];
 }
 
-export interface InventoryItemDto {
+export interface InventoryItemDto extends EquipmentShoppingMetadataDto {
   identifier: string;
   itemId: string;
   /**
@@ -107,7 +109,7 @@ export interface InventoryDto {
 
 export interface ItemBaseOptionsDto {
   slot: string | null;
-  options: Array<{ id: string; name: string }>;
+  options: Array<{ id: string; name: string } & EquipmentShoppingMetadataDto>;
 }
 
 export interface AddItemOptions {
@@ -241,15 +243,9 @@ function coinWeightPounds(coins: CharacterState["coins"]): number {
   return (coins.copper + coins.silver + coins.electrum + coins.gold + coins.platinum) / 50;
 }
 
-const PRICE_CURRENCY: Record<string, string> = { cp: "cp", sp: "sp", ep: "ep", gp: "gp", pp: "pp" };
 
-/** The display price text ("15 gp") or "—" for items without a cost setter. */
-function displayPrice(element: ParsedElement | undefined): string {
-  const cost = element?.setters.find((s) => s.name === "cost");
-  if (!cost) return "—";
-  const currency = PRICE_CURRENCY[String(cost.attrs?.currency ?? "")] ?? "";
-  return `${cost.value} ${currency}`.trim();
-}
+
+
 
 /** The resolved base element of an inventory item (its adorner target). */
 function baseElementOf(library: ElementLibrary, item: InventoryItemState): ParsedElement | undefined {
@@ -413,7 +409,7 @@ export function buildInventoryDto(
     const base = baseElementOf(library, item);
     const element = effectiveElement(library, item);
     const displayElement = element ?? base;
-    const metadata = equipmentMetadata(displayElement, (id) => library.byId.get(id));
+    const metadata = equipmentMetadata(displayElement, (id) => library.byId.get(id), state, base);
     // A slotless item fills no slot, so it offers the one "worn" action
     // instead of the hand/armour choices a weapon or armour offers.
     const slots = equipLocationsFor(base);
@@ -433,11 +429,12 @@ export function buildInventoryDto(
       storage: item.storage ?? null,
       isAttunable: isAttunableElement(displayElement),
       isAttuned: item.attuned,
-      displayPrice: displayPrice(base),
+      ...metadata,
+      displayPrice: metadata.displayPrice,
       source: base?.identity.source ?? "",
       equipLocations: locations,
       weight: setterValue(base, "weight") ?? null,
-      category: setterValue(base, "category") ?? null,
+      category: metadata.category,
       isPhysicalEquipment: base !== undefined && isPhysicalEquipment(base),
       description: metadata.description,
       rarity: metadata.rarity,
@@ -486,7 +483,7 @@ export function itemBaseOptions(library: ElementLibrary, itemId: string, state?:
       seen.add(key);
       return true;
     })
-    .map((candidate) => ({ id: candidate.identity.id, name: candidate.identity.name }))
+    .map((candidate) => ({ id: candidate.identity.id, name: candidate.identity.name, ...equipmentMetadata(candidate, id => library.byId.get(id), state) }))
     .sort((a, b) => a.name.localeCompare(b.name));
   return { slot: setter.name, options };
 }
@@ -743,7 +740,7 @@ export function baseRegistrationPresent(
 function planRegisteredCountEdit(document: Dnd5eDocument, state: CharacterState, delta: number): RawEdit[] {
   const elementsNode = document.root.build.elements?.node;
   if (!elementsNode) return [];
-  const value = state.registeredCount + delta;
+  const value = registrationCount(state) + delta;
   const range = attrValueRange(document.raw, elementsNode, "registered-count");
   return range ? [{ start: range.start, end: range.end, replacement: String(value) }] : [];
 }

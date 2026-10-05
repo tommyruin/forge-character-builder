@@ -428,7 +428,9 @@ export default function CharacterSourcesPanel() {
       setSources(next);
       setAppliedSourceIds(next.restrictedSourceIds);
       setDraftSourceIds(next.restrictedSourceIds);
-      notify("Source restrictions applied to this character.");
+      notify(response.removedSpellNames?.length
+        ? `Removed spells from disabled sources: ${response.removedSpellNames.join(", ")}. Choose replacements in Build or Magic.`
+        : "Source restrictions applied to this character.");
     } catch (caught) {
       setError(caught.message);
     } finally {

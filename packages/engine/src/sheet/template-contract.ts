@@ -10,7 +10,7 @@
  * draws flowing text into the rectangles of the rich-text fields.
  */
 
-export const SHEET_TEMPLATE_SETS = ["2014", "2024"] as const;
+export const SHEET_TEMPLATE_SETS = ["2014", "2024", "2024-hybrid"] as const;
 export type SheetTemplateSet = (typeof SHEET_TEMPLATE_SETS)[number];
 export const DEFAULT_SHEET_TEMPLATE_SET: SheetTemplateSet = "2014";
 
@@ -165,12 +165,12 @@ export const SHEET_FONT_FACES = {
   },
   alegreyaSans: {
     label: "Alegreya Sans",
-    roles: ["captions", "body", "numbers"],
+    roles: ["titles", "captions", "body", "numbers"],
     files: { regular: "AlegreyaSans-Regular.ttf", bold: "AlegreyaSans-Bold.ttf", italic: "AlegreyaSans-Italic.ttf", boldItalic: "AlegreyaSans-BoldItalic.ttf", caption: "AlegreyaSans-Bold.ttf" },
   },
   helvetica: {
     label: "Helvetica",
-    roles: ["captions", "body", "numbers"],
+    roles: ["titles", "captions", "body", "numbers"],
     standard: { regular: "Helvetica", bold: "Helvetica-Bold", italic: "Helvetica-Oblique", boldItalic: "Helvetica-BoldOblique" },
   },
 } as const satisfies Record<string, SheetFontFace>;

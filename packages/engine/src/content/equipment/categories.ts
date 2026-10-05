@@ -1,3 +1,5 @@
+import type { EquipmentShoppingMetadataDto } from "@forge-cb/api";
+import type { CharacterState } from "../../character/state.js";
 import type { PackExtras, ParsedElement } from "../parser.js";
 
 export interface EquipmentCategoryDto {
@@ -13,7 +15,7 @@ export interface EquipmentAttunementDto {
   addition: string | null;
 }
 
-export interface EquipmentMetadataDto {
+export interface EquipmentMetadataDto extends EquipmentShoppingMetadataDto {
   description: string;
   rarity: string | null;
   attunement: EquipmentAttunementDto;
@@ -316,9 +318,37 @@ function packExtrasNote(description: string, extras: PackExtras | undefined, res
 export function equipmentMetadata(
   element: ParsedElement | undefined,
   resolve?: ElementResolver,
+  state?: CharacterState,
+  base?: ParsedElement,
 ): EquipmentMetadataDto {
   const attunement = setter(element, "attunement");
+  const physical = base ?? element;
+  const cost = setter(element, "cost");
+  const conversion: Record<string, number> = { cp: 0.01, sp: 0.1, ep: 0.5, gp: 1, pp: 10 };
+  const currency = cost?.attrs?.currency?.toLowerCase() ?? "";
+  const numeric = cost?.value.trim().replaceAll(",", "") ?? "";
+  // Magic items are authored with a placeholder cost of 0; that is an
+  // unlisted price, not a free item.
+  const placeholder = element?.identity.type === "Magic Item" && Number(numeric) === 0;
+  const priceGp = !placeholder && /^\d+(?:\.\d+)?$/.test(numeric) && conversion[currency] !== undefined
+    ? Math.round(Number(numeric) * conversion[currency]! * 100) / 100 : null;
+  const category = element === undefined ? null : categoryFor(element).label;
+  const weapon = physical?.supports.join(" ").match(/WEAPON_CATEGORY_(SIMPLE|MARTIAL)_(MELEE|RANGED)/i);
+  const armor = physical === undefined ? undefined : setterValue(physical, "armor");
+  const needsBase = base === undefined && element?.identity.type === "Magic Item"
+    && (setter(element, "weapon") !== undefined || setter(element, "armor") !== undefined);
+  const equipmentKind = weapon
+    ? `${weapon[1]!.slice(0, 1).toUpperCase()}${weapon[1]!.slice(1).toLowerCase()} ${weapon[2]!.toLowerCase()} weapon`
+    : armor && physical?.identity.type === "Armor" ? (/shield/i.test(armor) ? "Shield" : `${armor} armor`)
+      : category;
+  const proficiencyId = physical === undefined ? undefined : setterValue(physical, "proficiency");
+  const isProficient = needsBase || state === undefined || !proficiencyId ? null
+    : state.sum.elements.some(entry => entry.id === proficiencyId);
+  const proficiencyStatus = needsBase ? "base-dependent" : proficiencyId
+    ? isProficient === null ? "unknown" : isProficient ? "proficient" : "not-proficient" : "not-applicable";
   return {
+    displayPrice: priceGp === null ? "Not listed" : `${priceGp} gp`,
+    priceGp, category, equipmentKind, isProficient, proficiencyStatus,
     description: publicEquipmentDescription(element, resolve),
     rarity: element === undefined ? null : setterValue(element, "rarity")?.trim() || null,
     attunement: {

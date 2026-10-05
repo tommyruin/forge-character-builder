@@ -2,7 +2,7 @@
 // renders against. Persisted per browser; renaming the key silently resets the
 // preference for everyone who set it.
 export const SHEET_TEMPLATE_STORAGE_KEY = 'fcb-sheet-template';
-export const SHEET_TEMPLATE_SETS = ['2014', '2024'];
+export const SHEET_TEMPLATE_SETS = ['2014', '2024', '2024-hybrid'];
 export const DEFAULT_SHEET_TEMPLATE_SET = '2014';
 
 export function readStoredSheetTemplateSet(storage = globalThis.localStorage) {

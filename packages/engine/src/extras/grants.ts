@@ -1,3 +1,4 @@
+import { registrationCount } from "../character/registration-count.js";
 /**
  * DM grants: add/remove granted feats and ability-score elements, and the
  * grants DTO. Element registration mirrors the planItemEdits raw-edit style
@@ -13,7 +14,6 @@ import {
   attrValueRange,
   createRegistrationContext,
   escapeXml,
-  filledWrapperCount,
   registerElement,
   renderNodes,
   resolveElementType,
@@ -36,7 +36,7 @@ export interface GrantedElementDto {
 export type DmGrantsDto = GrantedElementDto[];
 
 /** Grantable element types: corpus types registered as standalone nodes. */
-const GRANTED_TYPES: ReadonlySet<string> = new Set(["Feat", "Ability Score Improvement"]);
+
 
 /** How many times the id appears in the `<sum>`. */
 const registeredCountOf = (state: CharacterState, id: string): number =>
@@ -53,28 +53,6 @@ const isGranted = (
   itemOwned: ReadonlyMap<string, number>,
   id: string,
 ): boolean => registeredCountOf(state, id) > (itemOwned.get(id) ?? 0);
-
-/** The number of top-level granted nodes (selection-registered feats live inside level wrappers). */
-function countGrantedNodes(nodes: CharacterState["elements"]): number {
-  let count = 0;
-  for (const node of nodes) {
-    if (node.id !== "" && GRANTED_TYPES.has(node.type)) count++;
-  }
-  return count;
-}
-
-/** Top-level Item/Magic Item nodes (mirrors the item-control count). */
-function countItemNodes(nodes: CharacterState["elements"]): number {
-  let count = 0;
-  const walk = (list: CharacterState["elements"]): void => {
-    for (const node of list) {
-      if (node.id !== "" && (node.type === "Item" || node.type === "Magic Item")) count++;
-      walk(node.children);
-    }
-  };
-  walk(nodes);
-  return count;
-}
 
 function removeNodeEdit(raw: string, node: Dnd5eNode): RawEdit {
   let start = node.start;
@@ -116,13 +94,7 @@ function planSumReplaceEdits(document: Dnd5eDocument, remaining: Array<{ type: s
 function planRegisteredCountEdit(document: Dnd5eDocument, state: CharacterState, delta: number): RawEdit[] {
   const elementsNode = document.root.build.elements?.node;
   if (!elementsNode) return [];
-  const registered =
-    state.levelCount +
-    filledWrapperCount(state.elements) +
-    state.options.size +
-    countItemNodes(state.elements) +
-    countGrantedNodes(state.elements) +
-    delta;
+  const registered = registrationCount(state) + delta;
   const rc = attrValueRange(document.raw, elementsNode, "registered-count");
   if (!rc) return [];
   return [{ start: rc.start, end: rc.end, replacement: String(registered) }];

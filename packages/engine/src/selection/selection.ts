@@ -1,3 +1,4 @@
+import { registrationCount } from "../character/registration-count.js";
 /**
  * Selection engine.
  *
@@ -500,12 +501,25 @@ const supportsExpansionCache = new WeakMap<
   Map<SelectRule, { revision: number; value: string | undefined }>
 >();
 
+/** The original uploaded 2024 Bard repertoire used a fixed level-one tag.
+ * Resolve it at runtime so saved checksums and uploaded bytes stay intact. */
+export function effectiveSpellSupports(state: CharacterState, library: ElementLibrary, select: SelectRule): string | undefined {
+  const source = state.magic?.casters.find(block => block.name === "Bard")?.source;
+  return source === "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING"
+    && select.type === "Spell" && select.name === "Spell (Bard)"
+    && select.spellcasting === "Bard" && select.number === 4
+    && (select.level ?? 1) === 1 && select.supports === "$(spellcasting:list), 1"
+    && library.byId.get(source)?.spellcasting?.allowReplace === true
+    ? "$(spellcasting:list), $(spellcasting:slots)" : select.supports;
+}
+
 function expandSelectSupports(state: CharacterState, library: ElementLibrary, select: SelectRule): string | undefined {
-  if (select.supports === undefined) return undefined;
+  const supports = effectiveSpellSupports(state, library, select);
+  if (supports === undefined) return undefined;
   const casterName = select.spellcasting ?? state.spellcasting[0]?.name ?? "";
-  const hasListToken = select.supports.includes("$(spellcasting:list)");
-  const hasSlotsToken = select.supports.includes("$(spellcasting:slots)");
-  if (!hasListToken && !hasSlotsToken) return select.supports;
+  const hasListToken = supports.includes("$(spellcasting:list)");
+  const hasSlotsToken = supports.includes("$(spellcasting:slots)");
+  if (!hasListToken && !hasSlotsToken) return supports;
 
   // The expansion depends only on (state, rule, library revision) — never on
   // the candidate being tested — so option loops over thousands of candidates
@@ -546,7 +560,7 @@ function expandSelectSupportsUncached(
   // reference builder's unmatchable sentinel).
   const slotsExpression = levels.length === 0 ? "99" : `(${levels.join("||")})`;
 
-  let expression = (select.supports ?? "")
+  let expression = (effectiveSpellSupports(state, library, select) ?? "")
     .replaceAll("$(spellcasting:list)", listExpression)
     .replaceAll("$(spellcasting:slots)", slotsExpression);
   if (hasListToken && extensions.spellIds.length > 0) {
@@ -648,7 +662,7 @@ export function spellSlotCeilingFor(
   const select = selectRuleFor(state, library, rule);
   const caster = casterName ?? select?.spellcasting ?? state.spellcasting[0]?.name ?? "";
   const classLevel =
-    select !== undefined && (select.supports ?? "").includes("$(spellcasting:slots)")
+    select !== undefined && (effectiveSpellSupports(state, library, select) ?? "").includes("$(spellcasting:slots)")
       ? slotCeilingClassLevel(state, library, select, caster)
       : rule.requiredLevel;
   return classLevel !== undefined ? spellSlotLevelAtClassLevel(library, caster, classLevel) : 0;
@@ -1605,7 +1619,7 @@ export function clearSelection(
   next.sum.elements = next.sum.elements.filter((entry) => !removed.has(entry.id));
   next.sum.elementCount = next.sum.elements.length;
   removeInvalidGrantChildren(next, library);
-  next.registeredCount = next.levelCount + filledWrapperCount(next.elements) + next.options.size;
+  next.registeredCount = registrationCount(next);
   applyDisplay(next, library, rule.type, "");
   return next;
 }
@@ -1639,7 +1653,7 @@ export function setSelection(
     nextWrapper.registered = selectionId;
     nextWrapper.listText = listItem.text;
     nextWrapper.children = [];
-    next.registeredCount = next.levelCount + filledWrapperCount(next.elements) + next.options.size;
+    next.registeredCount = registrationCount(next);
     return next;
   }
   const element = library.byId.get(selectionId);
@@ -1685,7 +1699,7 @@ export function setSelection(
     elements: orderSumEntries(next.sum.elements, next, inserts),
   };
   next.sum.elementCount = next.sum.elements.length;
-  next.registeredCount = next.levelCount + filledWrapperCount(next.elements) + next.options.size;
+  next.registeredCount = registrationCount(next);
   applyDisplay(next, library, rule.type, element.identity.name);
   if (rule.type === "Class" && hitRolls !== undefined && hitRolls.length > 0) {
     next.hitPointRolls = { ...next.hitPointRolls, [selectionId]: [...hitRolls] };

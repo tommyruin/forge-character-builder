@@ -1030,6 +1030,8 @@ interface FeatureContinuation {
   bottom: number;
   fontSize: number;
   lineHeight: number;
+  /** The feature box a split layout continues, as its printed heading. */
+  heading?: string;
 }
 
 const DEFAULT_FEATURE_FONT_SIZE = 8;
@@ -1237,6 +1239,34 @@ function richTextBox(
   };
 }
 
+/**
+ * A split layout's feature boxes are small, so their overflow continues on
+ * plain pages in the attack-note style, each part under its box's
+ * "(continued)" heading, rather than in the same small boxes on copies of the
+ * character page. Overflow always keeps the normal size, so the parts share
+ * one font size and wrapping width.
+ */
+function addFeatureContinuationPages(
+  output: PDFDocument, parts: readonly FeatureContinuation[], fonts: SheetFonts,
+  colours: SheetLabelColours, footerText: string,
+): void {
+  if (parts.length === 0) return;
+  let rest: FeatureContinuation | undefined = {
+    ...parts[0]!,
+    lines: parts.flatMap((part): FeatureFlowLine[] => [
+      { words: `${part.heading} (continued)`.split(" ").map((text) => ({ text, style: "bold" as const })), indent: 0, gapAfter: "feature" },
+      ...part.lines,
+    ]),
+  };
+  while (rest !== undefined) {
+    const page = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    page.drawRectangle({ x: 32, y: 738, width: 548, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
+    page.drawText("FEATURES (CONTINUED)", { x: 44, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
+    drawSheetFooter(page, fonts, footerText);
+    rest = drawFeatureFlow(page, rest.lines, fonts, 44, 716, rest.width, 48, rest.fontSize, rest.lineHeight);
+  }
+}
+
 function drawDetailsRichText(
   page: PDFPage,
   modelPage: SheetPage,
@@ -1251,11 +1281,22 @@ function drawDetailsRichText(
   const racialContinuation = drawRichFeatureSection(
     page, find("racial-traits"), fonts, racialBox.x, racialBox.top, racialBox.width, racialBox.bottom);
   if (racialContinuation !== undefined) continuations.push(racialContinuation);
-  const featureBox = richTextBox(fieldRects, "details_features", DEFAULT_FEATURE_FONT_SIZE,
-    { x: 409, top: 653, width: 169, bottom: 132 });
-  const featureContinuation = drawRichFeatureSection(
-    page, find("features"), fonts, featureBox.x, featureBox.top, featureBox.width, featureBox.bottom);
-  if (featureContinuation !== undefined) continuations.push(featureContinuation);
+  // A layout with its own subclass and feat boxes (2024 Hybrid) splits the
+  // feature rows by origin; the others keep one combined box.
+  const featureFields: ReadonlyArray<readonly [string, SheetSection | undefined, string?]> = fieldRects.has("details_subclass_features")
+    ? [
+      ["details_features", { title: "class-features", rows: modelPage.featureGroups?.["class-features"] ?? [] }, "Class Features"],
+      ["details_subclass_features", { title: "subclass-features", rows: modelPage.featureGroups?.["subclass-features"] ?? [] }, "Subclass Features"],
+      ["details_feats", { title: "feats", rows: modelPage.featureGroups?.feats ?? [] }, "Feats"],
+    ]
+    : [["details_features", find("features")]];
+  for (const [field, section, heading] of featureFields) {
+    const featureBox = richTextBox(fieldRects, field, DEFAULT_FEATURE_FONT_SIZE,
+      { x: 409, top: 653, width: 169, bottom: 132 });
+    const featureContinuation = drawRichFeatureSection(
+      page, section, fonts, featureBox.x, featureBox.top, featureBox.width, featureBox.bottom);
+    if (featureContinuation !== undefined) continuations.push(heading === undefined ? featureContinuation : { ...featureContinuation, heading });
+  }
 
   const proficiencyRows = [
     ...(find("proficiencies")?.rows ?? []),
@@ -1654,8 +1695,10 @@ function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: nu
 
 /** Clarify recognized free casts while retaining unrecognized authored allowances. */
 function compactUsage(usage: string): string {
-  return usage.replace(/^(\d+)\s*\/\s*(Long Rest|Short Rest|LR|SR)$/i, (_, count: string, rest: string) =>
-    `${count} free ${count === "1" ? "cast" : "casts"}/${/^(Long Rest|LR)$/i.test(rest) ? "LR" : "SR"}`);
+  // Also compacts the allowance closing a feat's origin label:
+  // "[Fey Touched - 1/Long Rest]" reads "[Fey Touched - 1 free cast/LR]".
+  return usage.replace(/(^|- )(\d+)\s*\/\s*(Long Rest|Short Rest|LR|SR)(\]?)$/i, (_, lead: string, count: string, rest: string, close: string) =>
+    `${lead}${count} free ${count === "1" ? "cast" : "casts"}/${/^(Long Rest|LR)$/i.test(rest) ? "LR" : "SR"}${close}`);
 }
 
 async function addSpellListPage(
@@ -1819,23 +1862,29 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       const { page, fieldRects } = await fill("details", bundle.details, {
         ...values,
         details_features: "",
+        details_subclass_features: "",
+        details_feats: "",
         details_proficiencies_languages: "",
       });
       drawTemplateText(page, detailsLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       drawSheetFooter(page, fonts, footerText);
-      const continuations = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects));
-      for (let index = 0; index < continuations.length; index += 1) {
-        const continuation = continuations[index]!;
+      // Every box that overflowed continues in its own place on one further
+      // copy of the page, rather than each box taking a page of its own.
+      const overflow = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects));
+      let continuations = overflow.filter((continuation) => continuation.heading === undefined);
+      while (continuations.length > 0) {
         const { page: continuationPage, fieldRects: continuationRects } = await fill("details-continuation", bundle.details, {
           ...values,
           details_features: "",
+          details_subclass_features: "",
+          details_feats: "",
           details_proficiencies_languages: "",
         });
         drawTemplateText(continuationPage, detailsLabels, fonts, labelInk);
         await timed("brandImage", () => drawBrandImage(output, continuationPage, continuationRects, brandImage, colours));
         drawSheetFooter(continuationPage, fonts, footerText);
-        const next = timed("richText:details", () => drawFeatureFlow(
+        continuations = timed("richText:details", () => continuations.flatMap((continuation) => drawFeatureFlow(
           continuationPage,
           continuation.lines,
           fonts,
@@ -1845,9 +1894,9 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           continuation.bottom,
           continuation.fontSize,
           continuation.lineHeight,
-        ));
-        if (next !== undefined) continuations.push(next);
+        ) ?? []));
       }
+      addFeatureContinuationPages(output, overflow.filter((continuation) => continuation.heading !== undefined), fonts, labelInk, footerText);
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
       continue;
     }

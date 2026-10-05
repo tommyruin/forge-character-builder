@@ -1,3 +1,4 @@
+import { isContentAllowedForCharacter } from "../content/access.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
 import type { Dnd5eDocument } from "../dnd5e/document.js";
@@ -855,6 +856,14 @@ export function reconcileMagic(
   const combined = multiclassSlotProgression(state, library).size >= 2;
   const combinedLevel = combined ? Math.min(20, Math.max(0, statistics["multiclass:spellcasting:level"] ?? 0)) : 0;
   const blocks = buildCasterBlocks(state, library, statistics, selections, features, existing, combined);
+  const allowedSpell = (spell: MagicSpellEntry): boolean => {
+    const element = library.byId.get(spell.id);
+    return element === undefined || isContentAllowedForCharacter(state, library, element);
+  };
+  for (const block of blocks) {
+    block.cantrips = block.cantrips.filter(allowedSpell);
+    block.spells = block.spells.filter(allowedSpell);
+  }
 
   const same = (left: MagicCasterBlock, right: MagicCasterBlock): boolean => {
     if (left.name !== right.name || left.ability !== right.ability) return false;

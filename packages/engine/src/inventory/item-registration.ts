@@ -1,3 +1,4 @@
+import { registrationCount } from "../character/registration-count.js";
 /**
  * Item-owned registrations: the sweep that keeps an inventory item's own
  * grant subtree in step with whether the item conveys its benefits.
@@ -317,7 +318,7 @@ export function planItemRegistrationSweep(
   if (countDelta !== 0) {
     const range = attrValueRange(document.raw, elementsNode, "registered-count");
     if (range) {
-      edits.push({ start: range.start, end: range.end, replacement: String(state.registeredCount + countDelta) });
+      edits.push({ start: range.start, end: range.end, replacement: String(registrationCount(state) + countDelta) });
     }
   }
   return edits.length === 0 ? NOTHING : { edits, changed: true };

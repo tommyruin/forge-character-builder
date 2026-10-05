@@ -49,6 +49,7 @@ import {
   selectRuleFor,
   selectionRuleChecksum,
   spellSlotCeilingFor,
+  effectiveSpellSupports,
   toStateNodes,
   type RawEdit,
   type RegistrationContext,
@@ -1546,7 +1547,8 @@ function spellPicksAboveCeiling(state: CharacterState, library: ElementLibrary, 
       selectedElementIds: [node.registered!],
       path,
     };
-    if (!(selectRuleFor(lowered, library, rule)?.supports ?? "").includes("$(spellcasting:slots)")) return false;
+    const select = selectRuleFor(lowered, library, rule);
+    if (select === undefined || !(effectiveSpellSupports(lowered, library, select) ?? "").includes("$(spellcasting:slots)")) return false;
     const spellLevel = Number(library.byId.get(node.registered!)?.setters.find((setter) => setter.name === "level")?.value);
     const ceiling = spellSlotCeilingFor(lowered, library, rule);
     return ceiling > 0 && Number.isFinite(spellLevel) && spellLevel > ceiling;

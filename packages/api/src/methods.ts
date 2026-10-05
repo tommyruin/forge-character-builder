@@ -27,6 +27,23 @@ export interface CoinageDto {
   platinum: number;
 }
 
+export interface EquipmentShoppingMetadataDto {
+  displayPrice: string;
+  priceGp: number | null;
+  category: string | null;
+  equipmentKind: string | null;
+  isProficient: boolean | null;
+  proficiencyStatus: "proficient" | "not-proficient" | "not-applicable" | "base-dependent" | "unknown";
+}
+
+export interface ContentElementsQueryDto extends WireObject {
+  characterId?: string;
+  equipmentKind?: string;
+  rarity?: string;
+  proficiency?: "proficient" | "not-proficient";
+  maxPriceGp?: number;
+}
+
 export interface UploadedFileDto extends Base64Payload {
   path: string;
 }
@@ -243,7 +260,7 @@ export interface EngineMethodMap {
   contentStatus: MethodContract<[], WireObject>;
   contentSources: MethodContract<[], WireList>;
   equipmentCategories: MethodContract<[characterId?: string], WireList>;
-  contentElements: MethodContract<[query: WireObject], WireObject>;
+  contentElements: MethodContract<[query: ContentElementsQueryDto], WireObject>;
   contentElement: MethodContract<[id: string], WireObject | null>;
   createCharacter: MethodContract<[name: string], WireObject>;
   getCharacter: MethodContract<[id: string], WireObject>;

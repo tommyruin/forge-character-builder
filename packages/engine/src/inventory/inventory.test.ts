@@ -1,3 +1,4 @@
+import { equipmentMetadata } from "../content/equipment/categories.js";
 /**
  * Inventory surface: DTO shape, add/remove/equip/attune/extract semantics,
  * and .dnd5e serialization. These expectations are the specification for the
@@ -89,7 +90,10 @@ describe("inventory DTO", () => {
     expect(staff.type).toBe("Weapon");
     expect(staff.isEquipped).toBe(false); // primary occupied by the longsword
     expect(staff.isAttunable).toBe(true);
-    expect(staff.displayPrice).toBe("2 sp");
+    // The magic item's authored 0 gp is a placeholder: no price, not the base staff's 2 sp.
+    expect(staff.displayPrice).toBe("Not listed");
+    expect(staff.priceGp).toBeNull();
+    expect(staff.equipmentKind).toBe("Simple melee weapon");
     expect(staff.source).toBe("Player’s Handbook");
     expect(staff.weight).toBe("4 lb.");
     expect(staff.equipLocations).toEqual(["primary", "secondary"]);
@@ -158,7 +162,12 @@ describe("inventory DTO", () => {
     expect(service.getItemBaseOptions(id, LONGSWORD)).toEqual({ slot: null, options: [] });
     const staff = service.getItemBaseOptions(id, STAFF_OF_POWER);
     expect(staff.slot).toBe("weapon");
-    expect(staff.options).toEqual([{ id: QUARTERSTAFF, name: "Quarterstaff" }]);
+    const content = await library();
+    expect(staff.options).toEqual([{
+      id: QUARTERSTAFF, name: "Quarterstaff",
+      ...equipmentMetadata(content.byId.get(QUARTERSTAFF), key => content.byId.get(key), service.getCharacter(id)),
+    }]);
+    expect(staff.options[0]).toMatchObject({ priceGp: 0.2, equipmentKind: "Simple melee weapon", isProficient: false });
     const flame = service.getItemBaseOptions(id, "ID_WOTC_DMG_MAGIC_ITEM_FLAME_TONGUE");
     expect(flame.slot).toBe("weapon");
     expect(flame.options.map((o) => o.name)).toEqual([

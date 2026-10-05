@@ -1,3 +1,4 @@
+import { mergeSheetSpellcasters } from "./spell-groups.js";
 /**
  * Pure character-sheet model.
  *
@@ -76,7 +77,8 @@ export interface SheetSpellListSection {
     name: string;
     prepared: boolean;
     alwaysPrepared: boolean;
-    /** The free-cast allowance ("1/Long Rest"), when the spell has one. */
+    /** The free-cast allowance ("1/Long Rest"), or the feat that grants a
+     * spell folded into its class list ("[Fey Touched - 1/Long Rest]"). */
     usage?: string;
   }[];
 }
@@ -97,6 +99,8 @@ export interface SheetPage {
   templateKind: SheetTemplateKind;
   sections: readonly SheetSection[];
   spellcasting?: readonly SheetSpellcasterLayout[];
+  /** The details page's feature rows split by origin, for layouts with separate boxes. */
+  featureGroups?: Readonly<Record<string, readonly SheetRow[]>>;
 }
 
 export interface CharacterSheetModel {
@@ -302,7 +306,9 @@ export function buildCharacterSheetModel(
   }
   const spellcasters = buildSpellcastingDto(state, library, values, state.magicCasterIds);
   if (spellcasters.length > 0) {
-    pages.push(...buildSpellListPages(state, library, spellcasters));
+    // The printed list folds matching feat casters into their class's list;
+    // the canonical projection keeps the reference builder's caster blocks.
+    pages.push(...buildSpellListPages(state, library, options.canonical === true ? spellcasters : mergeSheetSpellcasters(spellcasters)));
   }
   if (options.mode === "full" && wants("spellCards")) {
     pages.push(...buildSpellDescriptionPages(state, library, spellcasters, options.canonical === true));
@@ -475,7 +481,7 @@ function buildFormValues(
   set("details_resistances", [...defenceLines(state, library, values, inline), ...state.conditional].join("\n"));
   set("details_initiative", signed(values.initiative ?? 0));
   const attacksPerAction = Math.max(1, values["extra attack:count"] ?? 1);
-  set("details_encounter_box", `${attacksPerAction} ${attacksPerAction === 1 ? "Attack" : "Attacks"} / Attack Action`);
+  set("details_encounter_box", attacksPerAction <= 1 ? "" : `${attacksPerAction} Attacks / Attack Action`);
   set("details_coinage_cp", state.coins.copper);
   set("details_coinage_sp", state.coins.silver);
   set("details_coinage_ep", state.coins.electrum);
@@ -951,7 +957,7 @@ function buildPage1(
   sections.push({ title: "proficiencies", rows: proficiency.proficiencyRows });
   sections.push({ title: "languages", rows: proficiency.languageRows });
 
-  return { page: 1, templateKind: "details", sections };
+  return { page: 1, templateKind: "details", sections, featureGroups: collected.groups };
 }
 
 function hitDiceDisplay(state: CharacterState, library: ElementLibrary): string {
@@ -1189,6 +1195,7 @@ function unarmoredAlt(state: CharacterState, library: ElementLibrary): string | 
 
 interface CollectedFeature {
   class: "senses" | "features" | "racial";
+  type: string;
   title: string;
   parenthetical: string | null;
   description: string;
@@ -1371,7 +1378,7 @@ function collectFeatures(
   library: ElementLibrary,
   values: StatisticsValues,
   inline?: Readonly<Record<string, string>>,
-): { senses: SheetRow[]; features: SheetRow[]; racial: SheetRow[]; orderedFeatures: SheetRow[] } {
+): { senses: SheetRow[]; features: SheetRow[]; racial: SheetRow[]; orderedFeatures: SheetRow[]; groups: Record<string, SheetRow[]> } {
   const out: CollectedFeature[] = [];
   const seen = new Set<string>();
   const ids = featureOrderIds(state, library);
@@ -1387,7 +1394,7 @@ function collectFeatures(
       // Reference renders sheet-less class features name-only ("Fighting Style.")
       // but hides the internal ASI-feat stubs ("Feat (4)").
       if (element.identity.type !== "Class Feature" || element.identity.id.startsWith("ID_INTERNAL_")) continue;
-      out.push({ class: cls, title: element.identity.name, parenthetical: null, description: "" });
+      out.push({ type: element.identity.type, class: cls, title: element.identity.name, parenthetical: null, description: "" });
       continue;
     }
     const description = sheetDescriptionAtLevel(sheet, state.level);
@@ -1395,6 +1402,7 @@ function collectFeatures(
     const parenthetical = featureParenthetical(sheet, description);
     out.push({
       class: cls,
+      type: element.identity.type,
       title: sheet.alt !== undefined && sheet.alt !== "" ? sheet.alt : element.identity.name,
       parenthetical: parenthetical === "" ? null : substitute(parenthetical, values, inline),
       description: substitute(description.text, values, inline),
@@ -1410,6 +1418,11 @@ function collectFeatures(
     features: rows((item) => item.class === "features"),
     racial: rows((item) => item.class === "racial"),
     orderedFeatures: rows((item) => item.class === "senses" || item.class === "features"),
+    groups: {
+      "class-features": rows(item => (item.class === "features" || item.class === "senses") && !["Archetype", "Archetype Feature", "Feat", "Feat Feature"].includes(item.type)),
+      "subclass-features": rows(item => item.class === "features" && ["Archetype", "Archetype Feature"].includes(item.type)),
+      feats: rows(item => item.class === "features" && ["Feat", "Feat Feature"].includes(item.type)),
+    },
   };
 }
 

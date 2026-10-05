@@ -1,3 +1,4 @@
+import { isContentAllowedForCharacter } from "../content/access.js";
 import type { Dnd5eDocument, Dnd5eNode } from "../dnd5e/document.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
@@ -30,6 +31,7 @@ export function isFullListCaster(library: ElementLibrary, block: MagicCasterBloc
 }
 
 interface RebuildInput {
+  state?: CharacterState;
   block: MagicCasterBlock;
   library: ElementLibrary;
   preparedIds: string[];
@@ -43,7 +45,7 @@ interface RebuildInput {
  * the section must stay empty.
  */
 export function renderSpellsLines(input: RebuildInput): MagicSpellEntry[] {
-  const { block, library, preparedIds } = input;
+  const { block, library, preparedIds, state } = input;
   const preparedSet = new Set(preparedIds);
   const byId = new Map<string, MagicSpellEntry>();
   for (const spell of [...block.cantrips, ...block.spells]) byId.set(spell.id, spell);
@@ -92,7 +94,7 @@ export function renderSpellsLines(input: RebuildInput): MagicSpellEntry[] {
   };
   if (fullList) {
     const maxLevel = maxSlotOf(block);
-    for (const info of fullCasterList(library, block.name, maxLevel)) {
+    for (const info of fullCasterList(library, block.name, maxLevel, state)) {
       addToUniverse(info.id);
     }
   } else {
@@ -197,10 +199,11 @@ export function planSetPrepared(
   const fullList = isFullListCaster(library, block);
   const universe = new Set(
     fullList
-      ? fullCasterList(library, block.name, 9).map((info) => info.id)
+      ? fullCasterList(library, block.name, maxSlotOf(block), state).map((info) => info.id)
       : knownIds,
   );
-  if (!universe.has(spellId)) {
+  const element = library.byId.get(spellId);
+  if (!universe.has(spellId) || element === undefined || !isContentAllowedForCharacter(state, library, element)) {
     throw engineError("not-found", `Spell '${spellId}' is not known by this caster.`);
   }
   if (isAlways) {
@@ -224,6 +227,7 @@ export function planSetPrepared(
   const nextBlock: MagicCasterBlock = { ...block, spells: entries };
   const preparedIds = entries.filter((spell) => spell.prepared).map((spell) => spell.id);
   const lines = renderSpellsLines({
+    state,
     block: nextBlock,
     library,
     preparedIds,
