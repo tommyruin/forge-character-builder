@@ -13,6 +13,8 @@ import {
   SHEET_FONT_FACES,
   SHEET_TEMPLATE_CONTRACT,
   isSheetTemplateSet,
+  resolveSheetLayout,
+  sheetDetailsFile,
   type SheetFontFace,
   type SheetFonts,
   type SheetTemplateLabels,
@@ -20,7 +22,7 @@ import {
 } from "./template-contract.js";
 
 type SheetTemplateLocation = { origin?: string };
-type SheetAssetResult = { bytes: Uint8Array | null; failure?: string };
+type SheetAssetResult = { bytes: Uint8Array | null; failure?: string; file?: string };
 
 /** The relative path of a template file within a set's directory under the base. */
 export function sheetTemplatePath(templateSet: SheetTemplateSet, name: string): string {
@@ -47,11 +49,18 @@ export function resolveCharacterSheetTemplateUrl(name: string, configuredBase: s
  * Fetches every template of a set; null when the host has no browser
  * location or fetch (Node tests), throwing a conflict error listing the
  * missing assets otherwise.
+ *
+ * `layout` picks the character page: the variant for its switches (see
+ * `sheetDetailsFile`), or the set's own page when it asks for the defaults. A
+ * variant that cannot be fetched, or that the set's labels do not describe,
+ * falls back to the set's own page, so an optional layout never stops a sheet
+ * from rendering.
  */
 export async function fetchCharacterSheetTemplateBundle(
   configuredBase: string,
   templateSet: SheetTemplateSet = DEFAULT_SHEET_TEMPLATE_SET,
   fonts: SheetFonts = DEFAULT_SHEET_FONTS,
+  layout?: unknown,
 ): Promise<CharacterSheetTemplateBundle | null> {
   const location = (globalThis as { location?: SheetTemplateLocation }).location;
   const origin = location?.origin;
@@ -80,8 +89,15 @@ export async function fetchCharacterSheetTemplateBundle(
       return { bytes: null, failure: `${name} (${cause instanceof Error ? cause.message : String(cause)})` };
     }
   };
+  const baseDetailsFile = SHEET_TEMPLATE_CONTRACT.files.details;
+  const variantFile = sheetDetailsFile(templateSet, resolveSheetLayout(templateSet, layout));
+  const fetchTemplate = async (key: string, name: string): Promise<SheetAssetResult> => {
+    if (key !== "details" || variantFile === baseDetailsFile) return fetchAsset(name);
+    const variant = await fetchAsset(variantFile);
+    return variant.bytes === null ? fetchAsset(name) : { ...variant, file: variantFile };
+  };
   const entries = await Promise.all(
-    Object.entries(SHEET_TEMPLATE_CONTRACT.files).map(async ([key, name]) => [key, await fetchAsset(name)] as const),
+    Object.entries(SHEET_TEMPLATE_CONTRACT.files).map(async ([key, name]) => [key, await fetchTemplate(key, name)] as const),
   );
   const spellcastingSectionTops = await Promise.all(
     SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops.map((name) => fetchAsset(name)),
@@ -119,11 +135,25 @@ export async function fetchCharacterSheetTemplateBundle(
   } catch (cause) {
     throw engineError("conflict", `character sheet labels unreadable: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
+  const templates = Object.fromEntries(entries.map(([key, asset]) => [key, asset.bytes]));
+  let detailsFile = entries.find(([key]) => key === "details")?.[1].file ?? baseDetailsFile;
+  if (detailsFile !== baseDetailsFile && labels[detailsFile] === undefined) {
+    // A variant the labels do not describe would print without its titles.
+    const fallback = await fetchAsset(baseDetailsFile);
+    if (fallback.bytes === null) {
+      throw engineError("conflict", `character sheet template assets unavailable: ${fallback.failure ?? baseDetailsFile}`, {
+        baseUrl: baseUrl.toString(), templateSet, assets: [fallback.failure ?? baseDetailsFile],
+      });
+    }
+    templates.details = fallback.bytes;
+    detailsFile = baseDetailsFile;
+  }
   return {
-    ...Object.fromEntries(entries.map(([key, asset]) => [key, asset.bytes])),
+    ...templates,
     spellcastingSectionTops: spellcastingSectionTops.map((asset) => asset.bytes),
     labels,
     faces: sheetFaces(fonts, (file) => fontBytes.get(file)!),
+    ...(detailsFile === baseDetailsFile ? {} : { detailsFile }),
   } as unknown as CharacterSheetTemplateBundle;
 }
 

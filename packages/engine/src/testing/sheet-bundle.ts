@@ -13,6 +13,8 @@ import {
   DEFAULT_SHEET_FONTS,
   DEFAULT_SHEET_TEMPLATE_SET,
   SHEET_TEMPLATE_CONTRACT,
+  resolveSheetLayout,
+  sheetDetailsFile,
   type SheetFonts,
   type SheetTemplateSet,
 } from "../sheet/template-contract.js";
@@ -21,17 +23,23 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".."
 const SHEETS_ROOT = join(REPO_ROOT, "apps", "client", "public", "sheets");
 const FONTS_DIR = join(SHEETS_ROOT, SHEET_TEMPLATE_CONTRACT.fontsDirectory);
 
-/** Every template of `set`, drawn in the contract's default colours. */
+/**
+ * Every template of `set`, drawn in the contract's default colours, with the
+ * character page `layout` asks for (the set's own page by default).
+ */
 export function localTemplateBundle(
   set: SheetTemplateSet = DEFAULT_SHEET_TEMPLATE_SET,
   fonts: SheetFonts = DEFAULT_SHEET_FONTS,
+  layout?: unknown,
 ): CharacterSheetTemplateBundle {
   const dir = join(SHEETS_ROOT, set);
   const template = (name: string): Uint8Array => new Uint8Array(readFileSync(join(dir, name)));
+  const detailsFile = sheetDetailsFile(set, resolveSheetLayout(set, layout));
   return {
     labels: JSON.parse(readFileSync(join(dir, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")),
     faces: sheetFaces(fonts, (file) => new Uint8Array(readFileSync(join(FONTS_DIR, file)))),
-    details: template(SHEET_TEMPLATE_CONTRACT.files.details),
+    ...(detailsFile === SHEET_TEMPLATE_CONTRACT.files.details ? {} : { detailsFile }),
+    details: template(detailsFile),
     background: template(SHEET_TEMPLATE_CONTRACT.files.background),
     companion: template(SHEET_TEMPLATE_CONTRACT.files.companion),
     equipment: template(SHEET_TEMPLATE_CONTRACT.files.equipment),

@@ -612,3 +612,16 @@ flag before `generateSheet`, and forwards it to the renderer. When disabled,
 overflowing cells say “Long note omitted” and generate no attack-note pages;
 character data is unchanged. Short single-line notes stay in their original
 cells. This choice is included in the PDF cache key.
+
+The client PDF render options and the dedicated render-worker request also
+accept `layout?: { top?, split?, readable? }`, the character page's optional
+layout switches; each is `true`, `false`, or `null`/absent for the template
+set's own default (`SHEET_LAYOUT_DEFAULTS`: split is on for 2024 Hybrid, off
+for 2014 and 2024). The switches pick a variant of the set's character page
+template, named for the switches that differ from the set's own page
+(`details~split.pdf`, `details~unsplit.pdf`; see `sheetDetailsFile` in
+`template-contract.ts`); every other template is shared. A variant that cannot
+be fetched, or that the set's `labels.json` does not describe, falls back to
+the set's own `details.pdf`. The layout never reaches `generateSheet`. The
+browser preference is the `split` member of `fcb-sheet-layout-options`, and the
+effective switches participate in the PDF cache key.

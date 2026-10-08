@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SHEET_RENDERER_REVISION, sheetCacheKey } from '../sheetCache';
+import {
+  DEFAULT_SHEET_LAYOUT_OPTIONS,
+  effectiveSheetLayout,
+  sheetLayoutCacheKey,
+} from '../../sheetLayoutOptionsSetting.js';
 
 const source = readFileSync(
   new URL('../tabs/SheetTab.jsx', import.meta.url),
@@ -72,7 +77,7 @@ describe('SheetTab floating controls', () => {
   it('requests and caches the lite sheet in the split-view Live Sheet (deployed-site behavior)', () => {
     expect(previewSource).toContain('lite: true');
     expect(previewSource).toContain(
-      'sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey, emphasizeAbilityModifiers, inventoryNotes)',
+      'sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey, emphasizeAbilityModifiers, inventoryNotes, layoutKey)',
     );
     expect(previewSource).not.toContain('lite: false');
   });
@@ -82,7 +87,7 @@ describe('SheetTab floating controls', () => {
     expect(previewSource).toContain('libraryRevision');
     expect(cacheSource).toContain('SHEET_RENDERER_REVISION');
     expect(sheetCacheKey('hero', 4, false, 7)).toBe(
-      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+attackNotes+spellCards+itemCards#scores#no-item-notes#full`,
+      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+attackNotes+spellCards+itemCards#scores#no-item-notes#layout-default#full`,
     );
     expect(
       sheetCacheKey('hero', 4, false, 7),
@@ -109,11 +114,34 @@ describe('SheetTab floating controls', () => {
   });
 
   it('separates cached PDFs by the item notes switch and retires older renders', () => {
-    // v9: the inventory notes column can describe magic items, tools and gear.
-    expect(SHEET_RENDERER_REVISION).toBe('pdf-canvas-v9');
+    // v10: the character page has optional layouts (split feature boxes).
+    expect(SHEET_RENDERER_REVISION).toBe('pdf-canvas-v10');
     const args = ['hero', 4, false, 7, '2014', 'colours', 'fonts', 'pages', false];
     expect(sheetCacheKey(...args, true)).not.toBe(sheetCacheKey(...args, false));
     expect(sheetCacheKey(...args)).toBe(sheetCacheKey(...args, false));
+  });
+
+  it('separates cached PDFs by the effective layout switches', () => {
+    const args = ['hero', 4, false, 7, '2014', 'colours', 'fonts', 'pages', false, false];
+    const plain = sheetLayoutCacheKey(effectiveSheetLayout('2014', DEFAULT_SHEET_LAYOUT_OPTIONS));
+    const split = sheetLayoutCacheKey(effectiveSheetLayout('2014', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, split: true }));
+    expect(sheetCacheKey(...args, split)).not.toBe(sheetCacheKey(...args, plain));
+    // The same effective layout shares its renders however it was reached.
+    expect(sheetLayoutCacheKey(effectiveSheetLayout('2024-hybrid', DEFAULT_SHEET_LAYOUT_OPTIONS))).toBe(
+      sheetLayoutCacheKey(effectiveSheetLayout('2024-hybrid', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, split: true })),
+    );
+  });
+
+  it('passes the effective layout to every sheet render and its cache key', () => {
+    const exportSource = readFileSync(new URL('../ExportMenu.jsx', import.meta.url), 'utf8');
+    for (const view of [source, previewSource, exportSource]) {
+      expect(view).toContain('effectiveSheetLayout(templateSet, layoutOptions)');
+      expect(view).toMatch(/sheetBytes\([\s\S]*layout[,:][\s\S]*\)|characters\.sheet\([^)]*layout[,:]/);
+    }
+    for (const view of [source, previewSource]) {
+      expect(view).toMatch(/sheetCacheKey\([\s\S]*?inventoryNotes,\s*(run\.)?layoutKey,?\s*\)/);
+      expect(view).toMatch(/const key = `[^`]*\$\{layoutKey\}/);
+    }
   });
 
   it('passes the item notes switch to every sheet render', () => {
@@ -122,6 +150,6 @@ describe('SheetTab floating controls', () => {
       expect(view).toContain('useSheetLayoutOptionsSetting');
       expect(view).toMatch(/sheetBytes\([\s\S]*inventoryNotes[\s\S]*\)|characters\.sheet\([^)]*inventoryNotes/);
     }
-    expect(source).toMatch(/sheetCacheKey\([\s\S]*?emphasizeAbilityModifiers,\s*inventoryNotes,?\s*\)/);
+    expect(source).toMatch(/sheetCacheKey\([\s\S]*?emphasizeAbilityModifiers,\s*inventoryNotes,\s*layoutKey,?\s*\)/);
   });
 });

@@ -18,6 +18,11 @@
  * 2024 Hybrid set keeps the 2024 page but restores the classic ability
  * column, saving throws and skills list, and splits the features by origin.
  *
+ * Each set's character page also has layout variants, one per combination of
+ * the contract's implemented layout switches away from the set's defaults
+ * (details~split.pdf, details~unsplit.pdf, ...). The page functions take the
+ * switches; the defaults draw the set's own page exactly as before.
+ *
  * The templates carry artwork and fields only. Every title, caption and ribbon
  * is recorded in the set's labels.json and drawn by the writer at render time
  * in the reader's chosen typefaces and colours; the generator measures text
@@ -42,7 +47,10 @@ if (!existsSync(CONTRACT_MODULE)) {
   console.error("build the engine first (npm run build): missing " + CONTRACT_MODULE);
   process.exit(1);
 }
-const { SHEET_TEMPLATE_CONTRACT: C, SHEET_TEMPLATE_SETS, SHEET_PALETTE, DEFAULT_SHEET_COLOURS, SHEET_FIXED_COLOURS } = await import(pathToFileURL(CONTRACT_MODULE).href);
+const {
+  SHEET_TEMPLATE_CONTRACT: C, SHEET_TEMPLATE_SETS, SHEET_PALETTE, DEFAULT_SHEET_COLOURS, SHEET_FIXED_COLOURS,
+  SHEET_LAYOUT_DEFAULTS, sheetLayoutVariants,
+} = await import(pathToFileURL(CONTRACT_MODULE).href);
 const OUTPUT_ROOT = join(ROOT, "apps", "client", "public", C.directory);
 const FONT_DIR = join(OUTPUT_ROOT, C.fontsDirectory);
 
@@ -520,7 +528,7 @@ function hitPointBox(s, prefix, x, y, width, height) {
 // Character page, 2014 arrangement.
 // ---------------------------------------------------------------------------
 
-async function details2014(edition) {
+async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
   masthead(s, edition, "CHARACTER", "details_character_name", "CHARACTER NAME", [
@@ -608,8 +616,15 @@ async function details2014(edition) {
   }
   s.text("details_attack_description", 34, 34, 355, 55, { multiline: true, size: 6, box: "none" });
 
-  // Column D: features and proficiencies.
-  s.block("FEATURES & TRAITS", "details_features", 404, 150, 182, 515);
+  // Column D: features and proficiencies. Split, the features column holds
+  // class features, subclass features and feats in boxes of their own.
+  if (layout.split) {
+    s.block("CLASS FEATURES", "details_features", 404, 410, 182, 255);
+    s.block("SUBCLASS FEATURES", "details_subclass_features", 404, 262, 182, 140);
+    s.block("FEATS", "details_feats", 404, 150, 182, 104);
+  } else {
+    s.block("FEATURES & TRAITS", "details_features", 404, 150, 182, 515);
+  }
   s.block("PROFICIENCIES & LANGUAGES", "details_proficiencies_languages", 404, 27, 182, 115);
   return finish(doc, s);
 }
@@ -718,7 +733,19 @@ function characterHeader2024(s, edition, style) {
   s.label("HEROIC INSPIRATION", vitalX(6), vitalY + 4.5, { size: Math.min(4.6, inspirationW / 16), align: "center", width: inspirationW });
 }
 
-async function details2024(edition) {
+/**
+ * The 2024 and Hybrid pages' feature boxes, split by origin, filling the
+ * right-hand area between the weapons table and the traits. The writer flows
+ * class, subclass and feat rows into their own boxes when the template has a
+ * subclass box.
+ */
+function splitFeatureBlocks(s, areaX, areaW) {
+  s.block("CLASS FEATURES", "details_features", areaX, 356, areaW, 136);
+  s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, 272, areaW, 76);
+  s.block("FEATS", "details_feats", areaX, 200, areaW, 64);
+}
+
+async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
   characterHeader2024(s, edition, style);
@@ -780,7 +807,8 @@ async function details2024(edition) {
   // rows took 5pt of it to spread over the band the fourth row used to leave
   // blank; 16pt still holds two lines of the user's own attack notes.
   s.text("details_attack_description", 274, 504, 308, 16, { multiline: true, size: 6, box: "none" });
-  s.block("CLASS FEATURES", "details_features", areaX, 200, areaW, 292);
+  if (layout.split) splitFeatureBlocks(s, areaX, areaW);
+  else s.block("CLASS FEATURES", "details_features", areaX, 200, areaW, 292);
   s.block(style.traits, "details_additional_notes", areaX, 60, 166, 132);
   s.section("CONDITIONS & EXHAUSTION", 444, 132, 142, 60);
   s.text("details_conditions", 448, 155, 134, 17, { multiline: true, size: 5.5, box: "none" });
@@ -798,7 +826,7 @@ async function details2024(edition) {
 // boxes.
 // ---------------------------------------------------------------------------
 
-async function detailsHybrid(edition) {
+async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
   characterHeader2024(s, edition, style);
@@ -866,11 +894,9 @@ async function detailsHybrid(edition) {
     s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
   }
   s.text("details_attack_description", 234, 504, 348, 16, { multiline: true, size: 6, box: "none" });
-  // The writer flows class, subclass and feat rows into their own boxes when
-  // the template has a subclass box.
-  s.block("CLASS FEATURES", "details_features", areaX, 356, areaW, 136);
-  s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, 272, areaW, 76);
-  s.block("FEATS", "details_feats", areaX, 200, areaW, 64);
+  // Unsplit, one box holds every feature across the three boxes' area.
+  if (layout.split) splitFeatureBlocks(s, areaX, areaW);
+  else s.block("FEATURES", "details_features", areaX, 200, areaW, 292);
   s.block(style.traits, "details_additional_notes", areaX, 60, 206, 132);
   s.section("CONDITIONS & EXHAUSTION", 444, 132, 142, 60);
   s.text("details_conditions", 448, 155, 134, 17, { multiline: true, size: 6, box: "none" });
@@ -1091,6 +1117,9 @@ async function buildSet(edition) {
   files.set(C.files.spellCard, await cardTemplate("spell", edition));
   files.set(C.files.genericCard, await cardTemplate("generic", edition));
   for (const [level, name] of C.spellcastingSectionTops.entries()) files.set(name, await spellLevelTemplate(level, edition));
+  // Layout variants of the character page, after the shared files so the
+  // existing labels keep their place in labels.json.
+  for (const { file, layout } of sheetLayoutVariants(edition)) files.set(file, await details(edition, layout));
   return files;
 }
 

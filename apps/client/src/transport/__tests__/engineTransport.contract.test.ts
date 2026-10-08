@@ -713,6 +713,16 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, inventoryNotes: true }]);
     await renderedApi.characters.sheetBytes("Ada", { lite: false, inventoryNotes: false });
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false }]);
+    // The character page's layout rides with the render, not the model build.
+    expect(sheetRenderer).toHaveBeenLastCalledWith(expect.anything(), expect.any(String), expect.objectContaining({ layout: undefined }));
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, templateSet: "2014", layout: { top: false, split: true, readable: false } });
+    expect(sheetRenderer).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.any(String),
+      expect.objectContaining({ templateSet: "2014", layout: { top: false, split: true, readable: false } }),
+    );
+    expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false }]);
+    expect(calls.filter(([method]) => method === "generateSheet").every(([, , request]) => !("layout" in (request as object)))).toBe(true);
     const sheetUrl = await renderedApi.characters.sheet("Ada", { lite: true });
     expect(sheetUrl).toMatch(/^blob:/);
     URL.revokeObjectURL(sheetUrl);

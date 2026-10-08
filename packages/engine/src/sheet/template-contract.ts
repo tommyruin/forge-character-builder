@@ -19,6 +19,99 @@ export function isSheetTemplateSet(value: unknown): value is SheetTemplateSet {
 }
 
 /**
+ * Optional layout switches for the character page. Each set has its own page
+ * (`details.pdf`), whose switches are the set's defaults; a layout that turns
+ * any implemented switch away from its default prints a variant of that page
+ * instead. Variants differ only in the character page: every other file in a
+ * set is shared.
+ *
+ * A variant is named for the switches that differ from the set's own page, in
+ * the fixed order of `SHEET_LAYOUT_FLAGS`, joined by `.`: `<flag>` for one
+ * turned on, `un<flag>` for one turned off — `details~split.pdf`,
+ * `details~top.split.pdf`, or `details~unsplit.pdf` for the Hybrid page,
+ * which splits its features by default. Each set's own page keeps its name
+ * and its bytes, so the default layout prints exactly what it always has. The
+ * set's `labels.json` carries every variant's text under its file name.
+ *
+ *  - `top`: a compact top row (no variant yet).
+ *  - `split`: separate boxes for class features, subclass features and feats.
+ *  - `readable`: a more readable body (no variant yet).
+ */
+export const SHEET_LAYOUT_FLAGS = ["top", "split", "readable"] as const;
+export type SheetLayoutFlag = (typeof SHEET_LAYOUT_FLAGS)[number];
+/** A layout with every switch decided. */
+export type SheetLayout = Record<SheetLayoutFlag, boolean>;
+/** A layout as asked for: a switch on, off, or null or absent for the set's default. */
+export type SheetLayoutRequest = Partial<Record<SheetLayoutFlag, boolean | null>>;
+
+/** Each set's own page, as switches. */
+export const SHEET_LAYOUT_DEFAULTS: Readonly<Record<SheetTemplateSet, Readonly<SheetLayout>>> = {
+  "2014": { top: false, split: false, readable: false },
+  "2024": { top: false, split: false, readable: false },
+  "2024-hybrid": { top: false, split: true, readable: false },
+};
+
+/**
+ * The switches with variant pages. A switch outside this list prints the set's
+ * own page whatever it is set to, so no variant is ever a copy of another.
+ */
+export const SHEET_IMPLEMENTED_LAYOUT_FLAGS: readonly SheetLayoutFlag[] = ["split"];
+
+/** Separates a variant's switches from the character page's base name. */
+const LAYOUT_VARIANT_SEPARATOR = "~";
+
+/** The layout `request` asks for on `set`: each switch given as a boolean, else the set's default. */
+export function resolveSheetLayout(set: SheetTemplateSet, request: unknown): SheetLayout {
+  const input = typeof request === "object" && request !== null ? (request as Record<string, unknown>) : {};
+  const defaults = SHEET_LAYOUT_DEFAULTS[set] ?? SHEET_LAYOUT_DEFAULTS[DEFAULT_SHEET_TEMPLATE_SET];
+  const pick = (flag: SheetLayoutFlag): boolean => {
+    const value = input[flag];
+    return typeof value === "boolean" ? value : defaults[flag];
+  };
+  return { top: pick("top"), split: pick("split"), readable: pick("readable") };
+}
+
+/**
+ * The character page file that prints `layout` on `set`: the set's own page
+ * when no implemented switch differs from its default, else the variant named
+ * for the switches that do. `implemented` is the list of switches with
+ * variants; tests pass every switch to check the naming.
+ */
+export function sheetDetailsFile(
+  set: SheetTemplateSet,
+  layout: Partial<SheetLayout>,
+  implemented: readonly SheetLayoutFlag[] = SHEET_IMPLEMENTED_LAYOUT_FLAGS,
+): string {
+  const defaults = SHEET_LAYOUT_DEFAULTS[set] ?? SHEET_LAYOUT_DEFAULTS[DEFAULT_SHEET_TEMPLATE_SET];
+  const tokens = SHEET_LAYOUT_FLAGS
+    .filter((flag) => implemented.includes(flag) && typeof layout[flag] === "boolean" && layout[flag] !== defaults[flag])
+    .map((flag) => (layout[flag] ? flag : `un${flag}`));
+  const base = SHEET_TEMPLATE_CONTRACT.files.details;
+  if (tokens.length === 0) return base;
+  return base.replace(/\.pdf$/, `${LAYOUT_VARIANT_SEPARATOR}${tokens.join(".")}.pdf`);
+}
+
+/** Every variant page `set` ships: one per combination of implemented switches away from its defaults. */
+export function sheetLayoutVariants(set: SheetTemplateSet): Array<{ file: string; layout: SheetLayout }> {
+  const defaults = SHEET_LAYOUT_DEFAULTS[set];
+  const variants: Array<{ file: string; layout: SheetLayout }> = [];
+  const flags = SHEET_LAYOUT_FLAGS.filter((flag) => SHEET_IMPLEMENTED_LAYOUT_FLAGS.includes(flag));
+  for (let mask = 1; mask < 1 << flags.length; mask += 1) {
+    const layout: SheetLayout = { ...defaults };
+    flags.forEach((flag, index) => {
+      if (mask & (1 << index)) layout[flag] = !defaults[flag];
+    });
+    variants.push({ file: sheetDetailsFile(set, layout), layout });
+  }
+  return variants;
+}
+
+/** A stable identity for a resolved layout, for cache keys. */
+export function sheetLayoutKey(layout: SheetLayout): string {
+  return SHEET_LAYOUT_FLAGS.map((flag) => (layout[flag] ? flag : `no-${flag}`)).join("/");
+}
+
+/**
  * Sheet colours. The templates are generated in the default colours; the
  * writer recolours their content streams to any other named choice before
  * filling them, so one template set serves every scheme. Every colour is

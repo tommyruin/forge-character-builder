@@ -7,6 +7,7 @@ import useSheetFontsSetting from "../hooks/useSheetFontsSetting";
 import useSheetPagesSetting from "../hooks/useSheetPagesSetting";
 import useSheetAbilitySetting from "../hooks/useSheetAbilitySetting";
 import useSheetLayoutOptionsSetting from "../hooks/useSheetLayoutOptionsSetting";
+import { effectiveSheetLayout } from "../sheetLayoutOptionsSetting.js";
 import { loadSheetBrandImage } from "../sheetBrandImage.js";
 import { downloadBlob } from "../vtt/download.js";
 import Icon from './Icon';
@@ -76,7 +77,7 @@ export default function ExportMenu({
   const downloadSheet = () =>
     runAction("sheet", async () => {
       const brandImage = await loadSheetBrandImage();
-      const url = await api.characters.sheet(id, { templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes: layoutOptions.inventoryNotes, brandImage, footerText: `Generated with ${shell.appName}.` });
+      const url = await api.characters.sheet(id, { templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes: layoutOptions.inventoryNotes, layout: effectiveSheetLayout(templateSet, layoutOptions), brandImage, footerText: `Generated with ${shell.appName}.` });
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = `${id}.pdf`;

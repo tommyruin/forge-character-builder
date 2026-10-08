@@ -4,8 +4,9 @@
 // resets the choices for everyone who made them.
 //
 //  - top: reserved for a later layout step.
-//  - split: reserved for a later layout step; null means "the layout's own
-//    default". A finite number or a non-empty string is kept as given.
+//  - split: separate boxes for class features, subclass features and feats
+//    on the character page. null means "the layout's own default" (off for
+//    2014 and 2024, on for 2024 Hybrid); true or false overrides it.
 //  - readable: reserved for a later layout step.
 //  - inventoryNotes: the equipment page's notes column also describes the
 //    other magic items in full and the tools and useful gear in brief.
@@ -13,8 +14,11 @@
 //    only when they are magic items, tools or useful gear. Items already in
 //    the inventory never change.
 //
-// Every option defaults to off, so a browser that has never touched this
-// setting keeps the sheet and the item cards it has always had.
+// Every option defaults to off (or, for split, to the layout's own default),
+// so a browser that has never touched this setting keeps the sheet and the
+// item cards it has always had.
+
+import { resolveSheetLayout, sheetLayoutKey } from '@forge-cb/engine/sheet-contract';
 
 export const SHEET_LAYOUT_OPTIONS_STORAGE_KEY = 'fcb-sheet-layout-options';
 
@@ -28,12 +32,6 @@ export const DEFAULT_SHEET_LAYOUT_OPTIONS = Object.freeze({
   smartCards: false,
 });
 
-function isSplitValue(value) {
-  return (
-    (typeof value === 'number' && Number.isFinite(value)) ||
-    (typeof value === 'string' && value.trim() !== '')
-  );
-}
 
 /** Applies the valid options of `wanted` over `base`; anything else keeps the base value. */
 function mergeOptions(base, wanted) {
@@ -46,7 +44,7 @@ function mergeOptions(base, wanted) {
     if (typeof source[name] === 'boolean') resolved[name] = source[name];
   }
   if ('split' in source) {
-    resolved.split = isSplitValue(source.split) ? source.split : null;
+    resolved.split = typeof source.split === 'boolean' ? source.split : null;
   }
   return resolved;
 }
@@ -78,6 +76,25 @@ export function storeSheetLayoutOptions(
   } catch {
     // Best effort only; the running session still honours the choice.
   }
+}
+
+/**
+ * The character page layout `options` print on `templateSet`: every switch
+ * decided, a split left at null taking the layout's own default. This is what
+ * the renders ask for and what the settings switch shows.
+ */
+export function effectiveSheetLayout(templateSet, options) {
+  const resolved = resolveSheetLayoutOptions(options);
+  return resolveSheetLayout(templateSet, {
+    top: resolved.top,
+    split: resolved.split,
+    readable: resolved.readable,
+  });
+}
+
+/** A stable identity for an effective layout, for sheet cache keys. */
+export function sheetLayoutCacheKey(layout) {
+  return `layout-${sheetLayoutKey(layout)}`;
 }
 
 /**

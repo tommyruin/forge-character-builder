@@ -358,6 +358,12 @@ export interface CharacterSheetTemplateBundle {
   spellcastingSectionBottom: Uint8Array;
   spellCard: Uint8Array;
   genericCard: Uint8Array;
+  /**
+   * The file `details` was loaded from, when it is a layout variant of the
+   * set's character page; its labels are kept under that name. Absent for the
+   * set's own page.
+   */
+  detailsFile?: string;
   /** The set's titles, captions and ribbons, keyed by template file. */
   labels: SheetTemplateLabels;
   /** The typefaces to draw them and the values in. */
@@ -498,7 +504,7 @@ function bundleIsComplete(bundle: CharacterSheetTemplateBundle | null): bundle i
     typeof bundle.labels === "object" && bundle.labels !== null &&
     typeof bundle.faces === "object" && bundle.faces !== null &&
     Object.entries(bundle).every(([key, value]) =>
-      key === "labels" || key === "faces" ||
+      key === "labels" || key === "faces" || key === "detailsFile" ||
       (Array.isArray(value)
         ? value.every((bytes) => bytes.byteLength > 0)
         : (value as Uint8Array).byteLength > 0)
@@ -1281,15 +1287,20 @@ function drawDetailsRichText(
   const racialContinuation = drawRichFeatureSection(
     page, find("racial-traits"), fonts, racialBox.x, racialBox.top, racialBox.width, racialBox.bottom);
   if (racialContinuation !== undefined) continuations.push(racialContinuation);
-  // A layout with its own subclass and feat boxes (2024 Hybrid) splits the
-  // feature rows by origin; the others keep one combined box.
-  const featureFields: ReadonlyArray<readonly [string, SheetSection | undefined, string?]> = fieldRects.has("details_subclass_features")
-    ? [
-      ["details_features", { title: "class-features", rows: modelPage.featureGroups?.["class-features"] ?? [] }, "Class Features"],
-      ["details_subclass_features", { title: "subclass-features", rows: modelPage.featureGroups?.["subclass-features"] ?? [] }, "Subclass Features"],
-      ["details_feats", { title: "feats", rows: modelPage.featureGroups?.feats ?? [] }, "Feats"],
-    ]
-    : [["details_features", find("features")]];
+  // A layout with its own subclass and feat boxes (2024 Hybrid, and the split
+  // layout of the others) splits the feature rows by origin; the others keep
+  // one combined box. A model without the groups prints the combined rows in
+  // the class box rather than leaving the three boxes empty.
+  const groups = modelPage.featureGroups;
+  const featureFields: ReadonlyArray<readonly [string, SheetSection | undefined, string?]> = !fieldRects.has("details_subclass_features")
+    ? [["details_features", find("features")]]
+    : groups === undefined
+      ? [["details_features", find("features"), "Features"]]
+      : [
+        ["details_features", { title: "class-features", rows: groups["class-features"] ?? [] }, "Class Features"],
+        ["details_subclass_features", { title: "subclass-features", rows: groups["subclass-features"] ?? [] }, "Subclass Features"],
+        ["details_feats", { title: "feats", rows: groups.feats ?? [] }, "Feats"],
+      ];
   for (const [field, section, heading] of featureFields) {
     const featureBox = richTextBox(fieldRects, field, DEFAULT_FEATURE_FONT_SIZE,
       { x: 409, top: 653, width: 169, bottom: 132 });
@@ -1824,7 +1835,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const output = await PDFDocument.create();
   const fonts = await timed("embedFonts", () => embedSheetFonts(output, bundle.faces));
   const values = { ...model.formValues };
-  let detailsLabels = bundle.labels[files.details];
+  let detailsLabels = bundle.labels[bundle.detailsFile ?? files.details];
   if (options.emphasizeAbilityModifiers === true) {
     for (const ability of ["str", "dex", "con", "int", "wis", "cha"]) {
       const score = `details_${ability}_score`;

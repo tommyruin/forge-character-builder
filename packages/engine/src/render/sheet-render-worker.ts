@@ -5,7 +5,7 @@
  * here; this worker owns the expensive pdf-lib work (template fetch + page
  * fills + save) on its own thread, so choices and reads on the engine worker
  * never queue behind a multi-second PDF render. The client owns the worker
- * lifecycle and posts { id, model, templateBase, templateSet, colours, fonts, footerText }
+ * lifecycle and posts { id, model, templateBase, templateSet, layout, colours, fonts, footerText }
  * requests; responses are { id, ok, bytes } with the bytes transferred (or
  * { id, ok, error }).
  */
@@ -22,10 +22,13 @@ import {
   DEFAULT_SHEET_TEMPLATE_SET,
   resolveSheetColours,
   resolveSheetFonts,
+  resolveSheetLayout,
   sheetColoursKey,
+  sheetDetailsFile,
   sheetFontsKey,
   type SheetColours,
   type SheetFonts,
+  type SheetLayoutRequest,
   type SheetTemplateSet,
 } from "../sheet/template-contract.js";
 
@@ -41,6 +44,8 @@ export interface SheetRenderRequest {
   templateBase: string;
   /** Which template set to render against; the default set when omitted. */
   templateSet?: SheetTemplateSet;
+  /** The character page's layout switches; the set's own page for any switch omitted or null. */
+  layout?: SheetLayoutRequest;
   emphasizeAbilityModifiers?: boolean;
   includeAttackNotes?: boolean;
   /** The colour names the templates are recoloured to; the defaults for any part omitted. */
@@ -76,6 +81,7 @@ async function recolorBundle(bundle: CharacterSheetTemplateBundle, colours: Shee
   return {
     labels: bundle.labels,
     faces: bundle.faces,
+    ...(bundle.detailsFile === undefined ? {} : { detailsFile: bundle.detailsFile }),
     details: details!,
     background: background!,
     companion: companion!,
@@ -90,7 +96,7 @@ async function recolorBundle(bundle: CharacterSheetTemplateBundle, colours: Shee
 }
 
 export function startSheetRenderWorker(scope: SheetRenderWorkerScope): void {
-  // Cached per template set and colour scheme for this worker instance; an entry is
+  // Cached per template set, character page and colour scheme for this worker instance; an entry is
   // dropped when its fetch fails so the next request retries. A recreated
   // worker starts with a fresh cache.
   const templatePromises = new Map<string, Promise<CharacterSheetTemplateBundle | null>>();
@@ -102,10 +108,11 @@ export function startSheetRenderWorker(scope: SheetRenderWorkerScope): void {
         const templateSet = request.templateSet ?? DEFAULT_SHEET_TEMPLATE_SET;
         const colours = resolveSheetColours(request.colours);
         const fonts = resolveSheetFonts(request.fonts);
-        const cacheKey = `${templateSet}:${sheetColoursKey(colours)}:${sheetFontsKey(fonts)}`;
+        const layout = resolveSheetLayout(templateSet, request.layout);
+        const cacheKey = `${templateSet}:${sheetDetailsFile(templateSet, layout)}:${sheetColoursKey(colours)}:${sheetFontsKey(fonts)}`;
         let candidate = templatePromises.get(cacheKey);
         if (candidate === undefined) {
-          candidate = fetchCharacterSheetTemplateBundle(request.templateBase, templateSet, fonts)
+          candidate = fetchCharacterSheetTemplateBundle(request.templateBase, templateSet, fonts, layout)
             .then((bundle) => (bundle === null ? null : recolorBundle(bundle, colours)));
           templatePromises.set(cacheKey, candidate);
         }

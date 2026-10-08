@@ -1,6 +1,7 @@
 // Module-level cache of recently generated character-sheet PDF bytes, keyed by
 // character + renderer/template revision + content revision + workspace mutation tick +
-// variant (lite vs full) + the optional pages selection + the item notes switch. mutationTick is bumped on every successful engine mutation
+// variant (lite vs full) + the optional pages selection + the item notes switch + the effective
+// character page layout (sheetLayoutCacheKey). mutationTick is bumped on every successful engine mutation
 // (CharacterWorkspace), while contentRevision changes when the loaded content library changes.
 // SHEET_RENDERER_REVISION must be bumped when the PDF renderer or sheet template/layout changes.
 //
@@ -13,10 +14,10 @@
 const cache = new Map(); // key -> Uint8Array
 let order = [];
 const MAX_ENTRIES = 4;
-export const SHEET_RENDERER_REVISION = 'pdf-canvas-v9';
+export const SHEET_RENDERER_REVISION = 'pdf-canvas-v10';
 
-export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica', pages = 'background+notes+attackNotes+spellCards+itemCards', emphasizeAbilityModifiers = false, inventoryNotes = false) {
-  return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${pages}#${emphasizeAbilityModifiers ? 'modifiers' : 'scores'}#${inventoryNotes ? 'item-notes' : 'no-item-notes'}#${lite ? 'lite' : 'full'}`;
+export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica', pages = 'background+notes+attackNotes+spellCards+itemCards', emphasizeAbilityModifiers = false, inventoryNotes = false, layout = 'layout-default') {
+  return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${pages}#${emphasizeAbilityModifiers ? 'modifiers' : 'scores'}#${inventoryNotes ? 'item-notes' : 'no-item-notes'}#${layout}#${lite ? 'lite' : 'full'}`;
 }
 
 export function getCachedSheet(key) {

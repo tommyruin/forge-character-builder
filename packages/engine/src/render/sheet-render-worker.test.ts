@@ -88,6 +88,8 @@ describe("sheet render worker", () => {
         ? sheetTemplateResponse(url)
         : new Response("not found", { status: 404 });
     }));
+    // Pin the clock: the writer stamps the modification date to the second.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-01-01T00:00:00Z") });
     try {
       startSheetRenderWorker(scope);
       const first = await request({ id: 1, model: modelFor("Ada"), templateBase: SHEET_BASE });
@@ -97,7 +99,8 @@ describe("sheet render worker", () => {
       const firstBytes = (first as { bytes: ArrayBuffer }).bytes;
       const secondBytes = (second as { bytes: ArrayBuffer }).bytes;
       expect(new TextDecoder().decode(new Uint8Array(firstBytes))).toMatch(/^%PDF-1\./);
-      expect(secondBytes).toEqual(firstBytes);
+      // toEqual treats any two ArrayBuffers as equal; compare the bytes.
+      expect(new Uint8Array(secondBytes)).toEqual(new Uint8Array(firstBytes));
       expect(firstBytes.byteLength).toBeGreaterThan(10_000);
       const emphasized = await request({ id: 3, model: modelFor("Ada"), templateBase: SHEET_BASE, emphasizeAbilityModifiers: true }) as { bytes: ArrayBuffer };
       const doc = await getDocument({ data: new Uint8Array(emphasized.bytes) }).promise;
@@ -110,6 +113,7 @@ describe("sheet render worker", () => {
       expect(notesDoc.numPages).toBe(1);
       expect((await (await notesDoc.getPage(1)).getTextContent()).items.some((item) => "str" in item && item.str === "Long note omitted")).toBe(true);
     } finally {
+      vi.useRealTimers();
       vi.stubGlobal("fetch", previousFetch);
       vi.stubGlobal("location", previousLocation);
     }
@@ -153,6 +157,47 @@ describe("sheet render worker", () => {
       expect(assets()).toHaveLength(perBundle * 2);
       expect(new Set(requests.filter((url) => url.includes(`/${SHEET_TEMPLATE_CONTRACT.fontsDirectory}/`))).size).toBeLessThanOrEqual(FONT_FILES);
     } finally {
+      vi.stubGlobal("fetch", previousFetch);
+      vi.stubGlobal("location", previousLocation);
+    }
+  }, 120_000);
+
+  it("renders the requested layout variant and keeps each layout's templates apart", async () => {
+    const { scope, request } = fakeScope();
+    const previousFetch = globalThis.fetch;
+    const previousLocation = (globalThis as { location?: unknown }).location;
+    const requests: string[] = [];
+    vi.stubGlobal("location", {
+      origin: "https://example.test",
+      pathname: "/tools/character-builder/",
+    });
+    vi.stubGlobal("fetch", vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      requests.push(url);
+      return url.startsWith(SHEET_BASE)
+        ? sheetTemplateResponse(decodeURIComponent(url))
+        : new Response("not found", { status: 404 });
+    }));
+    const pageText = async (bytes: ArrayBuffer) => {
+      // pdf.js takes ownership of the buffer it is given, so it reads a copy.
+      const doc = await getDocument({ data: new Uint8Array(bytes).slice() }).promise;
+      return (await (await doc.getPage(1)).getTextContent()).items.map((item) => ("str" in item ? item.str : "")).join(" ");
+    };
+    // The document info carries the time of writing to the second; pin it so
+    // the bytes compare.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-01-01T00:00:00Z") });
+    try {
+      startSheetRenderWorker(scope);
+      const plain = await request({ id: 1, model: modelFor("Ada"), templateBase: SHEET_BASE }) as { bytes: ArrayBuffer };
+      const split = await request({ id: 2, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { split: true } }) as { bytes: ArrayBuffer };
+      const defaulted = await request({ id: 3, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { top: false, split: null, readable: false } }) as { bytes: ArrayBuffer };
+      expect(requests.filter((url) => url.endsWith("/sheets/2014/details~split.pdf"))).toHaveLength(1);
+      expect(await pageText(split.bytes)).toContain("SUBCLASS FEATURES");
+      expect(await pageText(plain.bytes)).not.toContain("SUBCLASS FEATURES");
+      expect(new Uint8Array(defaulted.bytes)).toEqual(new Uint8Array(plain.bytes));
+      expect(new Uint8Array(split.bytes)).not.toEqual(new Uint8Array(plain.bytes));
+    } finally {
+      vi.useRealTimers();
       vi.stubGlobal("fetch", previousFetch);
       vi.stubGlobal("location", previousLocation);
     }

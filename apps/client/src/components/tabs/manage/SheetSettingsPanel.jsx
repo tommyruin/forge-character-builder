@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { api } from '../../../api';
 import useSheetTemplateSetting from '../../../hooks/useSheetTemplateSetting';
 import useSheetColoursSetting from '../../../hooks/useSheetColoursSetting';
@@ -6,6 +6,7 @@ import useSheetFontsSetting from '../../../hooks/useSheetFontsSetting';
 import useSheetPagesSetting from '../../../hooks/useSheetPagesSetting';
 import useSheetAbilitySetting from '../../../hooks/useSheetAbilitySetting';
 import useSheetLayoutOptionsSetting from '../../../hooks/useSheetLayoutOptionsSetting';
+import { effectiveSheetLayout } from '../../../sheetLayoutOptionsSetting.js';
 import FilterSelect from '../../FilterSelect';
 import Icon from '../../Icon';
 import { ensureSheetFontFaces, sheetFaceFontFamily } from '../../../sheetFontFaces.js';
@@ -56,6 +57,43 @@ function TipHeading({ label, tip }) {
         <Icon name="info" className="fcb-info-tip-icon" />
       </span>
     </h3>
+  );
+}
+
+/**
+ * Optional changes to the character page's layout. Each switch shows what the
+ * chosen layout prints; flipping it stores an explicit choice, which holds
+ * across layouts until the reader returns to the layout's own default.
+ */
+function LayoutOptions({ templateSet }) {
+  const { options, setOptions } = useSheetLayoutOptionsSetting();
+  const layout = effectiveSheetLayout(templateSet, options);
+  const splitHintId = useId();
+  return (
+    <div className="fcb-sheet-layout-options space-y-2" role="group" aria-label="Layout options">
+      <h3 className="fcb-sheet-colour-part">Layout options</h3>
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          role="switch"
+          aria-label="Split feature boxes"
+          aria-describedby={splitHintId}
+          checked={layout.split}
+          onChange={(event) => setOptions({ split: event.target.checked })}
+        />
+        <span>
+          <span className="block">Split feature boxes</span>
+          <span id={splitHintId} className="fcb-muted-copy block">
+            Separate boxes for class features, subclass features and feats
+          </span>
+        </span>
+      </label>
+      {options.split !== null && (
+        <button type="button" className="fcb-button" onClick={() => setOptions({ split: null })}>
+          Use layout default
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -183,6 +221,7 @@ export default function SheetSettingsPanel() {
               </button>
             </div>
           )}
+          <LayoutOptions templateSet={templateSet} />
         </div>
       </section>
       <section className="fcb-panel">

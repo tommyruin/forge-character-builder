@@ -54,8 +54,9 @@ describe('SheetSettingsPanel', () => {
     for (const label of ['Appearance &amp; portrait', 'Notes', 'Attack notes', 'Spell cards', 'Item cards']) {
       expect(markup).toContain(`aria-label="${label}"`);
     }
-    // Five page checkboxes on, plus ability emphasis, smart cards and item notes off by default.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(8);
+    // Five page checkboxes on, plus ability emphasis, split feature boxes,
+    // smart cards and item notes off by default on the 2014 layout.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(9);
     expect(markup.match(/checked=""/g)).toHaveLength(5);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
@@ -74,7 +75,19 @@ describe('SheetSettingsPanel', () => {
 
   it('offers item notes for the inventory as a switch, off by default', () => {
     expect(markup).toContain('Print item notes in the inventory: magic items in full, tools and useful gear in brief');
-    expect(markup.match(/role="switch"/g)).toHaveLength(2);
+    expect(markup.match(/role="switch"/g)).toHaveLength(3);
+  });
+
+  it('offers split feature boxes as a layout option, off on the default layout', () => {
+    expect(markup).toContain('Layout options');
+    expect(markup).toContain('Split feature boxes');
+    expect(markup).toContain('Separate boxes for class features, subclass features and feats');
+    const split = markup.match(/<input[^>]*aria-label="Split feature boxes"[^>]*>/)?.[0];
+    expect(split).toBeDefined();
+    expect(split).toContain('role="switch"');
+    expect(split).not.toContain('checked=""');
+    // Nothing overridden, so there is no default to return to.
+    expect(markup).not.toContain('Use layout default');
   });
 
   it('offers the bulk item-card actions only with a character open', () => {

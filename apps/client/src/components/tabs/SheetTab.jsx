@@ -7,6 +7,7 @@ import useSheetFontsSetting from '../../hooks/useSheetFontsSetting';
 import useSheetPagesSetting from '../../hooks/useSheetPagesSetting';
 import useSheetAbilitySetting from '../../hooks/useSheetAbilitySetting';
 import useSheetLayoutOptionsSetting from '../../hooks/useSheetLayoutOptionsSetting';
+import { effectiveSheetLayout, sheetLayoutCacheKey } from '../../sheetLayoutOptionsSetting.js';
 import { loadSheetBrandImage } from '../../sheetBrandImage.js';
 import { useWorkspace } from '../WorkspaceContext';
 import PdfCanvasViewer from '../PdfCanvasViewer';
@@ -40,6 +41,8 @@ export default function SheetTab() {
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { options: layoutOptions } = useSheetLayoutOptionsSetting();
   const inventoryNotes = layoutOptions.inventoryNotes;
+  const layout = useMemo(() => effectiveSheetLayout(templateSet, layoutOptions), [templateSet, layoutOptions]);
+  const layoutKey = sheetLayoutCacheKey(layout);
   // Debounced view of mutationTick: a burst of cascading mutations (multi-step
   // selections, level-ups) folds into one full-sheet regeneration instead of
   // rendering once per tick. Seeded from the current tick so the first mount
@@ -52,7 +55,7 @@ export default function SheetTab() {
   }, [active, debouncedTick, mutationTick]);
   // Only written from the async resolution; `loading` is derived by comparing keys.
   const [state, setState] = useState({ key: null, bytes: null, error: null });
-  const key = `${id}#${libraryRevision}#${debouncedTick}#${templateSet}#${coloursKey}#${fontsKey}#${pagesKey}#${emphasizeAbilityModifiers}#${inventoryNotes}#${nonce}`;
+  const key = `${id}#${libraryRevision}#${debouncedTick}#${templateSet}#${coloursKey}#${fontsKey}#${pagesKey}#${emphasizeAbilityModifiers}#${inventoryNotes}#${layoutKey}#${nonce}`;
 
   useEffect(() => {
     if (!active) return undefined;
@@ -69,6 +72,7 @@ export default function SheetTab() {
       pagesKey,
       emphasizeAbilityModifiers,
       inventoryNotes,
+      layoutKey,
     );
 
     // Manual Regenerate (nonce > 0) always re-renders; automatic loads may serve the cache.
@@ -91,7 +95,7 @@ export default function SheetTab() {
     // if its own cleanup hasn't cancelled it — so the surviving mount always renders.
     sharedSheetGeneration(runKey, () =>
       loadSheetBrandImage().then((brandImage) =>
-        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, brandImage, footerText: `Generated with ${shell.appName}.` })),
+        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, layout, brandImage, footerText: `Generated with ${shell.appName}.` })),
     )
       .then((bytes) => {
         putCachedSheet(cacheKey, bytes);
@@ -105,7 +109,7 @@ export default function SheetTab() {
     return () => {
       cancelled = true;
     };
-  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes]);
+  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, layout, layoutKey]);
 
   const ready = state.key === key;
   const bytes = ready ? state.bytes : null;

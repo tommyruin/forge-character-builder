@@ -4,15 +4,31 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
 import { templateFontSize } from "./pdf.js";
-import { SHEET_TEMPLATE_CONTRACT, SHEET_TEMPLATE_SETS, type SheetTemplateLabels } from "./template-contract.js";
+import {
+  SHEET_TEMPLATE_CONTRACT,
+  SHEET_TEMPLATE_SETS,
+  resolveSheetLayout,
+  sheetDetailsFile,
+  sheetLayoutVariants,
+  type SheetTemplateLabels,
+  type SheetTemplateSet,
+} from "./template-contract.js";
 
 const SHEETS = join(fileURLToPath(new URL(".", import.meta.url)), "../../../..", "apps", "client", "public", SHEET_TEMPLATE_CONTRACT.directory);
 
-/** Every full-page template of a set, with its labels and widget rectangles. */
-async function pagesOf(set: string) {
+/** A set's character pages: its own, then every layout variant. */
+function detailsFilesOf(set: SheetTemplateSet): string[] {
+  return [SHEET_TEMPLATE_CONTRACT.files.details, ...sheetLayoutVariants(set).map((variant) => variant.file)];
+}
+
+/** Every set's character pages, as [set, file] pairs. */
+const DETAILS_PAGES = SHEET_TEMPLATE_SETS.flatMap((set) => detailsFilesOf(set).map((file) => [set, file] as const));
+
+/** Every full-page template of a set, layout variants included, with its labels and widget rectangles. */
+async function pagesOf(set: SheetTemplateSet) {
   const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
   const files = [
-    SHEET_TEMPLATE_CONTRACT.files.details,
+    ...detailsFilesOf(set),
     SHEET_TEMPLATE_CONTRACT.files.background,
     SHEET_TEMPLATE_CONTRACT.files.companion,
     SHEET_TEMPLATE_CONTRACT.files.equipment,
@@ -28,8 +44,8 @@ async function pagesOf(set: string) {
 }
 
 describe("sheet template geometry", () => {
-  it.each([...SHEET_TEMPLATE_SETS])("provides six printable exhaustion markers on %s", async (set) => {
-    const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.files.details)))).getForm();
+  it.each(DETAILS_PAGES)("provides six printable exhaustion markers on %s/%s", async (set, file) => {
+    const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, file)))).getForm();
     expect(form.getFields().filter((field) => /^details_exhaustion_[1-6]$/.test(field.getName()))).toHaveLength(6);
   });
 
@@ -72,14 +88,37 @@ describe("sheet template geometry", () => {
   // The hybrid character page is the 2024 page with a different ability
   // arrangement: the writer fills it from the same values, so it must carry
   // every 2024 field, plus the boxes that split features by origin.
+  const fieldNames = async (set: SheetTemplateSet, file: string = SHEET_TEMPLATE_CONTRACT.files.details) =>
+    new Set((await PDFDocument.load(readFileSync(join(SHEETS, set, file)))).getForm().getFields().map((field) => field.getName()));
   it("gives the 2024 Hybrid character page every 2024 field and the split feature boxes", async () => {
-    const names = async (set: string) => new Set((await PDFDocument.load(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.files.details))))
-      .getForm().getFields().map((field) => field.getName()));
-    const modern = await names("2024");
-    const hybrid = await names("2024-hybrid");
+    const modern = await fieldNames("2024");
+    const hybrid = await fieldNames("2024-hybrid");
     expect([...modern].filter((name) => !hybrid.has(name))).toEqual([]);
     expect([...hybrid].filter((name) => !modern.has(name)).sort()).toEqual(["details_feats", "details_subclass_features"]);
   });
+
+  // The same layout switches on both pages give the same fields, so a value
+  // the writer fills on one is never lost on the other: the split 2024 page
+  // matches Hybrid's own, and the unsplit Hybrid page matches 2024's own.
+  it("keeps the 2024 and Hybrid pages' fields in step for each split choice", async () => {
+    for (const split of [true, false]) {
+      const modern = sheetDetailsFile("2024", resolveSheetLayout("2024", { split }));
+      const hybrid = sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { split }));
+      expect([...await fieldNames("2024", modern)].sort(), `split ${split}`).toEqual([...await fieldNames("2024-hybrid", hybrid)].sort());
+    }
+  });
+
+  // A variant changes the feature boxes and nothing else.
+  it.each(DETAILS_PAGES.filter(([, file]) => file !== SHEET_TEMPLATE_CONTRACT.files.details))(
+    "changes only the feature boxes on %s/%s",
+    async (set, file) => {
+      const featureBoxes = new Set(["details_features", "details_subclass_features", "details_feats"]);
+      const rects = async (name: string) => new Map((await PDFDocument.load(readFileSync(join(SHEETS, set, name)))).getForm().getFields()
+        .filter((field) => !featureBoxes.has(field.getName()))
+        .map((field) => [field.getName(), field.acroField.getWidgets()[0]?.getRectangle()]));
+      expect(await rects(file)).toEqual(await rects(SHEET_TEMPLATE_CONTRACT.files.details));
+    },
+  );
 
   it("sizes every field from its own default appearance", async () => {
     for (const set of SHEET_TEMPLATE_SETS) {
@@ -162,9 +201,8 @@ describe("sheet template geometry", () => {
     }
   });
 
-  it("gives the big numbers a size that suits their box", async () => {
-    const [details] = await pagesOf("2024");
-    const document = await PDFDocument.load(readFileSync(join(SHEETS, "2024", details!.file)));
+  it.each(DETAILS_PAGES.filter(([set]) => set !== "2014"))("gives the big numbers a size that suits their box on %s/%s", async (set, file) => {
+    const document = await PDFDocument.load(readFileSync(join(SHEETS, set, file)));
     const sizeOf = (name: string) => templateFontSize(document.getForm().getTextField(name).acroField.getDefaultAppearance());
     for (const name of ["details_proficiency_bonus", "details_initiative", "details_passive_perception_total", "details_hd"]) {
       expect(sizeOf(name), name).toBeGreaterThanOrEqual(14);

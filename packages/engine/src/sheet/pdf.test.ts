@@ -1226,14 +1226,21 @@ describe("character sheet PDF writer", () => {
     const state = built.service.getCharacter(built.id);
     const model = buildCharacterSheetModel(state, library, { mode: "lite" });
     expect(model.images?.["background_portrait_image"]).toBeDefined();
-    const first = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
-    const second = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
-    expect(second).toEqual(first);
-    // A floor, not a target: single-line values are drawn rather than flattened
-    // from form widgets, so a full sheet no longer carries an appearance stream
-    // per field. "bakes every provided form value" is what proves the content
-    // is all there.
-    expect(second.byteLength).toBeGreaterThan(30_000);
+    // The writer stamps the modification date to the second, and toEqual
+    // treats any two ArrayBuffers as equal, so pin the clock and compare bytes.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-01-01T00:00:00Z") });
+    try {
+      const first = new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle()));
+      const second = new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle()));
+      expect(second).toEqual(first);
+      // A floor, not a target: single-line values are drawn rather than flattened
+      // from form widgets, so a full sheet no longer carries an appearance stream
+      // per field. "bakes every provided form value" is what proves the content
+      // is all there.
+      expect(second.byteLength).toBeGreaterThan(30_000);
+    } finally {
+      vi.useRealTimers();
+    }
   }, 120_000);
 
   // A host logo is painted over the template's die mark by knocking the badge

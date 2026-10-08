@@ -274,6 +274,8 @@ function workerPort(): ClientWorkerPort {
 /** Per-render choices passed through to the sheet worker. */
 export interface SheetRenderOptions {
   templateSet?: "2014" | "2024";
+  /** The character page's layout switches; the set's own page when omitted. */
+  layout?: { top?: boolean | null; split?: boolean | null; readable?: boolean | null };
   emphasizeAbilityModifiers?: boolean;
   includeAttackNotes?: boolean;
   colours?: { accent?: string; lines?: string; text?: string };
@@ -805,6 +807,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         model,
         templateBase: sheetTemplateBase,
         templateSet: render.templateSet,
+        layout: render.layout,
         colours: render.colours,
         emphasizeAbilityModifiers: render.emphasizeAbilityModifiers,
         includeAttackNotes: render.includeAttackNotes,
@@ -1417,6 +1420,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       });
       return renderSheetBytes(model, {
         templateSet: typeof opts.templateSet === "string" ? (opts.templateSet as SheetRenderOptions["templateSet"]) : undefined,
+        // The layout picks the character page template; the model is the same.
+        layout: typeof opts.layout === "object" && opts.layout !== null ? (opts.layout as SheetRenderOptions["layout"]) : undefined,
         emphasizeAbilityModifiers: opts.emphasizeAbilityModifiers === true,
         includeAttackNotes: include?.attackNotes !== false,
         colours: typeof opts.colours === "object" && opts.colours !== null ? (opts.colours as SheetRenderOptions["colours"]) : undefined,

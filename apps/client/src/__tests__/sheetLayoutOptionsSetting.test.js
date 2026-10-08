@@ -3,6 +3,7 @@ import {
   DEFAULT_SHEET_LAYOUT_OPTIONS,
   SHEET_LAYOUT_OPTIONS_STORAGE_KEY,
   createSheetLayoutOptionsSettingStore,
+  effectiveSheetLayout,
   newItemCardOptions,
   readStoredSheetLayoutOptions,
   resolveSheetLayoutOptions,
@@ -57,12 +58,31 @@ describe('sheet layout options setting', () => {
     expect(readStoredSheetLayoutOptions(partial)).toEqual({ ...DEFAULT_SHEET_LAYOUT_OPTIONS, smartCards: true });
   });
 
-  it('keeps a split only when it is a usable value, else the layout default', () => {
-    expect(resolveSheetLayoutOptions({ split: 0.6 }).split).toBe(0.6);
-    expect(resolveSheetLayoutOptions({ split: 'wide' }).split).toBe('wide');
-    for (const split of [undefined, null, Number.NaN, Infinity, '', {}, true]) {
+  it('keeps split as an explicit on or off, else the layout default', () => {
+    expect(resolveSheetLayoutOptions({ split: true }).split).toBe(true);
+    expect(resolveSheetLayoutOptions({ split: false }).split).toBe(false);
+    for (const split of [undefined, null, Number.NaN, Infinity, '', {}, 0.6, 'wide', 'true']) {
       expect(resolveSheetLayoutOptions({ split }).split).toBeNull();
     }
+  });
+
+  it('stores a split override and returns to the layout default', () => {
+    const storage = memoryStorage();
+    const store = createSheetLayoutOptionsSettingStore({ storage });
+    store.set({ split: false });
+    expect(store.getSnapshot().split).toBe(false);
+    expect(JSON.parse(storage.map.get(SHEET_LAYOUT_OPTIONS_STORAGE_KEY)).split).toBe(false);
+    store.set({ split: null });
+    expect(store.getSnapshot().split).toBeNull();
+  });
+
+  it('splits the feature boxes by default only on the layout that always has', () => {
+    expect(effectiveSheetLayout('2014', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: false, split: false, readable: false });
+    expect(effectiveSheetLayout('2024', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: false, split: false, readable: false });
+    expect(effectiveSheetLayout('2024-hybrid', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: false, split: true, readable: false });
+    expect(effectiveSheetLayout('2014', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, split: true }).split).toBe(true);
+    expect(effectiveSheetLayout('2024-hybrid', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, split: false }).split).toBe(false);
+    expect(effectiveSheetLayout('2014', undefined)).toEqual({ top: false, split: false, readable: false });
   });
 
   it('stores valid changes, notifying once per real change', () => {
