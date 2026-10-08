@@ -62,6 +62,8 @@ describe("detail DTO (pinned contract)", () => {
       experience: 0,
       armorClass: 10,
       initiative: 0,
+      initiativeAdvantage: false,
+      initiativeAdvantageSources: [],
       speed: 0,
       proficiency: 2,
       loadWarning: null,

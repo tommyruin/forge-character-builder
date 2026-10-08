@@ -402,6 +402,14 @@ describe("writing the compact top row", () => {
     expect(bare.ticked("details_shield_equipped")).toBe(false);
   });
 
+  it.each([["2014", {}], ["2024", {}]] as const)("ticks the initiative advantage circle on the %s base page only when the value is true", async (set, layout) => {
+    const page = await render(set, layout, model({ details_initiative_advantage: "true" }));
+    expect(page.form.getField("details_initiative_advantage")).toBeInstanceOf(PDFCheckBox);
+    expect(page.ticked("details_initiative_advantage")).toBe(true);
+    const bare = await render(set, layout, model({ details_initiative_advantage: "" }));
+    expect(bare.ticked("details_initiative_advantage")).toBe(false);
+  });
+
   it.each(TOP_PAGES.filter(([set]) => set !== "2014"))("prints the identity in its own labelled fields on %s %j", async (set, layout) => {
     const page = await render(set, layout, model());
     expect(page.rect("details_build")).toBeUndefined();

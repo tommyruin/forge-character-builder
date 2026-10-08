@@ -248,6 +248,24 @@ const BAKED_ASI: Record<string, string> = {
   ID_INTERNAL_ASI_CHARISMA: "charisma",
 };
 
+/** The rule-less marker content grants for advantage on initiative rolls. */
+export const INITIATIVE_ADVANTAGE_MARKER = "ID_INTERNAL_GRANTS_INITIATIVE_ADVANTAGE";
+
+/** Magic items that give advantage on initiative only in their description
+ * text, with no marker grant. Each counts as granting the marker while the
+ * item conveys its benefits (equipped, and attuned when it requires
+ * attunement). An artificer's infusion feature is only the ability to make
+ * the helm, so only the helm itself is listed. */
+const TEXT_ONLY_INITIATIVE_ADVANTAGE: ReadonlySet<string> = new Set([
+  "ID_WOTC_GGTR_MAGIC_ITEM_PEREGRINE_MASK",
+  "ID_WOTC_TCOE_MAGIC_ITEM_HELM_OF_AWARENESS",
+  "ID_WOTC_UA20200224_MAGIC_ITEM_HELM_OF_AWARENESS",
+  "ID_WOTC_FTOD_MAGIC_ITEM_SLUMBERING_DRAGON_TOUCHED_FOCUS",
+  "ID_WOTC_FTOD_MAGIC_ITEM_STIRRING_DRAGON_TOUCHED_FOCUS",
+  "ID_WOTC_FTOD_MAGIC_ITEM_WAKENED_DRAGON_TOUCHED_FOCUS",
+  "ID_WOTC_FTOD_MAGIC_ITEM_ASCENDANT_DRAGON_TOUCHED_FOCUS",
+]);
+
 interface ClassLevel {
   id: string;
   slug: string;
@@ -565,9 +583,20 @@ function ruleSources(
   state: CharacterState,
   library: ElementLibrary,
   appliedKeys: Set<string>,
-): { rules: RuleSource[]; validRegistered: Set<string> } {
+): { rules: RuleSource[]; validRegistered: Set<string>; initiativeAdvantage: ElementSource[] } {
   const rules: RuleSource[] = [];
   const seen = new Set<string>();
+  // The active elements that grant advantage on initiative, recorded as each
+  // one passes its own gates (item activity, requirements, grant levels): the
+  // marker's own registration outlives an unequipped item or a replaced
+  // feature, so it is never evidence on its own.
+  const initiativeAdvantage = new Map<string, ElementSource>();
+  const grantsInitiativeAdvantage = (element: ParsedElement): void => {
+    const id = element.identity.id;
+    if (initiativeAdvantage.has(id)) return;
+    const alt = element.sheets[0]?.alt ?? "";
+    initiativeAdvantage.set(id, { id, name: alt !== "" ? alt : element.identity.name });
+  };
   const contexts = treeClassContexts(state);
   const valid = validTreeIds(state, library);
   // Element-level requirements re-evaluate against the valid registered set.
@@ -613,6 +642,7 @@ function ruleSources(
     if (resolved.element.requirements !== undefined && !evaluateRequirements(resolved.element.requirements, ctxWithValid)) {
       return;
     }
+    if (TEXT_ONLY_INITIATIVE_ADVANTAGE.has(id)) grantsInitiativeAdvantage(resolved.element);
     const bakedStats = ENGINE_BAKED_STAT_ELEMENTS.has(id);
     for (const rule of resolved.element.rules) {
       if (rule.kind === "stat") {
@@ -624,9 +654,11 @@ function ruleSources(
         if (rule.level !== undefined && rule.level > classLevel) continue;
         if (rule.requirements !== undefined && !evaluateRequirements(rule.requirements, ctxWithValid)) continue;
         if (rule.id !== undefined) {
+          if (rule.id === INITIATIVE_ADVANTAGE_MARKER) grantsInitiativeAdvantage(resolved.element);
           collect(rule.id, classLevel, false);
         } else if (rule.type !== undefined) {
           const byType = (library.byType.get(rule.type) ?? []).find((e) => rule.name === undefined || e.identity.name === rule.name);
+          if (byType?.identity.id === INITIATIVE_ADVANTAGE_MARKER) grantsInitiativeAdvantage(resolved.element);
           if (byType) collect(byType.identity.id, classLevel, false);
         }
       }
@@ -674,7 +706,25 @@ function ruleSources(
       collect(activeId, characterLevel, allowsDuplicate(library.byId.get(activeId), activeId));
     }
   }
-  return { rules, validRegistered };
+  return { rules, validRegistered, initiativeAdvantage: [...initiativeAdvantage.values()] };
+}
+
+/** An element named for display (its sheet title, else its name). */
+export interface ElementSource {
+  id: string;
+  name: string;
+}
+
+/**
+ * The active elements that give advantage on initiative rolls: those that
+ * grant the initiative advantage marker, and the magic items that say so only
+ * in their text. Each counts only while the calculator would apply its rules
+ * (an item conveying its benefits, a feature whose level is reached and whose
+ * requirements hold, so a replaced feature does not count). In collection
+ * order, each element once.
+ */
+export function initiativeAdvantageSources(state: CharacterState, library: ElementLibrary): ElementSource[] {
+  return ruleSources(state, library, new Set()).initiativeAdvantage;
 }
 
 /** The engine's fixed key vocabulary (all keys present on a fresh character). */

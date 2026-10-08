@@ -2836,9 +2836,9 @@
    },
    {
     "text": "SHIELD",
-    "x": 318.3394,
+    "x": 316.785,
     "y": 697.8,
-    "size": 4.2,
+    "size": 5,
     "font": "captions",
     "color": "text"
    },
@@ -3506,7 +3506,7 @@
     "text": "STEALTH DISADV.",
     "x": 42,
     "y": 179,
-    "size": 4.6,
+    "size": 5,
     "font": "captions",
     "color": "text"
    },
@@ -3751,9 +3751,9 @@
    },
    {
     "text": "SHIELD",
-    "x": 318.3394,
+    "x": 316.785,
     "y": 697.8,
-    "size": 4.2,
+    "size": 5,
     "font": "captions",
     "color": "text"
    },
@@ -4421,7 +4421,7 @@
     "text": "STEALTH DISADV.",
     "x": 42,
     "y": 179,
-    "size": 4.6,
+    "size": 5,
     "font": "captions",
     "color": "text"
    },
@@ -4624,11 +4624,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 393,
-    "y": 750,
-    "size": 3.402445507708666,
+    "x": 359,
+    "y": 729.5,
+    "size": 5,
     "font": "captions",
-    "color": "lines"
+    "color": "lines",
+    "align": "right",
+    "width": 58.5
    },
    {
     "text": "ARMOR CLASS",
@@ -4644,7 +4646,7 @@
     "text": "SHIELD",
     "x": 436,
     "y": 699,
-    "size": 3.4,
+    "size": 5,
     "font": "captions",
     "color": "text",
     "align": "center",
@@ -5471,11 +5473,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 393,
-    "y": 750,
-    "size": 3.402445507708666,
+    "x": 359,
+    "y": 729.5,
+    "size": 5,
     "font": "captions",
-    "color": "lines"
+    "color": "lines",
+    "align": "right",
+    "width": 58.5
    },
    {
     "text": "ARMOR CLASS",
@@ -5491,7 +5495,7 @@
     "text": "SHIELD",
     "x": 436,
     "y": 699,
-    "size": 3.4,
+    "size": 5,
     "font": "captions",
     "color": "text",
     "align": "center",
@@ -6318,11 +6322,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 253.142,
-    "y": 750,
-    "size": 3.6,
+    "x": 217,
+    "y": 729.5,
+    "size": 5,
     "font": "captions",
-    "color": "lines"
+    "color": "lines",
+    "align": "right",
+    "width": 62.5
    },
    {
     "text": "ARMOR CLASS",
@@ -6336,9 +6342,9 @@
    },
    {
     "text": "SHIELD",
-    "x": 318.3394,
+    "x": 316.785,
     "y": 697.8,
-    "size": 4.2,
+    "size": 5,
     "font": "captions",
     "color": "text"
    },
@@ -7231,11 +7237,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 253.142,
-    "y": 750,
-    "size": 3.6,
+    "x": 217,
+    "y": 729.5,
+    "size": 5,
     "font": "captions",
-    "color": "lines"
+    "color": "lines",
+    "align": "right",
+    "width": 62.5
    },
    {
     "text": "ARMOR CLASS",
@@ -7249,9 +7257,9 @@
    },
    {
     "text": "SHIELD",
-    "x": 318.3394,
+    "x": 316.785,
     "y": 697.8,
-    "size": 4.2,
+    "size": 5,
     "font": "captions",
     "color": "text"
    },

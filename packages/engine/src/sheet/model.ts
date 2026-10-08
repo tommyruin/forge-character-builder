@@ -16,7 +16,13 @@ import { mergeSheetSpellcasters } from "./spell-groups.js";
 import type { CharacterState } from "../character/state.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { ParsedElement, ParsedSheetEntry, SheetDescription } from "../content/parser.js";
-import { computeInlineValues, computeStatistics, elementRequirementContext, type StatisticsValues } from "../statistics/calculator.js";
+import {
+  computeInlineValues,
+  computeStatistics,
+  elementRequirementContext,
+  initiativeAdvantageSources,
+  type StatisticsValues,
+} from "../statistics/calculator.js";
 import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
 import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type InventoryItemDto } from "../inventory/inventory.js";
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
@@ -522,6 +528,9 @@ function buildFormValues(
   // is the importing player's note and outlives what the engine can derive.
   set("details_resistances", [...defenceLines(state, library, values, inline), ...state.conditional].join("\n"));
   set("details_initiative", signed(values.initiative ?? 0));
+  // The advantage circle beside initiative: ticked while any active feature
+  // or item gives advantage on initiative rolls.
+  set("details_initiative_advantage", initiativeAdvantageSources(state, library).length > 0 ? "true" : "");
   const attacksPerAction = Math.max(1, values["extra attack:count"] ?? 1);
   set("details_encounter_box", attacksPerAction <= 1 ? "" : `${attacksPerAction} Attacks / Attack Action`);
   set("details_coinage_cp", state.coins.copper);

@@ -9,7 +9,7 @@ import { randomUuid } from "../platform.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState, RegisteredElement } from "../character/state.js";
 import { evaluateRequirements } from "./expr.js";
-import { classLevelLookup, computeStatistics } from "../statistics/calculator.js";
+import { classLevelLookup, computeStatistics, initiativeAdvantageSources } from "../statistics/calculator.js";
 import {
   ENGINE_INTERNAL_ELEMENTS,
   allocatesAbilityScores,
@@ -78,6 +78,10 @@ export interface CharacterDetail {
   experience: number;
   armorClass: number;
   initiative: number;
+  /** True while any active feature or item gives advantage on initiative rolls. */
+  initiativeAdvantage: boolean;
+  /** The names of those features and items, for a tooltip. */
+  initiativeAdvantageSources: string[];
   speed: number;
   proficiency: number;
   gender: string;
@@ -400,6 +404,7 @@ export function buildCharacterDetail(
 ): CharacterDetail {
   const bonuses = abilityBonuses(state, library);
   const statistics = library ? computeStatistics(state, library) : null;
+  const advantageSources = library ? initiativeAdvantageSources(state, library).map((source) => source.name) : [];
   const abilities: AbilityDetail[] = ABILITIES.map(({ key, name, abbreviation }) => {
     const base = state.abilities[key as keyof CharacterState["abilities"]];
     const sources = bonuses.get(key) ?? [];
@@ -439,6 +444,8 @@ export function buildCharacterDetail(
     experience: state.experience,
     armorClass: statValue("ac", 10 + dexModifier),
     initiative: statValue("initiative", dexModifier),
+    initiativeAdvantage: advantageSources.length > 0,
+    initiativeAdvantageSources: advantageSources,
     speed: statValue("speed", 0),
     proficiency: statValue("proficiency", proficiencyBonus(state.level)),
     gender: state.gender,

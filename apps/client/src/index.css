@@ -2777,6 +2777,21 @@ button:disabled {
   font-weight: 850;
 }
 
+/* Advantage on initiative: a small tag inside the INIT pill. */
+.fcb-stat-pill-adv {
+  margin-left: -2px;
+  border: 1px solid color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  color: var(--fcb-text);
+  cursor: help;
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
 .fcb-builder-layout,
 .fcb-builder-grid,
 .fcb-two-panel-grid,

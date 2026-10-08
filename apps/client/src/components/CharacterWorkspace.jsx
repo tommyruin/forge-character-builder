@@ -31,6 +31,7 @@ import ContentLoadingProgress from "./ContentLoadingProgress";
 import Icon from './Icon';
 import SaveButton from "./SaveButton";
 import UndoButton from "./UndoButton";
+import WorkspaceStatPills from "./WorkspaceStatPills";
 import useAutosaveSetting from "../hooks/useAutosaveSetting";
 import useUnsavedChanges from "../hooks/useUnsavedChanges";
 import useUndoAvailable from "../hooks/useUndoAvailable";
@@ -739,19 +740,7 @@ export default function CharacterWorkspace({
           <div className="fcb-subbar-inner">
             <DesktopWorkspaceNavigation activeTab={tab} onSelect={selectTab} />
             {detail && (
-              <div className="fcb-subbar-stats">
-                {[
-                  ["HP", "Hit Points", statValue("hp")],
-                  ["AC", "Armor Class", detail.armorClass],
-                  ["INIT", "Initiative", detail.initiative],
-                  ["PROF", "Proficiency", detail.proficiency],
-                  ["SPEED", "Speed", detail.speed],
-                ].map(([label, full, value]) => (
-                  <span key={label} className="fcb-stat-pill" title={full}>
-                    <strong>{value ?? "—"}</strong> {label}
-                  </span>
-                ))}
-              </div>
+              <WorkspaceStatPills detail={detail} hp={statValue("hp")} />
             )}
           </div>
         </div>

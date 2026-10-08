@@ -2831,26 +2831,26 @@
     "width": 54
    },
    {
-    "text": "PROFICIENCY",
+    "text": "PROF.",
     "x": 101,
-    "y": 639.5,
-    "size": 3.2440640530093874,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "BONUS",
     "x": 101,
-    "y": 634.9,
-    "size": 3.2440640530093874,
+    "y": 633.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "INITIATIVE",
+    "text": "INIT.",
     "x": 155,
-    "y": 639.5,
-    "size": 3.6,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
@@ -3664,26 +3664,26 @@
     "width": 54
    },
    {
-    "text": "PROFICIENCY",
+    "text": "PROF.",
     "x": 101,
-    "y": 639.5,
-    "size": 3.2440640530093874,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "BONUS",
     "x": 101,
-    "y": 634.9,
-    "size": 3.2440640530093874,
+    "y": 633.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "INITIATIVE",
+    "text": "INIT.",
     "x": 155,
-    "y": 639.5,
-    "size": 3.6,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
@@ -6155,26 +6155,26 @@
     "width": 62
    },
    {
-    "text": "PROFICIENCY",
+    "text": "PROF.",
     "x": 101,
-    "y": 639.5,
-    "size": 3.2440640530093874,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "BONUS",
     "x": 101,
-    "y": 634.9,
-    "size": 3.2440640530093874,
+    "y": 633.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "INITIATIVE",
+    "text": "INIT.",
     "x": 155,
-    "y": 639.5,
-    "size": 3.6,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
@@ -6988,26 +6988,26 @@
     "width": 62
    },
    {
-    "text": "PROFICIENCY",
+    "text": "PROF.",
     "x": 101,
-    "y": 639.5,
-    "size": 3.2440640530093874,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "BONUS",
     "x": 101,
-    "y": 634.9,
-    "size": 3.2440640530093874,
+    "y": 633.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "INITIATIVE",
+    "text": "INIT.",
     "x": 155,
-    "y": 639.5,
-    "size": 3.6,
+    "y": 639.1,
+    "size": 5.5,
     "font": "captions",
     "color": "text"
    },

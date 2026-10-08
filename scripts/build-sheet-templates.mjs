@@ -543,7 +543,9 @@ function hitPointBox(s, prefix, x, y, width, height, { splitDice = false, readab
 
 /**
  * A half-width pill: its caption on one or two lines at the left, the value
- * in a roundel at the right. The compact 2014 column pairs two of them.
+ * in a roundel at the right. The compact 2014 column pairs two of them. The
+ * captions are short so they print at 5.5pt: every pill's first line shares
+ * one baseline, and a second line sits a line's height beneath it.
  */
 function roundelPill(s, name, lines, x, y, width) {
   s.pill(x, y, width, 24);
@@ -551,8 +553,8 @@ function roundelPill(s, name, lines, x, y, width) {
   s.circle(cx, y + 12, 9, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
   s.text(name, cx - 12, y + 5, 24, 14, { align: "center", size: 10, box: "none" });
   const room = cx - 9 - 1.5 - (x + 5);
-  const size = Math.min(3.6, ...lines.map((line) => room / s.textWidth(line, "caption", 1)));
-  lines.forEach((line, index) => s.label(line, x + 5, y + (lines.length === 1 ? 13.5 : 13.5 - index * 4.6), { size }));
+  const size = Math.min(5.5, ...lines.map((line) => room / s.textWidth(line, "caption", 1)));
+  lines.forEach((line, index) => s.label(line, x + 5, y + 13.1 - index * 6, { size }));
 }
 
 /**
@@ -612,8 +614,8 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   // Column B: proficiency bonus, saving throws, skills, passive perception, initiative.
   if (layout.top) {
     // Compact: proficiency bonus and initiative in two pills side by side.
-    roundelPill(s, "details_proficiency_bonus", ["PROFICIENCY", "BONUS"], 96, 626, 51);
-    roundelPill(s, "details_initiative", ["INITIATIVE"], 150, 626, 51);
+    roundelPill(s, "details_proficiency_bonus", ["PROF.", "BONUS"], 96, 626, 51);
+    roundelPill(s, "details_initiative", ["INIT."], 150, 626, 51);
     s.check("details_initiative_advantage", 158, 629.5, 5.5);
     s.label("ADV.", 165, 630.5, { size: 3.4, color: "lines" });
   } else {
@@ -825,7 +827,7 @@ function readableHeader2024(s, edition, style) {
   armorBeside2024(s, 354, 696, 76, 64);
   s.shield("details_armor_class", "ARMOR CLASS", 436, 762, 46, 46);
   s.text("details_equipped_shield", 436, 705, 46, 9, { align: "center", size: 5, box: "none" });
-  s.label("SHIELD", 436, 699, { size: 3.4, align: "center", width: 46 });
+  s.label("SHIELD", 436, 699, { size: 5, align: "center", width: 46 });
 
   const hp = s.section("HIT POINTS", 488, 700, 98, 60, { style: "plate", at: "top", size: 5.8 });
   s.text("details_hp_current", hp.x + 2, hp.y + 8, 44, 26, { align: "center", size: 20, box: "none" });
@@ -839,19 +841,19 @@ function readableHeader2024(s, edition, style) {
 
 /**
  * The readable pages' armor frame, drawn right beside the AC shield: the
- * armor worn, the stealth mark and the armor class notes beneath them.
+ * armor worn, the stealth mark on a line of its own beneath it, and the armor
+ * class notes below. The stealth mark ends its line, nearest the shield, with
+ * its 5pt caption right-aligned against it in whichever face is chosen.
  */
 function armorBeside2024(s, x, y, width, height) {
   const top = y + height;
   s.frame(x, y, width, height);
   s.label("ARMOR", x + 5, top - 10, { size: 4.2, color: "lines" });
-  // The stealth mark shares the caption's line, at its right.
-  const stealthSize = Math.min(3.6, (width - 44) / s.textWidth("STEALTH DISADV.", "caption", 1));
-  const stealthX = x + width - 5 - s.textWidth("STEALTH DISADV.", "caption", stealthSize);
-  s.check("details_armor_stealth_disadvantage", stealthX - 7.5, top - 11.5, 5.5);
-  s.label("STEALTH DISADV.", stealthX, top - 10, { size: stealthSize, color: "lines" });
   s.text("details_equipped_armor", x + 5, top - 23, width - 10, 9, { size: 6.5 });
-  s.text("details_armor_conditional", x + 4, y + 4, width - 8, height - 32, { multiline: true, size: 6, box: "none" });
+  const checkX = x + width - 5 - 5.5;
+  s.check("details_armor_stealth_disadvantage", checkX, top - 31.5, 5.5);
+  s.label("STEALTH DISADV.", x + 5, top - 30.5, { size: 5, color: "lines", align: "right", width: checkX - 2 - (x + 5) });
+  s.text("details_armor_conditional", x + 4, y + 4, width - 8, height - 38, { multiline: true, size: 6, box: "none" });
 }
 
 /** The 2024 page's row of vitals under the identity: proficiency to heroic inspiration. */
@@ -953,10 +955,10 @@ function compactHeader2024(s, edition, layout) {
   const rowY = 690;
   const rowH = 70;
   s.shield("details_armor_class", "ARMOR CLASS", 298, 762, 48, 50);
-  const shieldW = 7 + 2 + s.textWidth("SHIELD", "caption", 4.2);
+  const shieldW = 7 + 2 + s.textWidth("SHIELD", "caption", 5);
   const shieldX = 296 + (52 - shieldW) / 2;
   s.check("details_shield_equipped", shieldX, 696, 7);
-  s.label("SHIELD", shieldX + 9, 697.8, { size: 4.2 });
+  s.label("SHIELD", shieldX + 9, 697.8, { size: 5 });
 
   const hp = plateSection(s, "HIT POINTS", 354, rowY, 108, rowH);
   s.text("details_hp_current", hp.x + 2, hp.y + 10, 48, 26, { align: "center", size: 20, box: "none" });
@@ -1191,7 +1193,8 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   s.text("details_equipped_armor", inner.x + 3, inner.y + 14, 91, 10, { size: 6.5 });
   s.text("details_armor_conditional", inner.x + 100, inner.y + 2, 124, 27, { size: 6, multiline: true, box: "none" });
   s.check("details_armor_stealth_disadvantage", inner.x + 3, inner.y + 3, 6);
-  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 4, { size: 3.4 });
+  // The compact top row's page sets the stealth caption at a readable 5pt.
+  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 4, { size: layout.top ? 5 : 3.4 });
   s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 60, 236, armorTop - 46 - 8 - 60);
 
   // The right-hand area.
@@ -1297,7 +1300,8 @@ async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   inner = s.section("ARMOR", 26, 172, lw, 50);
   s.text("details_equipped_armor", inner.x + 3, inner.y + 15, 86, 10, { size: 7 });
   s.check("details_armor_stealth_disadvantage", inner.x + 3, inner.y + 2, 6);
-  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 3, { size: 4.6 });
+  // The compact top row's page sets the stealth caption at a readable 5pt.
+  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 3, { size: layout.top ? 5 : 4.6 });
   s.text("details_armor_conditional", inner.x + 94, inner.y + 1, inner.width - 97, inner.height - 1, { multiline: true, size: 6, box: "none" });
   s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 60, lw, 104);
 

@@ -2,15 +2,21 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { PDFCheckBox, PDFDocument } from "pdf-lib";
+import { PDFCheckBox, PDFDocument, type PDFFont } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import { templateFontSize } from "./pdf.js";
+import { sheetFaces } from "./templates.js";
 import {
+  DEFAULT_SHEET_FONTS,
+  SHEET_FONT_FACES,
+  SHEET_FONT_FACE_NAMES,
   SHEET_LAYOUT_DEFAULTS,
   SHEET_TEMPLATE_CONTRACT,
   SHEET_TEMPLATE_SETS,
   resolveSheetLayout,
   sheetDetailsFile,
   sheetLayoutVariants,
+  type SheetLabel,
   type SheetTemplateLabels,
   type SheetTemplateSet,
 } from "./template-contract.js";
@@ -379,7 +385,7 @@ describe("the readable body", () => {
     const page = await fieldsOf(set, file);
     const ac = page.rect("details_armor_class");
     // Left of the shield and close to it, within the shield's own band; the
-    // stealth mark ends its frame's caption line.
+    // stealth mark ends its own line under the armor.
     for (const [name, gap] of [["details_equipped_armor", 20], ["details_armor_conditional", 20], ["details_armor_stealth_disadvantage", 60]] as const) {
       const box = page.rect(name);
       expect(right(box), name).toBeLessThanOrEqual(ac.x + 0.5);
@@ -470,6 +476,129 @@ describe("the readable body", () => {
     expect(notes.height).toBeGreaterThanOrEqual(8);
     expect(top(page.rect("details_acrobatics_total"))).toBeLessThan(notes.y - 10);
   });
+});
+
+/**
+ * Every face a reader may pick for captions, embedded for measuring. The
+ * writer draws a caption at the size labels.json gives it in whichever of
+ * these is chosen, and never shrinks it to fit.
+ */
+let captionFacesPromise: Promise<Array<{ name: string; font: PDFFont }>> | undefined;
+function captionFaces() {
+  captionFacesPromise ??= (async () => {
+    const document = await PDFDocument.create();
+    document.registerFontkit(fontkit);
+    const read = (file: string) => readFileSync(join(SHEETS, SHEET_TEMPLATE_CONTRACT.fontsDirectory, file));
+    const names = SHEET_FONT_FACE_NAMES.filter((name) => (SHEET_FONT_FACES[name].roles as readonly string[]).includes("captions"));
+    return Promise.all(names.map(async (name) => {
+      const source = sheetFaces({ ...DEFAULT_SHEET_FONTS, captions: name }, read).captions;
+      return { name, font: await document.embedFont("standard" in source ? source.standard : source.bytes) };
+    }));
+  })();
+  return captionFacesPromise;
+}
+
+type Box = { x: number; y: number; width: number; height: number };
+/** The ink of an all-capitals caption in `font`: its measured width, from the baseline to a generous cap height. */
+function inkOf(label: SheetLabel, font: PDFFont): Box {
+  const width = font.widthOfTextAtSize(label.text, label.size);
+  const x = label.align === "center" ? label.x + ((label.width ?? 0) - width) / 2
+    : label.align === "right" ? label.x + (label.width ?? 0) - width
+      : label.x;
+  return { x, y: label.y, width, height: label.size * 0.75 };
+}
+const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+
+/**
+ * Fails unless `label` is at least 5pt and, in every caption face, lies inside
+ * `box` and clear of every field and every other caption on the page.
+ */
+async function expectReadableCaption(set: SheetTemplateSet, file: string, label: SheetLabel, box: Box) {
+  const where = `${set}/${file} "${label.text}"`;
+  expect(label.size, where).toBeGreaterThanOrEqual(5);
+  const page = await fieldsOf(set, file);
+  const widgets = page.form.getFields().flatMap((field) => field.acroField.getWidgets().map((widget) => ({ name: field.getName(), rect: widget.getRectangle() })));
+  const others = loadLabels(set)[file]!.labels.filter((other) => other.font === "captions" && !(other.text === label.text && other.x === label.x && other.y === label.y));
+  for (const { name, font } of await captionFaces()) {
+    const ink = inkOf(label, font);
+    const at = `${where} in ${name}`;
+    expect(ink.x, at).toBeGreaterThanOrEqual(box.x);
+    expect(ink.x + ink.width, at).toBeLessThanOrEqual(box.x + box.width);
+    expect(ink.y, at).toBeGreaterThanOrEqual(box.y);
+    expect(ink.y + ink.height, at).toBeLessThanOrEqual(box.y + box.height);
+    expect(widgets.filter((widget) => overlaps(ink, widget.rect)).map((widget) => widget.name), at).toEqual([]);
+    expect(others.filter((other) => overlaps(ink, inkOf(other, font))).map((other) => other.text), at).toEqual([]);
+  }
+}
+const loadLabels = (set: SheetTemplateSet) =>
+  JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
+
+describe("the small captions on the optional pages", () => {
+  // The compact 2014 column pairs the proficiency bonus and initiative in two
+  // 51 x 24 pills, each ending in a roundel (radius 9) centred on its value's
+  // 24pt-wide field. A caption sits between the pill's rounded left end and
+  // the roundel.
+  const TOP_2014 = DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("~top"));
+  it.each(TOP_2014)("prints the proficiency bonus and initiative captions at 5pt or more inside their pills on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const labels = loadLabels(set)[file]!.labels;
+    for (const name of ["details_proficiency_bonus", "details_initiative"]) {
+      const value = page.rect(name);
+      const roundelLeft = value.x + 12 - 9;
+      const pill = { x: value.x + 24 - 51, y: value.y - 5, width: 51, height: 24 };
+      // The pill's own captions: every caption in it but the advantage mark's.
+      const captions = labels.filter((label) => label.font === "captions" && label.text !== "ADV." &&
+        label.x >= pill.x && label.x < pill.x + pill.width && label.y >= pill.y && label.y < pill.y + pill.height);
+      expect(captions.length, name).toBeGreaterThan(0);
+      for (const caption of captions) {
+        await expectReadableCaption(set, file, caption, { x: pill.x + 4.5, y: pill.y + 3, width: roundelLeft - 1 - (pill.x + 4.5), height: pill.height - 6 });
+      }
+    }
+    // Slow under the coverage pass: every caption face is measured.
+  }, 30_000);
+
+  const SMALL_2024 = DETAILS_PAGES.filter(([set, file]) => set !== "2014" && (file.includes("~top") || file.includes("readable")));
+  it("covers every 2024 and Hybrid page with the compact top row or the readable body", () => {
+    expect(SMALL_2024).toHaveLength(12);
+  });
+
+  // The stealth mark's caption reads on the mark's line, right beside it,
+  // inside the armor's frame.
+  it.each(SMALL_2024)("prints the stealth caption at 5pt or more beside its mark on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const captions = loadLabels(set)[file]!.labels.filter((label) => label.text === "STEALTH DISADV.");
+    expect(captions).toHaveLength(1);
+    const check = page.rect("details_armor_stealth_disadvantage");
+    const armor = page.rect("details_equipped_armor");
+    const frameLeft = Math.min(armor.x, check.x);
+    const frameRight = Math.max(right(armor), right(page.rect("details_armor_conditional")));
+    await expectReadableCaption(set, file, captions[0]!, { x: frameLeft, y: check.y - 1, width: frameRight - frameLeft, height: check.height + 2 });
+    for (const { name, font } of await captionFaces()) {
+      const ink = inkOf(captions[0]!, font);
+      const gap = ink.x >= right(check) ? ink.x - right(check) : check.x - (ink.x + ink.width);
+      expect(gap, `${set}/${file} in ${name}`).toBeLessThanOrEqual(4);
+    }
+  }, 30_000);
+
+  // The shield caption: beside its tick box under the AC shield on the compact
+  // top row; centred under the shield's name field, above the vitals row,
+  // on the readable header.
+  it.each(SMALL_2024)("prints the shield caption at 5pt or more by the armor class on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const captions = loadLabels(set)[file]!.labels.filter((label) => label.text === "SHIELD");
+    expect(captions).toHaveLength(1);
+    const ac = page.rect("details_armor_class");
+    if (file.includes("~top")) {
+      const check = page.rect("details_shield_equipped");
+      // The AC shield's art is 2pt wider each side than its value's field.
+      await expectReadableCaption(set, file, captions[0]!, { x: right(check), y: check.y - 1, width: right(ac) + 2 - right(check), height: check.height + 2 });
+    } else {
+      const name = page.rect("details_equipped_shield");
+      // The vitals row's frames stand 4pt above their values' fields.
+      const vitalsTop = top(page.rect("details_proficiency_bonus")) + 4;
+      await expectReadableCaption(set, file, captions[0]!, { x: name.x, y: vitalsTop, width: name.width, height: name.y - vitalsTop });
+    }
+  }, 30_000);
 });
 
 describe("templateFontSize", () => {
