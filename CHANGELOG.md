@@ -6,6 +6,53 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A 2024 Hybrid character sheet: the 2024 page with 2014-style ability, save
+  and skill columns and separate Class Features, Subclass Features and Feats
+  boxes.
+- Optional sheet layouts in Sheet settings: split feature boxes, a compact top
+  row (AC, Hit Points, Hit Dice with Max and Spent, and Death Saves side by
+  side, with a shield tick box) and a readable body with larger captions and
+  more room for features. The 2014 readable layout prints six attack rows.
+- Each inventory item has Card and Sheet notes buttons, with bulk "magic &
+  useful only" and "none" actions. An optional setting prints magic items in
+  full and short tool and gear notes in the inventory column.
+- The equipment list shows price, type and rarity, bolds items you are
+  proficient with, and filters by type, rarity, proficiency and maximum price.
+- Martial Arts adds an Unarmed Strike to a monk's attacks, including when it
+  comes from a DM grant.
+- Initiative advantage from features and items such as Feral Instinct,
+  Remarkable Athlete, Assassinate and a Sentinel Shield ticks the sheet's
+  advantage circle and shows ADV in the app.
+
+### Changed
+
+- Spells from feats such as Magic Initiate print in the class spell list,
+  labelled with the feat and any free casts.
+- The sheet notes attacks per Attack action only when there is more than one.
+- Helvetica and Alegreya Sans can be chosen for sheet titles.
+- Hit Points, Armor Class, Initiative, Proficiency and Speed show as a compact
+  row on phones.
+
+### Fixed
+
+- Class-level requirements are checked, so 2024 invocations such as Eldritch
+  Spear and Agonizing Blast print their values and apply their rules.
+- A feature that is replaced by another, such as the base Wild Shape for a
+  Circle of the Moon druid, is no longer printed beside its replacement.
+  Feature text follows the level in that class.
+- The 2024 Shield and other mundane armor are added as themselves. A magic item
+  that still needs its base item grants nothing until it has one.
+- The attack editor won't add a second Unarmed Strike, and its tabs wrap on
+  phones.
+- Unpacked pack armor is worn and its shield held when those slots are free.
+- Co-written official books are listed with the other official books in
+  Sources. Turning a book off removes choices and spells from it and lists them.
+- A 2024 Bard can swap an earlier spell for one of any level they can cast.
+- Magic items without a listed price show "Not listed".
+- The Divine Oracle trait raises Intelligence or Wisdom and its maximum by 2.
+
 ## [2.4.0] - 2026-09-25
 
 ### Added
