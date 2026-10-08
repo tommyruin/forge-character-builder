@@ -1285,18 +1285,33 @@ describe("character sheet PDF writer", () => {
     expect(Number(repaint![2])).toBeGreaterThanOrEqual(left + width);
   }, 60_000);
 
-  it("bakes every provided form value into the flattened bundle output", async () => {
+  // The model carries values for every layout's fields; each page prints the
+  // ones its template has. A value whose field is on another layout only (the
+  // compact top row's separate species, class and level) is checked where it
+  // has a field, never passed by finding the same text in a neighbour.
+  it.each([
+    ["2014", {}],
+    ["2024", { top: true }],
+  ] as const)("bakes every provided form value into the flattened bundle output (%s %j)", async (set, layout) => {
     const library = await libraryPromise;
     const state = buildRogue5(library, "value-bake").state;
     const model = buildCharacterSheetModel(state, library, { mode: "lite" });
+    const bundle = localTemplateBundle(set, DEFAULT_SHEET_FONTS, layout);
+    const templateFields = new Set<string>();
+    for (const template of [bundle.details, bundle.background, bundle.equipment]) {
+      for (const field of (await PDFDocument.load(template)).getForm().getFields()) templateFields.add(field.getName());
+    }
     const formValues = Object.fromEntries(
       Object.entries(model.formValues ?? {}).filter(
-        ([key, value]) => value !== "" && /^(details|background|equipment_page)_/.test(key),
+        ([key, value]) => value !== "" && /^(details|background|equipment_page)_/.test(key) && templateFields.has(key),
       ),
     );
     expect(Object.keys(formValues).length).toBeGreaterThan(20);
+    if (set === "2024") {
+      for (const key of ["details_species", "details_class"]) expect(formValues, key).toHaveProperty(key);
+    }
 
-    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
     const browserPdf = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
     const contents = await Promise.all(Array.from({ length: browserPdf.numPages }, async (_, index) => {
       const content = await (await browserPdf.getPage(index + 1)).getTextContent();

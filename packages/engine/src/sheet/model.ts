@@ -465,6 +465,10 @@ function buildFormValues(
 
   const classBuildLabel = classDisplayWithArchetypes(state, library);
   set("details_build", `Level ${state.level}${state.race === "" ? "" : ` ${state.race}`}${classBuildLabel === "" ? "" : ` ${classBuildLabel}`}`);
+  // The compact top row prints the same identity as separate fields.
+  set("details_species", state.race);
+  set("details_class", classBuildLabel);
+  set("details_level", state.level);
   set("details_xp", state.experience);
   set("details_character_name", state.name);
   set("details_background", state.background);
@@ -576,6 +580,8 @@ function buildFormValues(
     equippedArmor?.name ?? `${unarmoredAlt(state, library) ?? "Unarmored"} (${values["ac:calculation"] ?? 0})`,
   );
   set("details_equipped_shield", equippedShield?.name ?? "");
+  // The compact top row ticks a box for the shield instead of naming it.
+  set("details_shield_equipped", equippedShield === undefined ? "" : "true");
   // Bonus-AC sources outside the base calculation (a held Staff of Power, a
   // ring of protection) list beneath the shield box with their contribution.
   set("details_armor_conditional", acContributionLines(state, library, values).join("\n"));

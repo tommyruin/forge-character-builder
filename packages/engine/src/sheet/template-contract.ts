@@ -33,7 +33,12 @@ export function isSheetTemplateSet(value: unknown): value is SheetTemplateSet {
  * and its bytes, so the default layout prints exactly what it always has. The
  * set's `labels.json` carries every variant's text under its file name.
  *
- *  - `top`: a compact top row (no variant yet).
+ *  - `top`: a compact top row. On the 2024 pages armor class, hit points,
+ *    hit dice (maximum and spent) and death saves share one row, the vitals
+ *    are smaller, speed lists each movement mode, a shield is a tick box and
+ *    the identity is separate species, class, level, background and XP
+ *    fields. On the 2014 page initiative sits beside the proficiency bonus
+ *    and the hit dice split into maximum and spent.
  *  - `split`: separate boxes for class features, subclass features and feats.
  *  - `readable`: a more readable body (no variant yet).
  */
@@ -52,10 +57,13 @@ export const SHEET_LAYOUT_DEFAULTS: Readonly<Record<SheetTemplateSet, Readonly<S
 };
 
 /**
- * The switches with variant pages. A switch outside this list prints the set's
- * own page whatever it is set to, so no variant is ever a copy of another.
+ * The switches with variant pages, in the order they shipped. A switch outside
+ * this list prints the set's own page whatever it is set to, so no variant is
+ * ever a copy of another. The order only decides the order variants are
+ * generated in, which keeps each set's labels.json growing at its end; file
+ * names always follow `SHEET_LAYOUT_FLAGS`.
  */
-export const SHEET_IMPLEMENTED_LAYOUT_FLAGS: readonly SheetLayoutFlag[] = ["split"];
+export const SHEET_IMPLEMENTED_LAYOUT_FLAGS: readonly SheetLayoutFlag[] = ["split", "top"];
 
 /** Separates a variant's switches from the character page's base name. */
 const LAYOUT_VARIANT_SEPARATOR = "~";
@@ -91,11 +99,15 @@ export function sheetDetailsFile(
   return base.replace(/\.pdf$/, `${LAYOUT_VARIANT_SEPARATOR}${tokens.join(".")}.pdf`);
 }
 
-/** Every variant page `set` ships: one per combination of implemented switches away from its defaults. */
+/**
+ * Every variant page `set` ships: one per combination of implemented switches
+ * away from its defaults, in shipping order — every combination of the
+ * earlier switches before any that adds a later one.
+ */
 export function sheetLayoutVariants(set: SheetTemplateSet): Array<{ file: string; layout: SheetLayout }> {
   const defaults = SHEET_LAYOUT_DEFAULTS[set];
   const variants: Array<{ file: string; layout: SheetLayout }> = [];
-  const flags = SHEET_LAYOUT_FLAGS.filter((flag) => SHEET_IMPLEMENTED_LAYOUT_FLAGS.includes(flag));
+  const flags = SHEET_IMPLEMENTED_LAYOUT_FLAGS.filter((flag) => SHEET_LAYOUT_FLAGS.includes(flag));
   for (let mask = 1; mask < 1 << flags.length; mask += 1) {
     const layout: SheetLayout = { ...defaults };
     flags.forEach((flag, index) => {

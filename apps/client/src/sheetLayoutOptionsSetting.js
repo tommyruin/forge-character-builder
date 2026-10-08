@@ -3,7 +3,11 @@
 // alongside the template set, colours and pages; renaming the key silently
 // resets the choices for everyone who made them.
 //
-//  - top: reserved for a later layout step.
+//  - top: a compact top row on the character page. On the 2024 layouts,
+//    armor class, hit points, hit dice and death saves share one row, with a
+//    shield tick box and separate species, class and level fields; on the
+//    2014 layout, initiative sits beside the proficiency bonus and the hit
+//    dice split into maximum and spent.
 //  - split: separate boxes for class features, subclass features and feats
 //    on the character page. null means "the layout's own default" (off for
 //    2014 and 2024, on for 2024 Hybrid); true or false overrides it.

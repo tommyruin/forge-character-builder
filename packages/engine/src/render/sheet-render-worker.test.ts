@@ -196,6 +196,11 @@ describe("sheet render worker", () => {
       expect(await pageText(plain.bytes)).not.toContain("SUBCLASS FEATURES");
       expect(new Uint8Array(defaulted.bytes)).toEqual(new Uint8Array(plain.bytes));
       expect(new Uint8Array(split.bytes)).not.toEqual(new Uint8Array(plain.bytes));
+      const top = await request({ id: 4, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { top: true, split: true } }) as { bytes: ArrayBuffer };
+      expect(requests.filter((url) => url.endsWith("/sheets/2014/details~top.split.pdf"))).toHaveLength(1);
+      expect(await pageText(top.bytes)).toContain("SPENT");
+      expect(await pageText(top.bytes)).toContain("SUBCLASS FEATURES");
+      expect(await pageText(plain.bytes)).not.toContain("SPENT");
     } finally {
       vi.useRealTimers();
       vi.stubGlobal("fetch", previousFetch);

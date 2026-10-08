@@ -69,9 +69,28 @@ function LayoutOptions({ templateSet }) {
   const { options, setOptions } = useSheetLayoutOptionsSetting();
   const layout = effectiveSheetLayout(templateSet, options);
   const splitHintId = useId();
+  const topHintId = useId();
   return (
     <div className="fcb-sheet-layout-options space-y-2" role="group" aria-label="Layout options">
       <h3 className="fcb-sheet-colour-part">Layout options</h3>
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          role="switch"
+          aria-label="Compact top row"
+          aria-describedby={topHintId}
+          checked={layout.top}
+          onChange={(event) => setOptions({ top: event.target.checked })}
+        />
+        <span>
+          <span className="block">Compact top row</span>
+          <span id={topHintId} className="fcb-muted-copy block">
+            {templateSet === '2014'
+              ? 'Initiative beside the proficiency bonus, and hit dice split into maximum and spent'
+              : 'Armor class, hit points, hit dice and death saves in one row, with a shield tick box and separate species, class and level'}
+          </span>
+        </span>
+      </label>
       <label className="flex items-start gap-2 text-sm">
         <input
           type="checkbox"

@@ -495,7 +495,7 @@ function drawTemplateText(
 /** Fields that hold a large number and take the numbers face. */
 function isNumbersField(name: string): boolean {
   return /^(details|companion)_(str|dex|con|int|wis|cha)_(score|modifier)$/.test(name) ||
-    /^(details|companion)_(armor_class|hp_current|hp_max|hp_temp|initiative|proficiency_bonus|passive_perception_total|inspiration|hd|speed_walking|xp)$/.test(name);
+    /^(details|companion)_(armor_class|hp_current|hp_max|hp_temp|initiative|proficiency_bonus|passive_perception_total|inspiration|hd|speed_walking|xp|level)$/.test(name);
 }
 
 function bundleIsComplete(bundle: CharacterSheetTemplateBundle | null): bundle is CharacterSheetTemplateBundle {

@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   host.remove();
-  sheetLayoutOptionsSettingStore.set({ split: null });
+  sheetLayoutOptionsSettingStore.set({ split: null, top: false });
   sheetTemplateSettingStore.set('2014');
 });
 
@@ -31,6 +31,7 @@ async function renderPanel() {
 }
 
 const splitSwitch = () => host.querySelector('[aria-label="Split feature boxes"]');
+const topSwitch = () => host.querySelector('[aria-label="Compact top row"]');
 const resetButton = () =>
   [...host.querySelectorAll('button')].find((button) => button.textContent === 'Use layout default');
 const layoutButton = (label) =>
@@ -65,6 +66,25 @@ describe('sheet settings layout options', () => {
     await act(async () => resetButton().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().split).toBeNull();
     expect(splitSwitch().checked).toBe(true);
+    expect(resetButton()).toBeUndefined();
+  });
+
+  it('stores the compact top row choice and shows it on every layout', async () => {
+    await renderPanel();
+    expect(topSwitch().getAttribute('role')).toBe('switch');
+    expect(topSwitch().checked).toBe(false);
+    expect(host.textContent).toContain('Initiative beside the proficiency bonus');
+    await act(async () => topSwitch().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBe(true);
+    expect(topSwitch().checked).toBe(true);
+    await act(async () => layoutButton('2024').click());
+    expect(topSwitch().checked).toBe(true);
+    expect(host.textContent).toContain('Armor class, hit points, hit dice and death saves in one row');
+    // The split choice is its own.
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().split).toBeNull();
+    await act(async () => topSwitch().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBe(false);
+    // Top is off by default everywhere, so there is no layout default to return to.
     expect(resetButton()).toBeUndefined();
   });
 });

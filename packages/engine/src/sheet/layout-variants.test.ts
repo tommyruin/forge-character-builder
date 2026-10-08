@@ -7,14 +7,17 @@
  */
 
 import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PDFDocument } from "pdf-lib";
+import { PDFArray, PDFCheckBox, PDFDocument, PDFStream, decodePDFRawStream } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
-import type { CharacterSheetModel } from "./model.js";
+import { CharacterService } from "../character/service.js";
+import { buildCharacterSheetModel, type CharacterSheetModel } from "./model.js";
 import { writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
 import { fetchCharacterSheetTemplateBundle } from "./templates.js";
+import { seededRng, sharedLibrary } from "../testing/character-factory.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import {
   DEFAULT_SHEET_FONTS,
@@ -63,26 +66,47 @@ describe("sheet layout flags", () => {
   });
 
   it("prints a switch that has no variant yet on the set's own page", () => {
-    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, readable: true }))).toBe(BASE);
-    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, split: true }))).toBe("details~split.pdf");
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { readable: true }))).toBe(BASE);
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { readable: true, split: true }))).toBe("details~split.pdf");
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, readable: true }))).toBe("details~top.pdf");
+  });
+
+  it("names the compact top row variants, alone and with the split switch", () => {
+    for (const set of ["2014", "2024"] as const) {
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true })), set).toBe("details~top.pdf");
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, split: true })), set).toBe("details~top.split.pdf");
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, split: false })), set).toBe("details~top.pdf");
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: false, split: true })), set).toBe("details~split.pdf");
+    }
+    // Hybrid splits by default, so its compact page with split left alone is plain "top".
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: true }))).toBe("details~top.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: true, split: null }))).toBe("details~top.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: true, split: false }))).toBe("details~top.unsplit.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: false }))).toBe(BASE);
   });
 
   it("keys a layout by its effective switches", () => {
     expect(sheetLayoutKey(resolveSheetLayout("2014", {}))).not.toBe(sheetLayoutKey(resolveSheetLayout("2014", { split: true })));
     expect(sheetLayoutKey(resolveSheetLayout("2014", { split: true }))).toBe(sheetLayoutKey(resolveSheetLayout("2024-hybrid", {})));
     expect(sheetLayoutKey(resolveSheetLayout("2024-hybrid", { split: null }))).toBe(sheetLayoutKey(resolveSheetLayout("2024-hybrid", { split: true })));
+    expect(sheetLayoutKey(resolveSheetLayout("2024", { top: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", {})));
+    expect(sheetLayoutKey(resolveSheetLayout("2024", { top: true, split: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", { top: true })));
   });
 
   it("ships every implemented variant beside its set, with its labels", () => {
+    // In the order the switches shipped, so each labels.json only grows at its end.
     const expected: Record<SheetTemplateSet, string[]> = {
-      "2014": ["details~split.pdf"],
-      "2024": ["details~split.pdf"],
-      "2024-hybrid": ["details~unsplit.pdf"],
+      "2014": ["details~split.pdf", "details~top.pdf", "details~top.split.pdf"],
+      "2024": ["details~split.pdf", "details~top.pdf", "details~top.split.pdf"],
+      "2024-hybrid": ["details~unsplit.pdf", "details~top.pdf", "details~top.unsplit.pdf"],
     };
     for (const set of SHEET_TEMPLATE_SETS) {
       const variants = sheetLayoutVariants(set);
       expect(variants.map((variant) => variant.file), set).toEqual(expected[set]);
       const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
+      // The set's own files keep their place; variants follow them.
+      const names = Object.keys(labels);
+      expect(names.slice(-variants.length), set).toEqual(variants.map((variant) => variant.file));
       for (const variant of variants) {
         expect(sheetDetailsFile(set, variant.layout), `${set}/${variant.file}`).toBe(variant.file);
         expect(readFileSync(join(SHEETS, set, variant.file)).byteLength, `${set}/${variant.file}`).toBeGreaterThan(1000);
@@ -127,7 +151,14 @@ describe("loading a layout variant", () => {
     const hybrid = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { split: false }))!;
     expect(hybrid.detailsFile).toBe("details~unsplit.pdf");
     expect(hybrid.details).toEqual(file("2024-hybrid", "details~unsplit.pdf"));
-  });
+    const top = (await fetchCharacterSheetTemplateBundle(base, "2024", DEFAULT_SHEET_FONTS, { top: true, split: true }))!;
+    expect(top.detailsFile).toBe("details~top.split.pdf");
+    expect(top.details).toEqual(file("2024", "details~top.split.pdf"));
+    const hybridTop = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { top: true }))!;
+    expect(hybridTop.detailsFile).toBe("details~top.pdf");
+    expect(hybridTop.details).toEqual(file("2024-hybrid", "details~top.pdf"));
+    // Every set and variant is loaded and parsed: slow under the coverage pass.
+  }, 30_000);
 
   it("fetches only the set's own page for the default layout", async () => {
     serve();
@@ -233,5 +264,144 @@ describe("writing a layout variant", () => {
     } finally {
       vi.useRealTimers();
     }
+    // Four full renders: about two seconds, two to three times that under the
+    // coverage pass. This checks bytes, not a 5-second budget.
+  }, 30_000);
+});
+
+describe("the compact top row's values", () => {
+  const FIXTURES = fileURLToPath(new URL("../../../../fixtures/coverage/characters/", import.meta.url));
+  async function fixtureValues(name: string) {
+    const library = await sharedLibrary();
+    const service = new CharacterService(undefined, library, { rng: seededRng(7) });
+    const state = service.importCharacterXml(name, await readFile(join(FIXTURES, `${name}.dnd5e`), "utf8"));
+    return buildCharacterSheetModel(state, library, { mode: "lite" }).formValues ?? {};
+  }
+
+  it("gives species, class, level and background a value each, beside the combined line", async () => {
+    const paladin = await fixtureValues("paladin-7");
+    expect(paladin["details_species"]).toBe("Human");
+    expect(paladin["details_class"]).toBe("Paladin, Oath of Redemption");
+    expect(paladin["details_level"]).toBe("7");
+    expect(paladin["details_background"]).toBe("Pirate");
+    // The base pages still print the combined line.
+    expect(paladin["details_build"]).toBe("Level 7 Human Paladin, Oath of Redemption");
+    const multiclass = await fixtureValues("druid-warlock-cleric-6");
+    expect(multiclass["details_class"]).toMatch(/^Druid.* \(\d\) \/ .* \(\d\) \/ .* \(\d\)$/);
+    expect(multiclass["details_level"]).toBe("6");
+    expect(multiclass["details_build"]).toBe(`Level 6 ${multiclass["details_species"]} ${multiclass["details_class"]}`);
+  }, 120_000);
+
+  it("ticks the shield only when one is equipped, keeping the shield's name for the base pages", async () => {
+    const paladin = await fixtureValues("paladin-7");
+    expect(paladin["details_shield_equipped"]).toBe("true");
+    expect(paladin["details_equipped_shield"]).toBe("Shield");
+    const library = await sharedLibrary();
+    const bare = buildCharacterSheetModel(new CharacterService(undefined, library).createCharacter("Bare"), library, { mode: "lite" }).formValues ?? {};
+    expect(bare["details_shield_equipped"]).toBe("");
+    expect(bare["details_equipped_shield"]).toBe("");
+  }, 120_000);
+});
+
+describe("writing the compact top row", () => {
+  const TOP_PAGES = [
+    ["2014", { top: true }], ["2014", { top: true, split: true }],
+    ["2024", { top: true }], ["2024", { top: true, split: true }],
+    ["2024-hybrid", { top: true }], ["2024-hybrid", { top: true, split: false }],
+  ] as const;
+  const MULTICLASS = "Druid, Circle of the Moon (2) / Warlock, The Fiend (2) / Cleric, Life Domain (2)";
+  const values: Record<string, string> = {
+    details_character_name: "Top Row",
+    details_xp: "14000",
+    details_species: "Mountain Dwarf",
+    details_class: MULTICLASS,
+    details_level: "6",
+    details_background: "Guild Artisan",
+    details_build: `Level 6 Mountain Dwarf ${MULTICLASS}`,
+    details_hd: "2d8/2d8/2d8",
+    details_armor_class: "18",
+    details_shield_equipped: "true",
+    details_equipped_shield: "Shield",
+  };
+  const model = (extra: Record<string, string> = {}): CharacterSheetModel => ({
+    characterId: "Top", mode: "lite", pageCount: 1,
+    pages: [{ page: 1, templateKind: "details", sections: [] }],
+    formValues: { ...values, ...extra },
+  });
+
+  async function render(set: SheetTemplateSet, layout: object, written: CharacterSheetModel, options = {}) {
+    const bundle = localTemplateBundle(set, DEFAULT_SHEET_FONTS, layout);
+    const form = (await PDFDocument.load(bundle.details)).getForm();
+    const rect = (name: string) => form.getFields().find((field) => field.getName() === name)?.acroField.getWidgets()[0]?.getRectangle();
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(written, bundle, options);
+    const doc = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+    const items = (await (await doc.getPage(1)).getTextContent()).items
+      .flatMap((item) => ("str" in item && item.str.trim() !== "" ? [{ str: item.str, x: item.transform[4] as number, y: item.transform[5] as number, width: item.width }] : []));
+    const loaded = await PDFDocument.load(pdf);
+    const contents = loaded.getPages()[0]!.node.Contents();
+    const streams = contents instanceof PDFArray
+      ? contents.asArray().map((ref) => loaded.context.lookup(ref, PDFStream))
+      : [contents as PDFStream];
+    const operators = streams.map((stream) => new TextDecoder("latin1").decode(decodePDFRawStream(stream as never).decode())).join("\n");
+    /**
+     * The writer's check marks: filled circles, each a move to its left edge
+     * at mid height and a curve ending at the bottom of its centre line.
+     */
+    const marks = [...operators.matchAll(/[\d.]+ ([\d.]+) m\s+[\d.]+ [\d.]+ [\d.]+ [\d.]+ ([\d.]+) [\d.]+ c/g)]
+      .map((match) => [Number(match[2]), Number(match[1])] as const);
+    const within = (box: { x: number; y: number; width: number; height: number }, x: number, y: number) =>
+      x >= box.x - 0.01 && x <= box.x + box.width + 0.01 && y >= box.y - 0.01 && y <= box.y + box.height + 0.01;
+    return {
+      form, rect, items, text: items.map((item) => item.str).join(" "),
+      ticked: (name: string) => { const box = rect(name); return box !== undefined && marks.some(([x, y]) => within(box, x, y)); },
+      /** Every drawn item that starts with any word of `value` lies wholly inside `name`'s box. */
+      inside: (value: string, name: string) => {
+        const box = rect(name);
+        const words = new Set(value.split(/\s+/));
+        const hits = items.filter((item) => item.str.split(/\s+/).some((word) => words.has(word)) && within(box ?? { x: 0, y: 0, width: -1, height: -1 }, item.x, item.y));
+        return box !== undefined && hits.length > 0 && hits.every((item) => item.x + item.width <= box.x + box.width + 0.5) &&
+          value.split(/\s+/).every((word) => hits.some((item) => item.str.split(/\s+/).includes(word)));
+      },
+    };
+  }
+
+  it.each(TOP_PAGES.filter(([set]) => set !== "2014"))("ticks the shield box beside AC on %s %j only when a shield is equipped", async (set, layout) => {
+    const page = await render(set, layout, model());
+    expect(page.form.getField("details_shield_equipped")).toBeInstanceOf(PDFCheckBox);
+    expect(page.rect("details_equipped_shield")).toBeUndefined();
+    expect(page.ticked("details_shield_equipped")).toBe(true);
+    expect(page.text).not.toContain("Shield ");
+    const bare = await render(set, layout, model({ details_shield_equipped: "", details_equipped_shield: "" }));
+    expect(bare.ticked("details_shield_equipped")).toBe(false);
+  });
+
+  it.each(TOP_PAGES.filter(([set]) => set !== "2014"))("prints the identity in its own labelled fields on %s %j", async (set, layout) => {
+    const page = await render(set, layout, model());
+    expect(page.rect("details_build")).toBeUndefined();
+    expect(page.inside("14000", "details_xp")).toBe(true);
+    expect(page.inside("Mountain Dwarf", "details_species")).toBe(true);
+    expect(page.inside(MULTICLASS, "details_class")).toBe(true);
+    expect(page.inside("6", "details_level")).toBe(true);
+    expect(page.inside("Guild Artisan", "details_background")).toBe(true);
+    expect(page.inside("2d8/2d8/2d8", "details_hd")).toBe(true);
+    for (const caption of ["SPECIES", "CLASS", "LEVEL", "BACKGROUND", "XP", "SHIELD", "MAX", "SPENT"]) {
+      expect(page.items.some((item) => item.str === caption), caption).toBe(true);
+    }
+    expect(page.text).not.toContain("SPECIES & BACKGROUND");
+    expect(page.text).not.toContain("CLASS & LEVEL");
+  });
+
+  it.each(TOP_PAGES.filter(([set]) => set !== "2014"))("swaps the ability values when modifiers are emphasized on %s %j", async (set, layout) => {
+    const scores = { details_str_score: "18", details_str_modifier: "+4" };
+    const page = await render(set, layout, model(scores), { emphasizeAbilityModifiers: true });
+    expect(page.inside("+4", "details_str_score")).toBe(true);
+    expect(page.inside("18", "details_str_modifier")).toBe(true);
+  });
+
+  it.each(TOP_PAGES.filter(([set]) => set === "2014"))("keeps the 2014 identity line and prints the hit dice maximum on %s %j", async (set, layout) => {
+    const page = await render(set, layout, model());
+    expect(page.inside("2d8/2d8/2d8", "details_hd")).toBe(true);
+    expect(page.rect("details_hd_spent")).toBeDefined();
+    expect(page.text).toContain("SPENT");
   });
 });

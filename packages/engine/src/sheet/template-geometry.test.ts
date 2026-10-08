@@ -2,9 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { PDFDocument } from "pdf-lib";
+import { PDFCheckBox, PDFDocument } from "pdf-lib";
 import { templateFontSize } from "./pdf.js";
 import {
+  SHEET_LAYOUT_DEFAULTS,
   SHEET_TEMPLATE_CONTRACT,
   SHEET_TEMPLATE_SETS,
   resolveSheetLayout,
@@ -23,6 +24,13 @@ function detailsFilesOf(set: SheetTemplateSet): string[] {
 
 /** Every set's character pages, as [set, file] pairs. */
 const DETAILS_PAGES = SHEET_TEMPLATE_SETS.flatMap((set) => detailsFilesOf(set).map((file) => [set, file] as const));
+
+/** Each page with split away from its set's default, beside the page that differs from it only in split. */
+function sheetLayoutVariantPairs(): Array<readonly [SheetTemplateSet, string, string]> {
+  return SHEET_TEMPLATE_SETS.flatMap((set) => sheetLayoutVariants(set)
+    .filter((variant) => variant.layout.split !== SHEET_LAYOUT_DEFAULTS[set].split)
+    .map((variant) => [set, variant.file, sheetDetailsFile(set, { ...variant.layout, split: SHEET_LAYOUT_DEFAULTS[set].split })] as const));
+}
 
 /** Every full-page template of a set, layout variants included, with its labels and widget rectangles. */
 async function pagesOf(set: SheetTemplateSet) {
@@ -100,25 +108,127 @@ describe("sheet template geometry", () => {
   // The same layout switches on both pages give the same fields, so a value
   // the writer fills on one is never lost on the other: the split 2024 page
   // matches Hybrid's own, and the unsplit Hybrid page matches 2024's own.
-  it("keeps the 2024 and Hybrid pages' fields in step for each split choice", async () => {
-    for (const split of [true, false]) {
-      const modern = sheetDetailsFile("2024", resolveSheetLayout("2024", { split }));
-      const hybrid = sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { split }));
-      expect([...await fieldNames("2024", modern)].sort(), `split ${split}`).toEqual([...await fieldNames("2024-hybrid", hybrid)].sort());
+  it("keeps the 2024 and Hybrid pages' fields in step for each layout choice", async () => {
+    for (const top of [false, true]) {
+      for (const split of [true, false]) {
+        const modern = sheetDetailsFile("2024", resolveSheetLayout("2024", { top, split }));
+        const hybrid = sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top, split }));
+        expect([...await fieldNames("2024", modern)].sort(), `top ${top} split ${split}`).toEqual([...await fieldNames("2024-hybrid", hybrid)].sort());
+      }
     }
   });
 
-  // A variant changes the feature boxes and nothing else.
-  it.each(DETAILS_PAGES.filter(([, file]) => file !== SHEET_TEMPLATE_CONTRACT.files.details))(
-    "changes only the feature boxes on %s/%s",
-    async (set, file) => {
+  // The split switch changes the feature boxes and nothing else: each page
+  // with it away from the set's default matches the page with the same other
+  // switches and the default split.
+  it.each(sheetLayoutVariantPairs())(
+    "changes only the feature boxes on %s/%s against %s",
+    async (set, file, reference) => {
       const featureBoxes = new Set(["details_features", "details_subclass_features", "details_feats"]);
       const rects = async (name: string) => new Map((await PDFDocument.load(readFileSync(join(SHEETS, set, name)))).getForm().getFields()
         .filter((field) => !featureBoxes.has(field.getName()))
         .map((field) => [field.getName(), field.acroField.getWidgets()[0]?.getRectangle()]));
-      expect(await rects(file)).toEqual(await rects(SHEET_TEMPLATE_CONTRACT.files.details));
+      expect(await rects(file)).toEqual(await rects(reference));
     },
   );
+
+  const TOP_2024 = DETAILS_PAGES.filter(([set, file]) => set !== "2014" && file.includes("~top"));
+  it("has a compact top row page for every set and split choice", () => {
+    expect(TOP_2024.map(([set, file]) => `${set}/${file}`)).toEqual([
+      "2024/details~top.pdf", "2024/details~top.split.pdf", "2024-hybrid/details~top.pdf", "2024-hybrid/details~top.unsplit.pdf",
+    ]);
+    expect(DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("~top")).map(([, file]) => file))
+      .toEqual(["details~top.pdf", "details~top.split.pdf"]);
+  });
+
+  // The compact top row puts the numbers a player changes most during a fight
+  // side by side, in the order they change: armor class beaten, hit points
+  // lost, hit dice spent, then death saves.
+  it.each(TOP_2024)("lays armor class, hit points, hit dice and death saves out in one row on %s/%s", async (set, file) => {
+    const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, file)))).getForm();
+    const base = (await PDFDocument.load(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.files.details)))).getForm();
+    const names = new Set(form.getFields().map((field) => field.getName()));
+    const rectIn = (source: typeof form, name: string) => source.getFields().find((field) => field.getName() === name)!.acroField.getWidgets()[0]!.getRectangle();
+    const rect = (name: string) => rectIn(form, name);
+    const row = ["details_armor_class", "details_hp_current", "details_hd", "details_death_save_success_1"].map(rect);
+    for (let index = 1; index < row.length; index += 1) {
+      expect(row[index]!.x, `column ${index}`).toBeGreaterThan(row[index - 1]!.x + row[index - 1]!.width);
+    }
+    // One row: every box shares a horizontal band.
+    const bottom = Math.max(...row.map((box) => box.y));
+    const top = Math.min(...row.map((box) => box.y + box.height));
+    expect(top).toBeGreaterThan(bottom);
+
+    // The shield is a tick box beside the armor class, not a caption and a name.
+    expect(form.getField("details_shield_equipped")).toBeInstanceOf(PDFCheckBox);
+    expect(names.has("details_equipped_shield")).toBe(false);
+    const ac = rect("details_armor_class");
+    const shield = rect("details_shield_equipped");
+    expect(shield.x + shield.width / 2).toBeGreaterThan(ac.x - 12);
+    expect(shield.x + shield.width / 2).toBeLessThan(ac.x + ac.width + 12);
+    expect(ac.y - (shield.y + shield.height)).toBeLessThan(30);
+
+    // Hit dice: the maximum beside a write-in for the dice spent.
+    expect(names.has("details_hd_spent")).toBe(true);
+
+    // The identity reads as separate labelled fields; XP is one of them.
+    expect(names.has("details_build")).toBe(false);
+    for (const name of ["details_species", "details_class", "details_level", "details_background", "details_xp"]) expect(names.has(name), name).toBe(true);
+    expect(rect("details_xp").height).toBeLessThanOrEqual(12);
+    expect(rect("details_xp").height).toBeLessThan(rectIn(base, "details_xp").height);
+
+    // Proficiency bonus, initiative and passive perception take smaller boxes.
+    for (const name of ["details_proficiency_bonus", "details_initiative", "details_passive_perception_total"]) {
+      expect(rect(name).width, name).toBeLessThan(rectIn(base, name).width);
+      expect(rect(name).height, name).toBeLessThan(rectIn(base, name).height);
+    }
+
+    // Speed: the walking speed large on the left, the other modes on lines of their own to its right.
+    const walking = rect("details_speed_walking");
+    const modes = ["details_speed_fly", "details_speed_climb", "details_speed_swim"].map(rect);
+    for (const mode of modes) expect(mode.x).toBeGreaterThanOrEqual(walking.x + walking.width);
+    expect(new Set(modes.map((mode) => mode.x)).size).toBe(1);
+    expect(modes[0]!.y).toBeGreaterThan(modes[1]!.y);
+    expect(modes[1]!.y).toBeGreaterThan(modes[2]!.y);
+  });
+
+  it.each(TOP_2024)("labels the compact identity plainly on %s/%s", async (set, file) => {
+    const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
+    const texts = labels[file]!.labels.map((label) => label.text);
+    for (const caption of ["SPECIES", "CLASS", "LEVEL", "BACKGROUND", "XP", "SHIELD", "MAX", "SPENT"]) expect(texts, caption).toContain(caption);
+    expect(texts).not.toContain("SPECIES & BACKGROUND");
+    expect(texts).not.toContain("CLASS & LEVEL");
+  });
+
+  it.each(DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("~top")))(
+    "puts initiative beside the proficiency bonus and splits the hit dice on %s/%s",
+    async (set, file) => {
+      const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, file)))).getForm();
+      const rect = (name: string) => form.getFields().find((field) => field.getName() === name)!.acroField.getWidgets()[0]!.getRectangle();
+      const bonus = rect("details_proficiency_bonus");
+      const initiative = rect("details_initiative");
+      // Side by side on one line.
+      expect(Math.abs((initiative.y + initiative.height / 2) - (bonus.y + bonus.height / 2))).toBeLessThan(2);
+      expect(Math.abs(initiative.x - (bonus.x + bonus.width))).toBeLessThan(40);
+      expect(form.getField("details_initiative_advantage")).toBeInstanceOf(PDFCheckBox);
+      const advantage = rect("details_initiative_advantage");
+      expect(Math.abs(advantage.y - initiative.y)).toBeLessThan(20);
+      const max = rect("details_hd");
+      const spent = rect("details_hd_spent");
+      expect(Math.abs(max.y - spent.y)).toBeLessThan(2);
+      expect(spent.x).toBeGreaterThanOrEqual(max.x + max.width);
+      // The rest of the 2014 page keeps its place, the shield caption included.
+      expect(form.getFields().some((field) => field.getName() === "details_equipped_shield")).toBe(true);
+      expect(form.getFields().some((field) => field.getName() === "details_build")).toBe(true);
+    },
+  );
+
+  // The companion page shares the hit point box, and keeps its single hit dice field.
+  it.each([...SHEET_TEMPLATE_SETS])("leaves the %s companion's hit dice whole", async (set) => {
+    const names = (await PDFDocument.load(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.files.companion)))).getForm().getFields().map((field) => field.getName());
+    expect(names).toContain("companion_hd");
+    expect(names.filter((name) => name.startsWith("companion_hd"))).toEqual(["companion_hd"]);
+  });
 
   it("sizes every field from its own default appearance", async () => {
     for (const set of SHEET_TEMPLATE_SETS) {
@@ -132,7 +242,9 @@ describe("sheet template geometry", () => {
         }
       }
     }
-  });
+    // Every page of every set, variants included: well past 5 seconds under
+    // the coverage pass, which is not what this test measures.
+  }, 30_000);
 
   // A 2024 weapon's notes cell carries the whole property list, and since the
   // "Mastery: <Name>" suffix was added it never fits one line. That cell — and

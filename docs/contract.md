@@ -619,9 +619,13 @@ layout switches; each is `true`, `false`, or `null`/absent for the template
 set's own default (`SHEET_LAYOUT_DEFAULTS`: split is on for 2024 Hybrid, off
 for 2014 and 2024). The switches pick a variant of the set's character page
 template, named for the switches that differ from the set's own page
-(`details~split.pdf`, `details~unsplit.pdf`; see `sheetDetailsFile` in
-`template-contract.ts`); every other template is shared. A variant that cannot
+(`details~split.pdf`, `details~unsplit.pdf`, `details~top.pdf`,
+`details~top.split.pdf`, `details~top.unsplit.pdf`; see `sheetDetailsFile` in
+`template-contract.ts`); every other template is shared. Variants exist for
+`top` (a compact top row) and `split`; `readable` still prints the set's own
+page. A variant that cannot
 be fetched, or that the set's `labels.json` does not describe, falls back to
 the set's own `details.pdf`. The layout never reaches `generateSheet`. The
-browser preference is the `split` member of `fcb-sheet-layout-options`, and the
+browser preferences are the `top` and `split` members of
+`fcb-sheet-layout-options`, and the
 effective switches participate in the PDF cache key.

@@ -14,7 +14,7 @@
 const cache = new Map(); // key -> Uint8Array
 let order = [];
 const MAX_ENTRIES = 4;
-export const SHEET_RENDERER_REVISION = 'pdf-canvas-v10';
+export const SHEET_RENDERER_REVISION = 'pdf-canvas-v11';
 
 export function sheetCacheKey(id, tick, lite, contentRevision = 0, templateSet = '2014', colours = 'crimson/gold/ink', fonts = 'cinzelDecorative/spectral/helvetica/helvetica', pages = 'background+notes+attackNotes+spellCards+itemCards', emphasizeAbilityModifiers = false, inventoryNotes = false, layout = 'layout-default') {
   return `${id}#${SHEET_RENDERER_REVISION}#${contentRevision}#${tick}#${templateSet}#${colours}#${fonts}#${pages}#${emphasizeAbilityModifiers ? 'modifiers' : 'scores'}#${inventoryNotes ? 'item-notes' : 'no-item-notes'}#${layout}#${lite ? 'lite' : 'full'}`;
