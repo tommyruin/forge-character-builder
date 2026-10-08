@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-08
+
 ### Added
 
 - A 2024 Hybrid character sheet: the 2024 page with 2014-style ability, save
