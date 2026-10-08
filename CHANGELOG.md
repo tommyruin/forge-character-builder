@@ -51,7 +51,7 @@ project uses [Semantic Versioning](https://semver.org/).
   Sources. Turning a book off removes choices and spells from it and lists them.
 - A 2024 Bard can swap an earlier spell for one of any level they can cast.
 - Magic items without a listed price show "Not listed".
-- The Divine Oracle trait raises Intelligence or Wisdom and its maximum by 2.
+- A trait that raises Intelligence or Wisdom by 2 also raises its maximum by 2.
 
 ## [2.4.0] - 2026-09-25
 

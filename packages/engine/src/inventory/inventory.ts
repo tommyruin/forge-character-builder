@@ -1147,7 +1147,7 @@ function attributeInsertAt(tag: { nameEnd: number; attributes: Map<string, Attri
 /**
  * Sets a `name="true"` flag attribute on or off. The document only ever
  * carries the flag as `"true"`: switching on rewrites any other value (an
- * Aurora `card="false"`) or appends the attribute after the tag's last one,
+ * imported `card="false"`) or appends the attribute after the tag's last one,
  * and switching off removes it whole — `"false"` is never written. A flag the
  * reader already treats as off (absent, or any value but `"true"`) is left
  * byte-for-byte as it is when switching off.

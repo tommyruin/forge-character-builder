@@ -992,17 +992,7 @@ export function computeStatistics(
   const seeds: Readonly<StatisticsValues> = { ...values };
 
   const appliedKeys = new Set<string>();
-  const { rules: rawRules, validRegistered } = ruleSources(state, library, appliedKeys);
-  // These two known corpus traits explicitly raise the maximum as well as the
-  // score; their base-tagged max:extra is a data error, not a capped increase.
-  const oracleTraits = new Set([
-    "ID_WOTC_MOOT_RACIAL_TRAIT_ORACLE_DIVINE_ORACLE_INTELLIGENCE",
-    "ID_WOTC_MOOT_RACIAL_TRAIT_ORACLE_DIVINE_ORACLE_WISDOM",
-  ]);
-  const allRules = rawRules.map(source => oracleTraits.has(source.element.identity.id)
-    && source.rule.name.endsWith(":max:extra")
-    ? { ...source, rule: { ...source.rule, name: source.rule.name.replace(":max:extra", ":max"), bonus: undefined } }
-    : source);
+  const { rules: allRules, validRegistered } = ruleSources(state, library, appliedKeys);
   const equipped = equippedInfo(state, library);
 
   // Ability-bonus rules (name = an ability) apply first so scores and

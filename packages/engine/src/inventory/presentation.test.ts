@@ -32,7 +32,7 @@ const LONGSWORD = "ID_WOTC_PHB_WEAPON_LONGSWORD";
 const JAVELIN_RECORD = "2e906783-4f90-4436-80e8-b75fabb703b4";
 const SHIELD_RECORD = "d44529ea-a842-4cc3-9c4a-f71d09de6a0c";
 const TATTOO_RECORD = "4fc8e3df-f612-48b4-af48-be918ddbd3d7";
-// cleric-7: Aurora wrote `card="false"` on its Rations record.
+// cleric-7: the imported file has `card="false"` on its Rations record.
 const CLERIC_RATIONS_RECORD = "319b3a89-f9dd-41d9-a898-42df78df80e2";
 
 let library: ElementLibrary;
@@ -128,7 +128,7 @@ describe("setItemPresentation", () => {
     expect(itemCardTitles(service, id)).toContain("Shield");
   });
 
-  it("turns an Aurora card=\"false\" record on by rewriting only the value", async () => {
+  it("turns an imported card=\"false\" record on by rewriting only the value", async () => {
     const { service, xml } = await importFixture("cleric-7.dnd5e");
     const id = "cleric-7.dnd5e";
     expect(recordOf(service.getInventory(id), CLERIC_RATIONS_RECORD).card).toBe(false);
@@ -264,7 +264,7 @@ describe("setItemCards", () => {
     const { service, xml } = await importFixture("barbarian-8.dnd5e");
     const id = "barbarian-8.dnd5e";
     service.setItemCards(id, { policy: "all" });
-    // The hidden optional-class-feature record keeps Aurora's card="false".
+    // The hidden optional-class-feature record keeps its imported card="false".
     expect(service.exportCharacterXml(id)).toBe(xml);
   });
 

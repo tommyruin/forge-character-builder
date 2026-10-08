@@ -1,6 +1,6 @@
 import type { CharacterState, RegisteredElement } from "./state.js";
 
-/** Aurora counts registrations, not descriptive list answers or grant children. */
+/** The .dnd5e format counts registrations, not descriptive list answers or grant children. */
 export function registrationCount(state: CharacterState): number {
   let choices = 0;
   const walk = (nodes: readonly RegisteredElement[]): void => {

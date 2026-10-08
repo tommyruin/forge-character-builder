@@ -43,7 +43,7 @@ describe("feedback regressions with uploaded corpus content", () => {
   it.each(["DRUID", "CLERIC", "PALADIN"])("limits the %s preparation list to PHB 2024", className => {
     const { service, id } = character(className);
     // Every switchable book except PHB 2024 — what the Sources panel can send;
-    // required books (DMG, MM, Aurora Legacy Essentials) cannot be disabled.
+    // required books (DMG, MM and the core rules book) cannot be disabled.
     const restrictedSourceIds = [...library.sources.values()]
       .filter(s => !isRequiredSource(s) && s.identity.name !== "Player’s Handbook (2024)")
       .map(s => s.identity.id);
@@ -71,7 +71,7 @@ describe("feedback regressions with uploaded corpus content", () => {
     expect(service.getSpellcasting(id)[0]!.knownSpells.some(s => s.id === spellId)).toBe(false);
   });
 
-  it("retains the Aurora registration total through a DM ability grant", async () => {
+  it("retains the .dnd5e registration total through a DM ability grant", async () => {
     const service = new CharacterService(undefined, library);
     const xml = await readFile(new URL("../../../fixtures/coverage/characters/paladin-7.dnd5e", import.meta.url), "utf8");
     service.importCharacterXml("paladin", xml);
@@ -83,18 +83,35 @@ describe("feedback regressions with uploaded corpus content", () => {
     expect(service.getCharacter("paladin").registeredCount).toBe(31);
   });
 
-  it.each(["INTELLIGENCE", "WISDOM"])("Divine Oracle raises %s and its maximum by two", ability => {
-    const service = new CharacterService(undefined, library);
-    const id = service.createCharacter("Oracle").id;
-    const state = service.getCharacter(id);
-    state.abilities[ability.toLowerCase() as "intelligence" | "wisdom"] = 20;
-    state.elements.push({ type: "Magic Item", name: "Oracle", id: "ID_WOTC_MOOT_MAGIC_ITEM_GIFT_ORACLE", children: [] });
-    state.sum.elements.push({ type: "Magic Item", id: "ID_WOTC_MOOT_MAGIC_ITEM_GIFT_ORACLE" });
-    state.elements.push({ type: "Racial Trait", name: ability, id: `ID_WOTC_MOOT_RACIAL_TRAIT_ORACLE_DIVINE_ORACLE_${ability}`, children: [] });
-    state.sum.elements.push({ type: "Racial Trait", id: `ID_WOTC_MOOT_RACIAL_TRAIT_ORACLE_DIVINE_ORACLE_${ability}` });
-    const stats = computeStatistics(state, library);
-    expect(stats[`${ability.toLowerCase()}:score`]).toBe(22);
-    expect(stats[`${ability.toLowerCase()}:max`]).toBe(22);
+  // A gift's chosen racial trait that raises an ability by two "as well as
+  // increasing your maximum for the chosen score by 2", authored as a score
+  // bonus beside a base-tagged max:extra of the same amount. Found by its
+  // rules rather than its identifier.
+  const scoreAndMaximumTraits = (ability: string) => (library.byType.get("Racial Trait") ?? []).filter(element => {
+    const stats = element.rules.filter(rule => rule.kind === "stat");
+    return element.requirements !== undefined
+      && stats.some(rule => rule.name === ability && rule.value === "2" && rule.bonus === undefined)
+      && stats.some(rule => rule.name === `${ability}:max:extra` && rule.value === "2" && rule.bonus === "base");
+  });
+
+  it.each(["intelligence", "wisdom"] as const)("a gift trait raises %s and its maximum by two", ability => {
+    const traits = scoreAndMaximumTraits(ability);
+    expect(traits.length).toBeGreaterThan(0);
+    for (const trait of traits) {
+      const gift = library.byId.get(trait.requirements!);
+      expect(gift?.identity.type).toBe("Magic Item");
+      const service = new CharacterService(undefined, library);
+      const id = service.createCharacter("Gifted").id;
+      const state = service.getCharacter(id);
+      state.abilities[ability] = 20;
+      state.elements.push({ type: "Magic Item", name: gift!.identity.name, id: gift!.identity.id, children: [] });
+      state.sum.elements.push({ type: "Magic Item", id: gift!.identity.id });
+      state.elements.push({ type: "Racial Trait", name: trait.identity.name, id: trait.identity.id, children: [] });
+      state.sum.elements.push({ type: "Racial Trait", id: trait.identity.id });
+      const stats = computeStatistics(state, library);
+      expect(stats[`${ability}:score`]).toBe(22);
+      expect(stats[`${ability}:max`]).toBe(22);
+    }
   });
 });
 

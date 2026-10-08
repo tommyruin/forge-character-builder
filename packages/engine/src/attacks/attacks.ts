@@ -1269,7 +1269,7 @@ function hasMartialArtsDie(statistics: StatisticsValues): boolean {
 
 /**
  * True when a stored row already stands for the unarmed strike: a native
- * unarmed row, or (for Aurora-origin files, which carry no `kind`) any row the
+ * unarmed row, or (for files from other builders, which carry no `kind`) any row the
  * player named "Unarmed Strike". The automatic Martial Arts row and the
  * editor's "Unarmed strike" mode share this test, so neither adds a second one.
  */

@@ -14,6 +14,7 @@ import { getCharacterAdjustments, getOptionalRules } from "./character/options.j
 import { isRestrictedForCharacter } from "./selection/selection.js";
 import { createEngineMethodHandlers } from "./worker-handlers.js";
 import { isRequiredSource, normalizeSourceName } from "./content/sourceIdentity.js";
+import type { ParsedElement } from "./content/parser.js";
 
 let library: ElementLibrary;
 
@@ -34,7 +35,7 @@ const FLAME_TONGUE = "ID_WOTC_DMG_MAGIC_ITEM_FLAME_TONGUE";
 /**
  * Every switchable source id except those whose names `keep` admits — the
  * list the Sources panel can produce. Required books (Dungeon Master's Guide,
- * Monster Manual, Aurora Legacy Essentials) cannot be disabled.
+ * Monster Manual and the core rules book) cannot be disabled.
  */
 function restrictAllExcept(keep: (source: string) => boolean): string[] {
   return [...library.sources.values()]
@@ -224,7 +225,6 @@ interface SourceGroupDto {
 const PHB24_NAME = "Player’s Handbook (2024)";
 const AI_SOURCE = "ID_WOTC_SOURCE_ACQUISITIONS_INCORPORATED";
 const EGTW_SOURCE = "ID_WOTC_SOURCE_EXPLORERS_GUIDE_TO_WILDEMOUNT";
-const ALE_SOURCE = "ID_SOURCE_AURORA_LEGACY_ESSENTIALS";
 const DNDB_SOURCES = [
   "ID_WOTC_SOURCE_DESCENT_INTO_THE_LOST_CAVERNS_OF_TSOJCANTH",
   "ID_WOTC_SOURCE_HEROES_FEAST_SAVING_THE_CHILDRENS_MENU",
@@ -234,6 +234,16 @@ const DNDB_SOURCES = [
   "ID_WOTC_SOURCE_MONSTROUS_COMPENDIUM_THREE",
   "ID_WOTC_SOURCE_VECNA_NEST_OF_THE_ELDRITCH_EYE",
 ];
+
+/** The required (core) book the alignments come from. */
+function requiredAlignmentSource(): ParsedElement {
+  const alignmentSource = library.byType.get("Alignment")?.[0]?.identity.source ?? "";
+  const source = [...library.sources.values()].find(
+    (candidate) => isRequiredSource(candidate) && normalizeSourceName(candidate.identity.name) === normalizeSourceName(alignmentSource),
+  );
+  expect(source).toBeDefined();
+  return source!;
+}
 
 function sourceGroupsFor(service: CharacterService, id: string, from: ElementLibrary = library): SourceGroupDto[] {
   return (createEngineMethodHandlers(service, from).getCharacterSources!(id) as { groups: SourceGroupDto[] }).groups;
@@ -346,28 +356,31 @@ describe("required sources cannot be restricted", () => {
   };
 
   it("drops a required source id from setCharacterSources and keeps alignments", () => {
+    const REQUIRED_SOURCE = requiredAlignmentSource().identity.id;
     const service = new CharacterService(undefined, library);
     const id = service.createCharacter("required").id;
     const before = alignmentOptions(service, id).length;
     expect(before).toBeGreaterThan(0);
     const response = createEngineMethodHandlers(service, library).setCharacterSources!(id, {
-      restrictedSourceIds: [ALE_SOURCE, AI_SOURCE, "missing-source"],
+      restrictedSourceIds: [REQUIRED_SOURCE, AI_SOURCE, "missing-source"],
     }) as { restrictedSourceIds: string[] };
     expect(response.restrictedSourceIds).toEqual([AI_SOURCE, "missing-source"]);
     expect(service.getCharacter(id).restrictedSources).toEqual([AI_SOURCE, "missing-source"]);
-    expect(service.exportCharacterXml(id)).not.toContain(ALE_SOURCE);
+    expect(service.exportCharacterXml(id)).not.toContain(REQUIRED_SOURCE);
     expect(alignmentOptions(service, id)).toHaveLength(before);
   });
 
   it("ignores a required source id in an imported file", () => {
+    const required = requiredAlignmentSource();
+    const REQUIRED_SOURCE = required.identity.id;
     const service = new CharacterService(undefined, library);
     const id = service.createCharacter("imported required").id;
     const before = alignmentOptions(service, id).length;
     void createEngineMethodHandlers(service, library).setCharacterSources!(id, { restrictedSourceIds: [AI_SOURCE] });
     const xml = service
       .exportCharacterXml(id)
-      .replace(`<source id="${AI_SOURCE}" />`, `<source id="${AI_SOURCE}" /><source id="${ALE_SOURCE}" />`);
-    expect(xml).toContain(ALE_SOURCE);
+      .replace(`<source id="${AI_SOURCE}" />`, `<source id="${AI_SOURCE}" /><source id="${REQUIRED_SOURCE}" />`);
+    expect(xml).toContain(REQUIRED_SOURCE);
 
     const reader = new CharacterService(undefined, library);
     reader.importCharacterXml(id, xml);
@@ -375,11 +388,10 @@ describe("required sources cannot be restricted", () => {
     expect(reader.exportCharacterXml(id)).toBe(xml);
     expect(alignmentOptions(reader, id)).toHaveLength(before);
     const state = reader.getCharacter(id);
-    const essentials = [...library.byId.values()].find(
-      (element) => element.identity.type !== "Source" && element.identity.source === "Aurora Legacy Essentials",
+    const fromRequired = [...library.byId.values()].find(
+      (element) => element.identity.type !== "Source" && element.identity.source === required.identity.name,
     );
-    if (essentials !== undefined) {
-      expect(isRestrictedForCharacter(state, library, essentials)).toBe(false);
-    }
+    expect(fromRequired).toBeDefined();
+    expect(isRestrictedForCharacter(state, library, fromRequired!)).toBe(false);
   });
 });
