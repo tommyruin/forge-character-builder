@@ -1047,6 +1047,7 @@ function AttacksManager({
         key={editor?.id ?? (editor === null ? 'new' : 'closed')}
         open={editor !== undefined}
         attack={editor || null}
+        attacks={attacks}
         options={options}
         detail={detail}
         busy={busy}

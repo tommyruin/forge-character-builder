@@ -1270,9 +1270,10 @@ function hasMartialArtsDie(statistics: StatisticsValues): boolean {
 /**
  * True when a stored row already stands for the unarmed strike: a native
  * unarmed row, or (for Aurora-origin files, which carry no `kind`) any row the
- * player named "Unarmed Strike".
+ * player named "Unarmed Strike". The automatic Martial Arts row and the
+ * editor's "Unarmed strike" mode share this test, so neither adds a second one.
  */
-function hasUnarmedStrikeRow(state: CharacterState): boolean {
+export function hasUnarmedStrikeRow(state: CharacterState): boolean {
   return state.attacks.some(
     (row) => row.kind === "unarmed" || row.name.trim().toLowerCase() === "unarmed strike",
   );

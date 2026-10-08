@@ -1150,10 +1150,13 @@ describe("character sheet PDF writer", () => {
     const library = await libraryPromise;
     const service = new CharacterService(undefined, library);
     const state = service.createCharacter("Staff wielder");
+    // The shape the inventory writes: the staff laid over its Quarterstaff
+    // base. A Staff of Power with no base cannot be wielded, so it conveys
+    // nothing.
     state.items.push({
       ...state.items[0] ?? {},
-      itemId: "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_POWER",
-      adorners: [],
+      itemId: "ID_WOTC_PHB_WEAPON_QUARTERSTAFF",
+      adorners: ["ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_POWER"],
       amount: 1,
       equipped: true,
       attuned: true,

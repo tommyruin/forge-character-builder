@@ -74,6 +74,25 @@ const EMPTY = {
   overrideFields: [],
 };
 
+/** The message shown on the Unarmed strike tab when the row already exists. */
+export const DUPLICATE_UNARMED_NOTICE =
+  'You already have an Unarmed Strike attack.';
+
+/**
+ * True when one of the character's rows already stands for the unarmed strike.
+ * Matches the engine's own test (a native unarmed row, or any row named
+ * "Unarmed Strike"), which rejects a second one.
+ */
+export function hasUnarmedStrikeRow(attacks) {
+  return (attacks ?? []).some(
+    (row) =>
+      row.kind === 'unarmed' ||
+      String(row.name ?? '')
+        .trim()
+        .toLowerCase() === 'unarmed strike',
+  );
+}
+
 export function attackDraft(attack, options) {
   if (!attack) return { ...EMPTY };
   const calculation = attack.calculation ?? {};
@@ -109,6 +128,7 @@ export function attackDraft(attack, options) {
 export default function AttackEditorModal({
   open,
   attack,
+  attacks,
   options,
   detail,
   busy,
@@ -216,9 +236,13 @@ export default function AttackEditorModal({
   // Adding an owned weapon builds the row from the item, so the editor shows
   // the inventory picker instead of the generated display fields.
   const isNewWeapon = draft.mode === 'weapon' && !attack;
+  // A character has one unarmed strike row; the engine rejects a second.
+  const isDuplicateUnarmed =
+    draft.mode === 'unarmed' && !attack && hasUnarmedStrikeRow(attacks);
 
   const submit = async (event) => {
     event.preventDefault();
+    if (isDuplicateUnarmed) return;
     // A weapon row's name is the item's, so the editor never demands one.
     if (
       draft.mode !== 'spell' &&
@@ -402,8 +426,11 @@ export default function AttackEditorModal({
     >
       <form className="space-y-4" onSubmit={submit}>
         {canChooseMode && (
+          // Not the shared sub-tab strip: on phones that splits one row into
+          // equal slices, too narrow for these labels. Whole labels wrap onto
+          // a second row instead, so every tab stays visible and reachable.
           <div
-            className="fcb-secondary-tabs"
+            className="flex min-w-0 flex-wrap items-stretch gap-0.5"
             role="tablist"
             aria-label="Attack type"
           >
@@ -413,13 +440,22 @@ export default function AttackEditorModal({
                 type="button"
                 role="tab"
                 aria-selected={draft.mode === mode}
-                className={`fcb-tab ${draft.mode === mode ? 'is-active' : ''}`}
+                className={`fcb-tab px-[13px] ${draft.mode === mode ? 'is-active' : ''}`}
                 onClick={() => chooseMode(mode)}
               >
                 {label}
               </button>
             ))}
           </div>
+        )}
+
+        {isDuplicateUnarmed && (
+          <p
+            role="status"
+            className="rounded-lg border border-[var(--fcb-border)] bg-[var(--fcb-surface-2)] p-3 text-sm normal-case text-[var(--fcb-text)]"
+          >
+            {DUPLICATE_UNARMED_NOTICE}
+          </p>
         )}
 
         {isUnarmed && (
@@ -770,7 +806,7 @@ export default function AttackEditorModal({
           <button
             type="submit"
             className="fcb-button fcb-button-primary"
-            disabled={busy}
+            disabled={busy || isDuplicateUnarmed}
           >
             {attack ? 'Save Attack' : 'Add Attack'}
           </button>

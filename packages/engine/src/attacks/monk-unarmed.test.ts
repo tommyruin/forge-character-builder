@@ -7,7 +7,7 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { type ElementLibrary } from "../content/library.js";
+import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { type AttackDto } from "./attacks.js";
 import { pendingSelectionRules, selectionOptions } from "../selection/selection.js";
@@ -151,5 +151,116 @@ describe("automatic monk unarmed strike row", () => {
     expect(rows[0]!.damage).toBe("1d4+4 bludgeoning");
     service.levelUpMode(id, { mode: "multiclass", classId: MC_MONK });
     expect(unarmedRows(service.getAttacks(id))).toHaveLength(1);
+  });
+});
+
+/** The thrown engine error, so a test can pin its code as well as its message. */
+const thrownBy = (action: () => unknown): unknown => {
+  try {
+    action();
+  } catch (error) {
+    return error;
+  }
+  throw new Error("expected the call to throw");
+};
+
+describe("adding an unarmed strike by hand", () => {
+  it("rejects a second unarmed row for a character who already has one", () => {
+    const { service, id } = newCharacter("Double Fists", "2024");
+    pickClass(service, id, FIGHTER_2024);
+    expect(unarmedRows(service.createAttack(id, { mode: "unarmed" }))).toHaveLength(1);
+    expect(thrownBy(() => service.createAttack(id, { mode: "unarmed" }))).toEqual({
+      code: "conflict",
+      message: "You already have an Unarmed Strike attack.",
+    });
+    expect(unarmedRows(service.getAttacks(id))).toHaveLength(1);
+  });
+
+  it("rejects a hand-added row once the monk's automatic row exists", () => {
+    const { service, id } = newCharacter("Auto Then Manual");
+    pickClass(service, id, MONK_2014);
+    const xml = service.exportCharacterXml(id);
+    expect(thrownBy(() => service.createAttack(id, { mode: "unarmed", damageDice: "1d8" }))).toMatchObject({
+      code: "conflict",
+    });
+    // The rejected request leaves the document untouched.
+    expect(service.exportCharacterXml(id)).toBe(xml);
+  });
+
+  it("rejects an unarmed row when a manual row is already named Unarmed Strike", () => {
+    const { service, id } = newCharacter("Named Then Unarmed");
+    service.createAttack(id, { mode: "manual", name: "Unarmed Strike", range: "5 ft", bonus: "+2", damage: "1", description: "" });
+    expect(thrownBy(() => service.createAttack(id, { mode: "unarmed" }))).toMatchObject({ code: "conflict" });
+    expect(service.getAttacks(id).map((row) => row.kind)).toEqual(["manual"]);
+  });
+
+  it("allows a new unarmed row after the old one was deleted", () => {
+    const { service, id } = newCharacter("Second Chance Monk");
+    pickClass(service, id, MONK_2014);
+    service.deleteAttack(id, unarmedRows(service.getAttacks(id))[0]!.id);
+    expect(unarmedRows(service.createAttack(id, { mode: "unarmed" }))).toHaveLength(1);
+  });
+});
+
+/**
+ * Martial Arts reached through a DM grant rather than the Monk class. No corpus
+ * feat grants `martial arts:dice`, so a homebrew feat grants the PHB Martial
+ * Arts class feature itself — the shape a "monk dip" feat pack takes.
+ */
+const MARTIAL_ARTS_2014 = "ID_WOTC_PHB_CLASS_FEATURE_MONK_MARTIAL_ARTS";
+const DISCIPLE_FEAT = "ID_TEST_FEAT_DISCIPLE_OF_THE_OPEN_HAND";
+const DISCIPLE_PACK = `<?xml version="1.0" encoding="utf-8"?>
+<elements>
+\t<element name="Disciple of the Open Hand" type="Feat" source="Monk Grant Test" id="${DISCIPLE_FEAT}">
+\t\t<description><p>You learn the monk's Martial Arts.</p></description>
+\t\t<rules>
+\t\t\t<grant type="Class Feature" id="${MARTIAL_ARTS_2014}" />
+\t\t</rules>
+\t</element>
+</elements>
+`;
+
+describe("automatic unarmed row from a DM grant", () => {
+  let grantLibrary: ElementLibrary;
+  beforeAll(() => {
+    const files = new Map(library.fileContents);
+    files.set("imports/monk-grant-test.xml", DISCIPLE_PACK);
+    grantLibrary = { ...library, fileContents: new Map<string, string>() } as ElementLibrary;
+    replaceLibraryFiles(grantLibrary, files);
+  }, 120_000);
+
+  const grantedFighter = (name: string): { service: CharacterService; id: string } => {
+    const service = new CharacterService(undefined, grantLibrary);
+    const id = service.createCharacter(name).id;
+    service.setAbilities(id, DEX_SCORES);
+    const rule = pendingSelectionRules(service.getCharacter(id)).find((r) => r.type === "Class")!;
+    service.setSelection(id, rule.identifier, FIGHTER_2014);
+    expect(service.getAttacks(id)).toEqual([]);
+    return { service, id };
+  };
+
+  it("adds exactly one unarmed row when a granted feat gives Martial Arts", () => {
+    const { service, id } = grantedFighter("Granted Fists");
+    service.addGrantedFeat(id, { featId: DISCIPLE_FEAT });
+    const rows = service.getAttacks(id);
+    expect(rows.map((row) => row.kind)).toEqual(["unarmed"]);
+    expect(rows[0]!.name).toBe("Unarmed Strike");
+    expect(rows[0]!.damage).toBe("1d4+4 bludgeoning");
+    // The row is in the stored document, not only in the derived view.
+    expect(service.exportCharacterXml(id).match(/<attack [^>]*kind="unarmed"/g)).toHaveLength(1);
+  });
+
+  it("does not add a second row when the grant is removed and given again", () => {
+    const { service, id } = grantedFighter("Regranted Fists");
+    service.addGrantedFeat(id, { featId: DISCIPLE_FEAT });
+    service.removeGrantedFeat(id, { featId: DISCIPLE_FEAT });
+    service.addGrantedFeat(id, { featId: DISCIPLE_FEAT });
+    expect(unarmedRows(service.getAttacks(id))).toHaveLength(1);
+  });
+
+  it("adds nothing for a grant that does not give Martial Arts", () => {
+    const { service, id } = grantedFighter("Brawler Fists");
+    service.addGrantedFeat(id, { featId: "ID_PHB_FEAT_TAVERNBRAWLER" });
+    expect(service.getAttacks(id)).toEqual([]);
   });
 });

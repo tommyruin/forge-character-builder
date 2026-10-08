@@ -1216,7 +1216,8 @@ describe("unarmed strike rows", () => {
       strength: 10, dexterity: 18, constitution: 14, intelligence: 10, wisdom: 14, charisma: 8,
     });
     await makeClass(service, id, MONK_2014);
-    service.createAttack(id, { mode: "unarmed" });
+    // Choosing Monk already added the automatic row; adding one by hand would be a duplicate.
+    expect(service.getAttacks(id).filter((a) => a.kind === "unarmed")).toHaveLength(1);
     const dieAt = (): string => unarmedRow(service.getAttacks(id)).damage;
     expect(dieAt()).toBe("1d4+4 bludgeoning");
     expect(unarmedRow(service.getAttacks(id)).ability).toBe("Dexterity");
@@ -1235,7 +1236,8 @@ describe("unarmed strike rows", () => {
       strength: 10, dexterity: 18, constitution: 14, intelligence: 10, wisdom: 14, charisma: 8,
     });
     await makeClass(service, id, MONK_2024);
-    service.createAttack(id, { mode: "unarmed" });
+    // Choosing Monk already added the automatic row; adding one by hand would be a duplicate.
+    expect(service.getAttacks(id).filter((a) => a.kind === "unarmed")).toHaveLength(1);
     const dieAt = (): string => unarmedRow(service.getAttacks(id)).damage;
     expect(dieAt()).toBe("1d6+4 bludgeoning");
     levelTo(service, id, 5);
@@ -1267,7 +1269,8 @@ describe("unarmed strike rows", () => {
     });
     await makeClass(service, id, MONK_2014);
     levelTo(service, id, 5);
-    service.createAttack(id, { mode: "unarmed" });
+    // Choosing Monk already added the automatic row; adding one by hand would be a duplicate.
+    expect(service.getAttacks(id).filter((a) => a.kind === "unarmed")).toHaveLength(1);
     expect(unarmedRow(service.getAttacks(id)).damage).toBe("1d6+4 bludgeoning");
     wear(service, id, ELDRITCH_CLAW_TATTOO);
     const row = unarmedRow(service.getAttacks(id));
@@ -1410,7 +1413,8 @@ describe("unarmed strike rows", () => {
     });
     await makeClass(service, id, MONK_2014);
     levelTo(service, id, 5);
-    service.createAttack(id, { mode: "unarmed" });
+    // Choosing Monk already added the automatic row; adding one by hand would be a duplicate.
+    expect(service.getAttacks(id).filter((a) => a.kind === "unarmed")).toHaveLength(1);
     wear(service, id, TCOE_CLAW_TATTOO);
     const computation = unarmedRow(service.getAttacks(id)).computation!;
     expect(computation.sourceNotes).toEqual([
@@ -1453,7 +1457,8 @@ describe("unarmed strike rows", () => {
     });
     await makeClass(service, id, MONK_2014);
     levelTo(service, id, 4);
-    service.createAttack(id, { mode: "unarmed" });
+    // Choosing Monk already added the automatic row; adding one by hand would be a duplicate.
+    expect(service.getAttacks(id).filter((a) => a.kind === "unarmed")).toHaveLength(1);
     expect(unarmedRow(service.getAttacks(id)).damage).toBe("1d4+4 bludgeoning");
 
     service.setCharacterOption(id, { optionId: OPTION_MULTICLASS, enabled: true });
@@ -1475,7 +1480,8 @@ describe("unarmed strike rows", () => {
     });
     await makeClass(service, id, MONK_2014);
     levelTo(service, id, 5);
-    service.createAttack(id, { mode: "unarmed" });
+    // Choosing Monk already added the automatic row; adding one by hand would be a duplicate.
+    expect(service.getAttacks(id).filter((a) => a.kind === "unarmed")).toHaveLength(1);
     expect(unarmedRow(service.getAttacks(id)).damage).toBe("1d6+4 bludgeoning");
 
     service.setRulesetMode(id, "2014");

@@ -114,6 +114,7 @@ import {
   newUnarmedAttackRow,
   newWeaponAttackRow,
   buildUnarmedPreview,
+  hasUnarmedStrikeRow,
   newSpellAttackRow,
   weaponsWithoutRows,
   planAutoAttackInsertEdits,
@@ -697,9 +698,10 @@ export class CharacterService {
     const next = this.remap(updated, state, id);
     if (mutate) mutate(next);
     const settled = this.settleRegistrationRules(id, updated, next, state);
-    this.store.set(settled.state);
-    this.documents.set(id, settled.document);
-    return settled.state;
+    // A grant or optional rule can give the character Martial Arts, so this
+    // path shares the attack pass too. The store still holds the pre-mutation
+    // state here, which is the "before" the unarmed transition is read from.
+    return this.reconcileAttackRows(id, settled.document, settled.state);
   }
 
   /**
@@ -2254,6 +2256,11 @@ export class CharacterService {
       }
       row = newWeaponAttackRow(state, this.library, item);
     } else if (body.mode === "unarmed") {
+      // One unarmed strike row per character: the automatic Martial Arts row
+      // uses the same test, so a hand-added row cannot double it either.
+      if (hasUnarmedStrikeRow(state)) {
+        throw engineError("conflict", "You already have an Unarmed Strike attack.");
+      }
       // The name, range, bonus, and damage are all resolved from the character;
       // the editor's display overrides arrive through updateAttack.
       row = newUnarmedAttackRow(

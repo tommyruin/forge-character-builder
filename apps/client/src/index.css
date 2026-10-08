@@ -5781,7 +5781,16 @@ button:disabled {
     height: 36px;
   }
 
+  /* Phones navigate from the bottom bar, so the subbar keeps only its stat
+     row. It sits in the workspace column rather than sticking: the workspace
+     main below it is the scroller, so the row stays in view regardless. */
   .fcb-workspace > .fcb-subbar {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+  }
+
+  .fcb-subbar .fcb-secondary-tabs {
     display: none;
   }
 
@@ -5800,11 +5809,36 @@ button:disabled {
     display: block;
   }
 
-  /* The live stat pills would need their own wrapped bar at this width — the numbers
-     are one tap away on the sheet, so hide them instead of stacking another row. Same
-     for the Save button (the collection's Export covers it); Level Up & XP stays and
-     fits beside the brand + primary tabs. */
-  .fcb-subbar-stats,
+  /* The live stat pills ride one compact row on phones, so HP, AC and the
+     Initiative ADV marker stay visible. Abbreviated labels fit five pills at
+     iPhone width; a longer value (a second speed) scrolls this row alone
+     rather than the page. */
+  .fcb-subbar-stats {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 4px;
+    margin-left: 0;
+    overflow-x: auto;
+    padding: 6px 0;
+    scrollbar-width: none;
+  }
+
+  .fcb-subbar-stats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fcb-subbar-stats .fcb-stat-pill {
+    flex: 0 0 auto;
+    gap: 4px;
+    min-height: 26px;
+    padding: 3px 6px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  /* The Save button hides at this width (the collection's Export covers it);
+     Level Up & XP stays and fits beside the brand + primary tabs. */
   .fcb-save-button {
     display: none;
   }

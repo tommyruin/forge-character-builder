@@ -196,9 +196,15 @@ export function equipLocationsFor(element: ParsedElement | undefined): string[] 
   return [];
 }
 
-/** The magic-item base slot setter ("weapon" or "armor"), when present. */
+/**
+ * The magic-item base slot setter ("weapon" or "armor"), when present. Only a
+ * Magic Item's setter names the base it is laid over (a weapon name, a
+ * support group). A mundane Armor element carries `<set name="armor">` as its
+ * own category (Light, Medium, Heavy, Shield): reading that as a base setter
+ * would turn a Shield into an adorner over whichever Shield matched by name.
+ */
 function baseSlotSetter(element: ParsedElement | undefined): Setter | undefined {
-  if (!element) return undefined;
+  if (element?.identity.type !== "Magic Item") return undefined;
   return element.setters.find((s) => s.name === "weapon" || s.name === "armor");
 }
 
@@ -347,9 +353,11 @@ export function contentElementOf(
  * slot to fill, so attunement alone activates it. A slotless item that needs
  * no attunement has only the act of wearing it to tell use from carriage --
  * except for the corpus's control records, which are switches rather than
- * gear and are on as soon as the character holds one. A stowed item
- * (assigned to a storage container) is off the character's person and is
- * always inert, regardless of its equipped/attuned flags.
+ * gear and are on as soon as the character holds one. A magic weapon or
+ * armour carried without the base it is laid over (a Sentinel Shield with no
+ * shield) can never be wielded or worn, so it is inert too, attuned or not.
+ * A stowed item (assigned to a storage container) is off the character's
+ * person and is always inert, regardless of its equipped/attuned flags.
  */
 export function itemBenefitsActive(
   library: ElementLibrary,
@@ -357,6 +365,7 @@ export function itemBenefitsActive(
 ): boolean {
   if (item.storage) return false;
   const base = elementById(library, item.itemId);
+  if (item.adorners.length === 0 && isAdornerElement(base)) return false;
   const attunable = isAttunableElement(effectiveElement(library, item));
   if (equipLocationsFor(base).length > 0) return item.equipped && (item.attuned || !attunable);
   if (attunable) return item.attuned;

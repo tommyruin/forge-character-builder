@@ -77,3 +77,81 @@ describe('workspace stat pills', () => {
     expect(workspaceSource).not.toContain('["INIT", "Initiative"');
   });
 });
+
+const css = readFileSync(new URL('../../index.css', import.meta.url), 'utf8');
+
+/** The bodies of every `@media <query>` block, brace-balanced. */
+const mediaBlocks = (query) => {
+  const blocks = [];
+  const opener = `@media ${query} {`;
+  for (
+    let start = css.indexOf(opener);
+    start !== -1;
+    start = css.indexOf(opener, start + 1)
+  ) {
+    let depth = 0;
+    const bodyStart = start + opener.length;
+    for (let i = bodyStart - 1; i < css.length; i += 1) {
+      if (css[i] === '{') depth += 1;
+      if (css[i] === '}') depth -= 1;
+      if (depth === 0) {
+        blocks.push(css.slice(bodyStart, i));
+        break;
+      }
+    }
+  }
+  return blocks;
+};
+
+/** Declarations of the rules whose selector list names `selector`. */
+const rulesFor = (source, selector) =>
+  [...source.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(([, selectors]) =>
+      selectors
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .split(',')
+        .map((part) => part.trim())
+        .includes(selector)
+    )
+    .map(([, , body]) => body);
+
+describe('workspace stat bar on phones', () => {
+  const mobile = mediaBlocks('(max-width: 820px)').join('\n');
+
+  it('is not hidden by the mobile layout', () => {
+    expect(mobile).not.toBe('');
+    for (const selector of [
+      '.fcb-subbar-stats',
+      '.fcb-workspace > .fcb-subbar',
+      '.fcb-subbar',
+    ]) {
+      for (const body of rulesFor(mobile, selector)) {
+        expect(body, selector).not.toMatch(/display:\s*none/);
+      }
+    }
+  });
+
+  it('keeps the bottom nav as the only tab strip on phones', () => {
+    // The subbar now shows for its stats; its desktop tab strip stays hidden
+    // so phones keep a single navigation (the bottom bar).
+    expect(
+      rulesFor(mobile, '.fcb-subbar .fcb-secondary-tabs').join('\n')
+    ).toMatch(/display:\s*none/);
+  });
+
+  it('fits the stats on one row that scrolls on its own if it must', () => {
+    const row = rulesFor(mobile, '.fcb-subbar-stats').join('\n');
+    expect(row).toMatch(/flex-wrap:\s*nowrap/);
+    expect(row).toMatch(/overflow-x:\s*auto/);
+    const pill = rulesFor(mobile, '.fcb-subbar-stats .fcb-stat-pill').join(
+      '\n'
+    );
+    expect(pill).toMatch(/white-space:\s*nowrap/);
+  });
+
+  it('keeps the Save button hidden on phones', () => {
+    expect(rulesFor(mobile, '.fcb-save-button').join('\n')).toMatch(
+      /display:\s*none/
+    );
+  });
+});

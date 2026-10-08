@@ -1066,13 +1066,17 @@ function defenceLines(
   const grouped = new Map<string, Set<string>>();
   const described: string[] = [];
   const seen = new Set<string>();
+  const classLevels = featureClassLevels(state);
   for (const id of registeredIds(state)) {
     const element = library.byId.get(id);
     if (element === undefined || element.identity.type !== "Condition") continue;
     let hasSheetText = false;
     for (const sheet of element.sheets) {
       if (sheet.display === false) continue;
-      const description = sheetDescriptionAtLevel(sheet, state.level);
+      // A Condition a class or subclass feature grants tiers its text by that
+      // class's level, as the feature itself does; any other source (a race,
+      // an item) reads the character level.
+      const description = sheetDescriptionAtLevel(sheet, classLevels.get(id) ?? state.level);
       if (description === undefined) continue;
       const text = substitute(description.text, values, inline).trim();
       if (text === "") continue;
@@ -1236,11 +1240,13 @@ interface CollectedFeature {
 /**
  * Associates registered ids with the owning class's current level. Class
  * grants are authored against that level, while the character's total level
- * also includes levels in other classes.
+ * also includes levels in other classes. The history is cropped to the
+ * displayed level, as the calculator's classLevels is, so a delevel preview
+ * reads the class levels it shows.
  */
 function featureClassLevels(state: CharacterState): Map<string, number> {
   const classLevels = new Map<string, number>();
-  for (const entry of state.levelHistory) {
+  for (const entry of state.levelHistory.slice(0, state.level)) {
     if (entry.isPending) continue;
     classLevels.set(entry.classId, Math.max(classLevels.get(entry.classId) ?? 0, entry.classLevel));
   }

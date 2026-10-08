@@ -252,7 +252,8 @@ describe("sheet attack rows", () => {
       strength: 10, dexterity: 18, constitution: 14, intelligence: 10, wisdom: 14, charisma: 8,
     });
     await selectClass(service, id, "ID_WOTC_PHB_CLASS_MONK");
-    service.createAttack(id, { mode: "unarmed" });
+    // Choosing Monk already added the automatic row; adding one by hand would be a duplicate.
+    expect(service.getAttacks(id).filter((a) => a.kind === "unarmed")).toHaveLength(1);
     while (service.getCharacter(id).level < 5) service.levelUpMode(id, { mode: "main" });
 
     const row = service.getAttacks(id).find((a) => a.kind === "unarmed")!;
