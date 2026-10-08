@@ -11,7 +11,12 @@
 //  - split: separate boxes for class features, subclass features and feats
 //    on the character page. null means "the layout's own default" (off for
 //    2014 and 2024, on for 2024 Hybrid); true or false overrides it.
-//  - readable: reserved for a later layout step.
+//  - readable: a more readable character page. On the 2024 layouts the armor
+//    sits beside armor class, species traits and conditions move beside the
+//    abilities, the feature boxes are taller and the attack notes larger (the
+//    2024 ability panels also show the modifier as the large number); on the
+//    2014 layout the captions are larger, the skills roomier and there are
+//    six attack rows.
 //  - inventoryNotes: the equipment page's notes column also describes the
 //    other magic items in full and the tools and useful gear in brief.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card

@@ -70,6 +70,7 @@ function LayoutOptions({ templateSet }) {
   const layout = effectiveSheetLayout(templateSet, options);
   const splitHintId = useId();
   const topHintId = useId();
+  const readableHintId = useId();
   return (
     <div className="fcb-sheet-layout-options space-y-2" role="group" aria-label="Layout options">
       <h3 className="fcb-sheet-colour-part">Layout options</h3>
@@ -104,6 +105,24 @@ function LayoutOptions({ templateSet }) {
           <span className="block">Split feature boxes</span>
           <span id={splitHintId} className="fcb-muted-copy block">
             Separate boxes for class features, subclass features and feats
+          </span>
+        </span>
+      </label>
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          role="switch"
+          aria-label="Readable body"
+          aria-describedby={readableHintId}
+          checked={layout.readable}
+          onChange={(event) => setOptions({ readable: event.target.checked })}
+        />
+        <span>
+          <span className="block">Readable body</span>
+          <span id={readableHintId} className="fcb-muted-copy block">
+            {templateSet === '2014'
+              ? 'Larger captions, roomier skills and six attack rows'
+              : 'Armor beside armor class, traits and conditions beside the abilities, taller feature boxes and larger attack notes'}
           </span>
         </span>
       </label>

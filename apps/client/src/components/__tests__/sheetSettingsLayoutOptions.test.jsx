@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   host.remove();
-  sheetLayoutOptionsSettingStore.set({ split: null, top: false });
+  sheetLayoutOptionsSettingStore.set({ split: null, top: false, readable: false });
   sheetTemplateSettingStore.set('2014');
 });
 
@@ -32,6 +32,7 @@ async function renderPanel() {
 
 const splitSwitch = () => host.querySelector('[aria-label="Split feature boxes"]');
 const topSwitch = () => host.querySelector('[aria-label="Compact top row"]');
+const readableSwitch = () => host.querySelector('[aria-label="Readable body"]');
 const resetButton = () =>
   [...host.querySelectorAll('button')].find((button) => button.textContent === 'Use layout default');
 const layoutButton = (label) =>
@@ -85,6 +86,25 @@ describe('sheet settings layout options', () => {
     await act(async () => topSwitch().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBe(false);
     // Top is off by default everywhere, so there is no layout default to return to.
+    expect(resetButton()).toBeUndefined();
+  });
+
+  it('stores the readable body choice and shows it on every layout', async () => {
+    await renderPanel();
+    expect(readableSwitch().getAttribute('role')).toBe('switch');
+    expect(readableSwitch().checked).toBe(false);
+    expect(host.textContent).toContain('Larger captions, roomier skills and six attack rows');
+    await act(async () => readableSwitch().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().readable).toBe(true);
+    expect(readableSwitch().checked).toBe(true);
+    await act(async () => layoutButton('2024 Hybrid').click());
+    expect(readableSwitch().checked).toBe(true);
+    expect(host.textContent).toContain('Armor beside armor class');
+    // The other switches are their own.
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().split).toBeNull();
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBe(false);
+    await act(async () => readableSwitch().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().readable).toBe(false);
     expect(resetButton()).toBeUndefined();
   });
 });

@@ -2,6 +2,7 @@ import type { SpellResourceDto } from "@forge-cb/api";
 import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection, SheetSpellListSection } from "./model.js";
 import type { LayoutRun } from "./card-layout.js";
 import { measuredTextWidth, winAnsiText } from "./text.js";
+import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote } from "./attack-notes.js";
 import { decodeBase64 } from "../platform.js";
 import {
   DEFAULT_SHEET_COLOURS,
@@ -1812,6 +1813,37 @@ async function addSpellListPage(
 }
 
 /**
+ * A template with more attack rows than the form values fill (the readable
+ * 2014 page has six) takes the next attacks from the details page's own list,
+ * and its free-text note lists only the attacks that still have no row ahead
+ * of the user's notes. A model without the list, or a template with the usual
+ * rows, keeps the form values as they are.
+ */
+function fillExtraAttackRows(
+  values: Record<string, string>,
+  model: CharacterSheetModel,
+  fields: ReadonlyMap<string, TemplateField>,
+): void {
+  let rows = 0;
+  for (const name of fields.keys()) {
+    const row = Number(name.match(/^details_attack(\d+)_weapon$/)?.[1] ?? 0);
+    if (row > rows) rows = row;
+  }
+  const details = model.pages.find((page) => page.templateKind === "details");
+  const attacks = details?.attacks;
+  if (rows <= SHEET_BASE_ATTACK_ROWS || attacks === undefined) return;
+  attacks.slice(SHEET_BASE_ATTACK_ROWS, rows).forEach((attack, index) => {
+    const row = SHEET_BASE_ATTACK_ROWS + index + 1;
+    values[`details_attack${row}_weapon`] = attack.name;
+    values[`details_attack${row}_range`] = attack.range;
+    values[`details_attack${row}_attack`] = attack.bonus;
+    values[`details_attack${row}_damage`] = attack.damage;
+    values[`details_attack${row}_description`] = attack.note;
+  });
+  values["details_attack_description"] = attackDescriptionNote(attacks.slice(rows), details?.attackNotes ?? "");
+}
+
+/**
  * Assemble every semantic page against its matching template. The result is
  * deliberately flattened/static so browser PDF viewers see the same text and
  * typography as downloaded files.
@@ -1836,28 +1868,34 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const fonts = await timed("embedFonts", () => embedSheetFonts(output, bundle.faces));
   const values = { ...model.formValues };
   let detailsLabels = bundle.labels[bundle.detailsFile ?? files.details];
+  const detailsArt = await artworkFor(bundle.details);
   if (options.emphasizeAbilityModifiers === true) {
+    // Emphasis puts the modifier in the large slot. A template whose modifier
+    // already has it (by its fields' own sizes) needs no swap.
+    let swapped = false;
     for (const ability of ["str", "dex", "con", "int", "wis", "cha"]) {
       const score = `details_${ability}_score`;
       const modifier = `details_${ability}_modifier`;
+      if ((detailsArt.fields.get(score)?.base ?? 0) <= (detailsArt.fields.get(modifier)?.base ?? 0)) continue;
       [values[score], values[modifier]] = [values[modifier] ?? "", values[score] ?? ""];
+      swapped = true;
     }
-    if (detailsLabels !== undefined) detailsLabels = {
+    if (swapped && detailsLabels !== undefined) detailsLabels = {
       ...detailsLabels,
       labels: detailsLabels.labels.map((label) => ({ ...label, text: label.text === "SCORE" ? "MODIFIER" : label.text === "MODIFIER" ? "SCORE" : label.text })),
     };
   }
+  fillExtraAttackRows(values, model, detailsArt.fields);
   const attackNotes: AttackNoteCard[] = [];
-  const detailsArt = await artworkFor(bundle.details);
   for (const [name, field] of detailsArt.fields) {
-    if (!/^details_attack(?:[1-4])?_description$/.test(name) || !values[name]) continue;
+    if (!/^details_attack(?:\d+)?_description$/.test(name) || !values[name]) continue;
     const value = values[name]!.split(/\r?\n/).map(winAnsiText).join("\n");
     const measure = (text: string, size: number): number => fonts.regular.widthOfTextAtSize(text, size);
     // Match the writer's single-line path before considering multiline overflow.
     if (!field.multiline && drawnNumberSize(value, field.rect, field.base, fonts.regular) > 0) continue;
     const size = fitMultilineFontSize(value, field.rect.width, field.rect.height, field.base, 0.25, measure);
     if (size >= 4.5 && value.split(/\s+/).every((word) => measure(word, size) <= field.rect.width - 4)) continue;
-    const row = name.match(/attack([1-4])_/)?.[1];
+    const row = name.match(/attack(\d+)_/)?.[1];
     const title = row ? `Attack ${row}: ${values[`details_attack${row}_weapon`] || "Notes"}` : "General attack notes";
     if (options.includeAttackNotes !== false) {
       attackNotes.push({ title, text: value });

@@ -77,7 +77,8 @@ describe("sheet template geometry", () => {
       }
     }
     expect(collisions).toEqual([]);
-  });
+    // Every page of the set, layout variants included: slow under the coverage pass.
+  }, 30_000);
 
   // The edition label is how a printed page says which rules it was laid out
   // for; a page without one reads as the other edition's sheet. The 2024
@@ -91,7 +92,8 @@ describe("sheet template geometry", () => {
       if (!(text?.labels ?? []).some((label) => label.text === `${RULES_EDITION[set]} RULES`)) missing.push(file);
     }
     expect(missing).toEqual([]);
-  });
+    // Every page of the set, layout variants included: slow under the coverage pass.
+  }, 30_000);
 
   // The hybrid character page is the 2024 page with a different ability
   // arrangement: the writer fills it from the same values, so it must carry
@@ -109,14 +111,17 @@ describe("sheet template geometry", () => {
   // the writer fills on one is never lost on the other: the split 2024 page
   // matches Hybrid's own, and the unsplit Hybrid page matches 2024's own.
   it("keeps the 2024 and Hybrid pages' fields in step for each layout choice", async () => {
-    for (const top of [false, true]) {
-      for (const split of [true, false]) {
-        const modern = sheetDetailsFile("2024", resolveSheetLayout("2024", { top, split }));
-        const hybrid = sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top, split }));
-        expect([...await fieldNames("2024", modern)].sort(), `top ${top} split ${split}`).toEqual([...await fieldNames("2024-hybrid", hybrid)].sort());
+    for (const readable of [false, true]) {
+      for (const top of [false, true]) {
+        for (const split of [true, false]) {
+          const modern = sheetDetailsFile("2024", resolveSheetLayout("2024", { top, split, readable }));
+          const hybrid = sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top, split, readable }));
+          expect([...await fieldNames("2024", modern)].sort(), `top ${top} split ${split} readable ${readable}`).toEqual([...await fieldNames("2024-hybrid", hybrid)].sort());
+        }
       }
     }
-  });
+    // Sixteen pages loaded: slow under the coverage pass.
+  }, 30_000);
 
   // The split switch changes the feature boxes and nothing else: each page
   // with it away from the set's default matches the page with the same other
@@ -135,10 +140,11 @@ describe("sheet template geometry", () => {
   const TOP_2024 = DETAILS_PAGES.filter(([set, file]) => set !== "2014" && file.includes("~top"));
   it("has a compact top row page for every set and split choice", () => {
     expect(TOP_2024.map(([set, file]) => `${set}/${file}`)).toEqual([
-      "2024/details~top.pdf", "2024/details~top.split.pdf", "2024-hybrid/details~top.pdf", "2024-hybrid/details~top.unsplit.pdf",
+      "2024/details~top.pdf", "2024/details~top.split.pdf", "2024/details~top.readable.pdf", "2024/details~top.split.readable.pdf",
+      "2024-hybrid/details~top.pdf", "2024-hybrid/details~top.unsplit.pdf", "2024-hybrid/details~top.readable.pdf", "2024-hybrid/details~top.unsplit.readable.pdf",
     ]);
     expect(DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("~top")).map(([, file]) => file))
-      .toEqual(["details~top.pdf", "details~top.split.pdf"]);
+      .toEqual(["details~top.pdf", "details~top.split.pdf", "details~top.readable.pdf", "details~top.split.readable.pdf"]);
   });
 
   // The compact top row puts the numbers a player changes most during a fight
@@ -304,13 +310,28 @@ describe("sheet template geometry", () => {
 
   // The 2014 page prints the same text on a wide line of its own, which fits;
   // it must not pick up the 2024 page's wrapping cell.
-  it("leaves the 2014 attack notes on their own single line", async () => {
-    const form = (await PDFDocument.load(readFileSync(join(SHEETS, "2014", SHEET_TEMPLATE_CONTRACT.files.details)))).getForm();
-    for (let row = 1; row <= 4; row += 1) {
+  // The readable page has six rows, each with its own notes line.
+  it.each([
+    [SHEET_TEMPLATE_CONTRACT.files.details, 4],
+    ...DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("readable")).map(([, file]) => [file, 6] as const),
+  ] as const)("leaves the 2014 attack notes on their own single line on %s, %i rows", async (file, rows) => {
+    const form = (await PDFDocument.load(readFileSync(join(SHEETS, "2014", file)))).getForm();
+    const rectOf = (name: string) => form.getTextField(name).acroField.getWidgets()[0]!.getRectangle();
+    const names = form.getFields().map((field) => field.getName());
+    expect(names.filter((name) => /^details_attack\d+_weapon$/.test(name))).toHaveLength(rows);
+    for (let row = 1; row <= rows; row += 1) {
       const field = form.getTextField(`details_attack${row}_description`);
       expect(field.isMultiline(), `row ${row}`).toBe(false);
-      expect(field.acroField.getWidgets()[0]!.getRectangle().width, `row ${row}`).toBeGreaterThan(300);
+      expect(rectOf(`details_attack${row}_description`).width, `row ${row}`).toBeGreaterThan(300);
+      // Each notes line sits under its own row and clears the next row's values.
+      const notes = rectOf(`details_attack${row}_description`);
+      expect(notes.y + notes.height, `row ${row}`).toBeLessThanOrEqual(rectOf(`details_attack${row}_weapon`).y);
+      if (row < rows) expect(notes.y, `row ${row}`).toBeGreaterThanOrEqual(rectOf(`details_attack${row + 1}_weapon`).y + rectOf(`details_attack${row + 1}_weapon`).height - 0.5);
     }
+    // The free-text notes keep a box of their own under the last row.
+    const free = rectOf("details_attack_description");
+    expect(free.y + free.height).toBeLessThanOrEqual(rectOf(`details_attack${rows}_description`).y);
+    expect(free.height).toBeGreaterThanOrEqual(20);
   });
 
   it.each(DETAILS_PAGES.filter(([set]) => set !== "2014"))("gives the big numbers a size that suits their box on %s/%s", async (set, file) => {
@@ -319,6 +340,135 @@ describe("sheet template geometry", () => {
     for (const name of ["details_proficiency_bonus", "details_initiative", "details_passive_perception_total", "details_hd"]) {
       expect(sizeOf(name), name).toBeGreaterThanOrEqual(14);
     }
+  });
+});
+
+/** A page's text fields: rectangle, size and multiline flag by name. */
+async function fieldsOf(set: SheetTemplateSet, file: string) {
+  const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, file)))).getForm();
+  const rect = (name: string) => form.getFields().find((field) => field.getName() === name)?.acroField.getWidgets()[0]?.getRectangle();
+  const size = (name: string) => templateFontSize(form.getTextField(name).acroField.getDefaultAppearance());
+  const has = (name: string) => form.getFields().some((field) => field.getName() === name);
+  return { form, rect: (name: string) => rect(name)!, size, has, multiline: (name: string) => form.getTextField(name).isMultiline() };
+}
+const top = (box: { y: number; height: number }) => box.y + box.height;
+const right = (box: { x: number; width: number }) => box.x + box.width;
+
+describe("the readable body", () => {
+  const READABLE_2024 = DETAILS_PAGES.filter(([set, file]) => set !== "2014" && file.includes("readable"));
+  const READABLE_2014 = DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("readable"));
+  /** The page `file` would be without the readable switch. */
+  const plainOf = (set: SheetTemplateSet, file: string) => {
+    const variant = sheetLayoutVariants(set).find((candidate) => candidate.file === file)!;
+    return sheetDetailsFile(set, { ...variant.layout, readable: false });
+  };
+
+  it("has a readable page for every set and combination of the other switches", () => {
+    expect(READABLE_2024.map(([set, file]) => `${set}/${file}`)).toEqual([
+      "2024/details~readable.pdf", "2024/details~split.readable.pdf", "2024/details~top.readable.pdf", "2024/details~top.split.readable.pdf",
+      "2024-hybrid/details~readable.pdf", "2024-hybrid/details~unsplit.readable.pdf", "2024-hybrid/details~top.readable.pdf", "2024-hybrid/details~top.unsplit.readable.pdf",
+    ]);
+    expect(READABLE_2014.map(([, file]) => file)).toEqual([
+      "details~readable.pdf", "details~split.readable.pdf", "details~top.readable.pdf", "details~top.split.readable.pdf",
+    ]);
+  });
+
+  // Armor class and the armor that gives it are read together, so the
+  // armor sits right beside the AC shield, in the top row when there is one.
+  it.each(READABLE_2024)("puts the armor beside the armor class on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const ac = page.rect("details_armor_class");
+    // Left of the shield and close to it, within the shield's own band; the
+    // stealth mark ends its frame's caption line.
+    for (const [name, gap] of [["details_equipped_armor", 20], ["details_armor_conditional", 20], ["details_armor_stealth_disadvantage", 60]] as const) {
+      const box = page.rect(name);
+      expect(right(box), name).toBeLessThanOrEqual(ac.x + 0.5);
+      expect(ac.x - right(box), name).toBeLessThan(gap);
+      expect(box.y, name).toBeGreaterThan(ac.y - 90);
+      expect(top(box), name).toBeLessThan(top(ac) + 50);
+    }
+  });
+
+  it.each(READABLE_2024)("moves the traits left and gives class features more height on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const plain = await fieldsOf(set, plainOf(set, file));
+    const LEFT = 266;
+    // Species traits under the abilities in the left column; proficiencies where the traits were.
+    const traits = page.rect("details_additional_notes");
+    expect(right(traits)).toBeLessThanOrEqual(LEFT);
+    const lowestAbility = Math.min(...["str", "dex", "con", "int", "wis", "cha"].map((key) => page.rect(`details_${key}_save_total`).y));
+    expect(top(traits)).toBeLessThan(lowestAbility);
+    const proficiencies = page.rect("details_proficiencies_languages");
+    const plainTraits = plain.rect("details_additional_notes");
+    expect(proficiencies.x).toBe(plainTraits.x);
+    expect(proficiencies.y).toBe(plainTraits.y);
+    expect(proficiencies.height).toBeLessThan(plainTraits.height);
+    // Conditions beside the abilities; senses take the conditions' old place.
+    expect(right(page.rect("details_conditions"))).toBeLessThanOrEqual(LEFT);
+    for (let i = 1; i <= 6; i += 1) expect(right(page.rect(`details_exhaustion_${i}`))).toBeLessThanOrEqual(LEFT);
+    expect(page.rect("details_resistances").x).toBeGreaterThan(plain.rect("details_conditions").x - 10);
+    expect(page.rect("details_encounter_box").height).toBeLessThan(plain.rect("details_encounter_box").height);
+    // The feature boxes share the height that freed.
+    const features = (fields: typeof page) => ["details_features", "details_subclass_features", "details_feats"]
+      .filter((name) => fields.has(name)).reduce((sum, name) => sum + fields.rect(name).height, 0);
+    expect(features(page)).toBeGreaterThan(features(plain) + 6);
+  });
+
+  // The free-text attack note under the weapons is the user's own prose and
+  // the attacks that did not get a row: two lines at 7pt or more.
+  it.each(READABLE_2024)("gives the more attacks note a taller wrapping cell on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const note = page.rect("details_attack_description");
+    expect(page.multiline("details_attack_description")).toBe(true);
+    expect(page.size("details_attack_description")).toBeGreaterThanOrEqual(7);
+    expect(note.height).toBeGreaterThanOrEqual(20);
+    expect(top(note)).toBeLessThanOrEqual(page.rect("details_attack4_description").y);
+  });
+
+  // D&D Beyond style: the modifier is the large number, the score a small badge.
+  it.each(READABLE_2024.filter(([set]) => set === "2024"))("makes the modifier the focal number on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const plain = await fieldsOf(set, plainOf(set, file));
+    for (const key of ["str", "dex", "con", "int", "wis", "cha"]) {
+      const modifier = page.rect(`details_${key}_modifier`);
+      const score = page.rect(`details_${key}_score`);
+      expect(page.size(`details_${key}_modifier`)!, key).toBeGreaterThan(page.size(`details_${key}_score`)!);
+      expect(modifier.width * modifier.height, key).toBeGreaterThan(score.width * score.height);
+      expect(score.y + score.height / 2, key).toBeLessThan(modifier.y + modifier.height / 2);
+      // A tighter panel: the numbers take less height above the saving throw than the plain panel's.
+      const header = (fields: typeof page) => Math.max(top(fields.rect(`details_${key}_modifier`)), top(fields.rect(`details_${key}_score`))) -
+        fields.rect(`details_${key}_save_total`).y;
+      expect(header(page), key).toBeLessThan(header(plain));
+    }
+  });
+
+  it.each(READABLE_2014)("raises the small captions on %s/%s", async (set, file) => {
+    const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
+    const sizeOf = (page: string, text: string) => labels[page]!.labels.filter((label) => label.text === text).map((label) => label.size);
+    for (const caption of ["STRENGTH", "DEXTERITY", "CONSTITUTION", "INTELLIGENCE", "WISDOM", "CHARISMA", "AC", "SPEED", "FLY", "CLIMB", "SWIM", "SUCCESSES", "FAILURES"]) {
+      const sizes = sizeOf(file, caption);
+      expect(sizes, caption).toHaveLength(1);
+      expect(sizes[0], caption).toBeGreaterThanOrEqual(5.5);
+      expect(sizes[0], caption).toBeLessThanOrEqual(7);
+      expect(sizes[0], caption).toBeGreaterThan(sizeOf(plainOf(set, file), caption)[0]!);
+    }
+  });
+
+  it.each(READABLE_2014)("spreads the skills over the room the saving throws gave up on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const plain = await fieldsOf(set, plainOf(set, file));
+    const skills = ["acrobatics", "animalhandling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation",
+      "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleightofhand", "stealth", "survival"];
+    const rows = skills.map((skill) => page.rect(`details_${skill}_total`).y);
+    for (let index = 1; index < rows.length; index += 1) expect(rows[index - 1]! - rows[index]!, skills[index]).toBeGreaterThanOrEqual(11.2);
+    expect(rows[0]! - rows[1]!).toBeGreaterThan(plain.rect("details_acrobatics_total").y - plain.rect("details_animalhandling_total").y);
+    // The saving throws keep their six rows and a notes line, in a shorter box.
+    const saves = ["str", "dex", "con", "int", "wis", "cha"].map((key) => page.rect(`details_${key}_save_total`));
+    const notes = page.rect("details_saving_throws");
+    expect(top(notes)).toBeLessThanOrEqual(saves[5]!.y);
+    expect(notes.y).toBeGreaterThan(plain.rect("details_saving_throws").y);
+    expect(notes.height).toBeGreaterThanOrEqual(8);
+    expect(top(page.rect("details_acrobatics_total"))).toBeLessThan(notes.y - 10);
   });
 });
 

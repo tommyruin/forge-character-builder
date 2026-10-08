@@ -41,6 +41,9 @@ import {
   type LayoutRun,
 } from "./card-layout.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
+import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote, type SheetAttackRow } from "./attack-notes.js";
+
+export type { SheetAttackRow } from "./attack-notes.js";
 
 export type SheetMode = "lite" | "full";
 
@@ -102,6 +105,14 @@ export interface SheetPage {
   spellcasting?: readonly SheetSpellcasterLayout[];
   /** The details page's feature rows split by origin, for layouts with separate boxes. */
   featureGroups?: Readonly<Record<string, readonly SheetRow[]>>;
+  /**
+   * The details page's displayed attacks, every one in sheet order. The form
+   * values fill the rows every template has; a template with more rows fills
+   * the rest from here and rewords the note under them.
+   */
+  attacks?: readonly SheetAttackRow[];
+  /** The user's own attack notes, apart from the attacks that did not get a row. */
+  attackNotes?: string;
 }
 
 export interface CharacterSheetModel {
@@ -303,7 +314,8 @@ export function buildCharacterSheetModel(
   // Absent means included: a caller that says nothing gets the whole sheet.
   const wants = (page: keyof SheetPageInclusions): boolean => options.include?.[page] !== false;
   const pages: SheetPage[] = [];
-  pages.push(buildPage1(state, library, values, inline));
+  const attacks = sheetAttackRows(state, library);
+  pages.push({ ...buildPage1(state, library, values, inline), attacks, attackNotes: state.attacksDescription });
   if (wants("background")) pages.push(buildPage2(state, library));
   const companion = buildCompanionDto(state, library, values);
   if (companion !== null) pages.push(buildCompanionPage(companion, pages.length + 1));
@@ -330,7 +342,7 @@ export function buildCharacterSheetModel(
   // is what keeps the numbers contiguous once a page is left out.
   const numbered: SheetPage[] = pages.map((page, index) => ({ ...page, page: index + 1 }));
   const formValues = {
-    ...buildFormValues(state, library, values, spellcasters, inline, inventoryNotes),
+    ...buildFormValues(state, library, values, spellcasters, attacks, inline, inventoryNotes),
     ...(companion !== null ? companionFormValues(companion) : {}),
   };
   // The templates' portrait frames are image buttons; an absent portrait must
@@ -355,6 +367,22 @@ export function buildCharacterSheetModel(
  * list more than once (two content sources, or a class list alongside an
  * always-prepared grant); the prepared entry wins so its mark survives.
  */
+/**
+ * The attacks the sheet prints, in order: each displayed attack once, with
+ * the live values of its resolved row.
+ */
+function sheetAttackRows(state: CharacterState, library: ElementLibrary): SheetAttackRow[] {
+  const seen = new Set<string>();
+  return buildAttacksDto(state, library)
+    .filter((entry) => entry.isDisplayed)
+    .filter((entry) => {
+      if (seen.has(entry.id)) return false;
+      seen.add(entry.id);
+      return true;
+    })
+    .map((attack) => ({ name: attack.name, range: attack.range, bonus: attack.bonus, damage: attack.damage, note: sheetAttackNote(attack, library) }));
+}
+
 /** Keep generated spell prose on its card, while preserving authored attack notes. */
 function sheetAttackNote(attack: AttackDto, library: ElementLibrary): string {
   if (attack.kind !== "spell" || attack.overriddenFields.includes("description")) return attack.description;
@@ -407,6 +435,7 @@ function buildFormValues(
   library: ElementLibrary,
   values: StatisticsValues,
   spellcasters: readonly SpellcasterDto[],
+  displayedAttacks: readonly SheetAttackRow[],
   inline?: Readonly<Record<string, string>>,
   inventoryNotes = false,
 ): Readonly<Record<string, string>> {
@@ -717,22 +746,11 @@ function buildFormValues(
     .map((entry) => `${entry.title}. ${entry.text}`);
   set("equipment_page_magic_items", sidebars.join("\n\n"));
 
-  const seenSheetAttackIds = new Set<string>();
-  const displayedAttacks = buildAttacksDto(state, library)
-    .filter((entry) => entry.isDisplayed)
-    .filter((entry) => {
-      if (seenSheetAttackIds.has(entry.id)) return false;
-      seenSheetAttackIds.add(entry.id);
-      return true;
-    });
-  // Both layouts have four attack rows. Later attacks lead the free-text
+  // Every template has four attack rows. Later attacks lead the free-text
   // notes under them, which continue onto an attack-note page when long, so
-  // no displayed attack drops off the sheet.
-  const sheetAttacks = displayedAttacks.slice(0, 4);
-  const moreAttacks = displayedAttacks.slice(4).map((attack) => {
-    const details = [attack.range, attack.bonus, attack.damage].filter((part) => part !== "");
-    return details.length > 0 ? `${attack.name}: ${details.join(", ")}` : attack.name;
-  });
+  // no displayed attack drops off the sheet. A template with more rows gets
+  // the rest from the details page's own attack list.
+  const sheetAttacks = displayedAttacks.slice(0, SHEET_BASE_ATTACK_ROWS);
   for (const [index, attack] of sheetAttacks.entries()) {
     const number = index === 0 ? "" : ` ${index + 1}`;
     // The document's attack/damage attributes are whatever was current when the
@@ -747,14 +765,9 @@ function buildFormValues(
     set(`details_attack${row}_range`, attack.range);
     set(`details_attack${row}_attack`, attack.bonus);
     set(`details_attack${row}_damage`, attack.damage);
-    set(`details_attack${row}_description`, sheetAttackNote(attack, library));
+    set(`details_attack${row}_description`, attack.note);
   }
-  set(
-    "details_attack_description",
-    [moreAttacks.length > 0 ? `More attacks: ${moreAttacks.join("; ")}.` : "", state.attacksDescription]
-      .filter((part) => part !== "")
-      .join("\n"),
-  );
+  set("details_attack_description", attackDescriptionNote(displayedAttacks.slice(SHEET_BASE_ATTACK_ROWS), state.attacksDescription));
 
   // The details page carries one spellcasting block, which belongs to the
   // character's class caster; a feature caster only fills it when there is no

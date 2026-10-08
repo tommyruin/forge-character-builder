@@ -55,8 +55,9 @@ describe('SheetSettingsPanel', () => {
       expect(markup).toContain(`aria-label="${label}"`);
     }
     // Five page checkboxes on, plus ability emphasis, compact top row, split
-    // feature boxes, smart cards and item notes off by default on the 2014 layout.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(10);
+    // feature boxes, readable body, smart cards and item notes off by default
+    // on the 2014 layout.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(11);
     expect(markup.match(/checked=""/g)).toHaveLength(5);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
@@ -75,7 +76,7 @@ describe('SheetSettingsPanel', () => {
 
   it('offers item notes for the inventory as a switch, off by default', () => {
     expect(markup).toContain('Print item notes in the inventory: magic items in full, tools and useful gear in brief');
-    expect(markup.match(/role="switch"/g)).toHaveLength(4);
+    expect(markup.match(/role="switch"/g)).toHaveLength(5);
   });
 
   it('offers a compact top row as a layout option, off by default', () => {
@@ -84,6 +85,14 @@ describe('SheetSettingsPanel', () => {
     expect(top).toContain('role="switch"');
     expect(top).not.toContain('checked=""');
     expect(markup).toContain('Compact top row');
+  });
+
+  it('offers a readable body as a layout option, off by default', () => {
+    const readable = markup.match(/<input[^>]*aria-label="Readable body"[^>]*>/)?.[0];
+    expect(readable).toBeDefined();
+    expect(readable).toContain('role="switch"');
+    expect(readable).not.toContain('checked=""');
+    expect(markup).toContain('Readable body');
   });
 
   it('offers split feature boxes as a layout option, off on the default layout', () => {

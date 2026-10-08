@@ -20,8 +20,9 @@
  *
  * Each set's character page also has layout variants, one per combination of
  * the contract's implemented layout switches away from the set's defaults
- * (details~split.pdf, details~unsplit.pdf, ...). The page functions take the
- * switches; the defaults draw the set's own page exactly as before.
+ * (details~split.pdf, details~unsplit.pdf, details~top.readable.pdf, ...).
+ * The page functions take the switches; the defaults draw the set's own page
+ * exactly as before.
  *
  * The templates carry artwork and fields only. Every title, caption and ribbon
  * is recorded in the set's labels.json and drawn by the writer at render time
@@ -299,27 +300,28 @@ class Sheet {
   }
   /**
    * A titled section. `ribbon` hangs the title over the top or bottom edge;
-   * `plate` sets it inside, over an ornamented rule. Returns the inner content box.
+   * `plate` sets it inside, over an ornamented rule. Returns the inner content
+   * box, `padTop` short of the frame's top so its contents clear the border.
    */
-  section(title, x, y, width, height, { style = this.style.titleStyle, at = this.style.titleAt, size = 6.2 } = {}) {
+  section(title, x, y, width, height, { style = this.style.titleStyle, at = this.style.titleAt, size = 6.2, padTop = 0 } = {}) {
     this.frame(x, y, width, height);
     if (style === "ribbon") {
       const fitted = Math.min(size, (size * (width - 56)) / this.textWidth(title, "display", size));
       if (at === "bottom") {
         this.ribbon(title, x + width / 2, y, { size: fitted });
-        return { x: x + 4, y: y + 8, width: width - 8, height: height - 12 };
+        return { x: x + 4, y: y + 8, width: width - 8, height: height - 12 - padTop };
       }
       this.ribbon(title, x + width / 2, y + height, { size: fitted });
-      return { x: x + 4, y: y + 4, width: width - 8, height: height - 12 };
+      return { x: x + 4, y: y + 4, width: width - 8, height: height - 12 - padTop };
     }
     if (style === "caption") {
       // The printed sheets label a panel inside its lower edge, centred.
       this.label(title, x, y + 5, { size: Math.min(size - 1.2, (width - 12) / (title.length * 0.62)), align: "center", width, color: "text" });
-      return { x: x + 4, y: y + 13, width: width - 8, height: height - 17 };
+      return { x: x + 4, y: y + 13, width: width - 8, height: height - 17 - padTop };
     }
     this.display(title, x, y + height - 11, { size, align: "center", width });
     this.ornamentRule(x + 8, x + width - 8, y + height - 15);
-    return { x: x + 4, y: y + 4, width: width - 8, height: height - 20 };
+    return { x: x + 4, y: y + 4, width: width - 8, height: height - 20 - padTop };
   }
   /** A framed stat: a large centred value over its caption. */
   stat(name, caption, x, y, width, height, { size = 12, radius = 4 } = {}) {
@@ -328,10 +330,10 @@ class Sheet {
     this.label(caption, x, y + 4.5, { size: Math.min(4.6, width / 14), align: "center", width });
   }
   /** A heater shield holding a large value, its caption on the shield's brow. */
-  shield(name, caption, x, top, width, height, { size = 18 } = {}) {
+  shield(name, caption, x, top, width, height, { size = 18, captionSize = 3.8 } = {}) {
     this.path(shieldPath(width, height), x, top, { fill: FILL, stroke: ACCENT, lineWidth: 1 });
     this.path(shieldPath(width - 5.2, height - 5), x + 2.6, top - 2.5, { stroke: GOLD, lineWidth: 0.35 });
-    this.label(caption, x, top - 9, { size: 3.8, align: "center", width });
+    this.label(caption, x, top - 9, { size: captionSize, align: "center", width });
     this.text(name, x + 2, top - height * 0.72, width - 4, height * 0.5, { align: "center", size, box: "none" });
   }
   /**
@@ -393,9 +395,9 @@ class Sheet {
     field.addToPage("", this.page, { x, y, width, height, borderWidth: 0, backgroundColor: undefined, borderColor: undefined, font: this.fonts.field });
     return field;
   }
-  /** A framed multiline field with a title. */
-  block(title, name, x, y, width, height, { size = 6, style, at } = {}) {
-    const inner = this.section(title, x, y, width, height, { style, at });
+  /** A framed multiline field with a title; `padTop` drops the field's top below the frame's. */
+  block(title, name, x, y, width, height, { size = 6, style, at, padTop = 0 } = {}) {
+    const inner = this.section(title, x, y, width, height, { style, at, padTop });
     this.text(name, inner.x, inner.y, inner.width, inner.height, { multiline: true, size, box: "none" });
     return inner;
   }
@@ -501,8 +503,10 @@ function deathSaves(s, prefix, x, y) {
  * The classic hit point box: maximum, hit dice and temporary above the
  * current total, with the death saves in a tab on the lower edge.
  * `splitDice` gives the hit dice a maximum and a write-in for the dice spent.
+ * `readable` sets the captions larger and drops the maximum and temporary
+ * fields further below the frame's top, which wants a taller box.
  */
-function hitPointBox(s, prefix, x, y, width, height, { splitDice = false } = {}) {
+function hitPointBox(s, prefix, x, y, width, height, { splitDice = false, readable = false } = {}) {
   // The printed sheets carry the running total in one panel, with hit dice and
   // the death saves in two smaller panels beneath it.
   const tallyHeight = 32;
@@ -510,26 +514,31 @@ function hitPointBox(s, prefix, x, y, width, height, { splitDice = false } = {})
   const mainHeight = height - tallyHeight - 5;
   s.section("CURRENT HIT POINTS", x, mainY, width, mainHeight, { style: "caption" });
   [[`${prefix}_hp_max`, "MAXIMUM", x + 12, 46], [`${prefix}_hp_temp`, "TEMPORARY", x + width - 58, 46]].forEach(([name, caption, fx, fw]) => {
-    s.captioned(name, caption, fx, mainY + mainHeight - 20, fw, 9, { align: "center", captionAlign: "center", size: 8, captionSize: 3.4 });
+    s.captioned(name, caption, fx, mainY + mainHeight - (readable ? 24 : 20), fw, 9, { align: "center", captionAlign: "center", size: 8, captionSize: readable ? 5.2 : 3.4 });
   });
-  s.text(`${prefix}_hp_current`, x + 12, mainY + 16, width - 24, 16, { align: "center", size: 14, box: "none" });
+  s.text(`${prefix}_hp_current`, x + 12, mainY + (readable ? 14 : 16), width - 24, 16, { align: "center", size: 14, box: "none" });
   const half = (width - 6) / 2;
   const dice = s.section("HIT DICE", x, y, half, tallyHeight, { style: "caption" });
   if (splitDice) {
     // Maximum and spent side by side, each captioned above its rule.
     const cell = (dice.width - 10) / 2;
-    s.captioned(`${prefix}_hd`, "MAX", dice.x + 3, y + 13, cell, 11, { align: "center", captionAlign: "center", size: 10, captionSize: 3.2 });
-    s.captioned(`${prefix}_hd_spent`, "SPENT", dice.x + 7 + cell, y + 13, cell, 11, { align: "center", captionAlign: "center", size: 10, captionSize: 3.2 });
+    const [fieldY, fieldH, captionSize] = readable ? [y + 13, 10, 4.6] : [y + 13, 11, 3.2];
+    s.captioned(`${prefix}_hd`, "MAX", dice.x + 3, fieldY, cell, fieldH, { align: "center", captionAlign: "center", size: 10, captionSize });
+    s.captioned(`${prefix}_hd_spent`, "SPENT", dice.x + 7 + cell, fieldY, cell, fieldH, { align: "center", captionAlign: "center", size: 10, captionSize });
   } else {
     s.text(`${prefix}_hd`, dice.x + 4, y + 13, dice.width - 8, 15, { align: "center", size: 12, box: "none" });
   }
   const saves = s.section("DEATH SAVES", x + half + 6, y, half, tallyHeight, { style: "caption" });
+  // Readable, the larger captions push the marks right and a point lower,
+  // clear of the frame's top.
+  const checksX = saves.x + (readable ? 44 : 38);
+  const [successY, failY] = readable ? [y + 20, y + 12] : [y + 21, y + 13];
   for (let index = 1; index <= 3; index += 1) {
-    s.check(`${prefix}_death_save_success_${index}`, saves.x + 38 + (index - 1) * 9, y + 21, 6);
-    s.check(`${prefix}_death_save_fail_${index}`, saves.x + 38 + (index - 1) * 9, y + 13, 6);
+    s.check(`${prefix}_death_save_success_${index}`, checksX + (index - 1) * 9, successY, 6);
+    s.check(`${prefix}_death_save_fail_${index}`, checksX + (index - 1) * 9, failY, 6);
   }
-  s.label("SUCCESSES", saves.x + 4, y + 22.5, { size: 3.2, color: "lines" });
-  s.label("FAILURES", saves.x + 4, y + 14.5, { size: 3.2, color: "lines" });
+  s.label("SUCCESSES", saves.x + 4, readable ? successY + 0.9 : y + 22.5, { size: readable ? 6 : 3.2, color: "lines" });
+  s.label("FAILURES", saves.x + 4, readable ? failY + 0.9 : y + 14.5, { size: readable ? 6 : 3.2, color: "lines" });
 }
 
 /**
@@ -544,6 +553,34 @@ function roundelPill(s, name, lines, x, y, width) {
   const room = cx - 9 - 1.5 - (x + 5);
   const size = Math.min(3.6, ...lines.map((line) => room / s.textWidth(line, "caption", 1)));
   lines.forEach((line, index) => s.label(line, x + 5, y + (lines.length === 1 ? 13.5 : 13.5 - index * 4.6), { size }));
+}
+
+/**
+ * The readable 2014 page's middle column: armor class, hit points, speed and
+ * senses, and racial traits, each with larger captions and its contents
+ * dropped clear of the frame's top. The hit point box grows for it, and the
+ * racial traits give up the difference.
+ */
+function readableColumnC2014(s, style, layout) {
+  s.section("ARMOR CLASS", 213, 580, 182, 85);
+  s.captioned("details_equipped_armor", "ARMOR", 224, 640, 123, 10, { size: 7, captionSize: 5.5 });
+  s.captioned("details_equipped_shield", "SHIELD", 224, 618, 123, 10, { size: 7, captionSize: 5.5 });
+  s.text("details_armor_conditional", 224, 589, 164, 26.5, { multiline: true, size: 6, box: "none" });
+  s.label("STEALTH DISADV.", 262, 651, { size: 4.6, color: "lines" });
+  s.check("details_armor_stealth_disadvantage", 308, 650, 6.5);
+  s.shield("details_armor_class", "AC", 355, 674, 44, 48, { captionSize: 7 });
+  hitPointBox(s, "details", 213, 484, 182, 92, { splitDice: layout.top, readable: true });
+  s.section("SPEED, SENSES & CONDITIONS", 213, 384, 182, 96);
+  [["details_speed_walking", "SPEED", 224], ["details_speed_fly", "FLY", 267], ["details_speed_climb", "CLIMB", 310], ["details_speed_swim", "SWIM", 353]].forEach(([name, caption, x]) => {
+    s.captioned(name, caption, x, 456, 35, 10, { align: "center", captionAlign: "center", size: 7, captionSize: 6.5 });
+  });
+  s.captioned("details_vision", "VISION", 224, 432, 66, 10, { size: 7, captionSize: 5.5 });
+  const inspirationSize = Math.min(5.5, 35 / s.textWidth(style.inspiration, "caption", 1));
+  s.captioned("details_inspiration", style.inspiration, 296, 432, 35, 10, { align: "center", captionAlign: "center", size: 7, captionSize: inspirationSize });
+  s.label("EXHAUSTION", 335, 444, { size: 5 });
+  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, 434, 6, { marker: "square" });
+  s.text("details_resistances", 224, 397, 164, 30, { multiline: true, size: 6, box: "none" });
+  s.block(style.traits, "details_additional_notes", 213, 196, 182, 184, { padTop: 4 });
 }
 
 // ---------------------------------------------------------------------------
@@ -562,10 +599,14 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
     ["details_player", "PLAYER", 541, 39, 1],
   ]);
 
-  // Column A: the six ability shields on a grey backing panel.
+  // Column A: the six ability shields on a grey backing panel. Readable, the
+  // shields widen to the panel and every name takes the size the longest fits.
   s.panel(27, 230, 67, 440);
+  const readableShieldWidth = 62;
+  const readableCaptionSize = Math.min(7, ...ABILITIES.map(([, caption]) => (readableShieldWidth - 12) / MEASURE.display.widthOfTextAtSize(caption, 1)));
   ABILITIES.forEach(([key, caption], index) => {
-    s.abilityShield("details", key, caption, 60.6, 662 - index * 71.5);
+    if (layout.readable) s.abilityShield("details", key, caption, 60.5, 662 - index * 71.5, { width: readableShieldWidth, captionSize: readableCaptionSize });
+    else s.abilityShield("details", key, caption, 60.6, 662 - index * 71.5);
   });
 
   // Column B: proficiency bonus, saving throws, skills, passive perception, initiative.
@@ -581,22 +622,27 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
     s.circle(184, 638, 10.5, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
     s.text("details_proficiency_bonus", 171, 631, 26, 14, { align: "center", size: 10, box: "none" });
   }
-  s.section("SAVING THROWS", 96, 496, 105, 124);
+  // Readable, the saving throws keep their six rows and one notes line in a
+  // shorter box, and the skills spread over the room that frees.
+  const saves = layout.readable ? { y: 514, height: 106, name: 6.2 } : { y: 496, height: 124, name: 5.6 };
+  s.section("SAVING THROWS", 96, saves.y, 105, saves.height);
   ABILITIES.forEach(([key], index) => {
     const y = 605.6 - index * 12;
     s.check(`details_${key}_save_proficiency`, 102, y, 6.7);
     s.text(`details_${key}_save_total`, 111, y - 1, 17, 9, { align: "center", size: 8 });
-    s.note(ABILITY_NAME[key], 131, y + 1, { size: 5.6 });
+    s.note(ABILITY_NAME[key], 131, y + 1, { size: saves.name });
   });
-  s.text("details_saving_throws", 100, 504, 97, 34, { multiline: true, size: 5.5, box: "none" });
-  s.section("SKILLS", 96, 262, 105, 228);
+  if (layout.readable) s.text("details_saving_throws", 100, 526, 97, 16, { multiline: true, size: 5.5, box: "none" });
+  else s.text("details_saving_throws", 100, 504, 97, 34, { multiline: true, size: 5.5, box: "none" });
+  const skills = layout.readable ? { height: 246, first: 494, pitch: 12.6, name: 5.8, ability: 4.6 } : { height: 228, first: 476.4, pitch: 11.2, name: 5.2, ability: 4.2 };
+  s.section("SKILLS", 96, 262, 105, skills.height);
   SKILLS.forEach(([key, caption, ability], index) => {
-    const y = 476.4 - index * 11.2;
+    const y = skills.first - index * skills.pitch;
     s.check(`details_${key}_proficiency`, 101, y, 6);
     s.check(`details_${key}_expertise`, 108, y, 6);
     s.text(`details_${key}_total`, 115, y - 1, 15, 9, { align: "center", size: 8 });
-    s.note(caption, 131, y + 0.5, { size: 5.2 });
-    s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, 131 + s.textWidth(caption, "captionLight", 5.2) + 2, y + 0.5, { size: 4.2, color: "lines" });
+    s.note(caption, 131, y + 0.5, { size: skills.name });
+    s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, 131 + s.textWidth(caption, "captionLight", skills.name) + 2, y + 0.5, { size: skills.ability, color: "lines" });
   });
   s.pill(96, 235, 105, 24);
   s.circle(108, 247, 10.5, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
@@ -620,37 +666,44 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   }
 
   // Column C: armor, hit points, senses and racial traits.
-  s.section("ARMOR CLASS", 213, 580, 182, 85);
-  s.captioned("details_equipped_armor", "ARMOR", 224, 643.6, 123, 10, { size: 7 });
-  s.captioned("details_equipped_shield", "SHIELD", 224, 621.6, 123, 10, { size: 7 });
-  s.text("details_armor_conditional", 224, 589, 164, 30, { multiline: true, size: 6, box: "none" });
-  s.check("details_armor_stealth_disadvantage", 306, 654.5, 6.5);
-  s.label("STEALTH DISADV.", 270, 655.6, { size: 3.4, color: "lines" });
-  s.shield("details_armor_class", "AC", 355, 674, 44, 48);
-  hitPointBox(s, "details", 213, 492, 182, 86, { splitDice: layout.top });
-  s.section("SPEED, SENSES & CONDITIONS", 213, 392, 182, 96);
-  [["details_speed_walking", "SPEED", 224], ["details_speed_fly", "FLY", 267], ["details_speed_climb", "CLIMB", 310], ["details_speed_swim", "SWIM", 353]].forEach(([name, caption, x]) => {
-    s.captioned(name, caption, x, 470, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-  });
-  s.captioned("details_vision", "VISION", 224, 448, 66, 10, { size: 7 });
-  s.captioned("details_inspiration", style.inspiration, 296, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-  s.label("EXHAUSTION", 335, 460, { size: 3.4 });
-  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, 450, 6, { marker: "square" });
-  s.text("details_resistances", 224, 404, 164, 38, { multiline: true, size: 6, box: "none" });
-  s.block(style.traits, "details_additional_notes", 213, 196, 182, 188);
+  if (layout.readable) readableColumnC2014(s, style, layout);
+  else {
+    s.section("ARMOR CLASS", 213, 580, 182, 85);
+    s.captioned("details_equipped_armor", "ARMOR", 224, 643.6, 123, 10, { size: 7 });
+    s.captioned("details_equipped_shield", "SHIELD", 224, 621.6, 123, 10, { size: 7 });
+    s.text("details_armor_conditional", 224, 589, 164, 30, { multiline: true, size: 6, box: "none" });
+    s.check("details_armor_stealth_disadvantage", 306, 654.5, 6.5);
+    s.label("STEALTH DISADV.", 270, 655.6, { size: 3.4, color: "lines" });
+    s.shield("details_armor_class", "AC", 355, 674, 44, 48);
+    hitPointBox(s, "details", 213, 492, 182, 86, { splitDice: layout.top });
+    s.section("SPEED, SENSES & CONDITIONS", 213, 392, 182, 96);
+    [["details_speed_walking", "SPEED", 224], ["details_speed_fly", "FLY", 267], ["details_speed_climb", "CLIMB", 310], ["details_speed_swim", "SWIM", 353]].forEach(([name, caption, x]) => {
+      s.captioned(name, caption, x, 470, 35, 10, { align: "center", captionAlign: "center", size: 7 });
+    });
+    s.captioned("details_vision", "VISION", 224, 448, 66, 10, { size: 7 });
+    s.captioned("details_inspiration", style.inspiration, 296, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
+    s.label("EXHAUSTION", 335, 460, { size: 3.4 });
+    for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, 450, 6, { marker: "square" });
+    s.text("details_resistances", 224, 404, 164, 38, { multiline: true, size: 6, box: "none" });
+    s.block(style.traits, "details_additional_notes", 213, 196, 182, 188);
+  }
 
-  // Bottom: attacks and spellcasting across columns A–C.
+  // Bottom: attacks and spellcasting across columns A–C. Readable, six rows
+  // share the panel with a shorter free-text note.
   s.section("ATTACKS & SPELLCASTING", 29, 27, 366, 162);
-  [["NAME", 34], ["RANGE", 173], ["ATTACK", 222], ["DAMAGE / TYPE", 273]].forEach(([caption, x]) => s.label(caption, x, 178, { size: 3.8, color: "lines" }));
-  for (let row = 1; row <= 4; row += 1) {
-    const y = 166.7 - (row - 1) * 22;
+  [["NAME", 34], ["RANGE", 173], ["ATTACK", 222], ["DAMAGE / TYPE", 273]].forEach(([caption, x]) => s.label(caption, x, 178, { size: layout.readable ? 4.6 : 3.8, color: "lines" }));
+  const attackRows = layout.readable ? 6 : 4;
+  const attackPitch = layout.readable ? 19.5 : 22;
+  for (let row = 1; row <= attackRows; row += 1) {
+    const y = 166.7 - (row - 1) * attackPitch;
     s.text(`details_attack${row}_weapon`, 34, y, 132, 10, { size: 7 });
     s.text(`details_attack${row}_range`, 173, y, 45, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_attack`, 222, y, 45, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_damage`, 273, y, 115, 10, { size: 7 });
     s.text(`details_attack${row}_description`, 34, y - 9.5, 354, 8, { size: 6, box: "none" });
   }
-  s.text("details_attack_description", 34, 34, 355, 55, { multiline: true, size: 6, box: "none" });
+  if (layout.readable) s.text("details_attack_description", 34, 34, 355, 24, { multiline: true, size: 6, box: "none" });
+  else s.text("details_attack_description", 34, 34, 355, 55, { multiline: true, size: 6, box: "none" });
 
   // Column D: features and proficiencies. Split, the features column holds
   // class features, subclass features and feats in boxes of their own.
@@ -707,7 +760,12 @@ function abilityPanel2024(s, key, caption, x, y, width, height, extra) {
  */
 function characterHeader2024(s, edition, style, layout) {
   if (layout.top) {
-    compactHeader2024(s, edition);
+    compactHeader2024(s, edition, layout);
+    return;
+  }
+  if (layout.readable) {
+    readableHeader2024(s, edition, style);
+    vitalsRow2024(s);
     return;
   }
   pageChrome(s, "CHARACTER", edition);
@@ -740,7 +798,64 @@ function characterHeader2024(s, edition, style, layout) {
   s.label("MAX", hp.x + 58, hp.y + 8, { size: 3.8, color: "lines" });
   s.text("details_hp_max", hp.x + 74, hp.y + 6, 36, 11, { align: "center", size: 8 });
 
-  // The vitals row.
+  vitalsRow2024(s);
+}
+
+/**
+ * The readable 2024 page's identity and armor row. Armor class is read with
+ * the armor that gives it, so the armor, its notes and the stealth mark sit
+ * in a frame right beside the AC shield. XP joins the identity's last line to
+ * make the room, and the hit points take a little less width.
+ */
+function readableHeader2024(s, edition, style) {
+  pageChrome(s, "CHARACTER", edition);
+
+  s.brush(26, 696, 322, 64);
+  s.frame(26, 696, 322, 64);
+  s.text("details_character_name", 32, 740, 240, 16, { size: 12 });
+  s.label("CHARACTER NAME", 32, 733.5, { size: 4.2 });
+  s.entry("details_player", "PLAYER", 280, 741, 62, 11);
+  s.entry("details_build", "CLASS & LEVEL", 32, 719, 310, 11);
+  [["details_background", style.origin, 32, 110], ["details_alignment", "ALIGNMENT", 148, 76], ["details_deity", "DEITY", 230, 58], ["details_xp", "XP", 294, 48]].forEach(([name, caption, x, width]) => {
+    const captionWidth = s.textWidth(caption, "caption", 3.4) + 4;
+    s.label(caption, x, 702.5, { size: 3.4, color: "lines" });
+    s.text(name, x + captionWidth, 702, width - captionWidth, 8, { size: 6 });
+  });
+
+  armorBeside2024(s, 354, 696, 76, 64);
+  s.shield("details_armor_class", "ARMOR CLASS", 436, 762, 46, 46);
+  s.text("details_equipped_shield", 436, 705, 46, 9, { align: "center", size: 5, box: "none" });
+  s.label("SHIELD", 436, 699, { size: 3.4, align: "center", width: 46 });
+
+  const hp = s.section("HIT POINTS", 488, 700, 98, 60, { style: "plate", at: "top", size: 5.8 });
+  s.text("details_hp_current", hp.x + 2, hp.y + 8, 44, 26, { align: "center", size: 20, box: "none" });
+  s.rounded(hp.x + 2, hp.y + 8, 44, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
+  s.label("CURRENT", hp.x + 2, hp.y + 2, { size: 3.8, align: "center", width: 44 });
+  s.label("TEMP", hp.x + 50, hp.y + 24, { size: 3.8, color: "lines" });
+  s.text("details_hp_temp", hp.x + 62, hp.y + 22, 26, 11, { align: "center", size: 8 });
+  s.label("MAX", hp.x + 50, hp.y + 8, { size: 3.8, color: "lines" });
+  s.text("details_hp_max", hp.x + 62, hp.y + 6, 26, 11, { align: "center", size: 8 });
+}
+
+/**
+ * The readable pages' armor frame, drawn right beside the AC shield: the
+ * armor worn, the stealth mark and the armor class notes beneath them.
+ */
+function armorBeside2024(s, x, y, width, height) {
+  const top = y + height;
+  s.frame(x, y, width, height);
+  s.label("ARMOR", x + 5, top - 10, { size: 4.2, color: "lines" });
+  // The stealth mark shares the caption's line, at its right.
+  const stealthSize = Math.min(3.6, (width - 44) / s.textWidth("STEALTH DISADV.", "caption", 1));
+  const stealthX = x + width - 5 - s.textWidth("STEALTH DISADV.", "caption", stealthSize);
+  s.check("details_armor_stealth_disadvantage", stealthX - 7.5, top - 11.5, 5.5);
+  s.label("STEALTH DISADV.", stealthX, top - 10, { size: stealthSize, color: "lines" });
+  s.text("details_equipped_armor", x + 5, top - 23, width - 10, 9, { size: 6.5 });
+  s.text("details_armor_conditional", x + 4, y + 4, width - 8, height - 32, { multiline: true, size: 6, box: "none" });
+}
+
+/** The 2024 page's row of vitals under the identity: proficiency to heroic inspiration. */
+function vitalsRow2024(s) {
   const vitalY = 640;
   const vitalW = 76;
   const vitalX = (index) => 26 + index * 82;
@@ -798,23 +913,41 @@ function plateSection(s, title, x, y, width, height) {
  * spent) and death saves. Beneath them the vitals are compact boxes, and the
  * speed box carries the walking speed large beside a line for each other mode.
  */
-function compactHeader2024(s, edition) {
+function compactHeader2024(s, edition, layout) {
   pageChrome(s, "CHARACTER", edition);
 
-  // Identity, x 26..290 across both rows.
-  s.brush(26, 640, 264, 120);
-  s.frame(26, 640, 264, 120);
-  s.text("details_character_name", 32, 738, 180, 16, { size: 12 });
-  s.label("CHARACTER NAME", 32, 731.5, { size: 4.2 });
-  s.entry("details_player", "PLAYER", 218, 739, 66, 11);
-  // Two lines for a multiclass character's classes and subclasses.
-  s.entry("details_class", "CLASS", 32, 707, 204, 21, { multiline: true, size: 7 });
-  s.entry("details_level", "LEVEL", 242, 707, 42, 16, { align: "center", size: 10, captionAlign: "center" });
-  s.entry("details_species", "SPECIES", 32, 682, 86, 10, { size: 7 });
-  s.entry("details_background", "BACKGROUND", 124, 682, 112, 10, { size: 7 });
-  s.entry("details_xp", "XP", 242, 682, 42, 10, { align: "center", size: 7, captionAlign: "center" });
-  s.entry("details_alignment", "ALIGNMENT", 32, 658, 118, 10, { size: 7 });
-  s.entry("details_deity", "DEITY", 156, 658, 128, 10, { size: 7 });
+  if (layout.readable) {
+    // Readable, the identity narrows to x 26..206 and the armor takes a tall
+    // frame right beside the AC shield.
+    s.brush(26, 640, 180, 120);
+    s.frame(26, 640, 180, 120);
+    s.text("details_character_name", 32, 738, 168, 16, { size: 12 });
+    s.label("CHARACTER NAME", 32, 731.5, { size: 4.2 });
+    s.entry("details_class", "CLASS", 32, 707, 126, 21, { multiline: true, size: 7 });
+    s.entry("details_level", "LEVEL", 164, 707, 36, 16, { align: "center", size: 10, captionAlign: "center" });
+    s.entry("details_species", "SPECIES", 32, 682, 62, 10, { size: 7 });
+    s.entry("details_background", "BACKGROUND", 100, 682, 58, 10, { size: 7 });
+    s.entry("details_xp", "XP", 164, 682, 36, 10, { align: "center", size: 7, captionAlign: "center" });
+    s.entry("details_alignment", "ALIGNMENT", 32, 658, 54, 10, { size: 7 });
+    s.entry("details_deity", "DEITY", 92, 658, 50, 10, { size: 7 });
+    s.entry("details_player", "PLAYER", 148, 658, 52, 10, { size: 7 });
+    armorBeside2024(s, 212, 640, 80, 120);
+  } else {
+    // Identity, x 26..290 across both rows.
+    s.brush(26, 640, 264, 120);
+    s.frame(26, 640, 264, 120);
+    s.text("details_character_name", 32, 738, 180, 16, { size: 12 });
+    s.label("CHARACTER NAME", 32, 731.5, { size: 4.2 });
+    s.entry("details_player", "PLAYER", 218, 739, 66, 11);
+    // Two lines for a multiclass character's classes and subclasses.
+    s.entry("details_class", "CLASS", 32, 707, 204, 21, { multiline: true, size: 7 });
+    s.entry("details_level", "LEVEL", 242, 707, 42, 16, { align: "center", size: 10, captionAlign: "center" });
+    s.entry("details_species", "SPECIES", 32, 682, 86, 10, { size: 7 });
+    s.entry("details_background", "BACKGROUND", 124, 682, 112, 10, { size: 7 });
+    s.entry("details_xp", "XP", 242, 682, 42, 10, { align: "center", size: 7, captionAlign: "center" });
+    s.entry("details_alignment", "ALIGNMENT", 32, 658, 118, 10, { size: 7 });
+    s.entry("details_deity", "DEITY", 156, 658, 128, 10, { size: 7 });
+  }
 
   // The top row, x 296..586: armor class, hit points, hit dice, death saves.
   const rowY = 690;
@@ -887,16 +1020,144 @@ function compactHeader2024(s, edition) {
  * class, subclass and feat rows into their own boxes when the template has a
  * subclass box.
  */
-function splitFeatureBlocks(s, areaX, areaW) {
-  s.block("CLASS FEATURES", "details_features", areaX, 356, areaW, 136);
-  s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, 272, areaW, 76);
-  s.block("FEATS", "details_feats", areaX, 200, areaW, 64);
+function splitFeatureBlocks(s, areaX, areaW, area) {
+  if (area === undefined) {
+    s.block("CLASS FEATURES", "details_features", areaX, 356, areaW, 136);
+    s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, 272, areaW, 76);
+    s.block("FEATS", "details_feats", areaX, 200, areaW, 64);
+    return;
+  }
+  // Between `area.bottom` and `area.top`, in about the same proportions.
+  const boxes = area.top - area.bottom - 16;
+  const classH = Math.round(boxes * 0.5);
+  const subclassH = Math.round(boxes * 0.27);
+  const featsH = boxes - classH - subclassH;
+  s.block("CLASS FEATURES", "details_features", areaX, area.top - classH, areaW, classH);
+  s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, area.bottom + featsH + 8, areaW, subclassH);
+  s.block("FEATS", "details_feats", areaX, area.bottom, areaW, featsH);
+}
+
+/**
+ * The readable 2024 ability panel, after D&D Beyond's: the modifier is the
+ * one large number, in the panel's main shape, with the score in a small
+ * badge over its lower edge. The header is shorter than the plain panel's,
+ * and the rows sit closer to the frame.
+ */
+function abilityPanelReadable2024(s, key, caption, x, y, width, height, extra) {
+  s.frame(x, y, width, height, { radius: 6 });
+  const top = y + height;
+  s.display(caption, x, top - 10.5, { size: 6, align: "center", width });
+  s.ornamentRule(x + 8, x + width - 8, top - 13.5);
+  const cx = x + width / 2;
+  const shapeW = 50;
+  const shapeTop = top - 16;
+  const shapeBottom = top - 40;
+  s.rounded(cx - shapeW / 2, shapeBottom, shapeW, shapeTop - shapeBottom, 5, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
+  s.rounded(cx - shapeW / 2 + 2, shapeBottom + 2, shapeW - 4, shapeTop - shapeBottom - 4, 3.5, { stroke: GOLD, lineWidth: 0.35 });
+  s.text(`details_${key}_modifier`, cx - shapeW / 2, top - 35, shapeW, 18, { align: "center", size: 16, box: "none" });
+  const badgeW = 26;
+  const badgeH = 12;
+  s.rounded(cx - badgeW / 2, shapeBottom - 6, badgeW, badgeH, badgeH / 2, { fill: FILL, stroke: ACCENT, lineWidth: 0.8 });
+  s.text(`details_${key}_score`, cx - badgeW / 2, shapeBottom - 5, badgeW, badgeH - 2, { align: "center", size: 8, box: "none" });
+  let rowY = top - 59;
+  s.rule(x + 5, rowY + 9, x + width - 5, rowY + 9, RULE, 0.4);
+  s.check(`details_${key}_save_proficiency`, x + 5, rowY - 1, 6.5);
+  s.text(`details_${key}_save_total`, x + 15, rowY - 2, 22, 9, { align: "center", size: 8 });
+  s.label("SAVING THROW", x + 41, rowY, { size: 4.6 });
+  rowY -= 11;
+  s.rule(x + 5, rowY + 9, x + width - 5, rowY + 9, RULE, 0.4);
+  for (const [skill, name] of SKILLS.filter(([, , ability]) => ability === key)) {
+    s.check(`details_${skill}_proficiency`, x + 5, rowY - 1, 6);
+    s.check(`details_${skill}_expertise`, x + 12.5, rowY - 1, 6);
+    s.text(`details_${skill}_total`, x + 20, rowY - 2, 20, 9, { align: "center", size: 7.5 });
+    s.note(name, x + 43, rowY, { size: Math.min(6.4, (width - 47) / s.textWidth(name, "captionLight", 1)) });
+    rowY -= 11;
+  }
+  if (extra) extra(rowY, x, width);
+}
+
+/**
+ * The readable right-hand area shared by the 2024 and Hybrid pages: a taller
+ * weapons panel whose free-text note prints at 7pt, taller feature boxes, and
+ * along the foot proficiencies (where the species traits were) beside senses
+ * and a shorter encounter notes box.
+ */
+function readableRightArea2024(s, layout, areaX, areaW, featuresTitle, columns, captionSize) {
+  s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 486, areaW, 146);
+  columns.forEach(([caption, x]) => s.label(caption, x, 605, { size: captionSize, color: "lines" }));
+  for (let row = 1; row <= 4; row += 1) {
+    const y = 594 - (row - 1) * 21;
+    const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
+    s.text(`details_attack${row}_weapon`, nx, y, nw, 10, { size: 7 });
+    s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
+    s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
+    s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
+    s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
+  }
+  // Three 7pt lines of the attacks without a row and the user's own notes.
+  s.text("details_attack_description", areaX + 4, 490, areaW - 8, 30, { multiline: true, size: 7, box: "none" });
+  const area = { bottom: 172, top: 478 };
+  if (layout.split) splitFeatureBlocks(s, areaX, areaW, area);
+  else s.block(featuresTitle, "details_features", areaX, area.bottom, areaW, area.top - area.bottom);
+  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", areaX, 60, 436 - areaX, 104);
+  const inner = s.section("SENSES & RESISTANCES", 444, 108, 142, 56, { size: 5.6 });
+  s.label("VISION", inner.x + 2, inner.y + inner.height - 8, { size: 4.6, color: "lines" });
+  s.text("details_vision", inner.x + 24, inner.y + inner.height - 10, inner.width - 26, 9, { size: 6.5 });
+  s.text("details_resistances", inner.x, inner.y, inner.width, inner.height - 12, { multiline: true, size: 6, box: "none" });
+  s.block("ENCOUNTER NOTES", "details_encounter_box", 444, 60, 142, 40, { size: 6 });
+}
+
+/** The readable pages' conditions box, beside the abilities: conditions over the exhaustion marks. */
+function readableConditions2024(s, x, y, width, height) {
+  const title = "CONDITIONS & EXHAUSTION";
+  const inner = s.section(title, x, y, width, height, { size: Math.min(5.6, (width - 14) / s.textWidth(title, "display", 1)) });
+  const pitch = Math.min(16, (inner.width - 6) / 6);
+  s.label("EXHAUSTION", inner.x + 2, inner.y + 12, { size: 4.6, color: "lines" });
+  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, inner.x + 2 + (i - 1) * pitch, inner.y + 2, 7, { marker: "square" });
+  s.text("details_conditions", inner.x, inner.y + 19, inner.width, inner.height - 19, { multiline: true, size: 6, box: "none" });
+}
+
+/**
+ * The readable 2024 page's body. The tighter ability panels leave room under
+ * the shorter column for conditions and exhaustion, beside the scores, and
+ * under both columns for the species traits; the right-hand area is
+ * `readableRightArea2024`'s.
+ */
+function readableBody2024(s, style, layout) {
+  const panelW = 114;
+  const heights = { str: 79, dex: 101, con: 89, int: 123, wis: 123, cha: 112 };
+  const columnDepth = Math.max(heights.str + heights.dex + heights.con, heights.int + heights.wis + heights.cha) + 16;
+  s.panel(22, 632 - columnDepth - 4, 244, columnDepth + 8);
+  let top = 632;
+  for (const key of ["str", "dex", "con"]) {
+    abilityPanelReadable2024(s, key, ABILITY_NAME[key].toUpperCase(), 26, top - heights[key], panelW, heights[key], key === "con" ? (rowY, x, width) => {
+      s.label("SAVING THROW NOTES", x + 5, rowY + 1, { size: 4.2, color: "lines" });
+      s.text("details_saving_throws", x + 5, rowY - 7, width - 10, 9, { size: 6, box: "none" });
+    } : undefined);
+    top -= heights[key] + 8;
+  }
+  const leftBottom = top + 8;
+  top = 632;
+  for (const key of ["int", "wis", "cha"]) {
+    abilityPanelReadable2024(s, key, ABILITY_NAME[key].toUpperCase(), 148, top - heights[key], panelW, heights[key]);
+    top -= heights[key] + 8;
+  }
+  const rightBottom = top + 8;
+
+  readableConditions2024(s, 26, rightBottom, panelW, leftBottom - 8 - rightBottom);
+  s.block(style.traits, "details_additional_notes", 26, 60, 236, rightBottom - 8 - 60);
+  readableRightArea2024(s, layout, 270, 316, "CLASS FEATURES",
+    [["NAME", 274, 68], ["RANGE", 344, 28], ["ATK / DC", 374, 34], ["DAMAGE & TYPE", 410, 64], ["NOTES", 476, 106]], 3.8);
 }
 
 async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
   characterHeader2024(s, edition, style, layout);
+  if (layout.readable) {
+    readableBody2024(s, style, layout);
+    return finish(doc, s);
+  }
 
   // Two columns of ability panels, each on a grey backing panel.
   const panelW = 114;
@@ -974,11 +1235,8 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
 // boxes.
 // ---------------------------------------------------------------------------
 
-async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
-  const style = EDITION[edition];
-  const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
-  characterHeader2024(s, edition, style, layout);
-
+/** The Hybrid page's classic ability column: six shields, then saving throws over the skills list. */
+function hybridAbilityColumns(s) {
   // Column A: the six ability shields on a grey backing panel.
   const columnTop = 632;
   const columnBottom = 300;
@@ -1012,6 +1270,23 @@ async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
     s.note(caption, bx + 41, y + 0.5, { size: 6.2 });
     s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, bx + 41 + s.textWidth(caption, "captionLight", 6.2) + 2, y + 0.5, { size: 5, color: "lines" });
   });
+}
+
+async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
+  const style = EDITION[edition];
+  const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
+  characterHeader2024(s, edition, style, layout);
+  if (layout.readable) {
+    hybridAbilityColumns(s);
+    // Beneath both columns: conditions beside the abilities, then the species traits.
+    readableConditions2024(s, 26, 228, 196, 64);
+    s.block(style.traits, "details_additional_notes", 26, 60, 196, 160);
+    readableRightArea2024(s, layout, 230, 356, "FEATURES",
+      [["NAME", 234, 82], ["RANGE", 318, 32], ["ATK / DC", 352, 36], ["DAMAGE & TYPE", 390, 72], ["NOTES", 464, 118]], 5);
+    return finish(doc, s);
+  }
+
+  hybridAbilityColumns(s);
 
   // Beneath both columns: senses, armor, then training and languages.
   const lw = 196;

@@ -114,8 +114,9 @@ describe('SheetTab floating controls', () => {
   });
 
   it('separates cached PDFs by the item notes switch and retires older renders', () => {
-    // v11: the character page has a compact top row layout.
-    expect(SHEET_RENDERER_REVISION).toBe('pdf-canvas-v11');
+    // v12: the character page has a readable body layout, with six attack
+    // rows on 2014.
+    expect(SHEET_RENDERER_REVISION).toBe('pdf-canvas-v12');
     const args = ['hero', 4, false, 7, '2014', 'colours', 'fonts', 'pages', false];
     expect(sheetCacheKey(...args, true)).not.toBe(sheetCacheKey(...args, false));
     expect(sheetCacheKey(...args)).toBe(sheetCacheKey(...args, false));
@@ -128,7 +129,9 @@ describe('SheetTab floating controls', () => {
     expect(sheetCacheKey(...args, split)).not.toBe(sheetCacheKey(...args, plain));
     const top = sheetLayoutCacheKey(effectiveSheetLayout('2014', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, top: true }));
     const topSplit = sheetLayoutCacheKey(effectiveSheetLayout('2014', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, top: true, split: true }));
-    expect(new Set([plain, split, top, topSplit].map((layout) => sheetCacheKey(...args, layout))).size).toBe(4);
+    const readable = sheetLayoutCacheKey(effectiveSheetLayout('2014', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, readable: true }));
+    const readableTop = sheetLayoutCacheKey(effectiveSheetLayout('2014', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, readable: true, top: true }));
+    expect(new Set([plain, split, top, topSplit, readable, readableTop].map((layout) => sheetCacheKey(...args, layout))).size).toBe(6);
     // The same effective layout shares its renders however it was reached.
     expect(sheetLayoutCacheKey(effectiveSheetLayout('2024-hybrid', DEFAULT_SHEET_LAYOUT_OPTIONS))).toBe(
       sheetLayoutCacheKey(effectiveSheetLayout('2024-hybrid', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, split: true })),

@@ -4367,5 +4367,3329 @@
    }
   ],
   "ribbons": []
+ },
+ "details~readable.pdf": {
+  "labels": [
+   {
+    "text": "20",
+    "x": 31,
+    "y": 742.22,
+    "size": 12.24,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 34
+   },
+   {
+    "text": "CHARACTER",
+    "x": 75,
+    "y": 742,
+    "size": 11,
+    "font": "titles",
+    "color": "accent"
+   },
+   {
+    "text": "2014 RULES",
+    "x": 486,
+    "y": 744,
+    "size": 4.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "right",
+    "width": 100
+   },
+   {
+    "text": "CHARACTER NAME",
+    "x": 27,
+    "y": 695,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 246
+   },
+   {
+    "text": "CLASS & LEVEL",
+    "x": 289,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "EXPERIENCE POINTS",
+    "x": 493,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "BACKGROUND",
+    "x": 289,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ALIGNMENT",
+    "x": 389,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DEITY",
+    "x": 489,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "PLAYER",
+    "x": 541,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STRENGTH",
+    "x": 29.5,
+    "y": 652,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "DEXTERITY",
+    "x": 29.5,
+    "y": 580.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CONSTITUTION",
+    "x": 29.5,
+    "y": 509,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "INTELLIGENCE",
+    "x": 29.5,
+    "y": 437.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "WISDOM",
+    "x": 29.5,
+    "y": 366,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CHARISMA",
+    "x": 29.5,
+    "y": 294.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "PROFICIENCY BONUS",
+    "x": 104,
+    "y": 636,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "SAVING THROWS",
+    "x": 96,
+    "y": 519,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Strength",
+    "x": 131,
+    "y": 606.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Dexterity",
+    "x": 131,
+    "y": 594.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Constitution",
+    "x": 131,
+    "y": 582.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Intelligence",
+    "x": 131,
+    "y": 570.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Wisdom",
+    "x": 131,
+    "y": 558.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Charisma",
+    "x": 131,
+    "y": 546.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "SKILLS",
+    "x": 96,
+    "y": 267,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Acrobatics",
+    "x": 131,
+    "y": 494.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 160.0744,
+    "y": 494.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Animal Handling",
+    "x": 131,
+    "y": 481.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 175.224,
+    "y": 481.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Arcana",
+    "x": 131,
+    "y": 469.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.3744,
+    "y": 469.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Athletics",
+    "x": 131,
+    "y": 456.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Str)",
+    "x": 154.9182,
+    "y": 456.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Deception",
+    "x": 131,
+    "y": 444.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 159.1116,
+    "y": 444.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "History",
+    "x": 131,
+    "y": 431.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.2178,
+    "y": 431.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Insight",
+    "x": 131,
+    "y": 418.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 150.0868,
+    "y": 418.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Intimidation",
+    "x": 131,
+    "y": 406.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 162.6554,
+    "y": 406.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Investigation",
+    "x": 131,
+    "y": 393.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 165.3002,
+    "y": 393.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Medicine",
+    "x": 131,
+    "y": 381.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 156.2058,
+    "y": 381.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Nature",
+    "x": 131,
+    "y": 368.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 150.4058,
+    "y": 368.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Perception",
+    "x": 131,
+    "y": 355.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 160.434,
+    "y": 355.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Performance",
+    "x": 131,
+    "y": 343.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 165.8802,
+    "y": 343.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Persuasion",
+    "x": 131,
+    "y": 330.70000000000005,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 161.7216,
+    "y": 330.70000000000005,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Religion",
+    "x": 131,
+    "y": 318.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 153.9496,
+    "y": 318.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Sleight of Hand",
+    "x": 131,
+    "y": 305.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 172.6546,
+    "y": 305.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Stealth",
+    "x": 131,
+    "y": 292.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 151.0554,
+    "y": 292.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Survival",
+    "x": 131,
+    "y": 280.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 153.6538,
+    "y": 280.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "PASSIVE PERCEPTION",
+    "x": 122,
+    "y": 245,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "INITIATIVE",
+    "x": 40,
+    "y": 199,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 36
+   },
+   {
+    "text": "ADVANTAGE",
+    "x": 70,
+    "y": 203,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 26
+   },
+   {
+    "text": "ACTIONS",
+    "x": 104,
+    "y": 217.5,
+    "size": 3.8,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ARMOR CLASS",
+    "x": 213,
+    "y": 585,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ARMOR",
+    "x": 224,
+    "y": 652,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SHIELD",
+    "x": 224,
+    "y": 630,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STEALTH DISADV.",
+    "x": 262,
+    "y": 651,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "AC",
+    "x": 355,
+    "y": 665,
+    "size": 7,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 44
+   },
+   {
+    "text": "CURRENT HIT POINTS",
+    "x": 213,
+    "y": 526,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "MAXIMUM",
+    "x": 225,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "TEMPORARY",
+    "x": 337,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "HIT DICE",
+    "x": 213,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "DEATH SAVES",
+    "x": 307,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "SUCCESSES",
+    "x": 315,
+    "y": 504.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "FAILURES",
+    "x": 315,
+    "y": 496.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SPEED, SENSES & CONDITIONS",
+    "x": 213,
+    "y": 389,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "SPEED",
+    "x": 224,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "FLY",
+    "x": 267,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "CLIMB",
+    "x": 310,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "SWIM",
+    "x": 353,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "VISION",
+    "x": 224,
+    "y": 444,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "INSPIRATION",
+    "x": 296,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "EXHAUSTION",
+    "x": 335,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "RACIAL TRAITS",
+    "x": 213,
+    "y": 201,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ATTACKS & SPELLCASTING",
+    "x": 29,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 366
+   },
+   {
+    "text": "NAME",
+    "x": 34,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "RANGE",
+    "x": 173,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ATTACK",
+    "x": 222,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DAMAGE / TYPE",
+    "x": 273,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "FEATURES & TRAITS",
+    "x": 404,
+    "y": 155,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "PROFICIENCIES & LANGUAGES",
+    "x": 404,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   }
+  ],
+  "ribbons": []
+ },
+ "details~split.readable.pdf": {
+  "labels": [
+   {
+    "text": "20",
+    "x": 31,
+    "y": 742.22,
+    "size": 12.24,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 34
+   },
+   {
+    "text": "CHARACTER",
+    "x": 75,
+    "y": 742,
+    "size": 11,
+    "font": "titles",
+    "color": "accent"
+   },
+   {
+    "text": "2014 RULES",
+    "x": 486,
+    "y": 744,
+    "size": 4.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "right",
+    "width": 100
+   },
+   {
+    "text": "CHARACTER NAME",
+    "x": 27,
+    "y": 695,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 246
+   },
+   {
+    "text": "CLASS & LEVEL",
+    "x": 289,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "EXPERIENCE POINTS",
+    "x": 493,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "BACKGROUND",
+    "x": 289,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ALIGNMENT",
+    "x": 389,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DEITY",
+    "x": 489,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "PLAYER",
+    "x": 541,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STRENGTH",
+    "x": 29.5,
+    "y": 652,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "DEXTERITY",
+    "x": 29.5,
+    "y": 580.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CONSTITUTION",
+    "x": 29.5,
+    "y": 509,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "INTELLIGENCE",
+    "x": 29.5,
+    "y": 437.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "WISDOM",
+    "x": 29.5,
+    "y": 366,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CHARISMA",
+    "x": 29.5,
+    "y": 294.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "PROFICIENCY BONUS",
+    "x": 104,
+    "y": 636,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "SAVING THROWS",
+    "x": 96,
+    "y": 519,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Strength",
+    "x": 131,
+    "y": 606.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Dexterity",
+    "x": 131,
+    "y": 594.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Constitution",
+    "x": 131,
+    "y": 582.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Intelligence",
+    "x": 131,
+    "y": 570.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Wisdom",
+    "x": 131,
+    "y": 558.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Charisma",
+    "x": 131,
+    "y": 546.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "SKILLS",
+    "x": 96,
+    "y": 267,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Acrobatics",
+    "x": 131,
+    "y": 494.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 160.0744,
+    "y": 494.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Animal Handling",
+    "x": 131,
+    "y": 481.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 175.224,
+    "y": 481.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Arcana",
+    "x": 131,
+    "y": 469.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.3744,
+    "y": 469.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Athletics",
+    "x": 131,
+    "y": 456.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Str)",
+    "x": 154.9182,
+    "y": 456.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Deception",
+    "x": 131,
+    "y": 444.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 159.1116,
+    "y": 444.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "History",
+    "x": 131,
+    "y": 431.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.2178,
+    "y": 431.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Insight",
+    "x": 131,
+    "y": 418.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 150.0868,
+    "y": 418.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Intimidation",
+    "x": 131,
+    "y": 406.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 162.6554,
+    "y": 406.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Investigation",
+    "x": 131,
+    "y": 393.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 165.3002,
+    "y": 393.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Medicine",
+    "x": 131,
+    "y": 381.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 156.2058,
+    "y": 381.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Nature",
+    "x": 131,
+    "y": 368.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 150.4058,
+    "y": 368.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Perception",
+    "x": 131,
+    "y": 355.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 160.434,
+    "y": 355.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Performance",
+    "x": 131,
+    "y": 343.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 165.8802,
+    "y": 343.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Persuasion",
+    "x": 131,
+    "y": 330.70000000000005,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 161.7216,
+    "y": 330.70000000000005,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Religion",
+    "x": 131,
+    "y": 318.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 153.9496,
+    "y": 318.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Sleight of Hand",
+    "x": 131,
+    "y": 305.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 172.6546,
+    "y": 305.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Stealth",
+    "x": 131,
+    "y": 292.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 151.0554,
+    "y": 292.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Survival",
+    "x": 131,
+    "y": 280.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 153.6538,
+    "y": 280.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "PASSIVE PERCEPTION",
+    "x": 122,
+    "y": 245,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "INITIATIVE",
+    "x": 40,
+    "y": 199,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 36
+   },
+   {
+    "text": "ADVANTAGE",
+    "x": 70,
+    "y": 203,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 26
+   },
+   {
+    "text": "ACTIONS",
+    "x": 104,
+    "y": 217.5,
+    "size": 3.8,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ARMOR CLASS",
+    "x": 213,
+    "y": 585,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ARMOR",
+    "x": 224,
+    "y": 652,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SHIELD",
+    "x": 224,
+    "y": 630,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STEALTH DISADV.",
+    "x": 262,
+    "y": 651,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "AC",
+    "x": 355,
+    "y": 665,
+    "size": 7,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 44
+   },
+   {
+    "text": "CURRENT HIT POINTS",
+    "x": 213,
+    "y": 526,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "MAXIMUM",
+    "x": 225,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "TEMPORARY",
+    "x": 337,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "HIT DICE",
+    "x": 213,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "DEATH SAVES",
+    "x": 307,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "SUCCESSES",
+    "x": 315,
+    "y": 504.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "FAILURES",
+    "x": 315,
+    "y": 496.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SPEED, SENSES & CONDITIONS",
+    "x": 213,
+    "y": 389,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "SPEED",
+    "x": 224,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "FLY",
+    "x": 267,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "CLIMB",
+    "x": 310,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "SWIM",
+    "x": 353,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "VISION",
+    "x": 224,
+    "y": 444,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "INSPIRATION",
+    "x": 296,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "EXHAUSTION",
+    "x": 335,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "RACIAL TRAITS",
+    "x": 213,
+    "y": 201,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ATTACKS & SPELLCASTING",
+    "x": 29,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 366
+   },
+   {
+    "text": "NAME",
+    "x": 34,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "RANGE",
+    "x": 173,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ATTACK",
+    "x": 222,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DAMAGE / TYPE",
+    "x": 273,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "CLASS FEATURES",
+    "x": 404,
+    "y": 415,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "SUBCLASS FEATURES",
+    "x": 404,
+    "y": 267,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "FEATS",
+    "x": 404,
+    "y": 155,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "PROFICIENCIES & LANGUAGES",
+    "x": 404,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   }
+  ],
+  "ribbons": []
+ },
+ "details~top.readable.pdf": {
+  "labels": [
+   {
+    "text": "20",
+    "x": 31,
+    "y": 742.22,
+    "size": 12.24,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 34
+   },
+   {
+    "text": "CHARACTER",
+    "x": 75,
+    "y": 742,
+    "size": 11,
+    "font": "titles",
+    "color": "accent"
+   },
+   {
+    "text": "2014 RULES",
+    "x": 486,
+    "y": 744,
+    "size": 4.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "right",
+    "width": 100
+   },
+   {
+    "text": "CHARACTER NAME",
+    "x": 27,
+    "y": 695,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 246
+   },
+   {
+    "text": "CLASS & LEVEL",
+    "x": 289,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "EXPERIENCE POINTS",
+    "x": 493,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "BACKGROUND",
+    "x": 289,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ALIGNMENT",
+    "x": 389,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DEITY",
+    "x": 489,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "PLAYER",
+    "x": 541,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STRENGTH",
+    "x": 29.5,
+    "y": 652,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "DEXTERITY",
+    "x": 29.5,
+    "y": 580.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CONSTITUTION",
+    "x": 29.5,
+    "y": 509,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "INTELLIGENCE",
+    "x": 29.5,
+    "y": 437.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "WISDOM",
+    "x": 29.5,
+    "y": 366,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CHARISMA",
+    "x": 29.5,
+    "y": 294.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "PROFICIENCY",
+    "x": 101,
+    "y": 639.5,
+    "size": 3.2440640530093874,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "BONUS",
+    "x": 101,
+    "y": 634.9,
+    "size": 3.2440640530093874,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "INITIATIVE",
+    "x": 155,
+    "y": 639.5,
+    "size": 3.6,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ADV.",
+    "x": 165,
+    "y": 630.5,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SAVING THROWS",
+    "x": 96,
+    "y": 519,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Strength",
+    "x": 131,
+    "y": 606.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Dexterity",
+    "x": 131,
+    "y": 594.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Constitution",
+    "x": 131,
+    "y": 582.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Intelligence",
+    "x": 131,
+    "y": 570.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Wisdom",
+    "x": 131,
+    "y": 558.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Charisma",
+    "x": 131,
+    "y": 546.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "SKILLS",
+    "x": 96,
+    "y": 267,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Acrobatics",
+    "x": 131,
+    "y": 494.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 160.0744,
+    "y": 494.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Animal Handling",
+    "x": 131,
+    "y": 481.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 175.224,
+    "y": 481.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Arcana",
+    "x": 131,
+    "y": 469.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.3744,
+    "y": 469.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Athletics",
+    "x": 131,
+    "y": 456.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Str)",
+    "x": 154.9182,
+    "y": 456.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Deception",
+    "x": 131,
+    "y": 444.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 159.1116,
+    "y": 444.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "History",
+    "x": 131,
+    "y": 431.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.2178,
+    "y": 431.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Insight",
+    "x": 131,
+    "y": 418.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 150.0868,
+    "y": 418.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Intimidation",
+    "x": 131,
+    "y": 406.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 162.6554,
+    "y": 406.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Investigation",
+    "x": 131,
+    "y": 393.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 165.3002,
+    "y": 393.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Medicine",
+    "x": 131,
+    "y": 381.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 156.2058,
+    "y": 381.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Nature",
+    "x": 131,
+    "y": 368.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 150.4058,
+    "y": 368.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Perception",
+    "x": 131,
+    "y": 355.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 160.434,
+    "y": 355.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Performance",
+    "x": 131,
+    "y": 343.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 165.8802,
+    "y": 343.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Persuasion",
+    "x": 131,
+    "y": 330.70000000000005,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 161.7216,
+    "y": 330.70000000000005,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Religion",
+    "x": 131,
+    "y": 318.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 153.9496,
+    "y": 318.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Sleight of Hand",
+    "x": 131,
+    "y": 305.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 172.6546,
+    "y": 305.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Stealth",
+    "x": 131,
+    "y": 292.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 151.0554,
+    "y": 292.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Survival",
+    "x": 131,
+    "y": 280.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 153.6538,
+    "y": 280.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "PASSIVE PERCEPTION",
+    "x": 122,
+    "y": 245,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ACTIONS",
+    "x": 38,
+    "y": 217.5,
+    "size": 3.8,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ARMOR CLASS",
+    "x": 213,
+    "y": 585,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ARMOR",
+    "x": 224,
+    "y": 652,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SHIELD",
+    "x": 224,
+    "y": 630,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STEALTH DISADV.",
+    "x": 262,
+    "y": 651,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "AC",
+    "x": 355,
+    "y": 665,
+    "size": 7,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 44
+   },
+   {
+    "text": "CURRENT HIT POINTS",
+    "x": 213,
+    "y": 526,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "MAXIMUM",
+    "x": 225,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "TEMPORARY",
+    "x": 337,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "HIT DICE",
+    "x": 213,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "MAX",
+    "x": 220,
+    "y": 509,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "SPENT",
+    "x": 259,
+    "y": 509,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "DEATH SAVES",
+    "x": 307,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "SUCCESSES",
+    "x": 315,
+    "y": 504.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "FAILURES",
+    "x": 315,
+    "y": 496.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SPEED, SENSES & CONDITIONS",
+    "x": 213,
+    "y": 389,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "SPEED",
+    "x": 224,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "FLY",
+    "x": 267,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "CLIMB",
+    "x": 310,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "SWIM",
+    "x": 353,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "VISION",
+    "x": 224,
+    "y": 444,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "INSPIRATION",
+    "x": 296,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "EXHAUSTION",
+    "x": 335,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "RACIAL TRAITS",
+    "x": 213,
+    "y": 201,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ATTACKS & SPELLCASTING",
+    "x": 29,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 366
+   },
+   {
+    "text": "NAME",
+    "x": 34,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "RANGE",
+    "x": 173,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ATTACK",
+    "x": 222,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DAMAGE / TYPE",
+    "x": 273,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "FEATURES & TRAITS",
+    "x": 404,
+    "y": 155,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "PROFICIENCIES & LANGUAGES",
+    "x": 404,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   }
+  ],
+  "ribbons": []
+ },
+ "details~top.split.readable.pdf": {
+  "labels": [
+   {
+    "text": "20",
+    "x": 31,
+    "y": 742.22,
+    "size": 12.24,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 34
+   },
+   {
+    "text": "CHARACTER",
+    "x": 75,
+    "y": 742,
+    "size": 11,
+    "font": "titles",
+    "color": "accent"
+   },
+   {
+    "text": "2014 RULES",
+    "x": 486,
+    "y": 744,
+    "size": 4.4,
+    "font": "captions",
+    "color": "lines",
+    "align": "right",
+    "width": 100
+   },
+   {
+    "text": "CHARACTER NAME",
+    "x": 27,
+    "y": 695,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 246
+   },
+   {
+    "text": "CLASS & LEVEL",
+    "x": 289,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "EXPERIENCE POINTS",
+    "x": 493,
+    "y": 724,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "BACKGROUND",
+    "x": 289,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ALIGNMENT",
+    "x": 389,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DEITY",
+    "x": 489,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "PLAYER",
+    "x": 541,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STRENGTH",
+    "x": 29.5,
+    "y": 652,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "DEXTERITY",
+    "x": 29.5,
+    "y": 580.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CONSTITUTION",
+    "x": 29.5,
+    "y": 509,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "INTELLIGENCE",
+    "x": 29.5,
+    "y": 437.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "WISDOM",
+    "x": 29.5,
+    "y": 366,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "CHARISMA",
+    "x": 29.5,
+    "y": 294.5,
+    "size": 5.637614161686774,
+    "font": "titles",
+    "color": "accent",
+    "align": "center",
+    "width": 62
+   },
+   {
+    "text": "PROFICIENCY",
+    "x": 101,
+    "y": 639.5,
+    "size": 3.2440640530093874,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "BONUS",
+    "x": 101,
+    "y": 634.9,
+    "size": 3.2440640530093874,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "INITIATIVE",
+    "x": 155,
+    "y": 639.5,
+    "size": 3.6,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ADV.",
+    "x": 165,
+    "y": 630.5,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SAVING THROWS",
+    "x": 96,
+    "y": 519,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Strength",
+    "x": 131,
+    "y": 606.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Dexterity",
+    "x": 131,
+    "y": 594.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Constitution",
+    "x": 131,
+    "y": 582.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Intelligence",
+    "x": 131,
+    "y": 570.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Wisdom",
+    "x": 131,
+    "y": 558.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "Charisma",
+    "x": 131,
+    "y": 546.6,
+    "size": 6.2,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "SKILLS",
+    "x": 96,
+    "y": 267,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 105
+   },
+   {
+    "text": "Acrobatics",
+    "x": 131,
+    "y": 494.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 160.0744,
+    "y": 494.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Animal Handling",
+    "x": 131,
+    "y": 481.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 175.224,
+    "y": 481.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Arcana",
+    "x": 131,
+    "y": 469.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.3744,
+    "y": 469.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Athletics",
+    "x": 131,
+    "y": 456.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Str)",
+    "x": 154.9182,
+    "y": 456.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Deception",
+    "x": 131,
+    "y": 444.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 159.1116,
+    "y": 444.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "History",
+    "x": 131,
+    "y": 431.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 151.2178,
+    "y": 431.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Insight",
+    "x": 131,
+    "y": 418.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 150.0868,
+    "y": 418.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Intimidation",
+    "x": 131,
+    "y": 406.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 162.6554,
+    "y": 406.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Investigation",
+    "x": 131,
+    "y": 393.7,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 165.3002,
+    "y": 393.7,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Medicine",
+    "x": 131,
+    "y": 381.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 156.2058,
+    "y": 381.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Nature",
+    "x": 131,
+    "y": 368.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 150.4058,
+    "y": 368.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Perception",
+    "x": 131,
+    "y": 355.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 160.434,
+    "y": 355.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Performance",
+    "x": 131,
+    "y": 343.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 165.8802,
+    "y": 343.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Persuasion",
+    "x": 131,
+    "y": 330.70000000000005,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Cha)",
+    "x": 161.7216,
+    "y": 330.70000000000005,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Religion",
+    "x": 131,
+    "y": 318.1,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Int)",
+    "x": 153.9496,
+    "y": 318.1,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Sleight of Hand",
+    "x": 131,
+    "y": 305.5,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 172.6546,
+    "y": 305.5,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Stealth",
+    "x": 131,
+    "y": 292.9,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Dex)",
+    "x": 151.0554,
+    "y": 292.9,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "Survival",
+    "x": 131,
+    "y": 280.3,
+    "size": 5.8,
+    "font": "notes",
+    "color": "text"
+   },
+   {
+    "text": "(Wis)",
+    "x": 153.6538,
+    "y": 280.3,
+    "size": 4.6,
+    "font": "notes",
+    "color": "lines"
+   },
+   {
+    "text": "PASSIVE PERCEPTION",
+    "x": 122,
+    "y": 245,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ACTIONS",
+    "x": 38,
+    "y": 217.5,
+    "size": 3.8,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ARMOR CLASS",
+    "x": 213,
+    "y": 585,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ARMOR",
+    "x": 224,
+    "y": 652,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SHIELD",
+    "x": 224,
+    "y": 630,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "STEALTH DISADV.",
+    "x": 262,
+    "y": 651,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "AC",
+    "x": 355,
+    "y": 665,
+    "size": 7,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 44
+   },
+   {
+    "text": "CURRENT HIT POINTS",
+    "x": 213,
+    "y": 526,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "MAXIMUM",
+    "x": 225,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "TEMPORARY",
+    "x": 337,
+    "y": 563,
+    "size": 5.2,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 46
+   },
+   {
+    "text": "HIT DICE",
+    "x": 213,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "MAX",
+    "x": 220,
+    "y": 509,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "SPENT",
+    "x": 259,
+    "y": 509,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "DEATH SAVES",
+    "x": 307,
+    "y": 489,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 88
+   },
+   {
+    "text": "SUCCESSES",
+    "x": 315,
+    "y": 504.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "FAILURES",
+    "x": 315,
+    "y": 496.9,
+    "size": 6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "SPEED, SENSES & CONDITIONS",
+    "x": 213,
+    "y": 389,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "SPEED",
+    "x": 224,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "FLY",
+    "x": 267,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "CLIMB",
+    "x": 310,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "SWIM",
+    "x": 353,
+    "y": 468,
+    "size": 6.5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "VISION",
+    "x": 224,
+    "y": 444,
+    "size": 5.5,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "INSPIRATION",
+    "x": 296,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "lines",
+    "align": "center",
+    "width": 35
+   },
+   {
+    "text": "EXHAUSTION",
+    "x": 335,
+    "y": 444,
+    "size": 5,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "RACIAL TRAITS",
+    "x": 213,
+    "y": 201,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "ATTACKS & SPELLCASTING",
+    "x": 29,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 366
+   },
+   {
+    "text": "NAME",
+    "x": 34,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "RANGE",
+    "x": 173,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "ATTACK",
+    "x": 222,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "DAMAGE / TYPE",
+    "x": 273,
+    "y": 178,
+    "size": 4.6,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "CLASS FEATURES",
+    "x": 404,
+    "y": 415,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "SUBCLASS FEATURES",
+    "x": 404,
+    "y": 267,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "FEATS",
+    "x": 404,
+    "y": 155,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   },
+   {
+    "text": "PROFICIENCIES & LANGUAGES",
+    "x": 404,
+    "y": 32,
+    "size": 5,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 182
+   }
+  ],
+  "ribbons": []
  }
 }

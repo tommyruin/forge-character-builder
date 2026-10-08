@@ -620,12 +620,22 @@ set's own default (`SHEET_LAYOUT_DEFAULTS`: split is on for 2024 Hybrid, off
 for 2014 and 2024). The switches pick a variant of the set's character page
 template, named for the switches that differ from the set's own page
 (`details~split.pdf`, `details~unsplit.pdf`, `details~top.pdf`,
-`details~top.split.pdf`, `details~top.unsplit.pdf`; see `sheetDetailsFile` in
-`template-contract.ts`); every other template is shared. Variants exist for
-`top` (a compact top row) and `split`; `readable` still prints the set's own
-page. A variant that cannot
+`details~top.split.pdf`, `details~readable.pdf`,
+`details~top.unsplit.readable.pdf`, …; see `sheetDetailsFile` in
+`template-contract.ts`); every other template is shared. Every combination of
+`top` (a compact top row), `split` and `readable` (a more readable body) has a
+variant. A variant that cannot
 be fetched, or that the set's `labels.json` does not describe, falls back to
 the set's own `details.pdf`. The layout never reaches `generateSheet`. The
-browser preferences are the `top` and `split` members of
+browser preferences are the `top`, `split` and `readable` members of
 `fcb-sheet-layout-options`, and the
 effective switches participate in the PDF cache key.
+
+The readable 2014 page has six attack rows. The sheet model's form values
+always fill the four rows every template has and list later attacks in
+`details_attack_description`; the details page also carries `attacks` (every
+displayed attack) and `attackNotes` (the user's own notes), from which the
+writer fills a template's further rows and rewords that note. With "Emphasize
+ability modifiers" on, the writer swaps an ability's score and modifier only
+where the template's score field is the larger; the readable 2024 panels
+already make the modifier the large number.

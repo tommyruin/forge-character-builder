@@ -101,6 +101,22 @@ describe('sheet layout options setting', () => {
     expect(readStoredSheetLayoutOptions(storage).top).toBe(false);
   });
 
+  it('stores and reads the readable body switch', () => {
+    const storage = memoryStorage();
+    const store = createSheetLayoutOptionsSettingStore({ storage });
+    store.set({ readable: true });
+    expect(store.getSnapshot().readable).toBe(true);
+    expect(JSON.parse(storage.map.get(SHEET_LAYOUT_OPTIONS_STORAGE_KEY)).readable).toBe(true);
+    expect(readStoredSheetLayoutOptions(storage)).toEqual({ ...DEFAULT_SHEET_LAYOUT_OPTIONS, readable: true });
+    for (const set of ['2014', '2024', '2024-hybrid']) {
+      expect(effectiveSheetLayout(set, store.getSnapshot()).readable, set).toBe(true);
+      expect(effectiveSheetLayout(set, DEFAULT_SHEET_LAYOUT_OPTIONS).readable, set).toBe(false);
+    }
+    expect(effectiveSheetLayout('2024-hybrid', store.getSnapshot())).toEqual({ top: false, split: true, readable: true });
+    store.set({ readable: false });
+    expect(readStoredSheetLayoutOptions(storage).readable).toBe(false);
+  });
+
   it('stores valid changes, notifying once per real change', () => {
     const storage = memoryStorage();
     const store = createSheetLayoutOptionsSettingStore({ storage });

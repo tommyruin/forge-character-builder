@@ -201,6 +201,9 @@ describe("sheet render worker", () => {
       expect(await pageText(top.bytes)).toContain("SPENT");
       expect(await pageText(top.bytes)).toContain("SUBCLASS FEATURES");
       expect(await pageText(plain.bytes)).not.toContain("SPENT");
+      const readable = await request({ id: 5, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { readable: true } }) as { bytes: ArrayBuffer };
+      expect(requests.filter((url) => url.endsWith("/sheets/2014/details~readable.pdf"))).toHaveLength(1);
+      expect(new Uint8Array(readable.bytes)).not.toEqual(new Uint8Array(plain.bytes));
     } finally {
       vi.useRealTimers();
       vi.stubGlobal("fetch", previousFetch);

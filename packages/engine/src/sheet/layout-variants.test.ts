@@ -65,10 +65,20 @@ describe("sheet layout flags", () => {
     expect(sheetDetailsFile("2014", { top: false, split: true, readable: true }, every)).toBe("details~split.readable.pdf");
   });
 
-  it("prints a switch that has no variant yet on the set's own page", () => {
-    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { readable: true }))).toBe(BASE);
-    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { readable: true, split: true }))).toBe("details~split.pdf");
-    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, readable: true }))).toBe("details~top.pdf");
+  it("names the readable body variants with every combination of the other switches", () => {
+    for (const set of ["2014", "2024"] as const) {
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { readable: true })), set).toBe("details~readable.pdf");
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { readable: true, split: true })), set).toBe("details~split.readable.pdf");
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, readable: true })), set).toBe("details~top.readable.pdf");
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, split: true, readable: true })), set).toBe("details~top.split.readable.pdf");
+      expect(sheetDetailsFile(set, resolveSheetLayout(set, { readable: false, split: true })), set).toBe("details~split.pdf");
+    }
+    // Hybrid splits by default, so its readable page with split left alone is plain "readable".
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true }))).toBe("details~readable.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, split: false }))).toBe("details~unsplit.readable.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, top: true }))).toBe("details~top.readable.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, top: true, split: false }))).toBe("details~top.unsplit.readable.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: false }))).toBe(BASE);
   });
 
   it("names the compact top row variants, alone and with the split switch", () => {
@@ -91,14 +101,25 @@ describe("sheet layout flags", () => {
     expect(sheetLayoutKey(resolveSheetLayout("2024-hybrid", { split: null }))).toBe(sheetLayoutKey(resolveSheetLayout("2024-hybrid", { split: true })));
     expect(sheetLayoutKey(resolveSheetLayout("2024", { top: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", {})));
     expect(sheetLayoutKey(resolveSheetLayout("2024", { top: true, split: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", { top: true })));
+    expect(sheetLayoutKey(resolveSheetLayout("2024", { readable: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", {})));
+    expect(sheetLayoutKey(resolveSheetLayout("2024", { readable: true, top: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", { top: true })));
   });
 
   it("ships every implemented variant beside its set, with its labels", () => {
     // In the order the switches shipped, so each labels.json only grows at its end.
     const expected: Record<SheetTemplateSet, string[]> = {
-      "2014": ["details~split.pdf", "details~top.pdf", "details~top.split.pdf"],
-      "2024": ["details~split.pdf", "details~top.pdf", "details~top.split.pdf"],
-      "2024-hybrid": ["details~unsplit.pdf", "details~top.pdf", "details~top.unsplit.pdf"],
+      "2014": [
+        "details~split.pdf", "details~top.pdf", "details~top.split.pdf",
+        "details~readable.pdf", "details~split.readable.pdf", "details~top.readable.pdf", "details~top.split.readable.pdf",
+      ],
+      "2024": [
+        "details~split.pdf", "details~top.pdf", "details~top.split.pdf",
+        "details~readable.pdf", "details~split.readable.pdf", "details~top.readable.pdf", "details~top.split.readable.pdf",
+      ],
+      "2024-hybrid": [
+        "details~unsplit.pdf", "details~top.pdf", "details~top.unsplit.pdf",
+        "details~readable.pdf", "details~unsplit.readable.pdf", "details~top.readable.pdf", "details~top.unsplit.readable.pdf",
+      ],
     };
     for (const set of SHEET_TEMPLATE_SETS) {
       const variants = sheetLayoutVariants(set);
@@ -157,6 +178,12 @@ describe("loading a layout variant", () => {
     const hybridTop = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { top: true }))!;
     expect(hybridTop.detailsFile).toBe("details~top.pdf");
     expect(hybridTop.details).toEqual(file("2024-hybrid", "details~top.pdf"));
+    const readable = (await fetchCharacterSheetTemplateBundle(base, "2024", DEFAULT_SHEET_FONTS, { top: true, split: true, readable: true }))!;
+    expect(readable.detailsFile).toBe("details~top.split.readable.pdf");
+    expect(readable.details).toEqual(file("2024", "details~top.split.readable.pdf"));
+    const hybridReadable = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { readable: true, split: false }))!;
+    expect(hybridReadable.detailsFile).toBe("details~unsplit.readable.pdf");
+    expect(hybridReadable.details).toEqual(file("2024-hybrid", "details~unsplit.readable.pdf"));
     // Every set and variant is loaded and parsed: slow under the coverage pass.
   }, 30_000);
 
@@ -403,5 +430,66 @@ describe("writing the compact top row", () => {
     expect(page.inside("2d8/2d8/2d8", "details_hd")).toBe(true);
     expect(page.rect("details_hd_spent")).toBeDefined();
     expect(page.text).toContain("SPENT");
+  });
+});
+
+describe("writing the readable body", () => {
+  const READABLE_PAGES = [
+    ["2014", { readable: true }], ["2014", { readable: true, top: true }],
+    ["2024", { readable: true }], ["2024", { readable: true, top: true, split: true }],
+    ["2024-hybrid", { readable: true }], ["2024-hybrid", { readable: true, top: true, split: false }],
+  ] as const;
+  const page = (extra: Partial<CharacterSheetModel["pages"][number]> = {}) => ({ page: 1, templateKind: "details" as const, sections: [], ...extra });
+  const model = (values: Record<string, string>, extra: Partial<CharacterSheetModel["pages"][number]> = {}): CharacterSheetModel => ({
+    characterId: "Readable", mode: "lite", pageCount: 1, pages: [page(extra)], formValues: values,
+  });
+
+  async function render(set: SheetTemplateSet, layout: object, written: CharacterSheetModel, options = {}) {
+    const bundle = localTemplateBundle(set, DEFAULT_SHEET_FONTS, layout);
+    const form = (await PDFDocument.load(bundle.details)).getForm();
+    const rect = (name: string) => form.getFields().find((field) => field.getName() === name)?.acroField.getWidgets()[0]?.getRectangle();
+    const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(written, bundle, options)) }).promise;
+    const items = (await (await doc.getPage(1)).getTextContent()).items
+      .flatMap((item) => ("str" in item && item.str.trim() !== "" ? [{ str: item.str, x: item.transform[4] as number, y: item.transform[5] as number, width: item.width, size: Math.hypot(item.transform[2] as number, item.transform[3] as number) }] : []));
+    /** The drawn items whose origin lies in `name`'s box. */
+    const within = (name: string) => {
+      const box = rect(name);
+      return box === undefined ? [] : items.filter((item) => item.x >= box.x - 0.5 && item.x <= box.x + box.width + 0.5 && item.y >= box.y - 0.5 && item.y <= box.y + box.height + 0.5);
+    };
+    return { form, rect, items, within, text: items.map((item) => item.str).join(" "), pages: doc.numPages };
+  }
+
+  it.each(READABLE_PAGES)("prints the %s %j page from the same values", async (set, layout) => {
+    const written = await render(set, layout, model({ details_character_name: "Readable Hero", details_str_score: "18", details_str_modifier: "+4" }));
+    expect(written.text).toContain("Readable Hero");
+    expect(written.within("details_str_score").map((item) => item.str)).toEqual(["18"]);
+    expect(written.within("details_str_modifier").map((item) => item.str)).toEqual(["+4"]);
+    expect(written.pages).toBe(1);
+  });
+
+  // The readable 2024 panels already make the modifier the big number, so
+  // emphasizing modifiers leaves the values where they are; the base panels
+  // and the shields still swap them.
+  it.each([["2024", { readable: true }], ["2024", { readable: true, top: true }]] as const)(
+    "keeps the modifier the large number when modifiers are emphasized on %s %j",
+    async (set, layout) => {
+      const values = { details_str_score: "18", details_str_modifier: "+4" };
+      for (const emphasizeAbilityModifiers of [false, true]) {
+        const written = await render(set, layout, model(values), { emphasizeAbilityModifiers });
+        const [modifier] = written.within("details_str_modifier");
+        const [score] = written.within("details_str_score");
+        expect(modifier?.str, `emphasis ${emphasizeAbilityModifiers}`).toBe("+4");
+        expect(score?.str, `emphasis ${emphasizeAbilityModifiers}`).toBe("18");
+        expect(modifier!.size).toBeGreaterThan(score!.size);
+      }
+    },
+  );
+
+  it.each(READABLE_PAGES.filter(([set]) => set !== "2014"))("prints the more attacks note at 7pt or more on %s %j", async (set, layout) => {
+    const note = "More attacks: Dagger: 20/60 ft, +5, 1d4+3 piercing; Javelin: 30/120 ft, +5, 1d6+3 piercing.\nAim for the knees.";
+    const written = await render(set, layout, model({ details_attack_description: note }));
+    const lines = written.within("details_attack_description");
+    expect(lines.map((item) => item.str).join(" ").replace(/\s+/g, " ")).toBe(note.replace(/\s+/g, " "));
+    for (const line of lines) expect(line.size, line.str).toBeGreaterThanOrEqual(7);
   });
 });

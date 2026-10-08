@@ -83,14 +83,20 @@ describe("character sheet PDF writer", () => {
     }
   }, 120_000);
 
-  it.each(["2014", "2024"] as const)("preserves overflowing attack notes and emphasizes modifiers on %s", async (edition) => {
+  // Emphasis puts the modifier in the large slot on every layout: the panels
+  // and shields with a large score swap the values, and the readable 2024
+  // panels, whose modifier is already the large number, leave them.
+  it.each([
+    ["2014", {}], ["2024", {}], ["2014", { readable: true }], ["2024", { readable: true }],
+    ["2024", { readable: true, top: true, split: true }], ["2024-hybrid", { readable: true }],
+  ] as const)("preserves overflowing attack notes and emphasizes modifiers on %s %j", async (edition, layout) => {
     const note = Array.from({ length: 160 }, (_, i) => `note${i}`).join(" ");
     const model = {
       characterId: "Readable", mode: "lite" as const, pageCount: 1,
       formValues: { details_str_score: "18", details_str_modifier: "+4", details_dex_score: "10", details_dex_modifier: "+0", details_int_score: "8", details_int_modifier: "-1", details_attack1_weapon: "Custom blade", details_attack1_description: note },
       pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
     };
-    const bytes = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition), { emphasizeAbilityModifiers: true });
+    const bytes = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition, DEFAULT_SHEET_FONTS, layout), { emphasizeAbilityModifiers: true });
     const doc = await getDocument({ data: new Uint8Array(bytes) }).promise;
     const first = await (await doc.getPage(1)).getTextContent();
     const items = first.items.filter((item) => "str" in item);

@@ -9,8 +9,13 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { pendingSelectionRules, selectionOptions } from "../selection/selection.js";
-import { buildCharacterSheetModel } from "./model.js";
+import { PDFDocument } from "pdf-lib";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { buildCharacterSheetModel, type CharacterSheetModel } from "./model.js";
+import { writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
+import { DEFAULT_SHEET_FONTS } from "./template-contract.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
+import { localTemplateBundle } from "../testing/sheet-bundle.js";
 
 
 let libraryPromise: Promise<ElementLibrary> | null = null;
@@ -112,34 +117,94 @@ describe("sheet attack rows", () => {
     expect(sheetAttackFields(service, lib, roundTrip(service, id))["details_attack1_description"]).toBe("Aim at the rope");
   });
 
-  it("lists attacks past the fourth row ahead of the free-text notes", async () => {
+  /** A character with seven displayed manual attacks and a note of the user's own. */
+  const sevenAttacks = async () => {
     const lib = await library();
     const service = new CharacterService(undefined, lib);
-    const id = service.createCharacter("Six attacks").id;
-    for (let index = 1; index <= 6; index += 1) {
+    const id = service.createCharacter("Seven attacks").id;
+    for (let index = 1; index <= 7; index += 1) {
       service.createAttack(id, {
         mode: "manual",
         name: `Blade ${index}`, range: "5 ft", bonus: "+4", damage: `1d${index + 3} slashing`, description: null,
       });
     }
-    const model = buildCharacterSheetModel(service.getCharacter(id), lib, { mode: "full", canonical: false });
-    const fields: Record<string, string> = {};
-    const walk = (node: unknown): void => {
-      if (node === null || typeof node !== "object") return;
-      for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-        if (key.startsWith("details_attack") && typeof value === "string") fields[key] = value;
-        else walk(value);
-      }
-    };
-    walk(model);
+    const state = { ...service.getCharacter(id), attacksDescription: "Aim for the knees." };
     const shown = service.getAttacks(id).filter((attack) => attack.isDisplayed).map((attack) => attack.name);
-    expect(shown.length).toBeGreaterThan(4);
+    return { lib, model: buildCharacterSheetModel(state, lib, { mode: "full", canonical: false }), shown };
+  };
+
+  /** The text the writer drew on the character page, and what it drew inside each field. */
+  const renderDetails = async (model: CharacterSheetModel, layout: object) => {
+    const bundle = localTemplateBundle("2014", DEFAULT_SHEET_FONTS, layout);
+    const form = (await PDFDocument.load(bundle.details)).getForm();
+    const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, bundle)) }).promise;
+    const items = (await (await doc.getPage(1)).getTextContent()).items
+      .flatMap((item) => ("str" in item && item.str.trim() !== "" ? [{ str: item.str, x: item.transform[4] as number, y: item.transform[5] as number }] : []));
+    const inField = (name: string): string => {
+      const box = form.getFields().find((field) => field.getName() === name)?.acroField.getWidgets()[0]?.getRectangle();
+      if (box === undefined) return "";
+      return items.filter((item) => item.x >= box.x - 0.5 && item.x <= box.x + box.width && item.y >= box.y - 0.5 && item.y <= box.y + box.height)
+        .map((item) => item.str).join(" ").replace(/\s+/g, " ");
+    };
+    return { inField, rows: form.getFields().filter((field) => /^details_attack\d+_weapon$/.test(field.getName())).length };
+  };
+
+  it("lists attacks past the fourth row ahead of the free-text notes", async () => {
+    const { model, shown } = await sevenAttacks();
+    const fields = model.formValues ?? {};
+    expect(shown).toHaveLength(7);
     expect(fields["details_attack4_weapon"]).toBe(shown[3]);
+    expect(fields["details_attack5_weapon"]).toBeUndefined();
     const rest = shown.slice(4);
     expect(fields["details_attack_description"]).toMatch(/^More attacks: /);
     for (const name of rest) expect(fields["details_attack_description"]).toContain(name);
     expect(fields["details_attack_description"]).toContain("Blade 6: 5 ft, +4, 1d9 slashing");
+    expect(fields["details_attack_description"]).toBe(
+      "More attacks: Blade 5: 5 ft, +4, 1d8 slashing; Blade 6: 5 ft, +4, 1d9 slashing; Blade 7: 5 ft, +4, 1d10 slashing.\nAim for the knees.",
+    );
+    // The details page also carries every displayed attack and the user's own
+    // notes apart, for a template with more rows.
+    const details = model.pages.find((page) => page.templateKind === "details")!;
+    expect(details.attacks?.map((attack) => attack.name)).toEqual(shown);
+    expect(details.attacks?.[6]).toEqual({ name: "Blade 7", range: "5 ft", bonus: "+4", damage: "1d10 slashing", note: "" });
+    expect(details.attackNotes).toBe("Aim for the knees.");
   });
+
+  it("prints attacks past the fourth row in the notes on a four-row sheet", async () => {
+    const { model } = await sevenAttacks();
+    const page = await renderDetails(model, {});
+    expect(page.rows).toBe(4);
+    expect(page.inField("details_attack4_weapon")).toBe("Blade 4");
+    expect(page.inField("details_attack_description")).toBe(
+      "More attacks: Blade 5: 5 ft, +4, 1d8 slashing; Blade 6: 5 ft, +4, 1d9 slashing; Blade 7: 5 ft, +4, 1d10 slashing. Aim for the knees.",
+    );
+    // Renders the corpus-built character on the full page.
+  }, 30_000);
+
+  it("prints six attack rows on the readable 2014 sheet, and only the seventh in the notes", async () => {
+    const { model } = await sevenAttacks();
+    for (const layout of [{ readable: true }, { readable: true, top: true }]) {
+      const page = await renderDetails(model, layout);
+      expect(page.rows, JSON.stringify(layout)).toBe(6);
+      for (let row = 1; row <= 6; row += 1) {
+        expect(page.inField(`details_attack${row}_weapon`), `row ${row}`).toBe(`Blade ${row}`);
+        expect(page.inField(`details_attack${row}_damage`), `row ${row}`).toBe(`1d${row + 3} slashing`);
+      }
+      expect(page.inField("details_attack5_range")).toBe("5 ft");
+      expect(page.inField("details_attack6_attack")).toBe("+4");
+      expect(page.inField("details_attack_description")).toBe("More attacks: Blade 7: 5 ft, +4, 1d10 slashing. Aim for the knees.");
+    }
+    // Two full renders of a corpus-built character.
+  }, 30_000);
+
+  it("leaves the readable rows' notes to the user when every attack has a row", async () => {
+    const { model } = await sevenAttacks();
+    const details = model.pages.find((page) => page.templateKind === "details")!;
+    const six = { ...model, pages: model.pages.map((page) => (page === details ? { ...page, attacks: details.attacks!.slice(0, 6) } : page)) };
+    const page = await renderDetails(six, { readable: true });
+    expect(page.inField("details_attack6_weapon")).toBe("Blade 6");
+    expect(page.inField("details_attack_description")).toBe("Aim for the knees.");
+  }, 30_000);
 
   it("prints a round-tripped spell row's current damage after a level-up", async () => {
     const lib = await library();

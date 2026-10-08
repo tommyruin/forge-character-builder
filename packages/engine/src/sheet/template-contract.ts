@@ -40,7 +40,14 @@ export function isSheetTemplateSet(value: unknown): value is SheetTemplateSet {
  *    fields. On the 2014 page initiative sits beside the proficiency bonus
  *    and the hit dice split into maximum and spent.
  *  - `split`: separate boxes for class features, subclass features and feats.
- *  - `readable`: a more readable body (no variant yet).
+ *  - `readable`: a more readable body. On the 2024 pages the armor sits
+ *    beside the armor class, the species traits move under the abilities,
+ *    conditions sit beside the abilities, the feature boxes are taller, the
+ *    free-text attack note prints at 7pt or more, and (2024 only) each
+ *    ability panel shows the modifier as its large number with the score in
+ *    a badge. On the 2014 page the small captions are larger, the skills
+ *    spread over room the saving throws give up, the middle boxes have more
+ *    top padding and there are six attack rows.
  */
 export const SHEET_LAYOUT_FLAGS = ["top", "split", "readable"] as const;
 export type SheetLayoutFlag = (typeof SHEET_LAYOUT_FLAGS)[number];
@@ -63,7 +70,7 @@ export const SHEET_LAYOUT_DEFAULTS: Readonly<Record<SheetTemplateSet, Readonly<S
  * generated in, which keeps each set's labels.json growing at its end; file
  * names always follow `SHEET_LAYOUT_FLAGS`.
  */
-export const SHEET_IMPLEMENTED_LAYOUT_FLAGS: readonly SheetLayoutFlag[] = ["split", "top"];
+export const SHEET_IMPLEMENTED_LAYOUT_FLAGS: readonly SheetLayoutFlag[] = ["split", "top", "readable"];
 
 /** Separates a variant's switches from the character page's base name. */
 const LAYOUT_VARIANT_SEPARATOR = "~";
