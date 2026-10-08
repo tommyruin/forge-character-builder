@@ -277,6 +277,22 @@ function classLevels(state: CharacterState, library: ElementLibrary): ClassLevel
   return out;
 }
 
+/**
+ * Resolves a `[level:<class>:N]` requirement atom's class name (the lowercase
+ * class name, as the selection engine spells it) to that class's level,
+ * cropped to the display level. A multiclass variant carries its class's
+ * name, so a multiclass character gets each class's own level; an absent
+ * class is level 0.
+ */
+export function classLevelLookup(state: CharacterState, library: ElementLibrary): (name: string) => number {
+  const levels = new Map<string, number>();
+  for (const entry of classLevels(state, library)) {
+    if (entry.slug === "") continue;
+    levels.set(entry.slug, (levels.get(entry.slug) ?? 0) + entry.level);
+  }
+  return (name) => levels.get(name.toLowerCase()) ?? 0;
+}
+
 /** The requirement context for stat rules: registered ids + ability scores. */
 function requirementContext(
   state: CharacterState,
@@ -303,6 +319,34 @@ function requirementContext(
       return scores[ABILITY_KEY[name] ?? name] ?? Number.NaN;
     },
     level: state.level,
+    classLevel: classLevelLookup(state, library),
+  };
+}
+
+export { requirementContext as statRequirementContext };
+
+/**
+ * The requirement context an element's own `<requirements>` are judged by
+ * once statistics are final: element atoms resolve against the valid
+ * registered set (as the calculator gates rules), ability and stat atoms
+ * against the computed `values`, and class-level atoms per class. A feature
+ * replaced through a marker element (`!ID_INTERNAL_…_FEATURE_REPLACEMENT_…`)
+ * fails it, exactly as its stat rules do.
+ */
+export function elementRequirementContext(
+  state: CharacterState,
+  library: ElementLibrary,
+  values: StatisticsValues,
+): RequirementContext {
+  const valid = validTreeIds(state, library);
+  const validRegistered = new Set(state.sum.elements.map((e) => e.id).filter((id) => valid.has(id)));
+  const scores: Record<string, number> = {};
+  for (const ability of Object.values(ABILITY_KEY)) {
+    scores[ability] = values[`${ability}:score`] ?? state.abilities[ability as keyof CharacterState["abilities"]];
+  }
+  return {
+    ...requirementContext(state, library, scores, values),
+    hasElement: (id) => validRegistered.has(id),
   };
 }
 

@@ -1,6 +1,9 @@
 import {
   startEngineWorker,
+  type CharacterSourcesDto,
   type EngineMethodHandlers,
+  type SetCharacterSourcesResultDto,
+  type SourceGroupDto,
   type EngineWorkerRuntime,
   type WireList,
   type WireObject,
@@ -20,7 +23,7 @@ import {
 } from "./content/equipment/categories.js";
 import type { ParsedElement } from "./content/parser.js";
 import { isContentAllowedForCharacter } from "./content/access.js";
-import { normalizeSourceName, sourceNamesWithElements } from "./content/sourceIdentity.js";
+import { isRequiredSource, normalizeSourceName, sourceNamesWithElements } from "./content/sourceIdentity.js";
 import { expandDescriptionReferences } from "./content/description.js";
 import { selectionOptions, selectionRuleForSlot } from "./selection/selection.js";
 import { computeStatistics } from "./statistics/calculator.js";
@@ -38,6 +41,17 @@ function sourceSetter(source: Pick<ParsedElement, "setters"> | undefined, name: 
   return source?.setters.find((setter) => setter.name === name)?.value ?? "";
 }
 
+/**
+ * The publisher key a source is grouped under: the author setter's
+ * `abbreviation` ("WOTC"), which co-authored books share ("Wizards of the
+ * Coast, Penny Arcade"), else the full author text.
+ */
+function sourcePublisher(source: Pick<ParsedElement, "setters">): string {
+  const author = source.setters.find((setter) => setter.name === "author");
+  const abbreviation = author?.attrs?.abbreviation?.trim() ?? "";
+  return abbreviation !== "" ? abbreviation.toLocaleUpperCase() : (author?.value.trim() ?? "");
+}
+
 function sourceDto(source: ParsedElement, library: ElementLibrary): WireObject {
   const name = source.identity.name;
   // Entries may spell the book's name differently ("Guide to" for "Guide To").
@@ -47,6 +61,7 @@ function sourceDto(source: ParsedElement, library: ElementLibrary): WireObject {
     name,
     source: source.identity.source,
     author: sourceSetter(source, "author"),
+    publisher: sourcePublisher(source),
     releaseDate: sourceSetter(source, "release"),
     isPlaytest: sourceSetter(source, "playtest").toLocaleLowerCase() === "true",
     // A built-in stub of a book: only the System Reference Document part of it
@@ -56,7 +71,7 @@ function sourceDto(source: ParsedElement, library: ElementLibrary): WireObject {
     overridesBundledCore: source.overridesBundledCore === true,
     information: sourceSetter(source, "information"),
     hasElements,
-    canToggle: sourceSetter(source, "core").toLocaleLowerCase() !== "true",
+    canToggle: !isRequiredSource(source),
   };
 }
 
@@ -66,6 +81,7 @@ function unknownSourceDto(id: string): WireObject {
     name: id,
     source: "",
     author: "",
+    publisher: "",
     releaseDate: "",
     isPlaytest: false,
     isIncomplete: false,
@@ -84,19 +100,51 @@ function sourceRecords(library: ElementLibrary): WireObject[] {
     });
 }
 
-function sourceGroups(records: readonly WireObject[]): WireObject[] {
+/** The most frequent value, ties broken alphabetically. */
+function mostCommon(values: readonly string[]): string {
+  const counts = new Map<string, number>();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  return [...counts].sort(
+    ([leftName, left], [rightName, right]) =>
+      right - left || leftName.localeCompare(rightName, "en", { sensitivity: "base" }),
+  )[0]?.[0] ?? "";
+}
+
+/**
+ * The plain publisher name of each abbreviation: the most common author text
+ * before its first comma, so "Wizards of the Coast, Penny Arcade" names the
+ * WOTC group "Wizards of the Coast".
+ */
+function publisherNames(records: readonly WireObject[]): Map<string, string> {
+  const leads = new Map<string, string[]>();
+  for (const record of records) {
+    const publisher = String(record.publisher ?? "");
+    const author = String(record.author ?? "");
+    if (publisher === "" || publisher === author) continue;
+    const lead = author.split(",")[0]!.trim();
+    if (lead === "") continue;
+    leads.set(publisher, [...(leads.get(publisher) ?? []), lead]);
+  }
+  return new Map([...leads].map(([publisher, names]) => [publisher, mostCommon(names)]));
+}
+
+function sourceGroups(records: readonly WireObject[]): SourceGroupDto[] {
   // Required (core) sources form their own leading "Core" group rather than
   // hiding among their publisher's toggleable books.
   const core: WireObject[] = [];
+  const names = publisherNames(records);
   const grouped = new Map<string, { name: string; sources: WireObject[] }>();
   for (const record of records) {
     if (record.canToggle === false) {
       core.push(record);
       continue;
     }
+    // Books group by publisher, not by their exact (co-)author text, so a
+    // publisher's group toggle reaches every one of its books.
+    const publisher = typeof record.publisher === "string" ? record.publisher : "";
     const author = typeof record.author === "string" ? record.author : "";
     const fallback = typeof record.source === "string" ? record.source : "Other";
-    const name = author || fallback || "Other";
+    const name = names.get(publisher) || author || fallback || "Other";
     const group = grouped.get(name) ?? { name, sources: [] };
     group.sources.push(record);
     grouped.set(name, group);
@@ -134,7 +182,7 @@ function allowedElements(library: ElementLibrary, state?: CharacterState): reado
   return out;
 }
 
-function characterSourcesResponse(service: CharacterService, library: ElementLibrary, id: string): WireObject {
+function characterSourcesResponse(service: CharacterService, library: ElementLibrary, id: string): CharacterSourcesDto {
   const state = service.getCharacter(id);
   const restrictedSourceIds = normalizeSourceIds(state.restrictedSources);
   const records = sourceRecords(library);
@@ -381,9 +429,15 @@ export function createEngineMethodHandlers(
         service.setAbilities(id, abilities as unknown as AbilityScores, abilities.generationOption).id,
       )),
     setCharacterSources: (id, request) => {
-      const sourceIds = normalizeSourceIds(request.restrictedSourceIds);
-      const removedSpellNames = service.applySourceEdits(id, restrictedSourceEdits(service, id, sourceIds));
-      return { ...characterSourcesResponse(service, library, id), removedSpellNames };
+      // Required sources cannot be switched off: their ids are dropped here,
+      // while ids absent from the loaded corpus are kept for later imports.
+      const sourceIds = normalizeSourceIds(request.restrictedSourceIds).filter((sourceId) => {
+        const source = library.sources.get(sourceId);
+        return source === undefined || !isRequiredSource(source);
+      });
+      const removed = service.applySourceEdits(id, restrictedSourceEdits(service, id, sourceIds));
+      const result: SetCharacterSourcesResultDto = { ...characterSourcesResponse(service, library, id), ...removed };
+      return result;
     },
     getCharacterSources: (id) => characterSourcesResponse(service, library, id),
     getSelectionOptions: (id, ruleId, request) => {

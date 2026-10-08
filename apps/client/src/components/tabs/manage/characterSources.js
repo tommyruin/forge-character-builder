@@ -114,3 +114,76 @@ export function getNewlyDisabledOverrideSources(
   }
   return sources;
 }
+
+/**
+ * The draft after a group header toggle: a fully or partly included group
+ * switches all its switchable books off; a fully excluded one switches them
+ * back on. Required books are never drafted.
+ */
+export function getGroupToggleSourceIds(draftSourceIds, group, state) {
+  const ids = new Set(normalizeRestrictedSourceIds(draftSourceIds));
+  const toggleableIds = (group?.sources ?? [])
+    .filter((source) => source?.canToggle && source.id)
+    .map((source) => source.id);
+  if (state?.allEnabled || state?.mixed) {
+    toggleableIds.forEach((id) => ids.add(id));
+  } else {
+    toggleableIds.forEach((id) => ids.delete(id));
+  }
+  return [...ids];
+}
+
+function namedSelections(value) {
+  return (Array.isArray(value) ? value : []).filter(
+    (entry) => typeof entry?.name === "string" && entry.name,
+  );
+}
+
+/** Content types as players see them on the Build tab. */
+const SELECTION_TYPE_LABELS = {
+  Archetype: "Subclass",
+  "Archetype Feature": "Subclass feature",
+  Multiclass: "Class",
+  "Sub Race": "Subrace",
+  "Race Variant": "Race variant",
+  "Racial Trait": "Trait",
+  "Class Feature": "Class feature",
+};
+
+function selectionLabel(entry) {
+  if (!entry.type) return entry.name;
+  return `${entry.name} (${SELECTION_TYPE_LABELS[entry.type] ?? entry.type})`;
+}
+
+/**
+ * The notice after applying sources: the choices removed from disabled books
+ * and the class picks kept from them. An older engine reports spells only.
+ */
+export function formatSourceApplyMessage(response) {
+  let removed = namedSelections(response?.removedSelections);
+  if (!Array.isArray(response?.removedSelections)) {
+    removed = (response?.removedSpellNames ?? []).map((name) => ({
+      name,
+      type: "Spell",
+    }));
+  }
+  const kept = namedSelections(response?.keptSelections);
+  const parts = [];
+  if (removed.length) {
+    const where = removed.some((entry) => entry.type === "Spell")
+      ? "Build or Magic"
+      : "Build";
+    parts.push(
+      `Removed from disabled books: ${removed.map(selectionLabel).join(", ")}. Choose replacements in ${where}.`,
+    );
+  }
+  if (kept.length) {
+    const books = kept.length === 1 ? "its book" : "their books";
+    parts.push(
+      `Kept ${kept.map(selectionLabel).join(", ")}: turn ${books} back on or change class in Build.`,
+    );
+  }
+  return parts.length
+    ? parts.join(" ")
+    : "Source restrictions applied to this character.";
+}

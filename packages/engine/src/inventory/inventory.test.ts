@@ -7,7 +7,8 @@ import { equipmentMetadata } from "../content/equipment/categories.js";
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
-import { CharacterService } from "../character/service.js";
+import { CharacterService, InMemoryCharacterStore } from "../character/service.js";
+import type { CharacterState } from "../character/state.js";
 import { parseDnd5e } from "../dnd5e/document.js";
 import { buildInventoryDto, type InventoryItemDto } from "./inventory.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
@@ -320,6 +321,7 @@ describe("inventory remove and extract", () => {
 });
 
 const CUSTOM_PACK = "ID_TEST_PACK_EXTRAS";
+const CUSTOM_ARMOR_PACK = "ID_TEST_PACK_ARMOR_EXTRAS";
 const CUSTOM_PACK_XML = `<?xml version="1.0" encoding="utf-8"?>
 <elements>
 \t<element name="Test Pack" type="Item" source="Pack Extras Test" id="${CUSTOM_PACK}">
@@ -339,6 +341,21 @@ const CUSTOM_PACK_XML = `<?xml version="1.0" encoding="utf-8"?>
 \t\t\t\t<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM</item>
 \t\t\t\t<item>ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_RELIQUARY</item>
 \t\t\t</choice>
+\t\t</extras>
+\t</element>
+\t<element name="Test Armor Pack" type="Item" source="Pack Extras Test" id="${CUSTOM_ARMOR_PACK}">
+\t\t<description><p>A test pack whose noted shortfalls are armor.</p></description>
+\t\t<setters>
+\t\t\t<set name="category">Equipment Packs</set>
+\t\t\t<set name="cost">—</set>
+\t\t\t<set name="weight">—</set>
+\t\t</setters>
+\t\t<extract>
+\t\t\t<item>ID_WOTC_PHB24_WEAPON_LONGSWORD</item>
+\t\t</extract>
+\t\t<extras>
+\t\t\t<item>ID_WOTC_PHB24_ARMOR_SHIELD</item>
+\t\t\t<item>ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL</item>
 \t\t</extras>
 \t</element>
 </elements>
@@ -436,6 +453,122 @@ describe("pack extras extraction", () => {
     dto = service.removeItem(id, pack.identifier);
     expect(dto.items).toHaveLength(0);
     expect(dto.coins.gold).toBe(0);
+  });
+
+  describe("wearing unpacked armor", () => {
+    const CHAIN_MAIL = "ID_WOTC_PHB24_ARMOR_HEAVY_CHAIN_MAIL";
+    const SCALE_MAIL_24 = "ID_WOTC_PHB24_ARMOR_MEDIUM_SCALE_MAIL";
+    const GREATSWORD_24 = "ID_WOTC_PHB24_WEAPON_GREATSWORD";
+    const LONGSWORD_24 = "ID_WOTC_PHB24_WEAPON_LONGSWORD";
+    const STEALTH = "ID_INTERNAL_GRANTS_STEALTH_DISADVANTAGE";
+    const registeredCount = (xml: string): number => Number(xml.match(/registered-count="(\d+)"/)![1]);
+    const sumOf = (xml: string): string => xml.slice(xml.indexOf("<sum"), xml.indexOf("</sum>"));
+    const treeOf = (xml: string): string => xml.slice(xml.indexOf("<elements"), xml.indexOf("</elements>"));
+    const count = (text: string, needle: string): number => text.split(needle).length - 1;
+    const withArmorPack = async (name: string, amount = 1) => {
+      const service = await customService();
+      const id = service.createCharacter(name).id;
+      const dto = service.addItem(id, { itemId: CUSTOM_ARMOR_PACK, amount, baseElementId: null });
+      return { service, id, pack: byItemId(dto, CUSTOM_ARMOR_PACK)! };
+    };
+
+    it("wears the pack's body armor and holds its shield, leaving weapons carried", async () => {
+      const { service, id, pack } = await withArmorPack("Unpacked Armor");
+      const before = registeredCount(service.exportCharacterXml(id));
+      const dto = service.extractItem(id, pack.identifier);
+      expect(byItemId(dto, CHAIN_MAIL)!.equippedLocation).toBe("Armor");
+      expect(byItemId(dto, SHIELD)!.equippedLocation).toBe("Secondary Hand");
+      // The user's decision: only armor and shields equip from a pack.
+      expect(byItemId(dto, LONGSWORD_24)!.isEquipped).toBe(false);
+
+      const xml = service.exportCharacterXml(id);
+      expect(xml).toContain('<equipped location="Armor">true</equipped>');
+      expect(xml).toContain('<equipped location="Secondary Hand">true</equipped>');
+      expect(count(sumOf(xml), `id="${STEALTH}"`)).toBe(1);
+      expect(count(treeOf(xml), '<element type="Armor" name="Chain Mail"')).toBe(1);
+
+      // The registrations match wearing the same two records by hand: taking
+      // them off returns the count to its pre-extraction value, and putting
+      // them back on reproduces the unpacked file. (Adding this Shield through
+      // addItem would adorn a 2014 Shield with it, so the hand path equips the
+      // unpacked records rather than adding fresh ones.)
+      const manual = await withArmorPack("Worn By Hand");
+      const manualBefore = registeredCount(manual.service.exportCharacterXml(manual.id));
+      const unpacked = manual.service.extractItem(manual.id, manual.pack.identifier);
+      const mail = byItemId(unpacked, CHAIN_MAIL)!.identifier;
+      const shield = byItemId(unpacked, SHIELD)!.identifier;
+      manual.service.equipItem(manual.id, mail, "none");
+      const carried = manual.service.equipItem(manual.id, shield, "none");
+      expect(carried.items.every((item) => !item.isEquipped)).toBe(true);
+      expect(registeredCount(manual.service.exportCharacterXml(manual.id))).toBe(manualBefore);
+      manual.service.equipItem(manual.id, mail, "armor");
+      manual.service.equipItem(manual.id, shield, "secondary");
+      const byHand = manual.service.exportCharacterXml(manual.id);
+      expect(registeredCount(xml) - before).toBe(registeredCount(byHand) - manualBefore);
+      expect(registeredCount(xml) - before).toBeGreaterThan(0);
+      expect(count(sumOf(byHand), `id="${STEALTH}"`)).toBe(1);
+
+      // The written file re-imports to the same inventory and re-exports byte for byte.
+      const reimported = service.importCharacterXml("Unpacked Armor Copy", xml);
+      const lib = await customLibrary();
+      expect(buildInventoryDto(reimported, lib)).toEqual(buildInventoryDto(service.getCharacter(id), lib));
+      expect(service.exportCharacterXml(reimported.id)).toBe(xml);
+    });
+
+    it("leaves the unpacked armor carried when armor is already worn", async () => {
+      const { service, id, pack } = await withArmorPack("Already Armored");
+      const worn = byItemId(service.addItem(id, { itemId: SCALE_MAIL_24, amount: 1, baseElementId: null }), SCALE_MAIL_24)!;
+      expect(worn.equippedLocation).toBe("Armor");
+      const dto = service.extractItem(id, pack.identifier);
+      expect(byItemId(dto, SCALE_MAIL_24)!.equippedLocation).toBe("Armor");
+      expect(byItemId(dto, CHAIN_MAIL)!.isEquipped).toBe(false);
+      expect(byItemId(dto, SHIELD)!.equippedLocation).toBe("Secondary Hand");
+      const tree = treeOf(service.exportCharacterXml(id));
+      expect(count(tree, '<element type="Armor" name="Chain Mail"')).toBe(0);
+      expect(count(tree, '<element type="Armor" name="Scale Mail"')).toBe(1);
+    });
+
+    it("leaves the unpacked shield carried while a two-handed weapon is held", async () => {
+      const { service, id, pack } = await withArmorPack("Two Hands Full");
+      const held = byItemId(service.addItem(id, { itemId: GREATSWORD_24, amount: 1, baseElementId: null }), GREATSWORD_24)!;
+      expect(held.equippedLocation).toBe("Two-Handed");
+      const dto = service.extractItem(id, pack.identifier);
+      expect(byItemId(dto, GREATSWORD_24)!.equippedLocation).toBe("Two-Handed");
+      expect(byItemId(dto, SHIELD)!.isEquipped).toBe(false);
+      expect(byItemId(dto, CHAIN_MAIL)!.equippedLocation).toBe("Armor");
+    });
+
+    it("does not equip a second identical pack's armor over the first", async () => {
+      const { service, id, pack } = await withArmorPack("Two Packs", 2);
+      service.extractItem(id, pack.identifier);
+      const dto = service.extractItem(id, pack.identifier);
+      const mails = dto.items.filter((item) => item.itemId === CHAIN_MAIL);
+      const shields = dto.items.filter((item) => item.itemId === SHIELD);
+      expect(mails.map((item) => item.equippedLocation)).toEqual(["Armor", null]);
+      expect(shields.map((item) => item.equippedLocation)).toEqual(["Secondary Hand", null]);
+      const xml = service.exportCharacterXml(id);
+      expect(count(sumOf(xml), `id="${STEALTH}"`)).toBe(1);
+      expect(count(treeOf(xml), '<element type="Armor" name="Chain Mail"')).toBe(1);
+    });
+
+    it("stores the unpacking and the equips as one change (one undo step)", async () => {
+      class CountingStore extends InMemoryCharacterStore {
+        sets = 0;
+        override set(state: CharacterState): void {
+          this.sets++;
+          super.set(state);
+        }
+      }
+      const store = new CountingStore();
+      const service = new CharacterService(store, await customLibrary());
+      const id = service.createCharacter("One Step").id;
+      const pack = byItemId(service.addItem(id, { itemId: CUSTOM_ARMOR_PACK, amount: 1, baseElementId: null }), CUSTOM_ARMOR_PACK)!;
+      store.sets = 0;
+      const dto = service.extractItem(id, pack.identifier);
+      expect(store.sets).toBe(1);
+      expect(byItemId(dto, CHAIN_MAIL)!.equippedLocation).toBe("Armor");
+      expect(byItemId(dto, SHIELD)!.equippedLocation).toBe("Secondary Hand");
+    });
   });
 });
 

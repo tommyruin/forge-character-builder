@@ -1538,6 +1538,19 @@ export function planAddCoinsEdits(state: CharacterState, document: Dnd5eDocument
   return planSetCoinsEdits(document, next);
 }
 
+/** One record an extraction appended. */
+export interface ExtractedItemRecord {
+  identifier: string;
+  /** The record's item id (an extracted record is never adorned). */
+  baseId: string;
+}
+
+/** The extraction edits plus the records they append, in document order. */
+export interface ExtractItemPlan {
+  edits: RawEdit[];
+  added: ExtractedItemRecord[];
+}
+
 /** Appends one extracted content record (a plain carried item). */
 function appendExtractedItemEdits(
   document: Dnd5eDocument,
@@ -1545,11 +1558,14 @@ function appendExtractedItemEdits(
   id: string,
   amount: number,
   cardPolicy: ItemCardPolicy,
+  added: ExtractedItemRecord[],
 ): RawEdit[] {
   const content = library.byId.get(id);
   if (!content) return [];
+  const identifier = randomUuid();
+  added.push({ identifier, baseId: content.identity.id });
   const node = renderItemNode({
-    identifier: randomUuid(),
+    identifier,
     name: content.identity.name,
     id: content.identity.id,
     amount,
@@ -1567,7 +1583,9 @@ function appendExtractedItemEdits(
  * Plans extracting one unit of an item's contents (packs): decrements the
  * record (removing it with the last unit), adds the <extract> contents, the
  * <extras> fixed items, the gold, and the selected candidates for the pack's
- * choices. An unset choice is skipped and stays manual.
+ * choices. An unset choice is skipped and stays manual. Every appended record
+ * is carried; `added` names them so the caller can wear the armor among them
+ * (see `extractedArmorToWear`).
  */
 export function planExtractItemEdits(
   state: CharacterState,
@@ -1577,7 +1595,7 @@ export function planExtractItemEdits(
   /** Chosen candidate id per choice label. */
   selections?: Readonly<Record<string, string>>,
   options: ExtractItemOptions = {},
-): RawEdit[] {
+): ExtractItemPlan {
   const cardPolicy = resolveItemCardPolicy(options.cardPolicy);
   const item = state.items.find((i) => i.identifier === identifier);
   if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
@@ -1588,8 +1606,12 @@ export function planExtractItemEdits(
     throw engineError("conflict", `Inventory item '${item.name}' cannot be extracted.`);
   }
   const edits: RawEdit[] = [];
-  for (const entry of extract) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount, cardPolicy));
-  for (const entry of extras?.items ?? []) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount, cardPolicy));
+  const added: ExtractedItemRecord[] = [];
+  const append = (id: string, amount: number): void => {
+    edits.push(...appendExtractedItemEdits(document, library, id, amount, cardPolicy, added));
+  };
+  for (const entry of extract) append(entry.id, entry.amount);
+  for (const entry of extras?.items ?? []) append(entry.id, entry.amount);
   for (const choice of extras?.choices ?? []) {
     const chosenId = selections?.[choice.label];
     if (chosenId === undefined) continue;
@@ -1597,7 +1619,7 @@ export function planExtractItemEdits(
     if (candidate === undefined) {
       throw engineError("invalid-argument", `'${chosenId}' is not a candidate for ${choice.label}`);
     }
-    edits.push(...appendExtractedItemEdits(document, library, candidate.id, candidate.amount, cardPolicy));
+    append(candidate.id, candidate.amount);
   }
   if ((extras?.gold ?? 0) > 0) {
     edits.push(...planAddCoinsEdits(state, document, { gold: extras!.gold }));
@@ -1611,5 +1633,33 @@ export function planExtractItemEdits(
   } else {
     edits.push(removeNodeEdit(document.raw, node));
   }
-  return edits;
+  return { edits, added };
+}
+
+/**
+ * The extracted records a pack wears by default, in the order to try them:
+ * body armor first, then shields, each with its location key. Only armor-type
+ * records qualify; weapons and other gear stay carried.
+ */
+export function extractedArmorToWear(
+  library: ElementLibrary,
+  added: readonly ExtractedItemRecord[],
+): Array<{ identifier: string; location: string }> {
+  const wearable = added.flatMap((record) => {
+    const base = library.byId.get(record.baseId);
+    if (base?.identity.type !== "Armor") return [];
+    const location = equipLocationsFor(base)[0];
+    return location === undefined ? [] : [{ identifier: record.identifier, location }];
+  });
+  const rank = (location: string): number => (location === "armor" ? 0 : 1);
+  return wearable.sort((a, b) => rank(a.location) - rank(b.location));
+}
+
+/**
+ * True when nothing occupies the location key in `state` (a two-handed weapon
+ * fills both hands). An unpacked item only takes a free location; it never
+ * evicts what the character already wears or holds.
+ */
+export function isEquipLocationFree(state: CharacterState, location: string): boolean {
+  return isSlotFree(state, location);
 }

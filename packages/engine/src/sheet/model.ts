@@ -16,7 +16,7 @@ import { mergeSheetSpellcasters } from "./spell-groups.js";
 import type { CharacterState } from "../character/state.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { ParsedElement, ParsedSheetEntry, SheetDescription } from "../content/parser.js";
-import { computeInlineValues, computeStatistics, type StatisticsValues } from "../statistics/calculator.js";
+import { computeInlineValues, computeStatistics, elementRequirementContext, type StatisticsValues } from "../statistics/calculator.js";
 import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
 import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type InventoryItemDto } from "../inventory/inventory.js";
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
@@ -1405,6 +1405,8 @@ function collectFeatures(
   const out: CollectedFeature[] = [];
   const seen = new Set<string>();
   const ids = featureOrderIds(state, library);
+  const classLevels = featureClassLevels(state);
+  let requirementCtx: ReturnType<typeof elementRequirementContext> | undefined;
   for (const id of ids) {
     if (seen.has(id)) continue;
     seen.add(id);
@@ -1412,6 +1414,15 @@ function collectFeatures(
     if (element === undefined) continue;
     const cls = classOfElement(element);
     if (cls === "hidden" || cls === "proficiency" || cls === "language") continue;
+    // A feature whose own requirements fail has been replaced (typically by a
+    // subclass or optional-class-feature marker such as
+    // ID_INTERNAL_PHB24_FEATURE_REPLACEMENT_DRUID_WILD_SHAPE); the calculator
+    // already ignores its rules, so its text must not print either. Feats
+    // keep their prerequisites as advice, not as a gate.
+    if (REQUIREMENT_GATED_FEATURE_TYPES.has(element.identity.type) && (element.requirements ?? "").trim() !== "") {
+      requirementCtx ??= elementRequirementContext(state, library, values);
+      if (!evaluateRequirements(element.requirements!, requirementCtx)) continue;
+    }
     const sheet = element.sheets[0];
     if (sheet === undefined) {
       // Reference renders sheet-less class features name-only ("Fighting Style.")
@@ -1420,7 +1431,9 @@ function collectFeatures(
       out.push({ type: element.identity.type, class: cls, title: element.identity.name, parenthetical: null, description: "" });
       continue;
     }
-    const description = sheetDescriptionAtLevel(sheet, state.level);
+    // Class grants tier their text by the owning class's level, so a
+    // multiclass character reads the tier its class has reached.
+    const description = sheetDescriptionAtLevel(sheet, classLevels.get(id) ?? state.level);
     if (description === undefined) continue;
     const parenthetical = featureParenthetical(sheet, description);
     out.push({
@@ -1448,6 +1461,13 @@ function collectFeatures(
     },
   };
 }
+
+/** Feature types whose own `<requirements>` decide whether they print. */
+const REQUIREMENT_GATED_FEATURE_TYPES: ReadonlySet<string> = new Set([
+  "Class Feature",
+  "Archetype Feature",
+  "Racial Trait",
+]);
 
 /**
  * Element types whose sheet text belongs in the Features & Traits box. The

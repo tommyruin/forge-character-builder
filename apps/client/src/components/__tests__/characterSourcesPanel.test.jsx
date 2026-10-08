@@ -3,7 +3,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
+  formatSourceApplyMessage,
   formatSourceReleaseDate,
+  getGroupToggleSourceIds,
   getNewlyDisabledOverrideSources,
   getSourceGroupState,
   getToggleableSourceIds,
@@ -373,5 +375,121 @@ describe("character sources panel", () => {
     expect(panelSource).toContain("getNewlyDisabledOverrideSources");
     expect(panelSource).toMatch(/requestDraftChange\(/);
     expect(panelSource).toMatch(/<OverrideDisableDialog/);
+  });
+  it("drafts every co-authored book when the merged publisher group is toggled", () => {
+    const wizards = {
+      name: "Wizards of the Coast",
+      canToggle: true,
+      sources: [
+        {
+          id: "ai",
+          name: "Acquisitions Incorporated",
+          author: "Wizards of the Coast, Penny Arcade",
+          publisher: "WOTC",
+          canToggle: true,
+        },
+        {
+          id: "egtw",
+          name: "Explorer’s Guide to Wildemount",
+          author: "Wizards of the Coast, Matthew Mercer",
+          publisher: "WOTC",
+          canToggle: true,
+        },
+        {
+          id: "phb24",
+          name: "Player’s Handbook (2024)",
+          author: "Wizards of the Coast",
+          publisher: "WOTC",
+          canToggle: true,
+        },
+      ],
+    };
+    const allOn = getSourceGroupState(wizards, []);
+    const disabled = getGroupToggleSourceIds([], wizards, allOn);
+    expect(disabled).toEqual(expect.arrayContaining(["ai", "egtw", "phb24"]));
+    expect(disabled).toHaveLength(3);
+    // Turning Player's Handbook (2024) back on leaves the co-authored books off.
+    const draft = disabled.filter((id) => id !== "phb24");
+    expect(draft).toEqual(expect.arrayContaining(["ai", "egtw"]));
+    // From none included, the header includes all three again.
+    const allOff = getSourceGroupState(wizards, disabled);
+    expect(getGroupToggleSourceIds(disabled, wizards, allOff)).toEqual([]);
+    // The row still credits each book's co-author.
+    const markup = renderToStaticMarkup(
+      createElement(SourceGroupList, {
+        groups: [wizards],
+        restrictedSourceIds: draft,
+        search: "",
+        disabled: false,
+        onToggleGroup: vi.fn(),
+        onToggleSource: vi.fn(),
+      }),
+    );
+    expect(markup).toContain("Wizards of the Coast, Penny Arcade");
+    expect(markup).toContain("Wizards of the Coast, Matthew Mercer");
+    expect(markup).toContain("1 of 3 included");
+  });
+
+  it("reports removed and kept choices after applying sources", () => {
+    expect(
+      formatSourceApplyMessage({
+        removedSpellNames: [],
+        removedSelections: [
+          { name: "Verdan", type: "Race" },
+          { name: "Grinner", type: "Background" },
+        ],
+        keptSelections: [{ name: "Fighter", type: "Class" }],
+      }),
+    ).toBe(
+      "Removed from disabled books: Verdan (Race), Grinner (Background). Choose replacements in Build. " +
+        "Kept Fighter (Class): turn its book back on or change class in Build.",
+    );
+    expect(
+      formatSourceApplyMessage({
+        removedSpellNames: ["Absorb Elements"],
+        removedSelections: [{ name: "Absorb Elements", type: "Spell" }],
+        keptSelections: [],
+      }),
+    ).toBe(
+      "Removed from disabled books: Absorb Elements (Spell). Choose replacements in Build or Magic.",
+    );
+    expect(
+      formatSourceApplyMessage({
+        removedSelections: [],
+        keptSelections: [
+          { name: "Artificer", type: "Class" },
+          { name: "Blood Hunter", type: "Class" },
+        ],
+      }),
+    ).toBe(
+      "Kept Artificer (Class), Blood Hunter (Class): turn their books back on or change class in Build.",
+    );
+    // An older engine that reports spells only.
+    expect(formatSourceApplyMessage({ removedSpellNames: ["Shield"] })).toBe(
+      "Removed from disabled books: Shield (Spell). Choose replacements in Build or Magic.",
+    );
+    expect(formatSourceApplyMessage({})).toBe(
+      "Source restrictions applied to this character.",
+    );
+    expect(panelSource).toContain("formatSourceApplyMessage(response)");
+    expect(panelSource).toContain("getGroupToggleSourceIds(");
+  });
+});
+
+describe("source apply message wording", () => {
+  it("names removed choices in the words the Build tab uses", () => {
+    expect(
+      formatSourceApplyMessage({
+        removedSelections: [
+          { name: "Echo Knight", type: "Archetype" },
+          { name: "Pallid Elf", type: "Sub Race" },
+          { name: "Draconblood", type: "Race Variant" },
+        ],
+        keptSelections: [{ name: "Artificer", type: "Multiclass" }],
+      }),
+    ).toBe(
+      "Removed from disabled books: Echo Knight (Subclass), Pallid Elf (Subrace), Draconblood (Race variant). " +
+        "Choose replacements in Build. Kept Artificer (Class): turn its book back on or change class in Build.",
+    );
   });
 });

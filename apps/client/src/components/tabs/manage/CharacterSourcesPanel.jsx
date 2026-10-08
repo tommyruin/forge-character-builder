@@ -8,7 +8,9 @@ import {
 } from "../../../sourcePreferences.js";
 import { useWorkspace } from "../../WorkspaceContext";
 import {
+  formatSourceApplyMessage,
   formatSourceReleaseDate,
+  getGroupToggleSourceIds,
   getNewlyDisabledOverrideSources,
   getSourceGroupState,
   getToggleableSourceIds,
@@ -404,17 +406,8 @@ export default function CharacterSourcesPanel() {
   };
 
   const toggleGroup = (group, state) => {
-    const toggleableIds = group.sources
-      .filter((source) => source.canToggle)
-      .map((source) => source.id);
-    if (!toggleableIds.length) return;
-    const ids = new Set(draftSourceIds);
-    if (state.allEnabled || state.mixed) {
-      toggleableIds.forEach((id) => ids.add(id));
-    } else {
-      toggleableIds.forEach((id) => ids.delete(id));
-    }
-    requestDraftChange([...ids]);
+    if (!group.sources.some((source) => source.canToggle)) return;
+    requestDraftChange(getGroupToggleSourceIds(draftSourceIds, group, state));
   };
 
   const apply = async () => {
@@ -428,9 +421,7 @@ export default function CharacterSourcesPanel() {
       setSources(next);
       setAppliedSourceIds(next.restrictedSourceIds);
       setDraftSourceIds(next.restrictedSourceIds);
-      notify(response.removedSpellNames?.length
-        ? `Removed spells from disabled sources: ${response.removedSpellNames.join(", ")}. Choose replacements in Build or Magic.`
-        : "Source restrictions applied to this character.");
+      notify(formatSourceApplyMessage(response));
     } catch (caught) {
       setError(caught.message);
     } finally {

@@ -6,6 +6,16 @@
  */
 
 import type { ElementLibrary } from "./library.js";
+import type { ParsedElement } from "./parser.js";
+
+/**
+ * True for a required (core) source: its `core` setter is "true". A character
+ * can never disable one, so restriction lists ignore its id wherever it comes
+ * from — an old default, an imported file or a hand-edited request.
+ */
+export function isRequiredSource(source: Pick<ParsedElement, "setters">): boolean {
+  return source.setters.find((setter) => setter.name === "core")?.value.trim().toLocaleLowerCase() === "true";
+}
 
 /** Case- and punctuation-insensitive form of a source display name. */
 export function normalizeSourceName(value: string): string {
@@ -41,7 +51,10 @@ export function sourceIdsByName(library: ElementLibrary): Map<string, Set<string
   return cached.byName;
 }
 
-/** True when the source display name resolves to a restricted source id. */
+/**
+ * True when the source display name resolves to a restricted source id.
+ * Required sources never count as restricted, even when their id is listed.
+ */
 export function isSourceNameRestricted(
   restricted: ReadonlySet<string>,
   library: ElementLibrary,
@@ -51,7 +64,9 @@ export function isSourceNameRestricted(
   const ids = sourceIdsByName(library).get(normalizeSourceName(sourceName));
   if (ids === undefined) return false;
   for (const id of ids) {
-    if (restricted.has(id)) return true;
+    if (!restricted.has(id)) continue;
+    const source = library.sources.get(id);
+    if (source === undefined || !isRequiredSource(source)) return true;
   }
   return false;
 }

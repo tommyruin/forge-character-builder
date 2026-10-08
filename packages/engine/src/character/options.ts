@@ -25,7 +25,7 @@ import {
   type RawEdit,
   type SelectionRule,
 } from "../selection/selection.js";
-import { computeStatistics, validTreeIds } from "../statistics/calculator.js";
+import { classLevelLookup, computeStatistics, validTreeIds } from "../statistics/calculator.js";
 import { engineError } from "../errors.js";
 
 // ---------------------------------------------------------------------------
@@ -820,6 +820,7 @@ function loadRequirementContext(
       return name in statValues ? statValues[name]! : Number.NaN;
     },
     level: state.level,
+    classLevel: classLevelLookup(state, library),
   };
 }
 

@@ -190,17 +190,32 @@ the public description plus equipment `rarity` and
 ## Source catalogue and character-source contract
 
 - `contentSources` returns source records with `id`, publication `name`,
-  `source`, `author`, `releaseDate`, `isPlaytest`, `hasElements`, and
-  `canToggle`, sorted deterministically by display name and then ID.
-- `getCharacterSources` and `setCharacterSources` return author-grouped
+  `source`, `author`, `publisher`, `releaseDate`, `isPlaytest`, `hasElements`,
+  and `canToggle`, sorted deterministically by display name and then ID.
+  `publisher` is the author setter's `abbreviation` attribute (upper-cased),
+  else the full author text; `author` keeps the full co-author text.
+- `getCharacterSources` and `setCharacterSources` return publisher-grouped
   `groups`, normalized `restrictedSourceIds`,
   `unavailableRestrictedSourceIds`, and a compatibility `sources` field for
-  restricted records. Group `canToggle` is true when at least one member can be
-  toggled.
+  restricted records. Required sources form a leading `Core` group; every
+  other group holds one publisher's books, so "Wizards of the Coast, Penny
+  Arcade" joins "Wizards of the Coast". A group sharing an abbreviation is
+  named by its most common author text before the first comma. Group
+  `canToggle` is true when at least one member can be toggled.
 - Source mutation input trims, removes empty IDs, and de-duplicates while
   retaining IDs absent from the currently loaded corpus. Such IDs are reported
   as unavailable instead of causing a not-found failure, so later content
-  imports can restore them.
+  imports can restore them. IDs of required (`canToggle: false`) sources are
+  dropped, and restriction checks ignore them when an imported file lists
+  them.
+- `setCharacterSources` also removes the character's choices from newly
+  disabled books in the same mutation: every filled selection whose chosen
+  element comes from a restricted source is cleared with its granted subtree,
+  and spells the character can no longer use are dropped from selections and
+  preparation. Class and multiclass picks are kept, since clearing one would
+  delete its levels. The response adds `removedSelections` and
+  `keptSelections` (`{ name, type }` lists, spells typed `Spell`) and keeps
+  `removedSpellNames` for older clients.
 - After bundled boot, the client replays persisted uploaded files through
   `ingestUploaded` before publishing the supplements-ready state. A character
   source mutation returns the engine's source response and persists local state
@@ -289,7 +304,7 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
   (`hasAttackRow` is true when an attack row is stored for this inventory record; a slotless item that can be worn — real equipment that is not a weapon, armor, an unbased magic overlay or a stackable consumable — has `equipLocations: ["worn"]`, `isEquippable: true`, and `equippedLocation: null` while worn)
 - `card` mirrors the record's `<details card="true">` (an item card on the full sheet) and `sidebar` its `<item sidebar="true">` (its description in the equipment page's inventory notes). `setItemPresentation({identifier, card?, sidebar?})` toggles either flag and `setItemCards({policy: "all"|"significant"|"none"})` sets every physical record's card at once (control records and records whose content is not installed are skipped); both return `InventoryDto`. A flag is only ever written as `"true"`: switching on rewrites another value (Aurora's `card="false"`) or appends the attribute after the tag's last one, switching off removes it whole, and a record with no `<details>` gains the empty details element a new record carries. All other bytes are unchanged, so toggling back restores the imported bytes. `significant` means `itemSignificance` (`content/equipment/significance.ts`) is not `trivial`: magic items, tools (tools, poison, spellcasting foci, instruments) and adventuring gear whose description reads as rules.
 - `getItemBaseOptions(itemId)` → `{slot: "weapon"|"armor"|null, options: {id, name}[]}`
-- `addItem({itemId, amount, baseElementId, cardPolicy?})` (`cardPolicy: "significant"` writes `card="true"` only for significant items; omitted or `"all"` cards every new record) / `removeItem(identifier, amount?)` (amount omitted removes the whole record) / `setItemAmount(identifier, {amount})` (a positive integer; registrations, equip and attunement state do not change) / `equipItem(identifier, {location})` (keys `primary|secondary|armor|primary-twohanded|worn|none`; `worn` writes `<equipped>true</equipped>` with no location, evicts nothing and is never applied automatically on add) / `attuneItem(identifier, {attuned})` / `setItemStorage(identifier, {storage, amount?})` (`amount` omitted moves the whole record; a smaller amount splits off that many units into a new plain record or an identical stack already in the destination) / `setCoins(Coinage)` / `extractItem(identifier, selections?, {cardPolicy?}?)` (the policy is `addItem`'s, applied to each unpacked record) — all return `InventoryDto`. A carried add of an identical plain stackable item (same `itemId`, no adorners, not equipped or attuned, not stowed) grows that record instead of appending a row; it is only the resulting `amount` that changes, so the caller can identify the stack from `InventoryDto` alone.
+- `addItem({itemId, amount, baseElementId, cardPolicy?})` (`cardPolicy: "significant"` writes `card="true"` only for significant items; omitted or `"all"` cards every new record) / `removeItem(identifier, amount?)` (amount omitted removes the whole record) / `setItemAmount(identifier, {amount})` (a positive integer; registrations, equip and attunement state do not change) / `equipItem(identifier, {location})` (keys `primary|secondary|armor|primary-twohanded|worn|none`; `worn` writes `<equipped>true</equipped>` with no location, evicts nothing and is never applied automatically on add) / `attuneItem(identifier, {attuned})` / `setItemStorage(identifier, {storage, amount?})` (`amount` omitted moves the whole record; a smaller amount splits off that many units into a new plain record or an identical stack already in the destination) / `setCoins(Coinage)` / `extractItem(identifier, selections?, {cardPolicy?}?)` (the policy is `addItem`'s, applied to each unpacked record; unpacked armor is worn the way `addItem` would wear it, body armor first and then a shield, each only into a free location, so it never evicts worn armor or an occupied off hand, including a two-handed weapon; every other unpacked record, weapons included, stays carried; the unpacking and these equips are one stored change) — all return `InventoryDto`. A carried add of an identical plain stackable item (same `itemId`, no adorners, not equipped or attuned, not stowed) grows that record instead of appending a row; it is only the resulting `amount` that changes, so the caller can identify the stack from `InventoryDto` alone.
 - An item conveys its benefits while it is not stowed and: for a weapon or armor, equipped (and attuned when it requires attunement); for a slotless item, attuned, or worn when it requires no attunement. While it does, the item's own element registers as a top-level `<elements>` node holding what it grants (the compatible imported shape for an adorner such as Weapon of Warning), with its `<sum>` entries following the base's (`base, base grants, adorner, adorner grants`); an item with nothing to grant or choose registers as a sum entry alone. Spells, choices, languages, senses and resistances the item grants therefore reach the same surfaces a feat's do, and leave with the item. A file saved in the earlier flat form (sum entries, no node) is migrated on import; an imported compatible file round-trips byte-identically.
 
 ## Inventory and attack DTOs

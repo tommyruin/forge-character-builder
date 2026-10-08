@@ -6,6 +6,7 @@ import type { ElementLibrary } from "./content/library.js";
 import { pendingSelectionRules } from "./selection/selection.js";
 import { createEngineMethodHandlers } from "./worker-handlers.js";
 import { computeStatistics } from "./statistics/calculator.js";
+import { isRequiredSource } from "./content/sourceIdentity.js";
 
 let library: ElementLibrary;
 beforeAll(async () => { library = await buildCorpusLibrary(); }, 120_000);
@@ -41,7 +42,13 @@ describe("feedback regressions with uploaded corpus content", () => {
 
   it.each(["DRUID", "CLERIC", "PALADIN"])("limits the %s preparation list to PHB 2024", className => {
     const { service, id } = character(className);
-    const restrictedSourceIds = [...library.sources.values()].filter(s => !["Core", "Internal", "Player’s Handbook (2024)"].includes(s.identity.name)).map(s => s.identity.id);
+    // Every switchable book except PHB 2024 — what the Sources panel can send;
+    // required books (DMG, MM, Aurora Legacy Essentials) cannot be disabled.
+    const restrictedSourceIds = [...library.sources.values()]
+      .filter(s => !isRequiredSource(s) && s.identity.name !== "Player’s Handbook (2024)")
+      .map(s => s.identity.id);
+    expect(restrictedSourceIds).not.toContain("ID_WOTC_SOURCE_DUNGEON_MASTERS_GUIDE");
+    expect(restrictedSourceIds).toContain("ID_WOTC_SOURCE_PLAYERS_HANDBOOK");
     void createEngineMethodHandlers(service, library).setCharacterSources!(id, { restrictedSourceIds });
     const spells = service.getSpellcasting(id)[0]!.knownSpells;
     expect(spells.length).toBeGreaterThan(0);

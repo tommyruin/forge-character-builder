@@ -243,6 +243,44 @@ export interface CharacterLoadDiagnosticsDto {
   totalMs: number;
 }
 
+/** A choice a source change removed or kept: the chosen element's name and type. */
+export interface SourceSelectionDto {
+  name: string;
+  type: string;
+}
+
+/**
+ * A publisher's books. Books group by the author setter's `abbreviation`
+ * (else the full author text), so co-authored books join their publisher.
+ */
+export interface SourceGroupDto extends WireObject {
+  name: string;
+  canToggle: boolean;
+  sources: WireList;
+}
+
+/** `getCharacterSources` result. */
+export interface CharacterSourcesDto extends WireObject {
+  groups: SourceGroupDto[];
+  restrictedSourceIds: string[];
+  unavailableRestrictedSourceIds: string[];
+  /** Compatibility: the restricted source records. */
+  sources: WireList;
+}
+
+/**
+ * `setCharacterSources` result: the `getCharacterSources` payload plus what
+ * the change did to the character's choices.
+ */
+export interface SetCharacterSourcesResultDto extends CharacterSourcesDto {
+  /** Spell names only; kept for older clients. */
+  removedSpellNames: string[];
+  /** Every cleared choice from a disabled book, spells included ("Spell"). */
+  removedSelections: SourceSelectionDto[];
+  /** Class picks from a disabled book, kept because clearing one deletes its levels. */
+  keptSelections: SourceSelectionDto[];
+}
+
 export interface MethodContract<Args extends readonly unknown[], Result> {
   args: Args;
   result: Result;
@@ -265,6 +303,8 @@ export interface EngineMethodMap {
   createCharacter: MethodContract<[name: string], WireObject>;
   getCharacter: MethodContract<[id: string], WireObject>;
   deleteCharacter: MethodContract<[id: string], void>;
+  // Results are CharacterSourcesDto / SetCharacterSourcesResultDto; the contract
+  // stays WireObject so existing callers keep their own narrowing.
   setCharacterSources: MethodContract<[id: string, request: { restrictedSourceIds: string[] }], WireObject>;
   getCharacterSources: MethodContract<[id: string], WireObject>;
   setPortrait: MethodContract<[id: string, base64: string], WireObject>;

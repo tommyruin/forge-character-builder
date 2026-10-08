@@ -1,4 +1,4 @@
-import { isContentAllowedForCharacter } from "../content/access.js";
+import { isContentAllowedForCharacter, isSourceRestricted } from "../content/access.js";
 /**
  * Character lifecycle operations over an in-memory, multi-id character store.
  *
@@ -90,6 +90,8 @@ import {
   planAttuneItemEdits,
   planEquipItemEdits,
   planExtractItemEdits,
+  extractedArmorToWear,
+  isEquipLocationFree,
   planRemoveItemEdits,
   planSetCoinsEdits,
   planSetItemAmountEdits,
@@ -508,6 +510,54 @@ export function createDocument(state: CharacterState): string {
  * bound only exists so mutually exclusive homebrew cannot spin.
  */
 const MAX_RULE_RECONCILE_PASSES = 8;
+
+/** A choice reported by a source change: the chosen element's name and type. */
+export interface NamedSelection {
+  name: string;
+  type: string;
+}
+
+/** What applying a source restriction removed from, or kept on, the character. */
+export interface SourceEditResult {
+  /** Spell names only; the original field, kept for older clients. */
+  removedSpellNames: string[];
+  /** Every cleared choice, spells included (type "Spell"). */
+  removedSelections: NamedSelection[];
+  /** Class picks from a disabled book, kept because clearing one deletes its levels. */
+  keptSelections: NamedSelection[];
+}
+
+/** Selection types a source change keeps rather than clears. */
+const KEPT_SELECTION_TYPES: ReadonlySet<string> = new Set(["Class", "Multiclass"]);
+
+/**
+ * Every filled selection wrapper in tree order (parents before the choices
+ * they grant). List wrappers register a list index rather than an element id,
+ * so they never resolve to restricted content.
+ */
+function filledSelectionRules(state: CharacterState): SelectionRule[] {
+  const rules: SelectionRule[] = [];
+  const walk = (nodes: readonly RegisteredElement[], path: number[]): void => {
+    nodes.forEach((node, index) => {
+      const here = [...path, index];
+      const registered = node.registered ?? "";
+      if (node.requiredLevel !== undefined && registered !== "" && node.isList !== true) {
+        rules.push({
+          identifier: state.selectionRuleIds?.get(here.join(".")) ?? "",
+          type: node.type,
+          name: node.name,
+          requiredLevel: node.requiredLevel,
+          hasSelection: true,
+          selectedElementIds: [registered],
+          path: here,
+        });
+      }
+      walk(node.children, here);
+    });
+  };
+  walk(state.elements, []);
+  return rules;
+}
 
 /**
  * Every selection wrapper keyed by tree path, alongside a signature that
@@ -1377,31 +1427,58 @@ export class CharacterService {
     }
   }
 
-  /** Source restriction changes clear spell choices and preparation atomically. */
-  applySourceEdits(id: string, edits: RawEdit[]): string[] {
+  /**
+   * Applies a source-restriction edit and removes the character's choices
+   * from the newly disabled books in the same operation: every filled
+   * selection whose chosen element is now restricted is cleared (its granted
+   * subtree goes with it), and spells the character can no longer use are
+   * dropped from the magic region. Class and multiclass picks are kept —
+   * clearing one would delete every level in that class — and reported.
+   */
+  applySourceEdits(id: string, edits: RawEdit[]): SourceEditResult {
     const { state: before, document: original } = this.require(id);
-    if (this.library === undefined) { this.applyRegionEdits(id, edits); return []; }
+    if (this.library === undefined) {
+      this.applyRegionEdits(id, edits);
+      return { removedSpellNames: [], removedSelections: [], keptSelections: [] };
+    }
+    const library = this.library;
     let document = parseDnd5e(applyRawEdits(original.raw, edits));
     let state = this.remap(document, before, id);
-    const removed = new Set<string>();
-    const disallowed = (spellId: string): boolean => {
-      const element = this.library!.byId.get(spellId);
-      return element?.identity.type === "Spell" && !isContentAllowedForCharacter(state, this.library!, element);
+    const removedSpells = new Set<string>();
+    const removed = new Map<string, NamedSelection>();
+    const note = (elementId: string): NamedSelection => {
+      const element = library.byId.get(elementId);
+      const entry = { name: element?.identity.name ?? elementId, type: element?.identity.type ?? "" };
+      removed.set(`${entry.type}\u0000${entry.name}`, entry);
+      if (entry.type === "Spell") removedSpells.add(entry.name);
+      return entry;
     };
+    // Spells keep their established rule (also out of the character's ruleset);
+    // every other choice is removed only for a disabled book.
+    const disallowed = (elementId: string): boolean => {
+      const element = library.byId.get(elementId);
+      if (element === undefined) return false;
+      return element.identity.type === "Spell"
+        ? !isContentAllowedForCharacter(state, library, element)
+        : isSourceRestricted(state, library, element.identity.source);
+    };
+    const restrictedRules = (): SelectionRule[] =>
+      filledSelectionRules(state).filter((rule) => rule.selectedElementIds.some(disallowed));
     for (;;) {
-      const rule = pendingSelectionRules(state).find(candidate => candidate.type === "Spell"
-        && candidate.selectedElementIds.some(disallowed));
+      // Tree order: a parent choice clears before the choices it granted.
+      const rule = restrictedRules().find((candidate) => !KEPT_SELECTION_TYPES.has(candidate.type));
       if (rule === undefined) break;
-      for (const spellId of rule.selectedElementIds) removed.add(this.library.byId.get(spellId)?.identity.name ?? spellId);
-      const plan = planSelectionEdits(document, state, this.library, rule, null);
+      for (const elementId of rule.selectedElementIds) note(elementId);
+      const plan = planSelectionEdits(document, state, library, rule, null);
       document = parseDnd5e(applyRawEdits(document.raw, plan));
       state = this.remap(document, state, id);
     }
     const removals: RawEdit[] = [];
     const walk = (node: Dnd5eNode): void => {
       const spellId = getAttr(node, "id") ?? "";
-      if (disallowed(spellId) && (node.name === "spell" || getAttr(node, "type") === "Spell")) {
-        removed.add(this.library!.byId.get(spellId)?.identity.name ?? spellId);
+      if (library.byId.get(spellId)?.identity.type === "Spell" && disallowed(spellId)
+        && (node.name === "spell" || getAttr(node, "type") === "Spell")) {
+        note(spellId);
         removals.push({ start: node.start, end: node.end, replacement: "" });
         return;
       }
@@ -1410,9 +1487,25 @@ export class CharacterService {
     walk(document.root.node);
     document = parseDnd5e(applyRawEdits(document.raw, removals));
     state = this.remap(document, state, id);
+    const settled = this.settleRegistrationRules(id, document, state, before);
     // Preparation-only removals also remove dormant serialized full-list entries.
-    this.reconcileMagicRegion(id, document, state);
-    return [...removed].sort();
+    const final = this.reconcileMagicRegion(id, settled.document, settled.state);
+    const kept = new Map<string, NamedSelection>();
+    for (const rule of filledSelectionRules(final)) {
+      if (!KEPT_SELECTION_TYPES.has(rule.type)) continue;
+      for (const elementId of rule.selectedElementIds) {
+        const element = library.byId.get(elementId);
+        if (element === undefined || !isSourceRestricted(final, library, element.identity.source)) continue;
+        kept.set(elementId, { name: element.identity.name, type: element.identity.type });
+      }
+    }
+    const byName = (left: NamedSelection, right: NamedSelection): number =>
+      left.name.localeCompare(right.name, "en", { sensitivity: "base" }) || left.type.localeCompare(right.type);
+    return {
+      removedSpellNames: [...removedSpells].sort(),
+      removedSelections: [...removed.values()].sort(byName),
+      keptSelections: [...kept.values()].sort(byName),
+    };
   }
 
   /** Applies raw byte-range edits to the document and re-maps state. */
@@ -1870,8 +1963,25 @@ export class CharacterService {
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
-    const edits = planExtractItemEdits(state, document, this.library, identifier, selections, options);
-    const next = this.applyInventoryPlan(id, state, document, edits);
+    const plan = planExtractItemEdits(state, document, this.library, identifier, selections, options);
+    // Wear the unpacked armor the way adding it would: body armor, then a
+    // shield, each only into a location that is still free. Every equip is
+    // planned against the document the previous step produced (two sum
+    // rewrites in one batch would overlap), and nothing is stored in between.
+    let current = parseDnd5e(applyRawEdits(document.raw, plan.edits));
+    let currentState = this.remap(current, state, id);
+    for (const { identifier: record, location } of extractedArmorToWear(this.library, plan.added)) {
+      if (!isEquipLocationFree(currentState, location)) continue;
+      const equipEdits = planEquipItemEdits(currentState, current, this.library, record, location);
+      current = parseDnd5e(applyRawEdits(current.raw, equipEdits));
+      currentState = this.remap(current, currentState, id);
+    }
+    // One whole-document edit hands the combined result to the shared
+    // inventory path against the pre-extraction state, so the sweep, rule
+    // settle and magic reconcile run once and the store sees one change (one
+    // undo step), exactly as for a single add.
+    const combined = { start: 0, end: document.raw.length, replacement: current.raw };
+    const next = this.applyInventoryPlan(id, state, document, [combined]);
     return this.inventoryDto(next, this.library);
   }
 

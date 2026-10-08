@@ -9,7 +9,7 @@ import { randomUuid } from "../platform.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState, RegisteredElement } from "../character/state.js";
 import { evaluateRequirements } from "./expr.js";
-import { computeStatistics } from "../statistics/calculator.js";
+import { classLevelLookup, computeStatistics } from "../statistics/calculator.js";
 import {
   ENGINE_INTERNAL_ELEMENTS,
   allocatesAbilityScores,
@@ -205,6 +205,7 @@ function requirementContextOf(state: CharacterState, library?: ElementLibrary): 
   hasElement(id: string): boolean;
   ability(name: string): number;
   level: number;
+  classLevel?(name: string): number;
 } {
   const registered = new Set(state.sum.elements.map((e) => e.id));
   for (const id of state.options) registered.add(id);
@@ -223,6 +224,8 @@ function requirementContextOf(state: CharacterState, library?: ElementLibrary): 
       return name in statValues ? statValues[name]! : Number.NaN;
     },
     level: state.level,
+    // Without a library no class element resolves, so no class has levels.
+    classLevel: library === undefined ? () => 0 : classLevelLookup(state, library),
   };
 }
 
