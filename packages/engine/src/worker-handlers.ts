@@ -446,10 +446,13 @@ export function createEngineMethodHandlers(
     addItem: (id, request) => objectResult(service.addItem(id, request)),
     removeItem: (id, identifier, amount) => objectResult(service.removeItem(id, identifier, amount)),
     setItemAmount: (id, identifier, request) => objectResult(service.setItemAmount(id, identifier, request.amount)),
-    extractItem: (id, identifier, selections) => objectResult(service.extractItem(id, identifier, selections)),
+    extractItem: (id, identifier, selections, options) =>
+      objectResult(service.extractItem(id, identifier, selections, options)),
     equipItem: (id, identifier, request) => objectResult(service.equipItem(id, identifier, request.location)),
     setItemStorage: (id, identifier, request) => objectResult(service.setItemStorage(id, identifier, request.storage, request.amount)),
     attuneItem: (id, identifier, request) => objectResult(service.attuneItem(id, identifier, request.attuned)),
+    setItemPresentation: (id, request) => objectResult(service.setItemPresentation(id, request)),
+    setItemCards: (id, request) => objectResult(service.setItemCards(id, request)),
     setCoins: (id, coins) => objectResult(service.setCoins(id, coins)),
     getAttacks: (id) => listResult(service.getAttacks(id)),
     getAttackOptions: (id) => objectResult(service.getAttackOptions(id)),
@@ -466,6 +469,7 @@ export function createEngineMethodHandlers(
       return objectResult(buildCharacterSheetModel(service.getCharacter(id), library, {
         mode: request.lite ? "lite" : "full",
         ...(request.include ? { include: request.include } : {}),
+        ...(request.inventoryNotes === true ? { inventoryNotes: true } : {}),
       }));
     },
     getSpellcasting: (id) => service.getSpellcasting(id),

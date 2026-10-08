@@ -6,6 +6,7 @@ import useSheetColoursSetting from '../hooks/useSheetColoursSetting';
 import useSheetFontsSetting from '../hooks/useSheetFontsSetting';
 import useSheetPagesSetting from '../hooks/useSheetPagesSetting';
 import useSheetAbilitySetting from '../hooks/useSheetAbilitySetting';
+import useSheetLayoutOptionsSetting from '../hooks/useSheetLayoutOptionsSetting';
 import { loadSheetBrandImage } from '../sheetBrandImage.js';
 import { useWorkspace } from './WorkspaceContext';
 import PdfCanvasViewer from './PdfCanvasViewer';
@@ -24,6 +25,8 @@ export default function SheetPreviewPanel() {
   const { fonts, fontsKey } = useSheetFontsSetting();
   const { pages, pagesKey } = useSheetPagesSetting();
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
+  const { options: layoutOptions } = useSheetLayoutOptionsSetting();
+  const inventoryNotes = layoutOptions.inventoryNotes;
   const footerText = `Generated with ${shell.appName}.`;
   // What we want rendered: the latest debounced mutation tick (+ manual refreshes). Seeded from
   // the CURRENT tick (not 0) so a remount can hit the cross-mount cache immediately instead of
@@ -51,7 +54,7 @@ export default function SheetPreviewPanel() {
     return () => window.clearTimeout(handle);
   }, [active, mutationTick]);
 
-  const key = `${id}#${libraryRevision}#${target.tick}#${templateSet}#${coloursKey}#${fontsKey}#${pagesKey}#${emphasizeAbilityModifiers}#${target.nonce}`;
+  const key = `${id}#${libraryRevision}#${target.tick}#${templateSet}#${coloursKey}#${fontsKey}#${pagesKey}#${emphasizeAbilityModifiers}#${inventoryNotes}#${target.nonce}`;
 
   // Serial pump: at most one generation in flight. When one lands, it regenerates only if the
   // wanted key moved on — the engine worker serializes calls, so firing one generation per
@@ -76,6 +79,7 @@ export default function SheetPreviewPanel() {
       pages,
       pagesKey,
       emphasizeAbilityModifiers,
+      inventoryNotes,
     };
 
     // Fast path: cached complete bytes for this tick (a remount or a tick we already rendered).
@@ -83,7 +87,7 @@ export default function SheetPreviewPanel() {
     // effect body (react-hooks/set-state-in-effect).
     if (target.nonce === 0) {
       const cached = getCachedSheet(
-        sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey, emphasizeAbilityModifiers),
+        sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey, emphasizeAbilityModifiers, inventoryNotes),
       );
       if (cached) {
         done.current = key;
@@ -110,6 +114,7 @@ export default function SheetPreviewPanel() {
               fonts: run.fonts,
               emphasizeAbilityModifiers: run.emphasizeAbilityModifiers,
               include: run.pages,
+              inventoryNotes: run.inventoryNotes,
               brandImage: await loadSheetBrandImage(),
               footerText,
             });
@@ -125,6 +130,7 @@ export default function SheetPreviewPanel() {
                 run.fontsKey,
                 run.pagesKey,
                 run.emphasizeAbilityModifiers,
+                run.inventoryNotes,
               ),
               bytes,
             );
@@ -145,7 +151,7 @@ export default function SheetPreviewPanel() {
       }
     })();
     return undefined;
-  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, footerText]);
+  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, footerText]);
 
   useEffect(
     () => () => {

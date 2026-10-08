@@ -1359,16 +1359,40 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     removeCompanionPortrait: (id: string) => mutateDetailAndPersist(id, "removeCompanionPortrait", [id]),
     inventory: (id: string) => invoke(getClient(), "getInventory", id),
     itemOptions: (id: string, itemId: string) => invoke(getClient(), "getItemBaseOptions", id, itemId),
-    addItem: (id: string, itemId: string, amount = 1, baseElementId: string | null = null) => mutateDetail(id, "addItem", [id, { itemId, amount, baseElementId }]),
+    addItem: (id: string, itemId: string, amount = 1, baseElementId: string | null = null, options: { cardPolicy?: "all" | "significant" } = {}) =>
+      mutateDetail(id, "addItem", [id, { itemId, amount, baseElementId, ...(options.cardPolicy ? { cardPolicy: options.cardPolicy } : {}) }]),
     removeItem: (id: string, identifier: string, amount?: number) =>
       mutateDetail(id, "removeItem", amount === undefined ? [id, identifier] : [id, identifier, amount]),
     setItemAmount: (id: string, identifier: string, amount: number) => mutateDetail(id, "setItemAmount", [id, identifier, { amount }]),
-    extractItem: (id: string, identifier: string, selections?: Record<string, string>) =>
-      mutateDetail(id, "extractItem", selections === undefined ? [id, identifier] : [id, identifier, selections]),
+    extractItem: (
+      id: string,
+      identifier: string,
+      selections?: Record<string, string>,
+      options: { cardPolicy?: "all" | "significant" } = {},
+    ) =>
+      mutateDetail(
+        id,
+        "extractItem",
+        options.cardPolicy
+          ? [id, identifier, selections ?? {}, { cardPolicy: options.cardPolicy }]
+          : selections === undefined
+            ? [id, identifier]
+            : [id, identifier, selections],
+      ),
     equipItem: (id: string, identifier: string, location: string) => mutateDetail(id, "equipItem", [id, identifier, { location }]),
     setItemStorage: (id: string, identifier: string, storage: string | null, amount?: number) =>
       mutateDetail(id, "setItemStorage", amount === undefined ? [id, identifier, { storage }] : [id, identifier, { storage, amount }]),
     attuneItem: (id: string, identifier: string, attuned: boolean) => mutateDetail(id, "attuneItem", [id, identifier, { attuned }]),
+    setItemPresentation: (id: string, identifier: string, presentation: { card?: boolean; sidebar?: boolean }) =>
+      mutateDetail(id, "setItemPresentation", [
+        id,
+        {
+          identifier,
+          ...(typeof presentation.card === "boolean" ? { card: presentation.card } : {}),
+          ...(typeof presentation.sidebar === "boolean" ? { sidebar: presentation.sidebar } : {}),
+        },
+      ]),
+    setItemCards: (id: string, policy: "all" | "significant" | "none") => mutateDetail(id, "setItemCards", [id, { policy }]),
     setCoins: (id: string, coins: AnyRecord) => mutateDetail(id, "setCoins", [id, coins]),
     attacks: (id: string) => invoke(getClient(), "getAttacks", id),
     attackOptions: (id: string) => invoke(getClient(), "getAttackOptions", id),
@@ -1388,6 +1412,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       const model = await invoke(getClient(), "generateSheet", id, {
         lite: Boolean(opts.lite),
         ...(modelInclude ? { include: modelInclude } : {}),
+        // Item notes widen the inventory notes column; off sends the old request.
+        ...(opts.inventoryNotes === true ? { inventoryNotes: true } : {}),
       });
       return renderSheetBytes(model, {
         templateSet: typeof opts.templateSet === "string" ? (opts.templateSet as SheetRenderOptions["templateSet"]) : undefined,

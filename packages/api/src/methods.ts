@@ -327,18 +327,41 @@ export interface EngineMethodMap {
   getInventory: MethodContract<[id: string], WireObject>;
   getItemBaseOptions: MethodContract<[id: string, itemId: string], WireObject>;
   addItem: MethodContract<
-    [id: string, request: { itemId: string; amount?: number; baseElementId?: string | null }],
+    [
+      id: string,
+      request: {
+        itemId: string;
+        amount?: number;
+        baseElementId?: string | null;
+        /** `significant` cards only magic items, tools and useful gear; omitted cards every new record. */
+        cardPolicy?: "all" | "significant";
+      },
+    ],
     WireObject
   >;
   removeItem: MethodContract<[id: string, identifier: string, amount?: number], WireObject>;
   setItemAmount: MethodContract<[id: string, identifier: string, request: { amount: number }], WireObject>;
-  extractItem: MethodContract<[id: string, identifier: string, selections?: Record<string, string>], WireObject>;
+  extractItem: MethodContract<
+    [
+      id: string,
+      identifier: string,
+      selections?: Record<string, string>,
+      /** `significant` cards only the unpacked magic items, tools and useful gear; omitted cards them all. */
+      options?: { cardPolicy?: "all" | "significant" },
+    ],
+    WireObject
+  >;
   equipItem: MethodContract<[id: string, identifier: string, request: { location: string }], WireObject>;
   setItemStorage: MethodContract<
     [id: string, identifier: string, request: { storage: string | null; amount?: number }],
     WireObject
   >;
   attuneItem: MethodContract<[id: string, identifier: string, request: { attuned: boolean }], WireObject>;
+  setItemPresentation: MethodContract<
+    [id: string, request: { identifier: string; card?: boolean; sidebar?: boolean }],
+    WireObject
+  >;
+  setItemCards: MethodContract<[id: string, request: { policy: "all" | "significant" | "none" }], WireObject>;
   setCoins: MethodContract<[id: string, coins: CoinageDto], WireObject>;
   getAttacks: MethodContract<[id: string], WireList>;
   getAttackOptions: MethodContract<[id: string], WireObject>;
@@ -351,7 +374,15 @@ export interface EngineMethodMap {
   moveAttack: MethodContract<[id: string, attackId: string, request: { direction: "up" | "down" }], WireList>;
   deleteAttack: MethodContract<[id: string, attackId: string], WireList>;
   generateSheet: MethodContract<
-    [id: string, request: { lite: boolean; include?: SheetPageInclusionsDto }],
+    [
+      id: string,
+      request: {
+        lite: boolean;
+        include?: SheetPageInclusionsDto;
+        /** Item notes: the inventory notes column also describes magic items, tools and useful gear. */
+        inventoryNotes?: boolean;
+      },
+    ],
     WireObject
   >;
   ensureHostFile: MethodContract<[path: string, base64: string], { path: string }>;
@@ -439,6 +470,8 @@ export const ENGINE_METHOD_NAMES = [
   "equipItem",
   "setItemStorage",
   "attuneItem",
+  "setItemPresentation",
+  "setItemCards",
   "setCoins",
   "getAttacks",
   "getAttackOptions",
@@ -541,6 +574,8 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   equipItem: implemented,
   setItemStorage: implemented,
   attuneItem: implemented,
+  setItemPresentation: implemented,
+  setItemCards: implemented,
   setCoins: implemented,
   getAttacks: implemented,
   getAttackOptions: implemented,
@@ -623,6 +658,8 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   equipItem: "character-write",
   setItemStorage: "character-write",
   attuneItem: "character-write",
+  setItemPresentation: "character-write",
+  setItemCards: "character-write",
   setCoins: "character-write",
   getAttacks: "read-only",
   getAttackOptions: "read-only",

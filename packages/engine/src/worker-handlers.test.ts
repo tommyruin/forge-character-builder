@@ -348,6 +348,8 @@ describe("engine worker handlers", () => {
       equipItem: ["Ada", "missing", { location: "none" }],
       setItemStorage: ["Ada", "missing", { storage: null }],
       attuneItem: ["Ada", "missing", { attuned: true }],
+      setItemPresentation: ["Ada", { identifier: "missing", card: true }],
+      setItemCards: ["Ada", { policy: "none" }],
       setCoins: ["Ada", { copper: 1, silver: 2, electrum: 3, gold: 4, platinum: 5 }],
       getAttacks: ["Ada"],
       getAttackOptions: ["Ada"],
@@ -504,6 +506,23 @@ describe("engine worker handlers", () => {
     }
   });
 
+  it("passes the item notes switch to the sheet model", async () => {
+    const service = new CharacterService(undefined, library);
+    service.createCharacter("item-notes");
+    service.addItem("item-notes", { itemId: "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS", amount: 1, baseElementId: null });
+    const dispatcher = createEngineDispatcher(createEngineMethodHandlers(service, library));
+    const notesOf = async (request: Record<string, unknown>): Promise<string> => {
+      const response = await dispatcher.dispatch({ id: 1, method: "generateSheet", args: ["item-notes", request] });
+      expect(response).toMatchObject({ ok: true });
+      return (response as unknown as { result: { formValues: Record<string, string> } }).result.formValues[
+        "equipment_page_magic_items"
+      ] ?? "";
+    };
+    expect(await notesOf({ lite: false })).not.toContain("Thieves’ Tools.");
+    expect(await notesOf({ lite: false, inventoryNotes: false })).not.toContain("Thieves’ Tools.");
+    expect(await notesOf({ lite: false, inventoryNotes: true })).toContain("Thieves’ Tools.");
+  });
+
   it("leaves out the sheet pages the request excludes, renumbering the rest", async () => {
     const service = new CharacterService(undefined, library);
     importBuilt(service, "page-picks", buildFullSheetCharacter(library, "page-picks"));
@@ -602,7 +621,8 @@ describe("engine worker handlers", () => {
     // 77: added setCompanionPortrait / removeCompanionPortrait.
     // 78: added levelUpTo (level straight to a target level).
     // 79: added setItemAmount (stack quantity changes).
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 79, engineVersion: ENGINE_VERSION } }]);
+    // 81: added setItemPresentation / setItemCards (item cards and inventory notes).
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 81, engineVersion: ENGINE_VERSION } }]);
   });
 });
 

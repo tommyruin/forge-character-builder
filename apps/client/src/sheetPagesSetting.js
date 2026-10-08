@@ -23,7 +23,7 @@ export const SHEET_PAGE_TIPS = {
   notes: 'The dedicated page for notes that outgrow the appearance page.',
   attackNotes: 'Extra pages for long attack notes. Unticking leaves a short omission label; your notes stay saved.',
   spellCards: 'One card per known spell, with its full description.',
-  itemCards: 'One card per carried item that carries a description.',
+  itemCards: "One card per item you've marked Card on the Equipment tab.",
 };
 
 export const DEFAULT_SHEET_PAGES = Object.freeze(

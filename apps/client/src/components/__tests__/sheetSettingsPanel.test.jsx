@@ -54,11 +54,41 @@ describe('SheetSettingsPanel', () => {
     for (const label of ['Appearance &amp; portrait', 'Notes', 'Attack notes', 'Spell cards', 'Item cards']) {
       expect(markup).toContain(`aria-label="${label}"`);
     }
-    // Five page checkboxes on, plus ability emphasis off by default.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(6);
+    // Five page checkboxes on, plus ability emphasis, smart cards and item notes off by default.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(8);
     expect(markup.match(/checked=""/g)).toHaveLength(5);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
+  });
+
+  it('explains that item cards follow each item\'s own Card choice', () => {
+    expect(markup).not.toContain('that carries a description');
+    expect(markup).toContain('Card on the Equipment tab');
+  });
+
+  it('offers smart cards as a switch, off by default', () => {
+    expect(markup).toContain('role="switch"');
+    expect(markup).toContain('Only give new items a card when they&#x27;re magic, tools or useful gear');
+    expect(markup).not.toMatch(/role="switch"[^>]*checked=""/);
+  });
+
+  it('offers item notes for the inventory as a switch, off by default', () => {
+    expect(markup).toContain('Print item notes in the inventory: magic items in full, tools and useful gear in brief');
+    expect(markup.match(/role="switch"/g)).toHaveLength(2);
+  });
+
+  it('offers the bulk item-card actions only with a character open', () => {
+    expect(markup).not.toContain('Cards for magic &amp; useful items only');
+    expect(markup).not.toContain('No item cards');
+    const inWorkspace = renderToStaticMarkup(
+      createElement(
+        WorkspaceContext.Provider,
+        { value: { id: 'Ada', detail: { rulesetMode: '2014' } } },
+        createElement(SheetSettingsPanel),
+      ),
+    );
+    expect(inWorkspace).toContain('Cards for magic &amp; useful items only');
+    expect(inWorkspace).toContain('No item cards');
   });
 
   it('maps every face to a browser font stack', () => {

@@ -30,10 +30,12 @@ describe("pack extract extras", () => {
 
   it("forwards optional selections over the transport", () => {
     expect(transport).toMatch(
-      /extractItem: \(id: string, identifier: string, selections\?: Record<string, string>\)/,
+      /extractItem: \(\s*id: string,\s*identifier: string,\s*selections\?: Record<string, string>,/,
     );
+    // An extraction without a card policy sends exactly the old tuple; the
+    // transport contract test pins the policy form.
     expect(transport).toMatch(
-      /selections === undefined \? \[id, identifier\] : \[id, identifier, selections\]/,
+      /selections === undefined\s*\? \[id, identifier\]\s*: \[id, identifier, selections\]/,
     );
   });
 });

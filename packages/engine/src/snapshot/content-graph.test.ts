@@ -176,8 +176,12 @@ describe("content library graph codec (vendored corpus)", () => {
 });
 
 describe("content library graph codec validation", () => {
+  // Serializing the full corpus takes about two seconds, so it happens once;
+  // each test still tampers with its own freshly parsed copy.
+  let canonical: string | undefined;
   function tampered(): ContentLibraryPayload {
-    return canonicalParse(canonicalStringify(serializeContentLibrary(library))) as ContentLibraryPayload;
+    canonical ??= canonicalStringify(serializeContentLibrary(library));
+    return canonicalParse(canonical) as ContentLibraryPayload;
   }
 
   it("rejects indexes out of table range", () => {

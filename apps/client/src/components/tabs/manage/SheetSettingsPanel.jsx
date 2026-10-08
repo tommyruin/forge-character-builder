@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
+import { api } from '../../../api';
 import useSheetTemplateSetting from '../../../hooks/useSheetTemplateSetting';
 import useSheetColoursSetting from '../../../hooks/useSheetColoursSetting';
 import useSheetFontsSetting from '../../../hooks/useSheetFontsSetting';
 import useSheetPagesSetting from '../../../hooks/useSheetPagesSetting';
 import useSheetAbilitySetting from '../../../hooks/useSheetAbilitySetting';
+import useSheetLayoutOptionsSetting from '../../../hooks/useSheetLayoutOptionsSetting';
 import FilterSelect from '../../FilterSelect';
 import Icon from '../../Icon';
 import { ensureSheetFontFaces, sheetFaceFontFamily } from '../../../sheetFontFaces.js';
@@ -54,6 +56,68 @@ function TipHeading({ label, tip }) {
         <Icon name="info" className="fcb-info-tip-icon" />
       </span>
     </h3>
+  );
+}
+
+/**
+ * Which items print a card. Each item carries its own Card choice (Equipment
+ * tab); this sets the choice for every item of the open character at once, as
+ * one undoable edit, and decides what new items start with.
+ */
+function ItemCardSettings({ workspace }) {
+  const { options, setOptions } = useSheetLayoutOptionsSetting();
+  const characterId = workspace?.id;
+  const applyToEveryItem = async (policy, message) => {
+    try {
+      await workspace.run(() => api.characters.setItemCards(characterId, policy));
+      workspace.notify?.(message);
+    } catch {
+      // run() already surfaced the failure in the workspace error banner.
+    }
+  };
+  return (
+    <div className="fcb-sheet-item-cards space-y-2">
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={options.smartCards}
+          onChange={(event) => setOptions({ smartCards: event.target.checked })}
+        />
+        <span>Only give new items a card when they&apos;re magic, tools or useful gear</span>
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={options.inventoryNotes}
+          onChange={(event) => setOptions({ inventoryNotes: event.target.checked })}
+        />
+        <span>Print item notes in the inventory: magic items in full, tools and useful gear in brief</span>
+      </label>
+      {characterId && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Item cards for this character">
+          <button
+            type="button"
+            className="fcb-button"
+            disabled={workspace.busy}
+            onClick={() =>
+              applyToEveryItem('significant', 'Item cards kept for magic items, tools and useful gear')
+            }
+          >
+            Cards for magic &amp; useful items only
+          </button>
+          <button
+            type="button"
+            className="fcb-button"
+            disabled={workspace.busy}
+            onClick={() => applyToEveryItem('none', 'Item cards removed from every item')}
+          >
+            No item cards
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -146,6 +210,7 @@ export default function SheetSettingsPanel() {
               </label>
             ))}
           </div>
+          <ItemCardSettings workspace={workspace} />
         </div>
       </section>
       <section className="fcb-panel">

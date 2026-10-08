@@ -72,7 +72,7 @@ describe('SheetTab floating controls', () => {
   it('requests and caches the lite sheet in the split-view Live Sheet (deployed-site behavior)', () => {
     expect(previewSource).toContain('lite: true');
     expect(previewSource).toContain(
-      'sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey, emphasizeAbilityModifiers)',
+      'sheetCacheKey(id, target.tick, true, libraryRevision, templateSet, coloursKey, fontsKey, pagesKey, emphasizeAbilityModifiers, inventoryNotes)',
     );
     expect(previewSource).not.toContain('lite: false');
   });
@@ -82,7 +82,7 @@ describe('SheetTab floating controls', () => {
     expect(previewSource).toContain('libraryRevision');
     expect(cacheSource).toContain('SHEET_RENDERER_REVISION');
     expect(sheetCacheKey('hero', 4, false, 7)).toBe(
-      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+attackNotes+spellCards+itemCards#scores#full`,
+      `hero#${SHEET_RENDERER_REVISION}#7#4#2014#crimson/gold/ink#cinzelDecorative/spectral/helvetica/helvetica#background+notes+attackNotes+spellCards+itemCards#scores#no-item-notes#full`,
     );
     expect(
       sheetCacheKey('hero', 4, false, 7),
@@ -106,5 +106,22 @@ describe('SheetTab floating controls', () => {
         'background+notes+attackNotes+-spellCards+itemCards',
       ),
     );
+  });
+
+  it('separates cached PDFs by the item notes switch and retires older renders', () => {
+    // v9: the inventory notes column can describe magic items, tools and gear.
+    expect(SHEET_RENDERER_REVISION).toBe('pdf-canvas-v9');
+    const args = ['hero', 4, false, 7, '2014', 'colours', 'fonts', 'pages', false];
+    expect(sheetCacheKey(...args, true)).not.toBe(sheetCacheKey(...args, false));
+    expect(sheetCacheKey(...args)).toBe(sheetCacheKey(...args, false));
+  });
+
+  it('passes the item notes switch to every sheet render', () => {
+    const exportSource = readFileSync(new URL('../ExportMenu.jsx', import.meta.url), 'utf8');
+    for (const view of [source, previewSource, exportSource]) {
+      expect(view).toContain('useSheetLayoutOptionsSetting');
+      expect(view).toMatch(/sheetBytes\([\s\S]*inventoryNotes[\s\S]*\)|characters\.sheet\([^)]*inventoryNotes/);
+    }
+    expect(source).toMatch(/sheetCacheKey\([\s\S]*?emphasizeAbilityModifiers,\s*inventoryNotes,?\s*\)/);
   });
 });

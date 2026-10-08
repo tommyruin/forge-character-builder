@@ -19,6 +19,10 @@ import {
 } from "../InspectableItemControls";
 import Modal from "../Modal";
 import { resolveMagicBaseAction } from "../magicBaseAction";
+import {
+  newItemCardOptions,
+  sheetLayoutOptionsSettingStore,
+} from "../../sheetLayoutOptionsSetting.js";
 
 // Engine-provided equip-slot tokens -> button labels. The engine classifies by the
 // item's real equipment slots, so magic armor yields ['armor'] and shows "Equip"
@@ -157,8 +161,21 @@ export default function EquipmentTab() {
   ) => {
     const before = inventory;
     try {
+      // Smart cards is read at the moment of the add; it only ever decides
+      // the card of the record being added.
+      const cardOptions = newItemCardOptions(
+        sheetLayoutOptionsSettingStore.getSnapshot(),
+      );
       const result = await mutate(() =>
-        api.characters.addItem(id, item.id, amount, baseElementId),
+        cardOptions
+          ? api.characters.addItem(
+              id,
+              item.id,
+              amount,
+              baseElementId,
+              cardOptions,
+            )
+          : api.characters.addItem(id, item.id, amount, baseElementId),
       );
       flashChangedRows(before, result);
       notify(
@@ -176,8 +193,19 @@ export default function EquipmentTab() {
   const extractItem = async (item, selections) => {
     const before = inventory;
     try {
+      // Unpacked records are new items too: smart cards decides theirs.
+      const cardOptions = newItemCardOptions(
+        sheetLayoutOptionsSettingStore.getSnapshot(),
+      );
       const result = await mutate(() =>
-        api.characters.extractItem(id, item.identifier, selections),
+        cardOptions
+          ? api.characters.extractItem(
+              id,
+              item.identifier,
+              selections,
+              cardOptions,
+            )
+          : api.characters.extractItem(id, item.identifier, selections),
       );
       flashChangedRows(before, result);
       setExtracting(null);
@@ -302,6 +330,11 @@ export default function EquipmentTab() {
         }}
         onAttune={(identifier, attuned) =>
           mutate(() => api.characters.attuneItem(id, identifier, attuned))
+        }
+        onSetPresentation={(identifier, presentation) =>
+          mutate(() =>
+            api.characters.setItemPresentation(id, identifier, presentation),
+          )
         }
         onExtract={setExtracting}
         onRemove={(identifier) =>
@@ -1244,6 +1277,7 @@ function Inventory({
   onSetItemAmount,
   onSetStorage,
   onAttune,
+  onSetPresentation,
   onExtract,
   onRemove,
   onAddAttack,
@@ -1348,6 +1382,15 @@ function Inventory({
                         </span>
                       </div>
                       <EquipmentSummary item={item} />
+                      {/* The narrow layout's header row has no room for two
+                          more actions, so the sheet choices get a row of
+                          their own there. */}
+                      <ItemPresentationToggles
+                        item={item}
+                        busy={busy}
+                        onSetPresentation={onSetPresentation}
+                        className="fcb-inventory-presentation--narrow"
+                      />
                       {item.notes ? (
                         <div className="text-xs italic text-[var(--fcb-text-faint)]">
                           {item.notes}
@@ -1406,6 +1449,7 @@ function Inventory({
                         busy={busy}
                         onEquip={onEquip}
                         onAttune={onAttune}
+                        onSetPresentation={onSetPresentation}
                         onExtract={onExtract}
                         onRemove={onRemove}
                         onAddAttack={onAddAttack}
@@ -1529,6 +1573,7 @@ export function InventoryActionButtons({
   busy,
   onEquip,
   onAttune,
+  onSetPresentation,
   onExtract,
   onRemove,
   onAddAttack,
@@ -1567,6 +1612,13 @@ export function InventoryActionButtons({
           onClick={() => onAttune(item.identifier, !item.isAttuned)}
         />
       )}
+      {onSetPresentation && (
+        <ItemPresentationButtons
+          item={item}
+          busy={busy}
+          onSetPresentation={onSetPresentation}
+        />
+      )}
       {item.isExtractable && (
         <ActionButton
           label="Extract"
@@ -1588,6 +1640,53 @@ export function InventoryActionButtons({
         icon="delete"
         disabled={busy}
         onClick={() => onRemove(item.identifier)}
+      />
+    </span>
+  );
+}
+
+// What the printed sheet does with a record: an item card on the card pages,
+// and its description in the equipment page's inventory notes. Each is a
+// toggle, so the pressed state is the record's current choice.
+function ItemPresentationButtons({ item, busy, onSetPresentation }) {
+  return (
+    <>
+      <ActionButton
+        label="Card"
+        ariaLabel={`Print a card for ${item.name}`}
+        icon="card"
+        aria-pressed={item.card === true}
+        disabled={busy}
+        onClick={() =>
+          onSetPresentation(item.identifier, { card: item.card !== true })
+        }
+      />
+      <ActionButton
+        label="Sheet notes"
+        ariaLabel={`Print notes for ${item.name} on the sheet`}
+        icon="notes"
+        aria-pressed={item.sidebar === true}
+        disabled={busy}
+        onClick={() =>
+          onSetPresentation(item.identifier, {
+            sidebar: item.sidebar !== true,
+          })
+        }
+      />
+    </>
+  );
+}
+
+function ItemPresentationToggles({ item, busy, onSetPresentation, className }) {
+  if (!onSetPresentation) return null;
+  return (
+    <span
+      className={`fcb-inventory-actions fcb-inventory-presentation ${className}`}
+    >
+      <ItemPresentationButtons
+        item={item}
+        busy={busy}
+        onSetPresentation={onSetPresentation}
       />
     </span>
   );
@@ -1786,13 +1885,13 @@ export function StowQuantityModal({ move, busy, onClose, onConfirm }) {
   );
 }
 
-function ActionButton({ label, icon, ...props }) {
+function ActionButton({ label, ariaLabel, icon, ...props }) {
   return (
     <button
       type="button"
       {...props}
-      aria-label={label}
-      title={label}
+      aria-label={ariaLabel ?? label}
+      title={ariaLabel ?? label}
       className="fcb-button fcb-inventory-action-button px-2 py-1 text-xs"
     >
       <Icon name={icon} className="fcb-inventory-action-icon" />

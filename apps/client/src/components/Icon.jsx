@@ -131,6 +131,18 @@ const PATHS = {
       <path d="m5 5 14 14" />
     </>
   ),
+  card: (
+    <>
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </>
+  ),
+  notes: (
+    <>
+      <path d="M6 3h9l3 3v15H6V3Z" />
+      <path d="M14 3v4h4M9 11h6M9 15h6" />
+    </>
+  ),
   extract: (
     <>
       <path d="m4 9 3-5h10l3 5-3 3H7L4 9Z" />

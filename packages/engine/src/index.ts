@@ -45,17 +45,25 @@ export {
   planSetCoinsEdits,
   planAddCoinsEdits,
   planExtractItemEdits,
+  planSetItemPresentationEdits,
+  planSetItemCardsEdits,
+  resolveItemCardPolicy,
   LOCATION_DISPLAY,
   type InventoryItemDto,
   type InventoryDto,
   type ItemBaseOptionsDto,
   type AddItemOptions,
   type AddItemPlan,
+  type ItemCardPolicy,
+  type ExtractItemOptions,
+  type ItemCardsPolicy,
+  type ItemPresentation,
   type ExtractEntryDto,
   type PackChoiceDto,
   type PackExtrasDto,
 } from "./inventory/inventory.js";
 export * from "./magic/dto.js";
+export * from "./content/equipment/significance.js";
 
 // Character sheet model and rendering.
 export * from "./sheet/model.js";

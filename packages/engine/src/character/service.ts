@@ -93,10 +93,15 @@ import {
   planRemoveItemEdits,
   planSetCoinsEdits,
   planSetItemAmountEdits,
+  planSetItemCardsEdits,
+  planSetItemPresentationEdits,
   planSetItemStorageEdits,
   type AddItemOptions,
+  type ExtractItemOptions,
   type InventoryDto,
   type ItemBaseOptionsDto,
+  type ItemCardsPolicy,
+  type ItemPresentation,
 } from "../inventory/inventory.js";
 import { planItemRegistrationSweep } from "../inventory/item-registration.js";
 import {
@@ -110,6 +115,7 @@ import {
   newSpellAttackRow,
   weaponsWithoutRows,
   planAutoAttackInsertEdits,
+  planAutoUnarmedInsertEdits,
   planInsertAttackEdits,
   planItemAttackRemovalEdits,
   planMoveAttackEdits,
@@ -713,10 +719,13 @@ export class CharacterService {
 
   /** Stores the state, re-deriving the magic region when it drifted. */
   private reconcileMagicRegion(id: string, document: Dnd5eDocument, state: CharacterState): CharacterState {
-    const magicPlan = reconcileMagic(document, state, this.library!, this.magicStatistics(state));
-    if (!magicPlan.changed) return this.reconcileAttackRows(id, document, state);
+    const statistics = this.magicStatistics(state);
+    const magicPlan = reconcileMagic(document, state, this.library!, statistics);
+    // The magic region never feeds `martial arts:dice`, so these statistics
+    // still answer the attack pass's Martial Arts question after a rewrite.
+    if (!magicPlan.changed) return this.reconcileAttackRows(id, document, state, statistics);
     const reconciled = parseDnd5e(applyRawEdits(document.raw, magicPlan.edits));
-    return this.reconcileAttackRows(id, reconciled, this.remap(reconciled, state, id));
+    return this.reconcileAttackRows(id, reconciled, this.remap(reconciled, state, id), statistics);
   }
 
   /**
@@ -725,8 +734,24 @@ export class CharacterService {
    * attributes as written, so a level-up that grows a cantrip's damage has to
    * land in the document too. Runs after the magic region settles because spell
    * rows resolve against the reconciled caster blocks.
+   *
+   * A mutation that gives the character Martial Arts also appends the unarmed
+   * strike row here, in the same stored step (one undo). The store still holds
+   * the pre-mutation state at this point, which is what makes the absent-to-
+   * present transition detectable; imports and snapshot loads never reach
+   * this path, so they stay byte-identical.
    */
-  private reconcileAttackRows(id: string, document: Dnd5eDocument, state: CharacterState): CharacterState {
+  private reconcileAttackRows(
+    id: string,
+    document: Dnd5eDocument,
+    state: CharacterState,
+    statistics?: Record<string, number>,
+  ): CharacterState {
+    const unarmedEdits = planAutoUnarmedInsertEdits(this.store.get(id), state, document, this.library!, statistics);
+    if (unarmedEdits.length > 0) {
+      document = parseDnd5e(applyRawEdits(document.raw, unarmedEdits));
+      state = this.remap(document, state, id);
+    }
     const edits = planRewriteAllAttackEdits(state, document, this.library!);
     if (edits.length === 0) {
       this.store.set(state);
@@ -1835,13 +1860,47 @@ export class CharacterService {
    * crediting the pack's extra gold and fixed items and appending the selected
    * candidate for each choice (`selections` maps a choice label to an item id).
    */
-  extractItem(id: string, identifier: string, selections?: Readonly<Record<string, string>>): InventoryDto {
+  extractItem(
+    id: string,
+    identifier: string,
+    selections?: Readonly<Record<string, string>>,
+    options?: ExtractItemOptions,
+  ): InventoryDto {
     const { state, document } = this.require(id);
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for inventory");
     }
-    const edits = planExtractItemEdits(state, document, this.library, identifier, selections);
+    const edits = planExtractItemEdits(state, document, this.library, identifier, selections, options);
     const next = this.applyInventoryPlan(id, state, document, edits);
+    return this.inventoryDto(next, this.library);
+  }
+
+  /**
+   * Sets whether a record prints an item card (`card`) and whether its
+   * description goes into the inventory notes (`sidebar`). Presentation only:
+   * registrations, equip and attunement state never change.
+   */
+  setItemPresentation(id: string, request: { identifier: string } & ItemPresentation): InventoryDto {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for inventory");
+    }
+    const edits = planSetItemPresentationEdits(document, state, request.identifier, {
+      ...(request.card === undefined ? {} : { card: request.card }),
+      ...(request.sidebar === undefined ? {} : { sidebar: request.sidebar }),
+    });
+    const next = edits.length === 0 ? state : this.applyPlan(id, state, document, edits);
+    return this.inventoryDto(next, this.library);
+  }
+
+  /** Applies one item-card choice to every carried record (see `planSetItemCardsEdits`). */
+  setItemCards(id: string, request: { policy: ItemCardsPolicy }): InventoryDto {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for inventory");
+    }
+    const edits = planSetItemCardsEdits(document, state, this.library, request.policy);
+    const next = edits.length === 0 ? state : this.applyPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
   }
 

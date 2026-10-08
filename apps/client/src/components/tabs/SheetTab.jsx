@@ -6,6 +6,7 @@ import useSheetColoursSetting from '../../hooks/useSheetColoursSetting';
 import useSheetFontsSetting from '../../hooks/useSheetFontsSetting';
 import useSheetPagesSetting from '../../hooks/useSheetPagesSetting';
 import useSheetAbilitySetting from '../../hooks/useSheetAbilitySetting';
+import useSheetLayoutOptionsSetting from '../../hooks/useSheetLayoutOptionsSetting';
 import { loadSheetBrandImage } from '../../sheetBrandImage.js';
 import { useWorkspace } from '../WorkspaceContext';
 import PdfCanvasViewer from '../PdfCanvasViewer';
@@ -37,6 +38,8 @@ export default function SheetTab() {
   const { fonts, fontsKey } = useSheetFontsSetting();
   const { pages, pagesKey } = useSheetPagesSetting();
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
+  const { options: layoutOptions } = useSheetLayoutOptionsSetting();
+  const inventoryNotes = layoutOptions.inventoryNotes;
   // Debounced view of mutationTick: a burst of cascading mutations (multi-step
   // selections, level-ups) folds into one full-sheet regeneration instead of
   // rendering once per tick. Seeded from the current tick so the first mount
@@ -49,7 +52,7 @@ export default function SheetTab() {
   }, [active, debouncedTick, mutationTick]);
   // Only written from the async resolution; `loading` is derived by comparing keys.
   const [state, setState] = useState({ key: null, bytes: null, error: null });
-  const key = `${id}#${libraryRevision}#${debouncedTick}#${templateSet}#${coloursKey}#${fontsKey}#${pagesKey}#${emphasizeAbilityModifiers}#${nonce}`;
+  const key = `${id}#${libraryRevision}#${debouncedTick}#${templateSet}#${coloursKey}#${fontsKey}#${pagesKey}#${emphasizeAbilityModifiers}#${inventoryNotes}#${nonce}`;
 
   useEffect(() => {
     if (!active) return undefined;
@@ -65,6 +68,7 @@ export default function SheetTab() {
       fontsKey,
       pagesKey,
       emphasizeAbilityModifiers,
+      inventoryNotes,
     );
 
     // Manual Regenerate (nonce > 0) always re-renders; automatic loads may serve the cache.
@@ -87,7 +91,7 @@ export default function SheetTab() {
     // if its own cleanup hasn't cancelled it — so the surviving mount always renders.
     sharedSheetGeneration(runKey, () =>
       loadSheetBrandImage().then((brandImage) =>
-        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, brandImage, footerText: `Generated with ${shell.appName}.` })),
+        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, brandImage, footerText: `Generated with ${shell.appName}.` })),
     )
       .then((bytes) => {
         putCachedSheet(cacheKey, bytes);
@@ -101,7 +105,7 @@ export default function SheetTab() {
     return () => {
       cancelled = true;
     };
-  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers]);
+  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes]);
 
   const ready = state.key === key;
   const bytes = ready ? state.bytes : null;

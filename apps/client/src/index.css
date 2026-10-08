@@ -5312,6 +5312,18 @@ button:disabled {
   width: auto;
 }
 
+/* The sheet choices' own row, used only by the narrow inventory layout. */
+.fcb-inventory-presentation--narrow {
+  display: none;
+}
+
+.fcb-inventory-action-button[aria-pressed="true"],
+.fcb-inventory-action-button[aria-pressed="true"]:hover {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  color: var(--fcb-text);
+}
+
 .fcb-inventory-action-label {
   display: inline;
 }
@@ -5524,6 +5536,12 @@ button:disabled {
 
   .fcb-inventory-mobile-actions .fcb-inventory-action-label {
     display: none;
+  }
+
+  .fcb-inventory-presentation--narrow {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 4px;
   }
 
   .fcb-inventory-mobile-actions .fcb-inventory-action-icon {

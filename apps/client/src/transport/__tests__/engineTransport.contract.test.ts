@@ -50,7 +50,7 @@ function fakeClient() {
     "setCompanionPortrait", "removeCompanionPortrait",
     "getDmGrants",
     "getInventory", "getItemBaseOptions", "addItem", "removeItem", "setItemAmount", "extractItem", "equipItem",
-    "setItemStorage", "attuneItem", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
+    "setItemStorage", "attuneItem", "setItemPresentation", "setItemCards", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
     "setAttackVisibility", "moveAttack", "deleteAttack", "generateSheet",
     "getAppearanceSuggestions",
   ];
@@ -492,6 +492,39 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["contentStatus"]);
   });
 
+  it("maps item presentation and card policies to undoable inventory writes", async () => {
+    const { client, calls } = fakeClient();
+    const store = fakeStore();
+    const api = createEngineApi({ client, store });
+    await api.characters.create("Ada");
+
+    await api.characters.setItemPresentation("Ada", "rope-1", { card: false });
+    await api.characters.setItemPresentation("Ada", "rope-1", { sidebar: true });
+    await api.characters.setItemCards("Ada", "significant");
+    await api.characters.addItem("Ada", "ID_ROPE");
+    await api.characters.addItem("Ada", "ID_ROPE", 2, null, { cardPolicy: "significant" });
+
+    expect(calls).toContainEqual(["setItemPresentation", "Ada", { identifier: "rope-1", card: false }]);
+    expect(calls).toContainEqual(["setItemPresentation", "Ada", { identifier: "rope-1", sidebar: true }]);
+    expect(calls).toContainEqual(["setItemCards", "Ada", { policy: "significant" }]);
+    // Without a policy the request is exactly the one the builder always sent.
+    expect(calls).toContainEqual(["addItem", "Ada", { itemId: "ID_ROPE", amount: 1, baseElementId: null }]);
+    expect(calls).toContainEqual([
+      "addItem",
+      "Ada",
+      { itemId: "ID_ROPE", amount: 2, baseElementId: null, cardPolicy: "significant" },
+    ]);
+    await api.characters.extractItem("Ada", "pack-1");
+    await api.characters.extractItem("Ada", "pack-1", { "Holy Symbol": "ID_AMULET" });
+    await api.characters.extractItem("Ada", "pack-1", undefined, { cardPolicy: "significant" });
+    // Without a policy an extraction sends exactly the request it always has.
+    expect(calls).toContainEqual(["extractItem", "Ada", "pack-1"]);
+    expect(calls).toContainEqual(["extractItem", "Ada", "pack-1", { "Holy Symbol": "ID_AMULET" }]);
+    expect(calls).toContainEqual(["extractItem", "Ada", "pack-1", {}, { cardPolicy: "significant" }]);
+    // Each is one ordinary character edit: undoable like any other.
+    expect(api.characters.canUndo("Ada")).toBe(true);
+  });
+
   it("starts a new character in the saved default rules version", async () => {
     const { client, calls } = fakeClient();
     const store = fakeStore();
@@ -675,6 +708,11 @@ describe("typed FCB nested adapter", () => {
     await renderedApi.characters.sheetBytes("Ada", { lite: true, include: { attackNotes: false, notes: true } });
     expect(sheetRenderer).toHaveBeenLastCalledWith(expect.anything(), expect.any(String), expect.objectContaining({ includeAttackNotes: false }));
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: true, include: { notes: true } }]);
+    // Item notes ride with the model build only when switched on.
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, inventoryNotes: true });
+    expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, inventoryNotes: true }]);
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, inventoryNotes: false });
+    expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false }]);
     const sheetUrl = await renderedApi.characters.sheet("Ada", { lite: true });
     expect(sheetUrl).toMatch(/^blob:/);
     URL.revokeObjectURL(sheetUrl);

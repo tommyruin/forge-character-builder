@@ -20,6 +20,7 @@ import { computeInlineValues, computeStatistics, type StatisticsValues } from ".
 import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
 import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type InventoryItemDto } from "../inventory/inventory.js";
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
+import { inventoryItemSignificance, plainDescriptionText } from "../content/equipment/significance.js";
 import { createRegistrationContext } from "../selection/selection.js";
 import { evaluateRequirements } from "../selection/expr.js";
 import {
@@ -145,6 +146,12 @@ export interface BuildSheetOptions {
   canonical?: boolean;
   /** Optional pages to leave out. Absent or `true` keeps the page. */
   include?: SheetPageInclusions;
+  /**
+   * Item notes: the equipment page's notes column also describes the other
+   * magic items in full and the tools and useful gear in brief (see
+   * `inventoryColumnEntries`). Absent or `false` prints the column as always.
+   */
+  inventoryNotes?: boolean;
 }
 
 const ABILITY_KEYS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
@@ -300,7 +307,8 @@ export function buildCharacterSheetModel(
   if (wants("background")) pages.push(buildPage2(state, library));
   const companion = buildCompanionDto(state, library, values);
   if (companion !== null) pages.push(buildCompanionPage(companion, pages.length + 1));
-  pages.push(buildInventoryPage(state, library, values, options.canonical === true));
+  const inventoryNotes = options.inventoryNotes === true;
+  pages.push(buildInventoryPage(state, library, values, options.canonical === true, inventoryNotes));
   if (options.mode === "full" && wants("notes") && notesFitDedicatedPage(state)) {
     pages.push(buildNotesPage(state));
   }
@@ -322,7 +330,7 @@ export function buildCharacterSheetModel(
   // is what keeps the numbers contiguous once a page is left out.
   const numbered: SheetPage[] = pages.map((page, index) => ({ ...page, page: index + 1 }));
   const formValues = {
-    ...buildFormValues(state, library, values, spellcasters, inline),
+    ...buildFormValues(state, library, values, spellcasters, inline, inventoryNotes),
     ...(companion !== null ? companionFormValues(companion) : {}),
   };
   // The templates' portrait frames are image buttons; an absent portrait must
@@ -400,6 +408,7 @@ function buildFormValues(
   values: StatisticsValues,
   spellcasters: readonly SpellcasterDto[],
   inline?: Readonly<Record<string, string>>,
+  inventoryNotes = false,
 ): Readonly<Record<string, string>> {
   const fields: Record<string, string> = {};
   const set = (name: string, value: string | number | undefined): void => {
@@ -696,15 +705,10 @@ function buildFormValues(
       }));
     fillTable(`equipment_page_vehicle_${index + 1}_cargo`, cargoRows);
   });
-  // Attuned items describe themselves in the magic-items panel automatically;
-  // the authored sidebar flag still forces any other item in.
-  const sidebars = state.items.flatMap((item) => {
-    if (!item.sidebar && !item.attuned) return [];
-    if (isHiddenInventoryItem(item, library)) return [];
-    const element = effectiveItemElement(item, library);
-    const description = stripXml(element?.descriptionXml ?? "");
-    return description === "" ? [] : [`${itemDisplayName(item, library)}. ${description}`];
-  });
+  // The notes column's entries; the positioned column on the equipment page
+  // is built from the same list, so the two cannot disagree.
+  const sidebars = inventoryColumnEntries(state, library, { notes: inventoryNotes })
+    .map((entry) => `${entry.title}. ${entry.text}`);
   set("equipment_page_magic_items", sidebars.join("\n\n"));
 
   const seenSheetAttackIds = new Set<string>();
@@ -1823,6 +1827,7 @@ function buildInventoryPage(
   library: ElementLibrary,
   values: StatisticsValues,
   canonical: boolean,
+  inventoryNotes: boolean,
 ): SheetPage {
   const inventory = buildInventoryDto(state, library, values["attunement:max"] ?? 3);
   const effectiveStrength = values["strength:score"] ?? state.abilities.strength;
@@ -1887,18 +1892,11 @@ function buildInventoryPage(
   });
   const sidebarRows: SheetRow[] = [];
   const sidebars: Array<{ title: string; html: string }> = [];
-  for (const item of state.items) {
-    // Attuned items describe themselves in the magic-items panel automatically;
-    // the authored sidebar flag still forces any other item in.
-    if (!item.sidebar && !item.attuned) continue;
-    if (isHiddenInventoryItem(item, library)) continue;
-    const element = effectiveItemElement(item, library);
-    const description = stripXml(element?.descriptionXml ?? "");
-    if (element === undefined || description === "") continue;
-    sidebars.push({ title: itemDisplayName(item, library), html: element.descriptionXml ?? "" });
+  for (const entry of inventoryColumnEntries(state, library, { notes: inventoryNotes })) {
+    sidebars.push({ title: entry.title, html: entry.html });
     sidebarRows.push({
       kind: "tokens",
-      tokens: [...`${itemDisplayName(item, library)}.`.split(/\s+/), ...description.split(/\s+/)],
+      tokens: [...`${entry.title}.`.split(/\s+/), ...entry.text.split(/\s+/)],
     });
   }
   const rowTokens = (row: SheetRow): string[] => row.kind === "tokens" ? [...row.tokens] : row.lines.flatMap((line) => line.split(/\s+/));
@@ -1932,6 +1930,98 @@ function buildInventoryPage(
   });
   void values;
   return { page: 3, templateKind: "equipment", sections };
+}
+
+/** One description in the equipment page's notes column. */
+export interface InventoryColumnEntry {
+  /** The item's display name, printed as the entry's run-in title. */
+  title: string;
+  /** The description markup the positioned column lays out. */
+  html: string;
+  /** The same description as plain text (the notes field and the row tokens). */
+  text: string;
+}
+
+const NOTE_SUMMARY_LIMIT = 200;
+
+/**
+ * A one-line note for a tool or a piece of useful gear: the description's
+ * first sentence, cut at a word boundary with an ellipsis when it runs past
+ * about 200 characters.
+ */
+export function itemNoteSummary(text: string, limit = NOTE_SUMMARY_LIMIT): string {
+  const plain = text.replace(/\s+/g, " ").trim();
+  const sentence = /^.*?[.!?](?=\s|$)/.exec(plain)?.[0] ?? plain;
+  if (sentence.length <= limit) return sentence;
+  const head = sentence.slice(0, limit + 1);
+  const space = head.lastIndexOf(" ");
+  const cut = (space > 0 ? head.slice(0, space) : sentence.slice(0, limit)).replace(/[\s,;:.!?—-]+$/, "");
+  return `${cut}…`;
+}
+
+function escapeNoteHtml(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+/**
+ * What the equipment page's notes column describes, shared by the positioned
+ * column and the `equipment_page_magic_items` field.
+ *
+ * Attuned items describe themselves automatically and the authored `sidebar`
+ * flag forces any other item in; those entries print in inventory order
+ * exactly as they always have, whatever `notes` says. With `notes` on, the
+ * column then adds every other magic item in full, then tools and useful gear
+ * as a one-sentence summary, each group in inventory order. Added entries skip
+ * an item already described (a second copy of the same ring), and trivial
+ * items never print.
+ */
+export function inventoryColumnEntries(
+  state: CharacterState,
+  library: ElementLibrary,
+  options: { notes: boolean },
+): InventoryColumnEntry[] {
+  const entries: InventoryColumnEntry[] = [];
+  const described = new Set<string>();
+  const full = (item: CharacterState["items"][number]): InventoryColumnEntry | null => {
+    const element = effectiveItemElement(item, library);
+    const text = stripXml(element?.descriptionXml ?? "");
+    if (element === undefined || text === "") return null;
+    return { title: itemDisplayName(item, library), html: element.descriptionXml ?? "", text };
+  };
+  const visible = state.items.filter((item) => !isHiddenInventoryItem(item, library));
+  for (const item of visible) {
+    if (!item.sidebar && !item.attuned) continue;
+    const entry = full(item);
+    if (entry === null) continue;
+    entries.push(entry);
+    described.add(effectiveItemElement(item, library)!.identity.id);
+  }
+  if (!options.notes) return entries;
+  const addOnce = (item: CharacterState["items"][number], entry: InventoryColumnEntry | null): void => {
+    const elementId = effectiveItemElement(item, library)?.identity.id;
+    if (entry === null || elementId === undefined || described.has(elementId)) return;
+    described.add(elementId);
+    entries.push(entry);
+  };
+  const significance = new Map(visible.map((item) => [item, inventoryItemSignificance(library, item)]));
+  const isMagicNote = (item: CharacterState["items"][number]): boolean =>
+    isMagicItem(item, library) || significance.get(item) === "magic";
+  for (const item of visible) {
+    if (isMagicNote(item)) addOnce(item, full(item));
+  }
+  for (const item of visible) {
+    if (isMagicNote(item)) continue;
+    const kind = significance.get(item);
+    if (kind !== "tool" && kind !== "useful-gear") continue;
+    const element = effectiveItemElement(item, library);
+    const summary = itemNoteSummary(plainDescriptionText(element?.descriptionXml));
+    addOnce(item, summary === "" ? null : {
+      title: itemDisplayName(item, library),
+      html: `<p>${escapeNoteHtml(summary)}</p>`,
+      text: summary,
+    });
+  }
+  return entries;
 }
 
 /** A magic item (adorned or magic-type base) renders in the sheet's MAGIC

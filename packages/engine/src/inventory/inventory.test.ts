@@ -357,6 +357,9 @@ const customLibrary = (): Promise<ElementLibrary> => {
 };
 
 describe("pack extras extraction", () => {
+  // The custom library is a second full corpus build; load it once, before
+  // the tests, rather than inside the first test's own timeout.
+  beforeAll(async () => { await customLibrary(); }, 120_000);
   const SHIELD = "ID_WOTC_PHB24_ARMOR_SHIELD";
   const AMULET = "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET";
   const EMBLEM = "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_EMBLEM";

@@ -1260,6 +1260,47 @@ export function planAutoAttackInsertEdits(
   });
 }
 
+/** The statistic every Martial Arts printing writes (2014 and 2024 Monk). */
+const MARTIAL_ARTS_DIE_KEY = "martial arts:dice";
+
+function hasMartialArtsDie(statistics: StatisticsValues): boolean {
+  return (statistics[MARTIAL_ARTS_DIE_KEY] ?? 0) > 0;
+}
+
+/**
+ * True when a stored row already stands for the unarmed strike: a native
+ * unarmed row, or (for Aurora-origin files, which carry no `kind`) any row the
+ * player named "Unarmed Strike".
+ */
+function hasUnarmedStrikeRow(state: CharacterState): boolean {
+  return state.attacks.some(
+    (row) => row.kind === "unarmed" || row.name.trim().toLowerCase() === "unarmed strike",
+  );
+}
+
+/**
+ * Edits that append an unarmed strike row when a mutation gives the character
+ * Martial Arts: `martial arts:dice` absent (or 0) in `before` and present in
+ * `state`. Only that transition triggers, so a row the player deleted stays
+ * deleted on later edits, and imports (which have no `before`) never insert.
+ * The row follows `newUnarmedAttackRow()`, so its die tracks level-ups exactly
+ * as a hand-added unarmed row does. `statistics`, when given, must be the
+ * statistics of `state`.
+ */
+export function planAutoUnarmedInsertEdits(
+  before: CharacterState | undefined,
+  state: CharacterState,
+  document: Dnd5eDocument,
+  library: ElementLibrary,
+  statistics?: StatisticsValues,
+): RawEdit[] {
+  if (before === undefined || hasUnarmedStrikeRow(state)) return [];
+  if (!document.root.build.input?.attacks()?.node) return [];
+  if (!hasMartialArtsDie(statistics ?? computeStatistics(state, library))) return [];
+  if (hasMartialArtsDie(computeStatistics(before, library))) return [];
+  return planInsertAttackEdits(state, document, library, newUnarmedAttackRow(), false);
+}
+
 /** Edits that remove the automatic row of an inventory item. */
 export function planItemAttackRemovalEdits(document: Dnd5eDocument, identifier: string): RawEdit[] {
   const node = attackNodes(document).find((n) => {

@@ -31,6 +31,7 @@ import { isContentAllowedForCharacter } from "../content/access.js";
 import type { ExtractEntry, PackExtras, ParsedElement, Rule, Setter } from "../content/parser.js";
 import type { CharacterState, Coinage, InventoryItemState } from "../character/state.js";
 import { equipmentMetadata, isPhysicalEquipment, type EquipmentAttunementDto } from "../content/equipment/categories.js";
+import { inventoryItemSignificance, isSignificantItem, itemSignificance } from "../content/equipment/significance.js";
 
 export interface ExtractEntryDto {
   itemId: string;
@@ -66,6 +67,10 @@ export interface InventoryItemDto extends EquipmentShoppingMetadataDto {
   displayElementId: string;
   /** The record's free-text notes from the details card. */
   notes: string;
+  /** `<details card="true">`: the full sheet prints an item card for this record. */
+  card: boolean;
+  /** `<item sidebar="true">`: the equipment page's inventory notes describe this record. */
+  sidebar: boolean;
   name: string;
   type: string;
   amount: number;
@@ -112,10 +117,37 @@ export interface ItemBaseOptionsDto {
   options: Array<{ id: string; name: string } & EquipmentShoppingMetadataDto>;
 }
 
+/**
+ * Which new records get an item card: `all` (the default, every record, as
+ * always) or `significant` (magic items, tools and useful gear only; see
+ * `itemSignificance`).
+ */
+export type ItemCardPolicy = "all" | "significant";
+
+/** Validates an optional card policy; omitted means `all`, the long-standing behaviour. */
+export function resolveItemCardPolicy(policy: unknown): ItemCardPolicy {
+  if (policy === undefined) return "all";
+  if (policy !== "all" && policy !== "significant") {
+    throw engineError("invalid-argument", `invalid item card policy '${String(policy)}'`);
+  }
+  return policy;
+}
+
+/** Whether a new record of `element` gets an item card under `policy`. */
+function newRecordCard(element: ParsedElement, policy: ItemCardPolicy): boolean {
+  return policy === "all" || isSignificantItem(itemSignificance(element));
+}
+
+/** Options of an extraction: which unpacked records get an item card. */
+export interface ExtractItemOptions {
+  cardPolicy?: ItemCardPolicy;
+}
+
 export interface AddItemOptions {
   itemId: string;
   amount?: number;
   baseElementId?: string | null;
+  cardPolicy?: ItemCardPolicy;
 }
 
 export interface RawEdit {
@@ -420,6 +452,8 @@ export function buildInventoryDto(
       itemId: item.itemId,
       displayElementId: displayElement?.identity.id ?? item.itemId,
       notes: item.notes ?? "",
+      card: item.card === true,
+      sidebar: item.sidebar === true,
       name: displayElement?.identity.name ?? item.name,
       type: base?.identity.type ?? "",
       amount: item.amount,
@@ -893,6 +927,7 @@ export function planAddItemEdits(
 ): AddItemPlan {
   const element = library.byId.get(options.itemId);
   if (!element) throw engineError("not-found", `item '${options.itemId}' not found`);
+  const cardPolicy = resolveItemCardPolicy(options.cardPolicy);
   const amount = options.amount ?? 1;
   let base = element;
   let adornerId: string | null = null;
@@ -945,6 +980,9 @@ export function planAddItemEdits(
     adorner: adorner ? { name: adorner.identity.name, id: adorner.identity.id } : null,
     detailsName: "",
     notes: "",
+    // The requested element is the adorner of an adorned record, so a +1
+    // Longsword classifies as the magic item it is.
+    card: newRecordCard(element, cardPolicy),
   });
   const edits: RawEdit[] = [appendItemEdit(document, node)];
   const registers = equippedLocation !== null;
@@ -1030,6 +1068,176 @@ export function planSetItemAmountEdits(document: Dnd5eDocument, identifier: stri
   }
   const removal = amountAttrRemovalRange(raw, node);
   return removal ? [{ start: removal.start, end: removal.end, replacement: "" }] : [];
+}
+
+// ---------------------------------------------------------------------------
+// Presentation: item cards and inventory notes
+// ---------------------------------------------------------------------------
+
+/** What a record prints: an item card, and its description in the inventory notes. */
+export interface ItemPresentation {
+  card?: boolean;
+  sidebar?: boolean;
+}
+
+/** Which records keep an item card after a bulk change. */
+export type ItemCardsPolicy = "all" | "significant" | "none";
+
+const ITEM_CARDS_POLICIES: readonly ItemCardsPolicy[] = ["all", "significant", "none"];
+
+interface AttributeSpan {
+  /** The whitespace before the attribute, so removal takes the attribute whole. */
+  start: number;
+  valueStart: number;
+  valueEnd: number;
+  /** Just past the closing quote. */
+  end: number;
+}
+
+const isTagSpace = (ch: string | undefined): boolean => ch === " " || ch === "\t" || ch === "\r" || ch === "\n";
+
+/**
+ * The attributes of a node's opening tag, scanned quote-aware so an attribute
+ * name inside another attribute's value is never mistaken for one. `nameEnd`
+ * is where an attribute would go on a tag that has none.
+ */
+function openTagAttributes(raw: string, node: Dnd5eNode): { nameEnd: number; attributes: Map<string, AttributeSpan> } {
+  const close = node.openEnd - 1;
+  let i = node.start + 1;
+  while (i < close && !isTagSpace(raw[i]) && raw[i] !== "/") i++;
+  const nameEnd = i;
+  const attributes = new Map<string, AttributeSpan>();
+  while (i < close) {
+    const start = i;
+    while (i < close && isTagSpace(raw[i])) i++;
+    if (i >= close || raw[i] === "/") break;
+    const nameStart = i;
+    while (i < close && raw[i] !== "=" && !isTagSpace(raw[i])) i++;
+    const name = raw.slice(nameStart, i);
+    while (i < close && isTagSpace(raw[i])) i++;
+    if (raw[i] !== "=") break;
+    i++;
+    while (i < close && isTagSpace(raw[i])) i++;
+    const quote = raw[i];
+    if (quote !== '"' && quote !== "'") break;
+    const valueEnd = raw.indexOf(quote, i + 1);
+    if (valueEnd < 0 || valueEnd >= close) break;
+    if (!attributes.has(name)) attributes.set(name, { start, valueStart: i + 1, valueEnd, end: valueEnd + 1 });
+    i = valueEnd + 1;
+  }
+  return { nameEnd, attributes };
+}
+
+/** Where a new attribute is appended: after the tag's last attribute. */
+function attributeInsertAt(tag: { nameEnd: number; attributes: Map<string, AttributeSpan> }): number {
+  let at = tag.nameEnd;
+  for (const span of tag.attributes.values()) at = Math.max(at, span.end);
+  return at;
+}
+
+/**
+ * Sets a `name="true"` flag attribute on or off. The document only ever
+ * carries the flag as `"true"`: switching on rewrites any other value (an
+ * Aurora `card="false"`) or appends the attribute after the tag's last one,
+ * and switching off removes it whole — `"false"` is never written. A flag the
+ * reader already treats as off (absent, or any value but `"true"`) is left
+ * byte-for-byte as it is when switching off.
+ */
+function planFlagAttributeEdits(raw: string, node: Dnd5eNode, name: string, on: boolean): RawEdit[] {
+  const tag = openTagAttributes(raw, node);
+  const span = tag.attributes.get(name);
+  const value = span === undefined ? null : raw.slice(span.valueStart, span.valueEnd);
+  if (on) {
+    if (value === "true") return [];
+    if (span !== undefined) return [{ start: span.valueStart, end: span.valueEnd, replacement: "true" }];
+    const at = attributeInsertAt(tag);
+    return [{ start: at, end: at, replacement: ` ${name}="true"` }];
+  }
+  if (span === undefined || value !== "true") return [];
+  return [{ start: span.start, end: span.end, replacement: "" }];
+}
+
+/**
+ * The card edit of one record. A record whose `<details>` element is missing
+ * (a hand-edited or third-party file) gains the same empty details element a
+ * new record is written with, as the record's last child; a self-closing
+ * record is opened up to hold it. Switching off a record without details is
+ * already the case and changes nothing.
+ */
+function planCardEdits(raw: string, itemNode: Dnd5eNode, card: boolean): RawEdit[] {
+  const details = childElements(itemNode, "details")[0];
+  if (details !== undefined) return planFlagAttributeEdits(raw, details, "card", card);
+  if (!card) return [];
+  const indent = indentOf(raw, itemNode);
+  const pad = `${indent}\t`;
+  const block = [`<details card="true">`, "\t<name>", "\t</name>", "\t<notes>", "\t</notes>", "</details>"]
+    .map((line) => `${pad}${line}`)
+    .join("\r\n");
+  if (itemNode.selfClosing) {
+    // `<item … />` -> `<item …>` + details + `</item>`. The edit starts where
+    // a new attribute would be inserted; a sidebar insertion planned at the
+    // same offset is ordered after this edit, so it lands inside the tag.
+    const at = attributeInsertAt(openTagAttributes(raw, itemNode));
+    return [{ start: at, end: itemNode.openEnd, replacement: `>\r\n${block}\r\n${indent}</item>` }];
+  }
+  const children = childElements(itemNode);
+  const at = children.length > 0 ? children[children.length - 1]!.end : itemNode.openEnd;
+  return [{ start: at, end: at, replacement: `\r\n${block}` }];
+}
+
+/**
+ * Plans a record's presentation: `card` toggles `<details card="true">`,
+ * `sidebar` toggles `<item sidebar="true">`; an omitted field is left alone.
+ * Nothing else in the record changes — not its identifier, children or any
+ * other attribute — so switching a flag back restores the original bytes.
+ */
+export function planSetItemPresentationEdits(
+  document: Dnd5eDocument,
+  state: CharacterState,
+  identifier: string,
+  presentation: ItemPresentation,
+): RawEdit[] {
+  for (const key of ["card", "sidebar"] as const) {
+    const value = presentation[key];
+    if (value !== undefined && typeof value !== "boolean") {
+      throw engineError("invalid-argument", `item ${key} must be true or false`);
+    }
+  }
+  if (!state.items.some((item) => item.identifier === identifier)) {
+    throw engineError("not-found", `inventory item '${identifier}' not found`);
+  }
+  const node = itemNodeOf(document, identifier);
+  const edits: RawEdit[] = [];
+  if (presentation.card !== undefined) edits.push(...planCardEdits(document.raw, node, presentation.card));
+  if (presentation.sidebar !== undefined) edits.push(...planFlagAttributeEdits(document.raw, node, "sidebar", presentation.sidebar));
+  return edits;
+}
+
+/**
+ * Plans one card choice for every carried record: `all` cards them all,
+ * `none` removes every card, and `significant` keeps cards for magic items,
+ * tools and useful gear only. Control records (optional class features and
+ * other non-physical switches) and records whose content is not installed are
+ * never touched: they print no card either way, and their bytes stay as the
+ * file had them.
+ */
+export function planSetItemCardsEdits(
+  document: Dnd5eDocument,
+  state: CharacterState,
+  library: ElementLibrary,
+  policy: ItemCardsPolicy,
+): RawEdit[] {
+  if (!ITEM_CARDS_POLICIES.includes(policy)) {
+    throw engineError("invalid-argument", `invalid item card policy '${String(policy)}'`);
+  }
+  const edits: RawEdit[] = [];
+  for (const item of state.items) {
+    const base = baseElementOf(library, item);
+    if (base === undefined || !isPhysicalEquipment(base)) continue;
+    const card = policy === "all" || (policy === "significant" && isSignificantItem(inventoryItemSignificance(library, item)));
+    edits.push(...planCardEdits(document.raw, itemNodeOf(document, item.identifier), card));
+  }
+  return edits;
 }
 
 /** Plans equipping/unequipping an item at a location key ("none" unequips). */
@@ -1336,6 +1544,7 @@ function appendExtractedItemEdits(
   library: ElementLibrary,
   id: string,
   amount: number,
+  cardPolicy: ItemCardPolicy,
 ): RawEdit[] {
   const content = library.byId.get(id);
   if (!content) return [];
@@ -1349,6 +1558,7 @@ function appendExtractedItemEdits(
     adorner: null,
     detailsName: "",
     notes: "",
+    card: newRecordCard(content, cardPolicy),
   });
   return [appendItemEdit(document, node)];
 }
@@ -1366,7 +1576,9 @@ export function planExtractItemEdits(
   identifier: string,
   /** Chosen candidate id per choice label. */
   selections?: Readonly<Record<string, string>>,
+  options: ExtractItemOptions = {},
 ): RawEdit[] {
+  const cardPolicy = resolveItemCardPolicy(options.cardPolicy);
   const item = state.items.find((i) => i.identifier === identifier);
   if (!item) throw engineError("not-found", `inventory item '${identifier}' not found`);
   const element = effectiveElement(library, item);
@@ -1376,8 +1588,8 @@ export function planExtractItemEdits(
     throw engineError("conflict", `Inventory item '${item.name}' cannot be extracted.`);
   }
   const edits: RawEdit[] = [];
-  for (const entry of extract) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount));
-  for (const entry of extras?.items ?? []) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount));
+  for (const entry of extract) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount, cardPolicy));
+  for (const entry of extras?.items ?? []) edits.push(...appendExtractedItemEdits(document, library, entry.id, entry.amount, cardPolicy));
   for (const choice of extras?.choices ?? []) {
     const chosenId = selections?.[choice.label];
     if (chosenId === undefined) continue;
@@ -1385,7 +1597,7 @@ export function planExtractItemEdits(
     if (candidate === undefined) {
       throw engineError("invalid-argument", `'${chosenId}' is not a candidate for ${choice.label}`);
     }
-    edits.push(...appendExtractedItemEdits(document, library, candidate.id, candidate.amount));
+    edits.push(...appendExtractedItemEdits(document, library, candidate.id, candidate.amount, cardPolicy));
   }
   if ((extras?.gold ?? 0) > 0) {
     edits.push(...planAddCoinsEdits(state, document, { gold: extras!.gold }));
