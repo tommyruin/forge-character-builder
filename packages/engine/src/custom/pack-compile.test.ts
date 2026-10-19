@@ -268,3 +268,16 @@ describe("reading a stored pack draft", () => {
     }
   });
 });
+
+describe("the element a pack stores for a draft", () => {
+  it("names the element type of every kind of draft, so the Homebrew list can group them", async () => {
+    const { packElementType, promoteCustomDraft } = await import("./promote.js");
+    expect(packElementType(createCustomCatalogDraft("language", "Tidecant"))).toBe("Language");
+    expect(packElementType(createCustomCatalogDraft("weaponProperty", "Cursed"))).toBe("Weapon Property");
+    expect(packElementType(createCustomAppendDraft("ID_PHB_SPELL_SHIELD", "Shield"))).toBe("Append");
+    const promoted = promoteCustomDraft(createCustomCatalogDraft("language", "Tidecant"), "Tide Campaign");
+    expect(promoted.element).toMatchObject({ type: "Language", name: "Tidecant", idLocked: true, id: promoted.id });
+    expect(promoted.element.rawXml).toBe(promoted.xml);
+    expect(promoted.element.customDraft).toMatchObject({ template: "language" });
+  });
+});
