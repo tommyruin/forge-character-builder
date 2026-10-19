@@ -279,8 +279,8 @@ export const CUSTOM_CATALOG_OPTIONS: readonly CatalogTemplateOption[] = [
     fields: [{ key: "Abbreviation", label: "Abbreviation", placeholder: "LW" }],
   },
   { id: "weaponProperty", label: "Weapon property", elementType: "Weapon Property", summary: "New properties, such as firearms reload or misfire" },
-  { id: "weapon", label: "Weapon", elementType: "Weapon", summary: "Category, properties, damage, mastery" },
-  { id: "armor", label: "Armor or shield", elementType: "Armor", summary: "Group, armor class, stealth, strength" },
+  { id: "baseWeapon", label: "Weapon", elementType: "Weapon", summary: "Category, properties, damage, mastery" },
+  { id: "baseArmor", label: "Armor or shield", elementType: "Armor", summary: "Group, armor class, stealth, strength" },
 ];
 
 export function catalogTemplateOption(id: CustomCatalogTemplate): CatalogTemplateOption {

@@ -533,7 +533,7 @@ function compileValidatedCatalog(draft: CustomCatalogDraft, options: CompileOpti
     if (value) setters.push(setter(field.key, value));
   }
 
-  if (draft.template === "weapon") {
+  if (draft.template === "baseWeapon") {
     const weapon = draft.weapon!;
     supports.unshift(WEAPON_CATEGORY_IDS[weapon.category]);
     const damageSupport = DAMAGE_TYPE_SUPPORT_IDS[weapon.damage.type];
@@ -546,7 +546,7 @@ function compileValidatedCatalog(draft: CustomCatalogDraft, options: CompileOpti
     if (weapon.versatile !== undefined) setters.push(setter("versatile", weapon.versatile));
     if (weapon.range !== undefined) setters.push(setter("range", weapon.range));
     setters.push(setter("proficiency", WEAPON_CATEGORY_PROFICIENCY[weapon.category]));
-  } else if (draft.template === "armor") {
+  } else if (draft.template === "baseArmor") {
     const armor = draft.armor!;
     const group = ARMOR_GROUP_DETAILS[armor.group];
     supports.unshift(group.id);

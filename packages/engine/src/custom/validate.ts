@@ -934,9 +934,9 @@ export function customCatalogDraftIssues(draft: unknown): CustomDraftIssue[] {
       }
     }
   }
-  if (template === "weapon") issues.push(...catalogWeaponIssues(draft.weapon));
+  if (template === "baseWeapon") issues.push(...catalogWeaponIssues(draft.weapon));
   else if (draft.weapon !== undefined) issues.push({ path: "weapon", message: "weapon settings only apply to a weapon" });
-  if (template === "armor") issues.push(...catalogArmorIssues(draft.armor));
+  if (template === "baseArmor") issues.push(...catalogArmorIssues(draft.armor));
   else if (draft.armor !== undefined) issues.push({ path: "armor", message: "armor settings only apply to an armor or shield" });
   issues.push(...blocksIssues(draft.blocks, new Map()));
   return issues;

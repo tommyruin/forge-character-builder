@@ -82,10 +82,10 @@ describe("a language, proficiency, vision, condition, deity, option, alignment o
   it("names the field when an entry is not valid", () => {
     const issues = customPackDraftIssues({ ...createCustomCatalogDraft("deity", "X"), fields: { speakers: "no" } });
     expect(issues).toContainEqual(expect.objectContaining({ path: "fields.speakers" }));
-    expect(customPackDraftIssues({ ...createCustomCatalogDraft("weapon", "X"), weapon: undefined })).toContainEqual(
+    expect(customPackDraftIssues({ ...createCustomCatalogDraft("baseWeapon", "X"), weapon: undefined })).toContainEqual(
       expect.objectContaining({ path: "weapon" }),
     );
-    expect(customPackDraftIssues({ ...createCustomCatalogDraft("language", "X"), weapon: createCustomCatalogDraft("weapon").weapon })).toContainEqual(
+    expect(customPackDraftIssues({ ...createCustomCatalogDraft("language", "X"), weapon: createCustomCatalogDraft("baseWeapon").weapon })).toContainEqual(
       expect.objectContaining({ path: "weapon" }),
     );
   });
@@ -93,7 +93,7 @@ describe("a language, proficiency, vision, condition, deity, option, alignment o
 
 describe("a weapon", () => {
   const sword = (extra: Partial<NonNullable<CustomCatalogDraft["weapon"]>> = {}): CustomCatalogDraft => ({
-    ...createCustomCatalogDraft("weapon", "Moon Blade"),
+    ...createCustomCatalogDraft("baseWeapon", "Moon Blade"),
     weapon: { category: "martialMelee", damage: { dice: "1d8", type: "slashing" }, hands: "onehand", ...extra },
   });
 
@@ -127,7 +127,7 @@ describe("a weapon", () => {
 
 describe("an armor and a shield", () => {
   const armor = (extra: Partial<NonNullable<CustomCatalogDraft["armor"]>> = {}): CustomCatalogDraft => ({
-    ...createCustomCatalogDraft("armor", "Moon Mail"),
+    ...createCustomCatalogDraft("baseArmor", "Moon Mail"),
     armor: { group: "medium", ac: 15, ...extra },
   });
 
@@ -165,8 +165,8 @@ describe("against the shipped rules", () => {
   };
 
   it("sets AC from a medium armor's base, capped, and from a shield's bonus", () => {
-    const mail = { ...createCustomCatalogDraft("armor", "Moon Mail"), armor: { group: "medium" as const, ac: 15 } };
-    const buckler = { ...createCustomCatalogDraft("armor", "Moon Buckler"), armor: { group: "shield" as const, ac: 3 } };
+    const mail = { ...createCustomCatalogDraft("baseArmor", "Moon Mail"), armor: { group: "medium" as const, ac: 15 } };
+    const buckler = { ...createCustomCatalogDraft("baseArmor", "Moon Buckler"), armor: { group: "shield" as const, ac: 3 } };
     const lib = withPack([mail, buckler]);
     const { service, id } = buildFighter3(lib, "PackArmor");
     service.addItem(id, { itemId: mail.id, amount: 1, baseElementId: null });
@@ -177,7 +177,7 @@ describe("against the shipped rules", () => {
   });
 
   it("gives a weapon the proficiency bonus the fighter holds for its category", () => {
-    const blade = { ...createCustomCatalogDraft("weapon", "Moon Blade"), weapon: { category: "martialMelee" as const, damage: { dice: "1d8", type: "slashing" as const }, hands: "onehand" as const } };
+    const blade = { ...createCustomCatalogDraft("baseWeapon", "Moon Blade"), weapon: { category: "martialMelee" as const, damage: { dice: "1d8", type: "slashing" as const }, hands: "onehand" as const } };
     const lib = withPack([blade]);
     const { service, id } = buildFighter3(lib, "PackWeapon");
     service.addItem(id, { itemId: blade.id, amount: 1, baseElementId: null });

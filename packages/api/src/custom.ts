@@ -453,8 +453,8 @@ export const CUSTOM_CATALOG_TEMPLATES = [
   "option",
   "alignment",
   "weaponProperty",
-  "weapon",
-  "armor",
+  "baseWeapon",
+  "baseArmor",
 ] as const;
 export type CustomCatalogTemplate = (typeof CUSTOM_CATALOG_TEMPLATES)[number];
 

@@ -200,10 +200,10 @@ export function createCustomCatalogDraft(template: CustomCatalogTemplate, name =
     name,
     description: "",
     blocks: [],
-    ...(template === "weapon"
+    ...(template === "baseWeapon"
       ? { weapon: { category: "simpleMelee" as const, damage: { dice: "1d6", type: "slashing" as const }, hands: "onehand" as const } }
       : {}),
-    ...(template === "armor" ? { armor: { group: "light" as const, ac: 11 } } : {}),
+    ...(template === "baseArmor" ? { armor: { group: "light" as const, ac: 11 } } : {}),
   };
 }
 
