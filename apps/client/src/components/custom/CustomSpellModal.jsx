@@ -159,7 +159,7 @@ export default function CustomSpellModal({
 
   // The attack row waits for the author to pause, and only runs for a draft the engine accepts.
   const previewKey =
-    roll !== 'none' && issues.length === 0 && casters !== null ? `${previewCaster ?? ''}:${JSON.stringify(tidied)}` : null;
+    roll !== 'none' && pack === null && issues.length === 0 && casters !== null ? `${previewCaster ?? ''}:${JSON.stringify(tidied)}` : null;
   useEffect(() => {
     if (previewKey === null) return undefined;
     let alive = true;
@@ -508,7 +508,7 @@ export default function CustomSpellModal({
               ))}
             </ul>
           </div>
-          {roll !== 'none' && (
+          {roll !== 'none' && pack === null && (
             <div data-testid="spell-attack-preview">
               <h4 className="fcb-field-label">Attack row{previewCaster ? ` (${previewCaster})` : ''}</h4>
               {attack ? (
