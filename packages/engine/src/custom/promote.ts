@@ -25,6 +25,7 @@ import {
 import { randomUuid } from "../platform.js";
 import { catalogElementType, elementTypeFor } from "./catalogue.js";
 import { compileCustomElement } from "./compile.js";
+import { CUSTOM_ID_PREFIX } from "./schema.js";
 import { pickTags } from "./validate-build.js";
 
 /** The element type each character option compiles to (a subspecies is a Sub Race or a Race Variant, by its kind). */
@@ -106,4 +107,39 @@ export function packElementFor(
 export function promoteCustomDraft(draft: CustomPackDraft, source: string): PromotedCustomElementDto {
   const element = packElementFor(draft, source);
   return { id: draft.id, xml: element.rawXml as string, element };
+}
+
+const CUSTOM_ID_IN_TEXT = new RegExp(`\\b${CUSTOM_ID_PREFIX}[A-Z0-9_]+\\b`, "g");
+
+/**
+ * The other builder-made elements a draft refers to: what it grants, offers as
+ * a pick, sits under (a subclass's class) or adds to. Promoting the draft alone
+ * would leave those references pointing at nothing in the pack, so a caller
+ * offers to bring them along. Elements the draft carries inside itself (the
+ * features of a class, the feature of a background) are part of it already and
+ * are not listed. The draft is read as data, so every kind of block is covered
+ * without the walk knowing the kinds.
+ */
+export function linkedCustomIds(draft: CustomPackDraft): string[] {
+  const defined = new Set<string>();
+  const referred = new Set<string>();
+  const visit = (value: unknown): void => {
+    if (typeof value === "string") {
+      for (const match of value.matchAll(CUSTOM_ID_IN_TEXT)) referred.add(match[0]);
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const entry of value) visit(entry);
+      return;
+    }
+    if (typeof value === "object" && value !== null) {
+      const record = value as Record<string, unknown>;
+      // A nested draft names its own element; it is defined here, not referred to.
+      if (typeof record.id === "string" && typeof record.template === "string") defined.add(record.id);
+      for (const entry of Object.values(record)) visit(entry);
+    }
+  };
+  visit(draft);
+  defined.add(draft.id);
+  return [...referred].filter((id) => !defined.has(id));
 }
