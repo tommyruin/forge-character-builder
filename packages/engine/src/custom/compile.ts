@@ -34,6 +34,7 @@ import {
   isCustomItemDraft,
   isCustomOverrideDraft,
   isCustomSpellDraft,
+  isCustomBuildDraft,
   type ChoiceBlock,
   type CustomAppendDraft,
   type CustomBlock,
@@ -47,12 +48,14 @@ import {
   type GrantBlock,
   type ModifierBlock,
   type ModifierGates,
+  type RequirementNode,
   type ScaleValue,
   type TrackerDef,
 } from "./schema.js";
 import { attributes, escapeAttribute, escapeText, paragraphs } from "./xml-text.js";
 import { scaleKey, scaleRuleSpecs, trackerRuleSpecs, trackerUsageText, trackersUsageText } from "./trackers.js";
 import { customPackDraftIssues } from "./validate.js";
+import { compileBuildDraft } from "./compile-build.js";
 
 export interface CompileOptions {
   /**
@@ -65,9 +68,17 @@ export interface CompileOptions {
    * so a pack passes its own name here; characters' own entries use "Custom".
    */
   source?: string;
+  /**
+   * The element type to write instead of the one the draft's `showsUnder` names:
+   * a feature authored inside a class is an Archetype Feature or a Background
+   * Feature, which no "shows under" choice stands for.
+   */
+  elementType?: string;
+  /** Value columns of the element this feature sits in; its modifiers and limited uses may read them. */
+  extraScales?: readonly ScaleValue[];
 }
 
-const ABILITY_TITLE: Record<string, string> = {
+export const ABILITY_TITLE: Record<string, string> = {
   strength: "Strength",
   dexterity: "Dexterity",
   constitution: "Constitution",
@@ -78,7 +89,7 @@ const ABILITY_TITLE: Record<string, string> = {
 
 export { escapeText, escapeAttribute };
 
-function valueText(value: CustomValue, scales: readonly ScaleValue[]): string {
+export function valueText(value: CustomValue, scales: readonly ScaleValue[]): string {
   switch (value.kind) {
     case "number":
       return String(value.value);
@@ -112,7 +123,7 @@ function gateAttributes(gates: ModifierGates | undefined): Array<readonly [strin
   ];
 }
 
-function statLine(
+export function statLine(
   name: string,
   value: string,
   extra: Array<readonly [string, string | number | undefined]>,
@@ -120,7 +131,7 @@ function statLine(
   return `<stat${attributes([["name", name], ["value", value], ...extra])} />`;
 }
 
-function modifierRules(block: ModifierBlock, scales: readonly ScaleValue[]): string[] {
+export function modifierRules(block: ModifierBlock, scales: readonly ScaleValue[]): string[] {
   const target = modifierTarget(block.target)!;
   const gates = gateAttributes(block.gates);
   const alt: Array<readonly [string, string | undefined]> = [["alt", block.label?.trim()]];
@@ -154,7 +165,15 @@ function modifierRules(block: ModifierBlock, scales: readonly ScaleValue[]): str
   ];
 }
 
-function grantRule(block: GrantBlock): string {
+/** A block's own requirements together with one the owner adds (all of them must hold). */
+function combineRequirements(tree: RequirementNode | undefined, extra: string | undefined): string {
+  const own = tree === undefined ? "" : compileRequirements(tree);
+  if (extra === undefined || extra === "") return own;
+  if (own === "") return extra;
+  return `${own.includes("||") ? `(${own})` : own},${extra}`;
+}
+
+export function grantRule(block: GrantBlock, extraRequirement?: string): string {
   const target = block.target;
   const spell = block.spell;
   return `<grant${attributes([
@@ -162,20 +181,20 @@ function grantRule(block: GrantBlock): string {
     ["id", target.by === "id" ? target.id : undefined],
     ["name", target.by === "name" ? target.name : undefined],
     ["level", block.level],
-    ["requirements", block.requirements === undefined ? "" : compileRequirements(block.requirements)],
+    ["requirements", combineRequirements(block.requirements, extraRequirement)],
     ["spellcasting", spell?.caster],
     ["prepared", spell?.prepared === true ? "true" : undefined],
     ["condition", block.switch?.trim()],
   ])} />`;
 }
 
-function choiceRule(block: ChoiceBlock): string {
+export function choiceRule(block: ChoiceBlock, extraRequirement?: string): string {
   const attrs = attributes([
     ["type", block.type],
     ["name", block.name.trim()],
     ["number", block.count > 1 ? block.count : undefined],
     ["level", block.level],
-    ["requirements", block.requirements === undefined ? "" : compileRequirements(block.requirements)],
+    ["requirements", combineRequirements(block.requirements, extraRequirement)],
     ["supports", compileFilter(block.supports)],
     ["optional", block.optional === true ? "true" : undefined],
     ["spellcasting", block.caster],
@@ -214,6 +233,7 @@ export function compileCustomElement(draft: CustomPackDraft, options: CompileOpt
     );
   }
   try {
+    if (isCustomBuildDraft(draft)) return compileBuildDraft(draft, options);
     if (isCustomSpellDraft(draft)) return compileValidatedSpell(draft, options);
     if (isCustomCatalogDraft(draft)) return compileValidatedCatalog(draft, options);
     if (isCustomAppendDraft(draft)) return compileValidatedAppend(draft);
@@ -226,13 +246,14 @@ export function compileCustomElement(draft: CustomPackDraft, options: CompileOpt
   }
 }
 
-function compileValidated(draft: CustomDraft, options: CompileOptions): string {
+export function compileValidated(draft: CustomDraft, options: CompileOptions): string {
   const id = options.id ?? draft.id;
   const source = options.source ?? CUSTOM_SOURCE_NAME;
-  const scales = draft.scales ?? [];
+  const own = draft.scales ?? [];
+  const scales = [...(options.extraScales ?? []), ...own];
   // Scale values and tracker maximums come first: a modifier that reads one
   // resolves against statistics the earlier rules already settled.
-  const rules: string[] = [...scaleRules(scales), ...trackerRules(draft.trackers ?? [], scales)];
+  const rules: string[] = [...scaleRules(own), ...trackerRules(draft.trackers ?? [], scales)];
   let castAbility: string | undefined;
   let spellUsage: string | undefined;
   for (const block of draft.blocks) {
@@ -266,7 +287,7 @@ function compileValidated(draft: CustomDraft, options: CompileOptions): string {
 
   const open = `<element${attributes([
     ["name", draft.name.trim()],
-    ["type", elementTypeFor(draft.showsUnder)],
+    ["type", options.elementType ?? elementTypeFor(draft.showsUnder)],
     ["source", source],
     ["id", id],
   ])}>`;
@@ -274,7 +295,7 @@ function compileValidated(draft: CustomDraft, options: CompileOptions): string {
 }
 
 /** B9: a count adds the step's difference at its level; a die is inline text from its level. */
-function scaleRules(scales: readonly ScaleValue[]): string[] {
+export function scaleRules(scales: readonly ScaleValue[]): string[] {
   return scales.flatMap((scale) =>
     scaleRuleSpecs(scale).map((spec) =>
       statLine(spec.name, spec.value, [["level", spec.level], ["inline", spec.inline ? "true" : undefined]]),
@@ -290,7 +311,7 @@ function trackerRules(trackers: readonly TrackerDef[], scales: readonly ScaleVal
 }
 
 /** The rules a list of blocks compiles to, and the casting ability its spells share. */
-function blockRules(blocks: readonly CustomBlock[]): { rules: string[]; castAbility: string | undefined } {
+export function blockRules(blocks: readonly CustomBlock[]): { rules: string[]; castAbility: string | undefined } {
   const rules: string[] = [];
   let castAbility: string | undefined;
   for (const block of blocks) {
@@ -308,7 +329,7 @@ function blockRules(blocks: readonly CustomBlock[]): { rules: string[]; castAbil
 }
 
 /** `<set name="damage" type="…">` style setter. */
-function setter(name: string, value: string | number, extra: Array<readonly [string, string | undefined]> = []): string {
+export function setter(name: string, value: string | number, extra: Array<readonly [string, string | undefined]> = []): string {
   return `<set${attributes([["name", name], ...extra])}>${escapeText(String(value))}</set>`;
 }
 

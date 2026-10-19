@@ -13,16 +13,27 @@
 
 import {
   isCustomAppendDraft,
+  isCustomBuildDraft,
   isCustomCatalogDraft,
   isCustomItemDraft,
   isCustomOverrideDraft,
   isCustomSpellDraft,
+  type CustomBuildDraft,
   type CustomPackDraft,
   type PromotedCustomElementDto,
 } from "@forge-cb/api";
 import { randomUuid } from "../platform.js";
 import { catalogElementType, elementTypeFor } from "./catalogue.js";
 import { compileCustomElement } from "./compile.js";
+
+/** The element type each character option compiles to (a subspecies is a Sub Race or a Race Variant, by its kind). */
+const BUILD_ELEMENT_TYPES: Partial<Record<CustomBuildDraft["template"], string>> = {
+  species: "Race",
+  class: "Class",
+  subclass: "Archetype",
+  background: "Background",
+  companion: "Companion",
+};
 
 /** The element type a draft compiles to, as a pack lists it. `Append` stands for an addition to another file's element. */
 export function packElementType(draft: CustomPackDraft): string {
@@ -31,18 +42,23 @@ export function packElementType(draft: CustomPackDraft): string {
   if (isCustomCatalogDraft(draft)) return catalogElementType(draft.template);
   if (isCustomAppendDraft(draft)) return "Append";
   if (isCustomOverrideDraft(draft)) return draft.targetType;
+  if (isCustomBuildDraft(draft)) return BUILD_ELEMENT_TYPES[draft.template] ?? (draft.template === "subspecies" ? draft.kind : "");
   return elementTypeFor(draft.showsUnder);
 }
 
 function packElementSupports(draft: CustomPackDraft): string[] {
   if (isCustomSpellDraft(draft)) return draft.classes ?? [];
   if (isCustomItemDraft(draft) || isCustomOverrideDraft(draft)) return [];
+  if (isCustomBuildDraft(draft)) {
+    if (draft.template === "subspecies" || draft.template === "subclass") return [draft.parent.tag];
+    return draft.template === "companion" ? (draft.tags ?? []) : [];
+  }
   return draft.tags ?? [];
 }
 
 function packElementSheetText(draft: CustomPackDraft): string {
   if (isCustomSpellDraft(draft) || isCustomItemDraft(draft) || isCustomCatalogDraft(draft)) return "";
-  if (isCustomAppendDraft(draft) || isCustomOverrideDraft(draft)) return "";
+  if (isCustomAppendDraft(draft) || isCustomOverrideDraft(draft) || isCustomBuildDraft(draft)) return "";
   return draft.sheet?.text ?? "";
 }
 

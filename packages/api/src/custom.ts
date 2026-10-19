@@ -522,6 +522,352 @@ export function isCustomCatalogDraft(draft: { template?: unknown }): draft is Cu
   return (CUSTOM_CATALOG_TEMPLATES as readonly unknown[]).includes(draft.template);
 }
 
+// ---- character options: species, class, background, companion -------------------
+
+/**
+ * Templates for the options a character is built from: a species and its
+ * subspecies, a class and its subclass, a background and a companion. Each
+ * compiles to a Race / Sub Race / Class / Archetype / Background / Companion
+ * element plus the feature elements it grants, in the shapes the bundled rules
+ * use, so leveling, selection, spellcasting and the sheet read them like any
+ * book option. A character's own pack does not hold them: a character has
+ * nothing to attach a class to.
+ */
+export const CUSTOM_BUILD_TEMPLATES = ["species", "subspecies", "class", "subclass", "background", "companion"] as const;
+export type CustomBuildTemplate = (typeof CUSTOM_BUILD_TEMPLATES)[number];
+
+export const CREATURE_SIZES = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] as const;
+export type CreatureSize = (typeof CREATURE_SIZES)[number];
+
+export const HIT_DICE = [6, 8, 10, 12] as const;
+export type HitDie = (typeof HIT_DICE)[number];
+
+export const SPEED_MODES = ["fly", "swim", "climb", "burrow"] as const;
+export type SpeedMode = (typeof SPEED_MODES)[number];
+
+/** A feature authored inside another element, granted at a level (B11). */
+export interface ProgressionFeature {
+  /** The level it is granted at: a class level inside a class or subclass, the character level inside a species. */
+  level: number;
+  /** The feature itself, edited with the same form as any custom feature. Its id is its element id. */
+  draft: CustomDraft;
+}
+
+/**
+ * The progression table (B11): features granted by level, choices offered by
+ * level and the value columns (B9) the features read, plus the effects the
+ * element has as a whole.
+ */
+export interface ProgressionFields {
+  features: ProgressionFeature[];
+  /** Player picks offered at a level (each carries its own `level`). */
+  choices: ChoiceBlock[];
+  /** Value columns of the level table, such as a die that grows. */
+  scales: ScaleValue[];
+  /** Effects the element has from the level each block names (B1, B2). */
+  blocks: CustomBlock[];
+}
+
+export interface IdLabel {
+  id: string;
+  /** Display text; the engine reads only the id. */
+  label?: string;
+}
+
+export interface ExtraSpeed {
+  mode: SpeedMode;
+  feet: number;
+}
+
+export interface LanguageSettings {
+  grants: IdLabel[];
+  /** How many more the player picks. */
+  choices: number;
+  /** Where the picks come from: the common languages, or any language. */
+  from?: "standard" | "any";
+}
+
+export interface HeightWeight {
+  /** `4'6"` and `90 lb.`: the shortest build. */
+  base: string;
+  /** Dice added on top (`2d10`), or a plain number. */
+  modifier: string;
+}
+
+export interface Appearance {
+  names?: { male?: string; female?: string; child?: string; family?: string };
+  namesFormat?: string;
+  height?: HeightWeight;
+  weight?: HeightWeight;
+}
+
+/** What a species and a subspecies share: senses, languages, ability changes, extra speeds and appearance setters. */
+export interface LineageFields extends ProgressionFields {
+  /** Vision elements granted (darkvision ...). */
+  vision?: IdLabel[];
+  languages?: LanguageSettings;
+  /** Fixed increases (2014 rules); they switch off under a background that grants the increase (2024). */
+  abilityBonuses?: Array<{ ability: CustomAbility; amount: number }>;
+  /** The player assigns this many +1 points among `from` (all six when omitted). */
+  abilityChoice?: { picks: number; from?: CustomAbility[] };
+  speeds?: ExtraSpeed[];
+  appearance?: Appearance;
+}
+
+/** What makes a species offer a subspecies (Sub Race) or a variant (Race Variant) pick. */
+export interface SubspeciesOffer {
+  kind: "Sub Race" | "Race Variant";
+  /** The tag subspecies answer to; the species' name when omitted. */
+  tag?: string;
+  /** The pick's name ("Elven Subrace"); defaults to the species name and the kind. */
+  label?: string;
+  /** A variant is usually optional; a subrace is not. */
+  optional?: boolean;
+}
+
+export interface CustomSpeciesDraft extends LineageFields {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  id: string;
+  template: "species";
+  name: string;
+  /** Plain text; blank lines separate paragraphs. */
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  size: CreatureSize;
+  /** Walking speed in feet. */
+  speed: number;
+  subspecies?: SubspeciesOffer;
+}
+
+export interface CustomSubspeciesDraft extends LineageFields {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  id: string;
+  template: "subspecies";
+  name: string;
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  kind: "Sub Race" | "Race Variant";
+  /** The species it belongs to; `tag` is what the species' pick answers to. */
+  parent: { id: string; name: string; tag: string };
+  /** Added to the walking speed. */
+  speedBonus?: number;
+}
+
+export const SLOT_PROGRESSIONS = ["full", "half", "third", "pact", "custom"] as const;
+export type SlotProgression = (typeof SLOT_PROGRESSIONS)[number];
+
+export const CASTING_STYLES = ["prepared", "known", "spellbook"] as const;
+export type CastingStyle = (typeof CASTING_STYLES)[number];
+
+export const MULTICLASS_SLOT_SHARES = ["full", "half", "third", "solo", "none"] as const;
+export type MulticlassSlotShare = (typeof MULTICLASS_SLOT_SHARES)[number];
+
+export interface KnownStep {
+  /** From this class level the total is `known`. */
+  level: number;
+  known: number;
+}
+
+/** B10: a class or subclass that casts spells. */
+export interface CustomSpellcasting {
+  /** The spellcasting feature's name; defaults to the class (or subclass) name. */
+  casterName?: string;
+  ability: CustomAbility;
+  /** `prepared` prepares from the whole list, `known` knows a fixed set, `spellbook` prepares from a book. */
+  style: CastingStyle;
+  /** A known caster may swap one spell when it gains a level. */
+  allowReplace?: boolean;
+  /** Ritual casting. */
+  ritual?: boolean;
+  /** The tag the spell list answers to; the class name when omitted. */
+  listTag?: string;
+  /** Narrows the list (a school filter for a third-caster). */
+  listFilter?: FilterNode;
+  slots: {
+    progression: SlotProgression;
+    /** `custom` only: slots of each level (1-9) at each class level (1-20), as totals. */
+    table?: number[][];
+  };
+  /** What a multiclass character counts from this class toward shared slots; follows the progression when omitted. */
+  multiclassSlots?: MulticlassSlotShare;
+  /** How many spells are prepared: the ability modifier and/or the class level (or a part of it). */
+  prepare?: { ability?: boolean; level?: "full" | "half" | "halfUp" };
+  cantrips?: KnownStep[];
+  spells?: KnownStep[];
+}
+
+export interface CustomMulticlass {
+  /** What taking a level in this class asks of the character (ability scores). */
+  requirements?: RequirementNode;
+  /** The proficiencies the text names, as the class page prints them. */
+  summary?: string;
+  /** Proficiencies and picks gained when this is not the first class. */
+  blocks: CustomBlock[];
+}
+
+export interface CustomClassDraft extends ProgressionFields {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  id: string;
+  template: "class";
+  name: string;
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  hitDie: HitDie;
+  /** One line for the class picker. */
+  short?: string;
+  /** Proficiencies and picks of the first class only (skills, armor, saves): grants (B2) and choices (B3). */
+  starting: CustomBlock[];
+  /**
+   * The level the player picks a subclass at, and what the pick is called
+   * ("Arcane Tradition"). The label is also the tag subclasses answer to, so it
+   * stays stable once subclasses exist; it reads "<class> Subclass" when omitted.
+   */
+  subclass?: { level: number; label?: string };
+  /** Levels that offer an ability score increase or a feat. */
+  asiLevels: number[];
+  spellcasting?: CustomSpellcasting;
+  multiclass?: CustomMulticlass;
+}
+
+/** How a subclass relates to its class' spells. */
+export interface SubclassSpells {
+  /** The class' spellcasting feature name (`Wizard`), for spells the subclass prepares and adds. */
+  caster: string;
+  /** Spells always prepared from a class level. */
+  alwaysPrepared: Array<{ level: number; spell: IdLabel }>;
+  /** Spells added to the class list for every character of the class (an append to the spell). */
+  addToList: IdLabel[];
+  /** The list tag the added spells take; the parent class name when omitted. */
+  listTag?: string;
+}
+
+export interface CustomSubclassDraft extends ProgressionFields {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  id: string;
+  template: "subclass";
+  name: string;
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  /** The class it belongs to; `tag` is what the class' subclass pick answers to. */
+  parent: { id: string; name: string; tag: string };
+  /** Spells added to the parent's list; or the subclass casts on its own (`spellcasting`). */
+  spells?: SubclassSpells;
+  spellcasting?: CustomSpellcasting;
+}
+
+export const PERSONALITY_LIST_NAMES = ["Personality Trait", "Ideal", "Bond", "Flaw"] as const;
+export type PersonalityListName = (typeof PERSONALITY_LIST_NAMES)[number];
+
+export interface BackgroundList {
+  /** The sheet fills its personality, ideals, bonds and flaws boxes from lists of exactly these names. */
+  name: PersonalityListName;
+  /** How many the player picks. */
+  count: number;
+  items: string[];
+}
+
+export interface CustomBackgroundDraft {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  id: string;
+  template: "background";
+  name: string;
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  /** Proficiencies and languages: grants (B2) and choices (B3). */
+  starting: CustomBlock[];
+  /** Starting equipment, one line each; backgrounds list it in their text. */
+  equipment: string[];
+  /** The background feature, authored here because it cannot be added on its own. */
+  feature?: CustomDraft;
+  lists: BackgroundList[];
+  /** 2024: the three abilities the background raises (the player assigns +2/+1 or +1/+1/+1). */
+  abilityChoice?: CustomAbility[];
+  /** 2024: the origin feat. */
+  originFeat?: IdLabel;
+  blocks: CustomBlock[];
+}
+
+export type CompanionTraitKind = "traits" | "actions" | "reactions";
+
+/** A trait, action or reaction of a companion's stat block. */
+export interface CompanionEntry {
+  id: string;
+  name: string;
+  text: string;
+}
+
+export const COMPANION_STAT_TARGETS = [
+  "companion:ac",
+  "companion:attack",
+  "companion:damage",
+  "companion:proficiency",
+  "companion:initiative",
+  "companion:hp:max",
+] as const;
+export type CompanionStatTarget = (typeof COMPANION_STAT_TARGETS)[number];
+
+/** A companion statistic that follows its owner (hit points = 5 x level, armor class = 10 + proficiency ...). */
+export interface CompanionStat {
+  id: string;
+  target: CompanionStatTarget;
+  mode: "add" | "set";
+  value: CustomValue;
+}
+
+export interface CustomCompanionDraft {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  id: string;
+  template: "companion";
+  name: string;
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  /** The tags pickers filter on (`Familiar`). */
+  tags?: string[];
+  size: CreatureSize;
+  creatureType: string;
+  alignment: string;
+  /** `1/2`, `0`, `3`. */
+  challenge: string;
+  armorClass: number;
+  hitPoints: number;
+  /** Printed hit points ("19 (3d8+6)"); the number when omitted. */
+  hitPointsText?: string;
+  speed: number;
+  speeds?: ExtraSpeed[];
+  abilities: Record<CustomAbility, number>;
+  senses?: string;
+  languages?: string;
+  skills?: string;
+  saves?: string;
+  resistances?: string;
+  immunities?: string;
+  vulnerabilities?: string;
+  conditionImmunities?: string;
+  traits: CompanionEntry[];
+  actions: CompanionEntry[];
+  reactions: CompanionEntry[];
+  stats: CompanionStat[];
+}
+
+export type CustomBuildDraft =
+  | CustomSpeciesDraft
+  | CustomSubspeciesDraft
+  | CustomClassDraft
+  | CustomSubclassDraft
+  | CustomBackgroundDraft
+  | CustomCompanionDraft;
+
+/** True for a draft of the character-option kind. */
+export function isCustomBuildDraft(draft: { template?: unknown }): draft is CustomBuildDraft {
+  return (CUSTOM_BUILD_TEMPLATES as readonly unknown[]).includes(draft.template);
+}
+
 // ---- appends and overrides ---------------------------------------------------
 
 /** The template of a draft that adds rules or tags to an element another file defines. */
@@ -586,10 +932,10 @@ export function isCustomOverrideDraft(draft: { template?: unknown }): draft is C
 
 /**
  * Anything a homebrew pack stores. A character's own pack holds the first three
- * kinds (`CustomEntryDraft`): a character has nothing to attach a language or a
- * book override to.
+ * kinds (`CustomEntryDraft`): a character has nothing to attach a language, a
+ * class or a book override to.
  */
-export type CustomPackDraft = CustomEntryDraft | CustomCatalogDraft | CustomAppendDraft | CustomOverrideDraft;
+export type CustomPackDraft = CustomEntryDraft | CustomCatalogDraft | CustomAppendDraft | CustomOverrideDraft | CustomBuildDraft;
 
 /** True for a draft of the spell kind. */
 export function isCustomSpellDraft(draft: { template?: unknown }): draft is CustomSpellDraft {

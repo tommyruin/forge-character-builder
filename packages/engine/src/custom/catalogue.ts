@@ -206,7 +206,7 @@ export const CUSTOM_EQUIPPED_VALUES: Readonly<Record<string, readonly string[]>>
  */
 export const CUSTOM_GRANT_TYPES: readonly string[] = [
   "Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature", "Language", "Proficiency",
-  "Vision", "Condition", "Spell", "Ability Score Improvement", "Option",
+  "Vision", "Condition", "Spell", "Ability Score Improvement", "Option", "Companion",
 ];
 
 // ---- catalogue entries (packs) -------------------------------------------------

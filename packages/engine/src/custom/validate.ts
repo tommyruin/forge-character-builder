@@ -19,10 +19,12 @@ import { serializeElement } from "./element-xml.js";
 import { MASTERY_PROPERTY_IDS } from "./base-items.js";
 import { filterIssues, requirementIssues, type ConditionIssue } from "./conditions.js";
 import { scaleIssues, scalesById, trackerIssues } from "./trackers.js";
+import { customBuildDraftIssues } from "./validate-build.js";
 import {
   ARMOR_GROUPS,
   CUSTOM_ABILITIES,
   CUSTOM_APPEND_TEMPLATE,
+  CUSTOM_BUILD_TEMPLATES,
   CUSTOM_CATALOG_TEMPLATES,
   CUSTOM_DRAFT_SCHEMA_VERSION,
   CUSTOM_OVERRIDE_TEMPLATE,
@@ -84,9 +86,9 @@ function withPrefix(prefix: string, issues: readonly ConditionIssue[]): CustomDr
 }
 
 /** The scale values a block's value may name: the draft's own, by id. */
-type Scales = ReadonlyMap<string, ScaleValue>;
+export type Scales = ReadonlyMap<string, ScaleValue>;
 
-function valueIssues(value: unknown, path: string, scales: Scales, numberOnly = false): CustomDraftIssue[] {
+export function valueIssues(value: unknown, path: string, scales: Scales, numberOnly = false): CustomDraftIssue[] {
   if (!isRecord(value)) return [{ path, message: "give a number or pick a value to use" }];
   if (value.kind === "number") {
     return isWholeNumber(value.value) && value.value >= -1000 && value.value <= 1000
@@ -387,7 +389,7 @@ export function customDraftIssues(draft: unknown): CustomDraftIssue[] {
  * feature drafts and item drafts: a list of at most `MAX_BLOCKS` blocks with
  * unique ids, and spells that agree on one cast ability and one allowance.
  */
-function blocksIssues(blocks: unknown, scales: Scales): CustomDraftIssue[] {
+export function blocksIssues(blocks: unknown, scales: Scales): CustomDraftIssue[] {
   const issues: CustomDraftIssue[] = [];
   if (!Array.isArray(blocks)) {
     return [{ path: "blocks", message: "blocks must be a list" }];
@@ -818,7 +820,7 @@ const CATALOG_FIELDS: Readonly<Record<string, readonly string[]>> = {
   alignment: ["Abbreviation"],
 };
 
-function headIssues(draft: Record<string, unknown>, idPattern: RegExp, nameRequired: boolean): CustomDraftIssue[] {
+export function headIssues(draft: Record<string, unknown>, idPattern: RegExp, nameRequired: boolean): CustomDraftIssue[] {
   const issues: CustomDraftIssue[] = [];
   if (draft.schemaVersion !== undefined && draft.schemaVersion !== CUSTOM_DRAFT_SCHEMA_VERSION) {
     issues.push({
@@ -844,7 +846,7 @@ function headIssues(draft: Record<string, unknown>, idPattern: RegExp, nameRequi
   return issues;
 }
 
-function tagIssues(tags: unknown): CustomDraftIssue[] {
+export function tagIssues(tags: unknown): CustomDraftIssue[] {
   if (tags === undefined) return [];
   if (!Array.isArray(tags) || tags.length > 20 || tags.some((tag) => !isName(tag, 60) || TAG_TEXT.test(tag as string))) {
     return [{ path: "tags", message: "tags are short names without commas, at most 20" }];
@@ -997,6 +999,7 @@ export function customOverrideDraftIssues(draft: unknown): CustomDraftIssue[] {
 
 /** Every problem in whatever a homebrew pack stores. */
 export function customPackDraftIssues(draft: unknown): CustomDraftIssue[] {
+  if (isRecord(draft) && CUSTOM_BUILD_TEMPLATES.includes(draft.template as never)) return customBuildDraftIssues(draft);
   if (isRecord(draft) && CUSTOM_CATALOG_TEMPLATES.includes(draft.template as never)) return customCatalogDraftIssues(draft);
   if (isRecord(draft) && draft.template === CUSTOM_APPEND_TEMPLATE) return customAppendDraftIssues(draft);
   if (isRecord(draft) && draft.template === CUSTOM_OVERRIDE_TEMPLATE) return customOverrideDraftIssues(draft);
@@ -1012,7 +1015,10 @@ export function readCustomPackDraft(raw: unknown): CustomPackDraft {
     throw engineError("invalid-argument", "invalid custom draft: a draft must be an object");
   }
   const packOnly =
-    CUSTOM_CATALOG_TEMPLATES.includes(raw.template as never) || raw.template === CUSTOM_APPEND_TEMPLATE || raw.template === CUSTOM_OVERRIDE_TEMPLATE;
+    CUSTOM_CATALOG_TEMPLATES.includes(raw.template as never) ||
+    CUSTOM_BUILD_TEMPLATES.includes(raw.template as never) ||
+    raw.template === CUSTOM_APPEND_TEMPLATE ||
+    raw.template === CUSTOM_OVERRIDE_TEMPLATE;
   if (!packOnly) return readCustomEntry(raw);
   const candidate = raw.schemaVersion === undefined ? { ...raw, schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION } : raw;
   const issues = customPackDraftIssues(candidate);

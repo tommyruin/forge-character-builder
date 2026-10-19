@@ -35,17 +35,17 @@ import { engineError } from "../errors.js";
 import { pendingSelectionRules, type RawEdit } from "../selection/selection.js";
 import { elementTypeFor } from "./catalogue.js";
 import { compileCustomElement, compileCustomPack } from "./compile.js";
-import { diffChoiceIdentity, type ChoiceDraft } from "./identity.js";
+import { diffBuildChoiceIdentity, diffChoiceIdentity, type ChoiceDraft, type ChoiceIdentityChange } from "./identity.js";
 import { buildSectionOfType } from "./placement.js";
 import { entriesWithDraft, entriesWithoutDraft, planCustomPackEdits, readCustomPack } from "./pack.js";
 import { promoteCustomDraft } from "./promote.js";
-import { isCustomAppendDraft, isCustomItemDraft, isCustomOverrideDraft, isCustomSpellDraft, type CustomPackDraft } from "./schema.js";
+import { isCustomAppendDraft, isCustomBuildDraft, isCustomItemDraft, isCustomOverrideDraft, isCustomSpellDraft, type CustomBuildDraft, type CustomPackDraft } from "./schema.js";
 import { readCustomEntry, readCustomPackDraft } from "./validate.js";
 import type { AddItemOptions, ItemDetails } from "../inventory/inventory.js";
 
-/** True for the drafts whose rules can hold a choice: a feature or a catalogue entry. */
+/** True for the drafts whose rules hold their choices in the draft's own element: a feature or a catalogue entry. */
 function hasChoices(draft: CustomPackDraft): draft is ChoiceDraft {
-  return !isCustomItemDraft(draft) && !isCustomSpellDraft(draft) && !isCustomAppendDraft(draft) && !isCustomOverrideDraft(draft);
+  return !isCustomItemDraft(draft) && !isCustomSpellDraft(draft) && !isCustomAppendDraft(draft) && !isCustomOverrideDraft(draft) && !isCustomBuildDraft(draft);
 }
 
 /** What the content operations need from the character service. */
@@ -93,10 +93,17 @@ function nodeAt(nodes: readonly RegisteredElement[], path: readonly number[]): R
 }
 
 /** Every node registering `ownerId`, at any depth. */
-function ownerNodes(nodes: readonly RegisteredElement[], ownerId: string, into: RegisteredElement[] = []): RegisteredElement[] {
+function ownerNodes(
+  nodes: readonly RegisteredElement[],
+  ownerId: string,
+  asPick = false,
+  into: RegisteredElement[] = [],
+): RegisteredElement[] {
   for (const node of nodes) {
-    if (node.id === ownerId) into.push(node);
-    ownerNodes(node.children, ownerId, into);
+    // A class, species or background is registered as the pick of a selection, so the node holding
+    // its own choices is the pick's wrapper, found by what it registered.
+    if (node.id === ownerId || (asPick && (node.registered ?? "") === ownerId)) into.push(node);
+    ownerNodes(node.children, ownerId, asPick, into);
   }
   return into;
 }
@@ -448,7 +455,7 @@ export class CharacterCustomContent {
     ) {
       return { changes: [], hasPicks: false };
     }
-    return this.picksLost(stored, proposed);
+    return this.picksLost(stored.id, diffChoiceIdentity(stored, proposed));
   }
 
   /**
@@ -462,18 +469,22 @@ export class CharacterCustomContent {
     if (request.before === null || request.before === undefined) return none;
     const before = readCustomPackDraft(request.before);
     const after = readCustomPackDraft(request.after);
-    if (!hasChoices(before) || !hasChoices(after) || before.id !== after.id) return none;
-    return this.picksLost(before, after);
+    if (before.id !== after.id) return none;
+    if (isCustomBuildDraft(before) && isCustomBuildDraft(after)) {
+      return this.picksLost(before.id, diffBuildChoiceIdentity(before as CustomBuildDraft, after as CustomBuildDraft));
+    }
+    if (!hasChoices(before) || !hasChoices(after)) return none;
+    return this.picksLost(before.id, diffChoiceIdentity(before, after));
   }
 
-  private picksLost(stored: ChoiceDraft, proposed: ChoiceDraft): ChoiceIdentityReportDto {
+  private picksLost(ownerId: string, differences: ChoiceIdentityChange[]): ChoiceIdentityReportDto {
     const library = this.host.library;
-    const changes = diffChoiceIdentity(stored, proposed).map((change) => {
+    const changes = differences.map((change) => {
       const picks: ChoiceIdentityReportDto["changes"][number]["picks"] = [];
       for (const characterId of this.host.characterIds()) {
         const state = this.host.loadedState(characterId);
         if (state === undefined) continue;
-        for (const owner of ownerNodes(state.elements, stored.id)) {
+        for (const owner of ownerNodes(state.elements, change.ownerId ?? ownerId, true)) {
           for (const wrapper of choiceWrappers(owner)) {
             const slot = change.orphanedChecksums.indexOf(wrapper.checksum ?? "");
             if (slot < 0 || (wrapper.registered ?? "") === "") continue;
