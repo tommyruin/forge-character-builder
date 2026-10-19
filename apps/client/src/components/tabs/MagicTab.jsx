@@ -11,6 +11,12 @@ import {
   InformationButton,
   InspectableItemButton,
 } from '../InspectableItemControls';
+import { localStore } from '../../transport/localStore';
+import CustomSpellModal from '../custom/CustomSpellModal';
+import SpellAliasModal from '../custom/SpellAliasModal';
+import { CustomBadge, useCustomContent } from '../custom/CustomEntries';
+import { makeCustomServices } from '../custom/customServices';
+import { spellDraftFromMissing } from '../custom/draftModel';
 import SpellBrowser from './magic/SpellBrowser';
 import SpellDetails from './magic/SpellDetails';
 import SpellSource from './magic/SpellSource';
@@ -26,6 +32,8 @@ import {
 
 // DM/homebrew "add a spell" is a local-engine-only capability (needs api.characters.addSpell).
 const canAddSpell = typeof api.characters.addSpell === 'function';
+// Spells made on the character live in its own pack (the same capability as custom features).
+const canCustom = typeof api.characters.saveCustomDraft === 'function';
 // The banner the engine projects DM grants under when the character has no
 // class caster to carry them (GRANTED_CASTER_NAME in magic/dto.ts). It reports
 // kind "feature" — it has no slots and nothing to prepare — but unlike a feat's
@@ -185,6 +193,7 @@ export default function MagicTab() {
     resetPrimaryScroll,
     libraryRevision,
     active,
+    notify,
     createLibraryPickerRefreshController,
     ensureLibraryRevisionReady,
   } = useWorkspace();
@@ -205,6 +214,11 @@ export default function MagicTab() {
   const [openRule, setOpenRule] = useState(undefined);
   const [preparePopup, setPreparePopup] = useState(null); // { caster, spell, kind }
   const [addSpellOpen, setAddSpellOpen] = useState(false);
+  // The spell form (null when closed): `entry` edits a saved spell, `initialDraft` starts a new
+  // one from a name or a missing id, `caster` is the caster it is offered to cast with.
+  const [spellDialog, setSpellDialog] = useState(null);
+  const [aliasDialog, setAliasDialog] = useState(null);
+  const [missingSpells, setMissingSpells] = useState([]);
   const [spellLevelTab, setSpellLevelTab] = useState(null); // active spell-level tab in the caster list
   const [dmGrants, setDmGrants] = useState([]); // DM/homebrew grants (local engine only), for per-spell Remove
   const [libraryRefreshing, setLibraryRefreshing] = useState(false);
@@ -366,6 +380,54 @@ export default function MagicTab() {
   const dmSpellIds = new Set(
     dmGrants.filter((g) => g.kind === 'spell').map((g) => g.id),
   );
+
+  const rulesetMode = detail?.rulesetMode;
+  const customServices = useMemo(
+    () => (canCustom ? makeCustomServices({ api, store: localStore, id, run, ruleset: rulesetMode }) : null),
+    [id, run, rulesetMode],
+  );
+  const { entries: customSpells } = useCustomContent(customServices, casters, 'spell');
+  const customSpellsById = useMemo(
+    () => new Map(customSpells.map((entry) => [entry.elementId, entry])),
+    [customSpells],
+  );
+
+  // Spells the character's content grants that nothing defines (a pack that names a spell it
+  // never wrote): listed with a way to make them, so the grant has something to resolve to.
+  useEffect(() => {
+    if (!canCustom || typeof api.characters.missingGrants !== 'function') return undefined;
+    let alive = true;
+    api.characters
+      .missingGrants(id)
+      .then((list) => {
+        if (alive) setMissingSpells((list ?? []).filter((entry) => entry.missingType === 'Spell'));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [id, casters, customSpells]);
+
+  const saveAlias = async (spell, details) => {
+    try {
+      const updated = await run(() => api.characters.setSpellAlias(id, spell.id, details), {
+        invalidateSelectionOptions: false,
+      });
+      if (Array.isArray(updated)) {
+        setCachedResource(`spellcasting:${id}`, updated);
+        casterRequestGeneration.current += 1;
+        applyCasters(updated);
+      } else refresh(true);
+      setAliasDialog(null);
+      notify?.(
+        <>
+          Saved <strong>{details.name || spell.name}</strong>
+        </>,
+      );
+    } catch {
+      // run() already surfaced the failure in the workspace error banner.
+    }
+  };
 
   const removeGrantedSpell = async (caster, spell) => {
     const updated = await run(
@@ -705,6 +767,46 @@ export default function MagicTab() {
               <SpellPointsPanel resource={spellPointResource} />
             )}
 
+          {missingSpells.length > 0 && (
+            <section className="fcb-panel" data-testid="missing-spells">
+              <header className="fcb-panel-header">
+                <div>
+                  <h2 className="fcb-panel-title">Spells that cannot be found</h2>
+                  <p className="fcb-muted-copy mt-0.5 text-xs">
+                    Something this character has grants a spell that no loaded content defines, so
+                    it does nothing. Make the spell and the grant has something to give.
+                  </p>
+                </div>
+              </header>
+              <ul className="space-y-2 px-4 py-3">
+                {missingSpells.map((missing) => (
+                  <li
+                    key={`${missing.elementId}:${missing.missingId}`}
+                    className="flex flex-wrap items-center gap-3"
+                  >
+                    <span className="min-w-0 flex-1 text-sm">
+                      <strong>{spellDraftFromMissing(missing).name || missing.missingId}</strong>
+                      {missing.elementName ? ` — granted by ${missing.elementName}` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      className="fcb-button"
+                      disabled={busy || !customServices}
+                      onClick={() =>
+                        setSpellDialog({
+                          initialDraft: spellDraftFromMissing(missing),
+                          caster: activeCaster?.kind === 'class' ? activeCaster.name : null,
+                        })
+                      }
+                    >
+                      Create spell
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {activeTab === 'choose' && (() => {
             // The rail owns rule selection, so the panel renders the active
             // rule's browser directly — no group heading or accordion card.
@@ -827,8 +929,21 @@ export default function MagicTab() {
                                     onInspect={inspectKnownSpell(spell)}
                                     className="font-semibold text-left"
                                   >
-                                    {spell.name}
+                                    {spell.alias?.name ? (
+                                      <>
+                                        {spell.alias.name}
+                                        <span
+                                          className="fcb-muted-copy ml-1 text-xs font-normal"
+                                          data-testid="spell-real-name"
+                                        >
+                                          ({spell.name})
+                                        </span>
+                                      </>
+                                    ) : (
+                                      spell.name
+                                    )}
                                   </InspectableItemButton>
+                                  {customSpellsById.has(spell.id) && <CustomBadge />}
                                   {(() => {
                                     const cast = castingTimeBadge(
                                       spell.castingTime,
@@ -869,6 +984,31 @@ export default function MagicTab() {
                                       {spell.usage}
                                     </span>
                                   )}
+                                  {canCustom && (
+                                    <button
+                                      type="button"
+                                      className="fcb-icon-button"
+                                      title="Give this spell your own name and a note"
+                                      aria-label={`Rename ${spell.name}`}
+                                      disabled={busy}
+                                      onClick={() => setAliasDialog(spell)}
+                                    >
+                                      <Icon name="edit" />
+                                    </button>
+                                  )}
+                                  {customSpellsById.has(spell.id) && (
+                                    <button
+                                      type="button"
+                                      className="fcb-button"
+                                      aria-label={`Edit ${spell.name}`}
+                                      disabled={busy}
+                                      onClick={() =>
+                                        setSpellDialog({ entry: customSpellsById.get(spell.id) })
+                                      }
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
                                   {isDmGranted && (
                                     <button
                                       type="button"
@@ -884,6 +1024,14 @@ export default function MagicTab() {
                                     </button>
                                   )}
                                 </span>
+                                {spell.alias?.note && (
+                                  <p
+                                    className="fcb-muted-copy mt-0.5 text-xs"
+                                    data-testid="spell-alias-note"
+                                  >
+                                    {spell.alias.note}
+                                  </p>
+                                )}
                               </td>
                               <td
                                 className="text-xs text-[var(--fcb-text-muted)]"
@@ -1005,6 +1153,41 @@ export default function MagicTab() {
           open
           onClose={() => setAddSpellOpen(false)}
           onAdded={() => refresh(true)}
+          onCreate={
+            customServices
+              ? ({ name, caster }) => setSpellDialog({ initialDraft: { name }, caster })
+              : undefined
+          }
+        />
+      )}
+      {spellDialog && customServices && (
+        <CustomSpellModal
+          key={spellDialog.entry?.elementId ?? spellDialog.initialDraft?.id ?? spellDialog.initialDraft?.name ?? 'new'}
+          services={customServices}
+          characterName={detail?.name ?? 'this character'}
+          entry={spellDialog.entry ?? null}
+          initialDraft={spellDialog.initialDraft ?? null}
+          defaultCaster={spellDialog.caster ?? activeCaster?.name ?? null}
+          onClose={() => setSpellDialog(null)}
+          onSaved={(saved) => {
+            refresh(true);
+            if (saved) {
+              notify?.(
+                <>
+                  Saved <strong>{saved.draft.name}</strong>
+                </>,
+              );
+            }
+          }}
+        />
+      )}
+      {aliasDialog && (
+        <SpellAliasModal
+          key={aliasDialog.id}
+          spell={aliasDialog}
+          busy={busy}
+          onClose={() => setAliasDialog(null)}
+          onSave={saveAlias}
         />
       )}
     </WorkspaceTabLayout>
