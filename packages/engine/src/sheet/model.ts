@@ -26,7 +26,8 @@ import {
 import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
 import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type InventoryItemDto } from "../inventory/inventory.js";
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
-import { inventoryItemSignificance, plainDescriptionText } from "../content/equipment/significance.js";
+import { inventoryItemSignificance } from "../content/equipment/significance.js";
+import { itemNote } from "./item-summary.js";
 import { createRegistrationContext } from "../selection/selection.js";
 import { evaluateRequirements } from "../selection/expr.js";
 import {
@@ -1996,27 +1997,6 @@ export interface InventoryColumnEntry {
   text: string;
 }
 
-const NOTE_SUMMARY_LIMIT = 200;
-
-/**
- * A one-line note for a tool or a piece of useful gear: the description's
- * first sentence, cut at a word boundary with an ellipsis when it runs past
- * about 200 characters.
- */
-export function itemNoteSummary(text: string, limit = NOTE_SUMMARY_LIMIT): string {
-  const plain = text.replace(/\s+/g, " ").trim();
-  const sentence = /^.*?[.!?](?=\s|$)/.exec(plain)?.[0] ?? plain;
-  if (sentence.length <= limit) return sentence;
-  const head = sentence.slice(0, limit + 1);
-  const space = head.lastIndexOf(" ");
-  const cut = (space > 0 ? head.slice(0, space) : sentence.slice(0, limit)).replace(/[\s,;:.!?—-]+$/, "");
-  return `${cut}…`;
-}
-
-function escapeNoteHtml(value: string): string {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-
 /**
  * What the equipment page's notes column describes, shared by the positioned
  * column and the `equipment_page_magic_items` field.
@@ -2025,7 +2005,7 @@ function escapeNoteHtml(value: string): string {
  * flag forces any other item in; those entries print in inventory order
  * exactly as they always have, whatever `notes` says. With `notes` on, the
  * column then adds every other magic item in full, then tools and useful gear
- * as a one-sentence summary, each group in inventory order. Added entries skip
+ * as a short summary, each group in inventory order. Added entries skip
  * an item already described (a second copy of the same ring), and trivial
  * items never print.
  */
@@ -2068,12 +2048,8 @@ export function inventoryColumnEntries(
     const kind = significance.get(item);
     if (kind !== "tool" && kind !== "useful-gear") continue;
     const element = effectiveItemElement(item, library);
-    const summary = itemNoteSummary(plainDescriptionText(element?.descriptionXml));
-    addOnce(item, summary === "" ? null : {
-      title: itemDisplayName(item, library),
-      html: `<p>${escapeNoteHtml(summary)}</p>`,
-      text: summary,
-    });
+    const note = itemNote(element?.descriptionXml);
+    addOnce(item, note === null ? null : { title: itemDisplayName(item, library), ...note });
   }
   return entries;
 }

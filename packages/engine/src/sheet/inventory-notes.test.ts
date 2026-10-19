@@ -17,7 +17,7 @@ import { CharacterService } from "../character/service.js";
 import { buildFighter3, seededRng, sharedLibrary } from "../testing/character-factory.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import { sheetCanonical } from "./canonical.js";
-import { buildCharacterSheetModel, inventoryColumnEntries, itemNoteSummary, type CharacterSheetModel } from "./model.js";
+import { buildCharacterSheetModel, inventoryColumnEntries, type CharacterSheetModel } from "./model.js";
 import { writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
 
 const FIXTURE_ROOT = fileURLToPath(new URL("../../../../fixtures/coverage/characters/", import.meta.url));
@@ -30,8 +30,12 @@ const CLOAK = "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_PROTECTION";
 const POTION = "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HEALING";
 
 const ROPE_SENTENCE = "Rope, whether made of hemp or silk, has 2 hit points and can be burst with a DC 17 Strength check.";
-const TOOLS_SENTENCE =
-  "Perhaps the most common tools used by adventurers, thieves’ tools are designed for picking locks and foiling traps.";
+const TOOLS_NOTE = [
+  "Perhaps the most common tools used by adventurers, thieves’ tools are designed for picking locks and foiling traps.",
+  "Set a Trap.",
+  "The total of your check becomes the DC for someone else’s attempt to discover or disable the trap.",
+  "The trap deals damage appropriate to the materials used in crafting it (such as poison or a weapon) or damage equal to half the total of your check, whichever the DM deems appropriate.",
+].join(" ");
 const RING_LATER_TEXT = "The spell cast from the ring is no longer stored in it, freeing up space.";
 
 let library: ElementLibrary;
@@ -83,8 +87,8 @@ describe("inventoryColumnEntries", () => {
     ]);
     expect(entries[1]!.text).toContain(RING_LATER_TEXT);
     expect(entries[3]!.text).toBe(ROPE_SENTENCE);
-    expect(entries[4]!.text).toBe(TOOLS_SENTENCE);
-    expect(entries[4]!.html).toBe(`<p>${TOOLS_SENTENCE}</p>`);
+    expect(entries[4]!.text).toBe(TOOLS_NOTE);
+    expect(entries[4]!.html).toContain("<p><strong><em>Set a Trap.</em></strong> The total of your check");
   });
 
   it("keeps a sheet-notes item where it always printed, in full", () => {
@@ -106,27 +110,13 @@ describe("inventoryColumnEntries", () => {
   });
 });
 
-describe("itemNoteSummary", () => {
-  it("keeps the first sentence", () => {
-    expect(itemNoteSummary("Short one. Second sentence here.")).toBe("Short one.");
-    expect(itemNoteSummary("No full stop at all")).toBe("No full stop at all");
-  });
-
-  it("caps a long sentence near 200 characters at a word boundary", () => {
-    const long = `${"word ".repeat(60).trim()}.`;
-    const summary = itemNoteSummary(long);
-    expect(summary.endsWith("…")).toBe(true);
-    expect(summary.length).toBeLessThanOrEqual(201);
-    expect(summary.slice(0, -1)).toMatch(/word$/);
-  });
-});
-
 describe("the item notes switch on the sheet model", () => {
   it("prints the extra notes in the column and the notes field", () => {
     const { service, id } = packedFighter("Model");
     const state = service.getCharacter(id);
     const model = buildCharacterSheetModel(state, library, { mode: "full", inventoryNotes: true });
     expect(sidebarText(model)).toContain("Thieves’ Tools.");
+    expect(sidebarText(model)).toContain("Set a Trap.");
     expect(model.formValues?.["equipment_page_magic_items"]).toContain(`Rope, Hempen (50 feet). ${ROPE_SENTENCE}`);
     expect(model.formValues?.["equipment_page_magic_items"]).not.toContain("Rations");
 
