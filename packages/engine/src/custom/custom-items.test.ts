@@ -429,3 +429,41 @@ describe("what an item draft may not do", () => {
     expect(dto.items[0]!.isCustom).toBe(false);
   });
 });
+
+describe("previewing an item before it is saved", () => {
+  it("shows the attack row the item would give, attuned, without touching the character", () => {
+    const { service, id } = fighter();
+    const before = service.exportCharacterXml(id);
+    const preview = service.previewCustomItem(id, { draft: frostbite() });
+    expect(preview.attack).toEqual({
+      name: "Frostbite",
+      range: "5 ft",
+      bonus: "+5 vs AC",
+      damage: "1d8+3 slashing + 1d6 cold",
+      description: "Versatile",
+    });
+    expect(service.exportCharacterXml(id)).toBe(before);
+    expect(service.getCustomContent(id).entries).toEqual([]);
+    expect(service.getInventory(id).items).toEqual([]);
+  });
+
+  it("previews an edit against the stored item and leaves the stored definition alone", () => {
+    const { service, id } = fighter();
+    const draft = frostbite();
+    service.saveCustomDraft(id, { draft });
+    const stored = service.exportCharacterXml(id);
+    const preview = service.previewCustomItem(id, { draft: { ...draft, bonus: 3 } });
+    expect(preview.attack?.bonus).toBe("+7 vs AC");
+    expect(preview.attack?.damage).toBe("1d8+5 slashing + 1d6 cold");
+    expect(service.exportCharacterXml(id)).toBe(stored);
+    // The real item still has the stored numbers.
+    service.attuneItem(id, service.getInventory(id).items[0]!.identifier, true);
+    expect(weaponRow(service, id).bonus).toBe("+5 vs AC");
+  });
+
+  it("has no attack row to show for anything but a weapon, and refuses a bad draft", () => {
+    const { service, id } = fighter();
+    expect(service.previewCustomItem(id, { draft: createCustomItemDraft("gear", "Whistle") }).attack).toBeNull();
+    expect(() => service.previewCustomItem(id, { draft: { ...frostbite(), bonus: 99 } })).toThrow(/bonus/);
+  });
+});

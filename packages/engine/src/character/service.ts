@@ -157,8 +157,18 @@ import {
   type DmGrantsDto,
 } from "../extras/grants.js";
 import { buildAppearanceSuggestions, type AppearanceSuggestionsDto } from "../extras/appearance.js";
-import type { ChoiceIdentityReportDto, CustomContentDto, CustomDiagnosticDto, CustomDraftEntryDto, PromotedCustomElementDto } from "@forge-cb/api";
+import type {
+  ChoiceIdentityReportDto,
+  CustomContentDto,
+  CustomDiagnosticDto,
+  CustomDraftEntryDto,
+  CustomItemPreviewDto,
+  PromotedCustomElementDto,
+} from "@forge-cb/api";
 import { CharacterCustomContent } from "../custom/character-content.js";
+import { compileCustomElement } from "../custom/compile.js";
+import { isCustomItemDraft } from "../custom/schema.js";
+import { readCustomEntry } from "../custom/validate.js";
 
 export interface CharacterStore {
   get(id: string): CharacterState | undefined;
@@ -2340,6 +2350,51 @@ export class CharacterService {
   /** The choices a proposed draft would change the identity of, and the picks under them. */
   getChoiceIdentityImpact(id: string, request: { draft: unknown }): ChoiceIdentityReportDto {
     return this.custom.impact(id, request);
+  }
+
+  /**
+   * What an item draft would give this character, without saving it. The draft
+   * is added to a scratch copy of the character, wielded and attuned, and its
+   * weapon row read back, so the numbers are the ones the real add would print.
+   * The scratch copy is discarded before this returns.
+   */
+  previewCustomItem(id: string, request: { draft: unknown }): CustomItemPreviewDto {
+    const { document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for custom content");
+    }
+    const draft = readCustomEntry(request.draft);
+    compileCustomElement(draft);
+    if (!isCustomItemDraft(draft) || draft.template !== "weapon") return { attack: null };
+    const scratchId = `${id}::item-preview`;
+    const scratch = new CharacterService(undefined, this.library, { rng: this.rng });
+    try {
+      scratch.importCharacterXml(scratchId, document.raw);
+      // A stored copy of this item is replaced, not edited, so the preview is of a fresh record.
+      if (scratch.getCustomContent(scratchId).entries.some((entry) => entry.elementId === draft.id)) {
+        scratch.deleteCustomDraft(scratchId, { draftId: draft.id });
+      }
+      scratch.saveCustomDraft(scratchId, { draft });
+      const record = scratch.getCharacter(scratchId).items.find((item) => item.adorners.includes(draft.id));
+      if (record === undefined) return { attack: null };
+      if (draft.attunement === true) {
+        // Attunement slots are the character's to run out of; the preview makes room for the item.
+        for (const other of scratch.getInventory(scratchId).items) {
+          if (other.isAttuned && other.identifier !== record.identifier) scratch.attuneItem(scratchId, other.identifier, false);
+        }
+        scratch.attuneItem(scratchId, record.identifier, true);
+      }
+      const row = scratch.getCharacter(scratchId).attacks.find((attack) => attack.identifier === record.identifier);
+      const attack = row === undefined ? undefined : scratch.getAttacks(scratchId).find((entry) => entry.id === row.id);
+      return {
+        attack:
+          attack === undefined
+            ? null
+            : { name: attack.name, range: attack.range, bonus: attack.bonus, damage: attack.damage, description: attack.description },
+      };
+    } finally {
+      scratch.deleteCharacter(scratchId);
+    }
   }
 
   /** The DM grants list (granted spells, feats, ability scores and other features). */

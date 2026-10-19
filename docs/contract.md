@@ -61,7 +61,8 @@ There are currently no public roadmap-unsupported methods. Groups:
   `addGrantedAbilityScore`, `removeGrantedAbilityScore`, `addGrantedElement`,
   `removeGrantedElement`, `getDmGrants`, `getCompanion`, `setCompanionName`
 - **Custom content**: `getCustomContent`, `saveCustomDraft`,
-  `deleteCustomDraft`, `promoteCustomDraft`, `getChoiceIdentityImpact`
+  `deleteCustomDraft`, `promoteCustomDraft`, `getChoiceIdentityImpact`,
+  `previewCustomItem`
 - **Inventory**: `getInventory`, `getItemBaseOptions`, `addItem`, `removeItem`,
   `setItemAmount`, `extractItem`, `equipItem`, `attuneItem`, `setItemStorage`,
   `setItemPresentation`, `setItemCards`, `setItemDetails`, `setCoins`
@@ -568,6 +569,11 @@ the character or its last copy of an entry removes it.
   with `idLocked: true`, `customDraft` keeps the form data), ready to push onto a
   collection's `elements`. The id never changes, so characters that carry the
   entry keep resolving it once the collection is ingested.
+- `previewCustomItem(id, {draft})` -> `{attack}`. Adds the item to a scratch copy
+  of the character, wields and attunes it, and returns the weapon's attack row
+  (`{name, range, bonus, damage, description}`, as `getAttacks` prints it); null
+  for anything that is not a weapon. Nothing is saved and the scratch copy is
+  discarded.
 - `getChoiceIdentityImpact(id, {draft})` -> `{changes, hasPicks}`. Compares a
   proposed draft with the stored draft of the same id. Each change is `{blockId,
   name, type, change: "removed" | "changed", fields, orphanedSlots, picks}` where

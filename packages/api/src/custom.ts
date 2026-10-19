@@ -405,3 +405,18 @@ export interface PromotedCustomElementDto extends WireObject {
    */
   element: WireObject;
 }
+
+/** The attack row a custom weapon would give the character, as `getAttacks` prints it. */
+export interface CustomItemAttackPreviewDto extends WireObject {
+  name: string;
+  range: string;
+  bonus: string;
+  damage: string;
+  description: string;
+}
+
+/** `previewCustomItem`: what an item draft would do for this character, without saving it. */
+export interface CustomItemPreviewDto extends WireObject {
+  /** The weapon's attack row once wielded and attuned; null for anything that is not a weapon. */
+  attack: CustomItemAttackPreviewDto | null;
+}

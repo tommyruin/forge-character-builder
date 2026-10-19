@@ -3,6 +3,7 @@ import type {
   CustomContentDto,
   CustomEntryDraft,
   CustomDraftMutationDto,
+  CustomItemPreviewDto,
   DmGrantDto,
   PromotedCustomElementDto,
 } from "./custom.js";
@@ -419,6 +420,11 @@ export interface EngineMethodMap {
    * the same id, and whether any loaded character has picks under them.
    */
   getChoiceIdentityImpact: MethodContract<[id: string, request: { draft: CustomEntryDraft }], ChoiceIdentityReportDto>;
+  /**
+   * What an item draft would give this character, computed on a scratch copy so
+   * nothing is saved: the weapon's attack row once it is wielded and attuned.
+   */
+  previewCustomItem: MethodContract<[id: string, request: { draft: CustomEntryDraft }], CustomItemPreviewDto>;
   getCompanion: MethodContract<[id: string], WireObject | null>;
   setCompanionName: MethodContract<[id: string, request: { name: string }], WireObject>;
   setCompanionPortrait: MethodContract<[id: string, base64: string], WireObject>;
@@ -573,6 +579,7 @@ export const ENGINE_METHOD_NAMES = [
   "deleteCustomDraft",
   "promoteCustomDraft",
   "getChoiceIdentityImpact",
+  "previewCustomItem",
   "getCompanion",
   "setCompanionName",
   "setCompanionPortrait",
@@ -685,6 +692,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   deleteCustomDraft: implemented,
   promoteCustomDraft: implemented,
   getChoiceIdentityImpact: implemented,
+  previewCustomItem: implemented,
   getCompanion: implemented,
   setCompanionName: implemented,
   setCompanionPortrait: implemented,
@@ -777,6 +785,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   deleteCustomDraft: "character-write",
   promoteCustomDraft: "read-only",
   getChoiceIdentityImpact: "read-only",
+  previewCustomItem: "read-only",
   getCompanion: "read-only",
   setCompanionName: "character-write",
   setCompanionPortrait: "character-write",

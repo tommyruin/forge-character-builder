@@ -570,6 +570,7 @@ export function createEngineMethodHandlers(
     },
     promoteCustomDraft: (id, request) => service.promoteCustomDraft(id, request),
     getChoiceIdentityImpact: (id, request) => service.getChoiceIdentityImpact(id, request),
+    previewCustomItem: (id, request) => service.previewCustomItem(id, request),
     getAppearanceSuggestions: (id, seed) => objectResult(service.getAppearanceSuggestions(id, seed)),
   };
 }
