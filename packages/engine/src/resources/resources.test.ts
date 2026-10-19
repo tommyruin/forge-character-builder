@@ -83,6 +83,30 @@ describe("a character that never used a tracker", () => {
   });
 });
 
+describe("deleting a custom entry", () => {
+  it("forgets what it had spent and the switches it named, leaving a pool another feature shares", () => {
+    const { service, id } = fighter();
+    const original = service.exportCharacterXml(id);
+    const gift = feature("Gift", {
+      trackers: [tracker({ id: "gift", label: "Gift", pool: "Shared", max: { kind: "number", value: 4 } }), tracker({ id: "solo", label: "Solo" })],
+      blocks: [{ kind: "modifier", id: "m", target: "ac:misc", mode: "add", value: { kind: "number", value: 1 }, gates: { switch: "Gift form" } }] as CustomBlock[],
+    });
+    const twin = feature("Twin", { trackers: [tracker({ id: "twin", label: "Twin", pool: "Shared", max: { kind: "number", value: 4 } })] });
+    service.saveCustomDraft(id, { draft: gift });
+    service.saveCustomDraft(id, { draft: twin });
+    service.setTrackerUsed(id, { trackerId: "solo", used: 1 });
+    service.setTrackerUsed(id, { trackerId: "pool:shared", used: 2 });
+    service.setResourceSwitch(id, { name: "Gift form", on: true });
+
+    service.deleteCustomDraft(id, { draftId: gift.id });
+    const after = service.getResources(id);
+    expect(byLabel(after, "Shared").used).toBe(2);
+    expect(after.switches).toEqual([]);
+    service.deleteCustomDraft(id, { draftId: twin.id });
+    expect(service.exportCharacterXml(id)).toBe(original);
+  });
+});
+
 describe("custom trackers and rests", () => {
   const built = (): { service: CharacterService; id: string } => {
     const { service, id } = fighter();

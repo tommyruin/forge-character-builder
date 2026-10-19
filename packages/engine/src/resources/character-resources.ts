@@ -16,8 +16,8 @@ import { computeInlineValues, computeStatistics } from "../statistics/calculator
 import { featureUsageEntries } from "../sheet/model.js";
 import type { RawEdit } from "../selection/selection.js";
 import { planResourceEdits, readResourceBlock, storedWithState } from "./block.js";
-import type { ResourceState } from "./types.js";
-import { buildResources, restKeys } from "./view.js";
+import type { DeclaredResources, ResourceState } from "./types.js";
+import { buildResources, poolKey, restKeys } from "./view.js";
 
 export interface ResourcesHost {
   readonly library: ElementLibrary | undefined;
@@ -72,6 +72,36 @@ export class CharacterResources {
     const edits = planResourceEdits(document, stored);
     if (edits.length === 0) return current;
     return this.view(this.host.applyRegionEdits(id, edits));
+  }
+
+  /**
+   * Forgets what a removed custom entry left behind: the counts it had spent
+   * and the switches only it named. `declared` is what the file declared before
+   * the entry was removed, so a shared pool stays while another member uses it.
+   */
+  forgetOwner(id: string, ownerId: string, declared: DeclaredResources): void {
+    const mine = declared.trackers.filter((tracker) => tracker.ownerId === ownerId);
+    const others = declared.trackers.filter((tracker) => tracker.ownerId !== ownerId);
+    const switchesLeft = new Set(declared.switches.filter((entry) => entry.ownerId !== ownerId).map((entry) => entry.name.trim().toLowerCase()));
+    const { document } = this.host.snapshot(id);
+    const read = readResourceBlock(document);
+    if (read.unreadable) return;
+    const next: Stored = {
+      spent: { ...read.state.spent },
+      switchesOn: read.state.switchesOn.filter(
+        (name) => switchesLeft.has(name.trim().toLowerCase()) || !declared.switches.some((entry) => entry.ownerId === ownerId && sameName(entry.name, name)),
+      ),
+      manual: read.state.manual,
+    };
+    for (const tracker of mine) {
+      delete next.spent[tracker.def.id];
+      const pool = tracker.def.pool?.trim();
+      if (pool !== undefined && pool !== "" && !others.some((other) => other.def.pool !== undefined && sameName(other.def.pool, pool))) {
+        delete next.spent[poolKey(pool)];
+      }
+    }
+    const edits = planResourceEdits(document, storedWithState(read.stored, next));
+    if (edits.length > 0) this.host.applyRegionEdits(id, edits);
   }
 
   setUsed(id: string, request: { trackerId: string; used: number }): ResourcesDto {

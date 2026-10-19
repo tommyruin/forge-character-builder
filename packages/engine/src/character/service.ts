@@ -2469,7 +2469,9 @@ export class CharacterService {
 
   /** Removes a custom draft: ungrants it, drops its stored copy and its installed element. */
   deleteCustomDraft(id: string, request: { draftId: string }): void {
+    const declared = this.require(id).state.resources.declared;
     this.custom.remove(id, request);
+    this.resources.forgetOwner(id, request.draftId, declared);
   }
 
   /**
