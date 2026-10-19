@@ -17,8 +17,13 @@
 //     }]
 //   }
 
+import { compileCustomElement, customPackDraftIssues } from '@forge-cb/engine/custom';
 import { requirementsSyntaxError } from '@forge-cb/engine/requirements';
 import { contentStoragePath } from '../../transport/contentStorage.js';
+
+// The shape version of a stored pack. A record without one is a collection from before packs
+// carried an author, a release date and a playtest flag; `migratePack` reads it as version 1.
+export const PACK_SCHEMA_VERSION = 2;
 
 export const UPLOAD_CATEGORY = 'homebrew';
 
@@ -29,7 +34,7 @@ export const RULESET_OPTIONS = [
 ];
 
 export const ELEMENT_RULESET_OPTIONS = [
-  ['inherit', 'Use collection setting'],
+  ['inherit', 'Use pack setting'],
   ...RULESET_OPTIONS,
 ];
 
@@ -383,11 +388,15 @@ export function collectionStoragePath(draft) {
 
 export function createCollection(name) {
   return {
+    schemaVersion: PACK_SCHEMA_VERSION,
     id: crypto.randomUUID(),
     name,
     slug: fileSlug(name),
     abbreviation: deriveAbbreviation(name),
     description: '',
+    author: '',
+    release: '',
+    playtest: false,
     ruleset: 'shared',
     slugTouched: false,
     abbrTouched: false,
@@ -678,7 +687,24 @@ export function requirementsDisplayText(element) {
   return (element.requirementRows ?? []).map(requirementPhrase).filter(Boolean).join('; ');
 }
 
+// The XML an element written with a form is compiled to, under the pack's current name. The pack
+// name is the element's source, so renaming a pack reaches every element on the next save. A draft
+// the compiler refuses falls back to the XML it last compiled to: validation reports the draft, and
+// saving never loses what was stored.
+function compiledDraftXml(element, collection) {
+  try {
+    return compileCustomElement(element.customDraft, { source: collection.name });
+  } catch {
+    return element.rawXml?.trim() ?? '';
+  }
+}
+
 export function buildElementXml(element, collection) {
+  if (element.customDraft != null && typeof element.customDraft === 'object') {
+    // A draft that does not compile and never has contributes nothing to the file; validation
+    // names it, and the file is not loaded while it is invalid.
+    return compiledDraftXml(element, collection);
+  }
   if (element.rawXml != null && element.rawXml.trim()) return element.rawXml.trim();
 
   const spec = TYPE_SPECS[element.type] ?? {};
@@ -733,6 +759,13 @@ export function buildElementXml(element, collection) {
   return [`<element ${attrs}>`, ...children.map((line) => indent(line, '  ')), '</element>'].join('\n');
 }
 
+// A pack's release date as the Source element reads it (YYYYMMDD), from the date the form stores
+// (YYYY-MM-DD). Anything else is left out rather than written as a date the library cannot sort.
+export function releaseStamp(release) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(release ?? '').trim());
+  return match ? `${match[1]}${match[2]}${match[3]}` : '';
+}
+
 function buildSourceElementXml(draft) {
   const description = draft.description?.trim()
     ? descriptionToXml(draft.description)
@@ -746,6 +779,9 @@ function buildSourceElementXml(draft) {
     `    <set name="abbreviation">${escapeXml(draft.abbreviation || 'HB')}</set>`,
     '    <set name="url">https://local.homebrew</set>',
     '    <set name="homebrew">true</set>',
+    ...(draft.author?.trim() ? [`    <set name="author">${escapeXml(draft.author.trim())}</set>`] : []),
+    ...(releaseStamp(draft.release) ? [`    <set name="release">${releaseStamp(draft.release)}</set>`] : []),
+    ...(draft.playtest === true ? ['    <set name="playtest">true</set>'] : []),
     `    <set name="ruleset">${normalizeCollectionRuleset(draft.ruleset)}</set>`,
     '  </setters>',
     '</element>',
@@ -755,7 +791,9 @@ function buildSourceElementXml(draft) {
 // The complete collection file. No <info> block on purpose: when present the engine requires
 // an <update version><file/> payload and rejects the file otherwise; omitting it is safe.
 export function buildCollectionXml(draft) {
-  const parts = [buildSourceElementXml(draft), ...(draft.elements ?? []).map((el) => buildElementXml(el, draft))];
+  const parts = [buildSourceElementXml(draft), ...(draft.elements ?? []).map((el) => buildElementXml(el, draft))].filter(
+    (part) => part !== '',
+  );
   return [
     '<?xml version="1.0" encoding="utf-8" ?>',
     '<elements>',
@@ -773,12 +811,19 @@ const ID_PATTERN = /^ID_[A-Z0-9_]+$/;
 
 export function validateDraft(draft) {
   const errors = [];
-  if (!draft.name?.trim()) errors.push({ where: 'Collection', message: 'Collection name is required.' });
-  if (!fileSlug(draft.slug || draft.name)) errors.push({ where: 'Collection', message: 'Collection slug is required (letters/numbers).' });
+  if (!draft.name?.trim()) errors.push({ where: 'Pack', message: 'Pack name is required.' });
+  if (!fileSlug(draft.slug || draft.name)) errors.push({ where: 'Pack', message: 'Pack slug is required (letters/numbers).' });
 
   const seenIds = new Set();
   for (const element of draft.elements ?? []) {
     const label = element.name?.trim() || `(unnamed ${element.type})`;
+
+    if (element.customDraft != null && typeof element.customDraft === 'object') {
+      for (const issue of customPackDraftIssues(element.customDraft)) {
+        errors.push({ where: label, message: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
+      }
+      continue;
+    }
 
     if (element.rawXml != null && element.rawXml.trim()) {
       const doc = new DOMParser().parseFromString(element.rawXml, 'application/xml');

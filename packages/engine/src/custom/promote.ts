@@ -46,9 +46,25 @@ function packElementSheetText(draft: CustomPackDraft): string {
   return draft.sheet?.text ?? "";
 }
 
-/** The element a pack stores for a draft, compiled under the pack's source name. */
-export function packElementFor(draft: CustomPackDraft, source: string): PromotedCustomElementDto["element"] {
-  const xml = compileCustomElement(draft, { source });
+/**
+ * The element a pack stores for a draft, compiled under the pack's source name.
+ *
+ * `tolerant` is for an editor holding a draft that is not finished (no name yet, an
+ * addition that adds nothing): the element is still made, with no XML until the
+ * draft compiles, so the form keeps working and nothing is lost between keystrokes.
+ */
+export function packElementFor(
+  draft: CustomPackDraft,
+  source: string,
+  options: { tolerant?: boolean } = {},
+): PromotedCustomElementDto["element"] {
+  let xml: string;
+  try {
+    xml = compileCustomElement(draft, { source });
+  } catch (cause) {
+    if (options.tolerant !== true) throw cause;
+    xml = "";
+  }
   return {
     localId: randomUuid(),
     type: packElementType(draft),

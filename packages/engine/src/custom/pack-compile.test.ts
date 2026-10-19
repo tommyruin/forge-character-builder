@@ -270,6 +270,14 @@ describe("reading a stored pack draft", () => {
 });
 
 describe("the element a pack stores for a draft", () => {
+  it("is still made, without XML, for a draft the editor has not finished, when it is asked to be tolerant", async () => {
+    const { packElementFor } = await import("./promote.js");
+    const unfinished = createCustomAppendDraft("ID_PHB_SPELL_SHIELD", "Shield");
+    expect(() => packElementFor(unfinished, "Tide Campaign")).toThrow();
+    const element = packElementFor(unfinished, "Tide Campaign", { tolerant: true });
+    expect(element).toMatchObject({ type: "Append", rawXml: "", id: unfinished.id, customDraft: unfinished });
+  });
+
   it("names the element type of every kind of draft, so the Homebrew list can group them", async () => {
     const { packElementType, promoteCustomDraft } = await import("./promote.js");
     expect(packElementType(createCustomCatalogDraft("language", "Tidecant"))).toBe("Language");
