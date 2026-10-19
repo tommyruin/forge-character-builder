@@ -1388,6 +1388,15 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     addAbilityScore: (id: string, ids: string[]) => mutateDetail(id, "addGrantedAbilityScore", [id, { abilityElementIds: ids }]),
     removeAbilityScore: (id: string, idToRemove: string) => mutateDetail(id, "removeGrantedAbilityScore", [id, { abilityElementId: idToRemove }]),
     dmGrants: (id: string) => invoke(getClient(), "getDmGrants", id),
+    // The character's own pack. A save stores the draft in the character file,
+    // so it goes through the same dirty-mark and persist path as any edit.
+    customContent: (id: string) => invoke(getClient(), "getCustomContent", id),
+    saveCustomDraft: (id: string, draft: AnyRecord, options: { grant?: boolean } = {}) =>
+      mutateDetail(id, "saveCustomDraft", [id, { draft, ...(options.grant === false ? { grant: false } : {}) }]),
+    deleteCustomDraft: (id: string, draftId: string) => mutateDetail(id, "deleteCustomDraft", [id, { draftId }]),
+    promoteCustomDraft: (id: string, draftId: string, source: string) =>
+      invoke(getClient(), "promoteCustomDraft", id, { draftId, source }),
+    choiceIdentityImpact: (id: string, draft: AnyRecord) => invoke(getClient(), "getChoiceIdentityImpact", id, { draft }),
     companion: (id: string) => invoke(getClient(), "getCompanion", id),
     setCompanionName: (id: string, name: string) => mutateDetailAndPersist(id, "setCompanionName", [id, { name }]),
     setCompanionPortrait: (id: string, base64: string) =>

@@ -48,7 +48,8 @@ function fakeClient() {
     "addGrantedSpell", "removeGrantedSpell", "addGrantedFeat", "removeGrantedFeat",
     "addGrantedAbilityScore", "removeGrantedAbilityScore", "getCompanion", "setCompanionName",
     "setCompanionPortrait", "removeCompanionPortrait",
-    "getDmGrants",
+    "getDmGrants", "getCustomContent", "saveCustomDraft", "deleteCustomDraft", "promoteCustomDraft",
+    "getChoiceIdentityImpact",
     "getInventory", "getItemBaseOptions", "addItem", "removeItem", "setItemAmount", "extractItem", "equipItem",
     "setItemStorage", "attuneItem", "setItemPresentation", "setItemCards", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
     "setAttackVisibility", "moveAttack", "deleteAttack", "generateSheet",
@@ -523,6 +524,32 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["extractItem", "Ada", "pack-1", {}, { cardPolicy: "significant" }]);
     // Each is one ordinary character edit: undoable like any other.
     expect(api.characters.canUndo("Ada")).toBe(true);
+  });
+
+  it("saves, deletes and checks custom drafts as undoable character edits that reach storage", async () => {
+    const { client, calls } = fakeClient();
+    const store = fakeStore();
+    const api = createEngineApi({ client, store });
+    await api.characters.create("Ada");
+    const draft = { schemaVersion: 1, id: "ID_CUSTOM_TRANSPORT01", template: "feature", name: "Gift", showsUnder: "feats", description: "", blocks: [] };
+
+    await api.characters.saveCustomDraft("Ada", draft);
+    await api.characters.saveCustomDraft("Ada", draft, { grant: false });
+    await api.characters.deleteCustomDraft("Ada", draft.id);
+    await api.characters.customContent("Ada");
+    await api.characters.promoteCustomDraft("Ada", draft.id, "My homebrew");
+    await api.characters.choiceIdentityImpact("Ada", draft);
+
+    expect(calls).toContainEqual(["saveCustomDraft", "Ada", { draft }]);
+    expect(calls).toContainEqual(["saveCustomDraft", "Ada", { draft, grant: false }]);
+    expect(calls).toContainEqual(["deleteCustomDraft", "Ada", { draftId: draft.id }]);
+    expect(calls).toContainEqual(["getCustomContent", "Ada"]);
+    expect(calls).toContainEqual(["promoteCustomDraft", "Ada", { draftId: draft.id, source: "My homebrew" }]);
+    expect(calls).toContainEqual(["getChoiceIdentityImpact", "Ada", { draft }]);
+    // A save is an ordinary character edit: undoable, and written to the stored copy with it.
+    expect(api.characters.canUndo("Ada")).toBe(true);
+    await api.characters.saveCharacter("Ada");
+    expect(store.putCharacter).toHaveBeenCalled();
   });
 
   it("starts a new character in the saved default rules version", async () => {

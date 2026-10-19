@@ -24,9 +24,24 @@ import {
 import AddFeatModal from './feats/AddFeatModal';
 import AddAsiModal from './feats/AddAsiModal';
 import CompanionSection from './CompanionSection';
+import CustomFeatureModal from '../custom/CustomFeatureModal';
+import {
+  CustomEntryList,
+  CustomEntryRows,
+  useCustomContent,
+} from '../custom/CustomEntries';
+import { makeCustomServices } from '../custom/customServices';
+import { localStore } from '../../transport/localStore';
 
 // DM/homebrew grants are a local-engine-only capability.
 const canGrant = typeof api.characters.addFeat === 'function';
+// Custom features are the same capability: they are granted to the character.
+const canCustom = typeof api.characters.saveCustomDraft === 'function';
+
+// Where a new custom entry shows when it is started from a section: its own where that is one
+// of the four a custom entry can show under, else Other.
+const showsUnderFor = (sectionKey) =>
+  ['race', 'class', 'feats'].includes(sectionKey) ? sectionKey : 'other';
 
 // BUILD tab: selection rules grouped into sections by rule type (Race / Class /
 // Background / Ability Scores / Languages / Proficiencies / Feats). Rules
@@ -49,6 +64,9 @@ export default function BuildTab() {
   const [inspected, setInspected] = useState(null);
   const [addFeatOpen, setAddFeatOpen] = useState(false);
   const [addAsiOpen, setAddAsiOpen] = useState(false);
+  // The custom-feature dialog: null when closed, else the entry being edited (or null to make
+  // a new one) and the section the entry starts under.
+  const [customDialog, setCustomDialog] = useState(null);
   const {
     inspect: inspectItem,
     dismiss: dismissMobileDescription,
@@ -57,6 +75,24 @@ export default function BuildTab() {
     onInspect: setInspected,
     registerDetailsScroll,
   });
+
+  const rulesetMode = detail.rulesetMode;
+  const customServices = useMemo(
+    () =>
+      canCustom
+        ? makeCustomServices({
+            api,
+            store: localStore,
+            id,
+            run,
+            ruleset: rulesetMode,
+          })
+        : null,
+    [id, run, rulesetMode],
+  );
+  const { entries: customEntries } = useCustomContent(customServices, detail);
+  const customIn = (key) => customEntries.filter((e) => e.section === key);
+  const customIds = new Set(customEntries.map((e) => e.elementId));
 
   const groups = useMemo(() => {
     const known = new Set([
@@ -89,7 +125,7 @@ export default function BuildTab() {
         types: COMPANION_RULE_TYPES,
         rules: groups.companion,
       });
-    if (groups.other.length > 0)
+    if (groups.other.length > 0 || customEntries.some((e) => e.section === 'other'))
       list.push({
         key: 'other',
         label: 'Other',
@@ -97,12 +133,14 @@ export default function BuildTab() {
         rules: groups.other,
       });
     return list;
-  }, [detail, groups]);
+  }, [detail, groups, customEntries]);
 
   const active = sections.find((s) => s.key === section) ?? sections[0];
 
+  // A custom feat is listed with the other custom entries (Edit and Remove delete its draft),
+  // not as a DM grant, whose Remove would only take it off the character.
   const grantedFeats = detail.registeredElements.filter(
-    (e) => e.type === 'Feat',
+    (e) => e.type === 'Feat' && !customIds.has(e.id),
   );
 
   // DM/homebrew grants (local engine only) — refetched whenever the character changes so add/remove
@@ -143,6 +181,14 @@ export default function BuildTab() {
     run(() => api.characters.removeFeat(id, featId));
   const removeAsi = (abilityElementId) =>
     run(() => api.characters.removeAbilityScore(id, abilityElementId));
+  const removeCustom = (entry) => customServices.remove(entry.elementId);
+  const customRows = {
+    onInspect: inspectItem,
+    onEdit: (entry) =>
+      setCustomDialog({ entry, showsUnder: entry.draft.showsUnder }),
+    onRemove: removeCustom,
+    disabled: busy,
+  };
 
   return (
     <WorkspaceTabLayout
@@ -201,6 +247,22 @@ export default function BuildTab() {
                 Feat
               </button>
             )}
+            {active.key !== 'companion' && canCustom && (
+              <button
+                type="button"
+                className="fcb-button"
+                onClick={() =>
+                  setCustomDialog({
+                    entry: null,
+                    showsUnder: showsUnderFor(active.key),
+                  })
+                }
+                title="Make a feature of your own (a boon, a trait, a gift) without writing XML"
+              >
+                <Icon name="add" />
+                Custom
+              </button>
+            )}
           </header>
           <div
             className="fcb-panel-body fcb-editor-primary"
@@ -252,10 +314,14 @@ export default function BuildTab() {
 
             {active.key === 'feats' && (
               <div className="mb-4 space-y-3">
-                {grantedFeats.length > 0 && (
+                {(grantedFeats.length > 0 || customIn('feats').length > 0) && (
                   <div className="fcb-card p-3">
                     <div className="mb-2 text-sm font-semibold">Your feats</div>
                     <ul className="space-y-1">
+                      <CustomEntryRows
+                        entries={customIn('feats')}
+                        {...customRows}
+                      />
                       {grantedFeats.map((feat) => (
                         <li
                           key={feat.id}
@@ -290,6 +356,15 @@ export default function BuildTab() {
                     </ul>
                   </div>
                 )}
+              </div>
+            )}
+
+            {['race', 'class', 'other'].includes(active.key) && (
+              <div className="mb-4">
+                <CustomEntryList
+                  entries={customIn(active.key)}
+                  {...customRows}
+                />
               </div>
             )}
 
@@ -334,7 +409,8 @@ export default function BuildTab() {
               {active.rules.length === 0 &&
                 active.key !== 'companion' &&
                 active.key !== 'abilities' &&
-                active.key !== 'feats' && (
+                active.key !== 'feats' &&
+                customIn(active.key).length === 0 && (
                   <p className="fcb-empty-copy">
                     No open choices in this section.
                   </p>
@@ -360,6 +436,20 @@ export default function BuildTab() {
         open={addAsiOpen}
         onClose={() => setAddAsiOpen(false)}
       />
+      {customDialog && customServices && (
+        <CustomFeatureModal
+          key={customDialog.entry?.elementId ?? 'new'}
+          services={customServices}
+          characterName={detail.name || 'your character'}
+          entry={customDialog.entry}
+          initialShowsUnder={customDialog.showsUnder}
+          onClose={() => setCustomDialog(null)}
+          onSaved={(saved) => {
+            // Show the entry where it landed, so adding one never looks like nothing happened.
+            if (saved?.section) setSection(saved.section);
+          }}
+        />
+      )}
     </WorkspaceTabLayout>
   );
 }

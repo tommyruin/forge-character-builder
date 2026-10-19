@@ -22,6 +22,12 @@ project uses [Semantic Versioning](https://semver.org/).
   improvements, and the grants list says which entries are custom.
 - A change to a custom choice's name, level or count can be checked first: the
   engine says which picks would be lost.
+- Build has a [+] Custom button in every section. It opens a form where you name
+  a feature, say where it shows (Race, Class, Feats or Other), write its text
+  and add effects: ability scores, bonuses, spells, proficiencies, languages,
+  player picks, limited uses and "only while active". The entry is listed with a
+  Custom badge and Edit and Remove buttons, and the form can also copy it to My
+  homebrew. Saving an edit warns first if it would clear picks already made.
 
 ### Changed
 
