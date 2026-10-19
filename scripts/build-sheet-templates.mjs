@@ -338,9 +338,10 @@ class Sheet {
   }
   /**
    * An ability shield: the name on the brow, the score in the body and the
-   * modifier in a roundel over the tip.
+   * modifier in a roundel over the tip — or, with `large: "modifier"`, the
+   * modifier in the body and the score in the roundel.
    */
-  abilityShield(prefix, key, caption, cx, top, { width = 54, height = 65, captionSize = 4.2, scoreSize = 18, modifierSize = 9, roundelRadius = 9 } = {}) {
+  abilityShield(prefix, key, caption, cx, top, { width = 54, height = 65, captionSize = 4.2, large = "score", scoreSize, modifierSize, roundelRadius = 9 } = {}) {
     const x = cx - width / 2;
     this.path(shieldPath(width, height), x, top, { fill: FILL, stroke: ACCENT, lineWidth: 1 });
     this.path(shieldPath(width - 5.2, height - 5), x + 2.6, top - 2.5, { stroke: GOLD, lineWidth: 0.35 });
@@ -350,11 +351,14 @@ class Sheet {
     // height rather than pinned — the 65pt and 62pt shields then agree.
     const scoreHeight = height * 0.46;
     const scoreMiddle = top - height * 0.45;
-    this.text(`${prefix}_${key}_score`, x + 6, scoreMiddle - scoreHeight / 2, width - 12, scoreHeight, { align: "center", size: scoreSize, box: "none" });
+    const [body, small] = large === "modifier" ? ["modifier", "score"] : ["score", "modifier"];
+    // Each number's size follows where it sits unless the caller sets it.
+    const sizes = { score: scoreSize ?? (body === "score" ? 18 : 9), modifier: modifierSize ?? (body === "modifier" ? 18 : 9) };
+    this.text(`${prefix}_${key}_${body}`, x + 6, scoreMiddle - scoreHeight / 2, width - 12, scoreHeight, { align: "center", size: sizes[body], box: "none" });
     const roundel = top - height + 6;
     this.circle(cx, roundel, roundelRadius, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
     this.circle(cx, roundel, roundelRadius - 2, { stroke: GOLD, lineWidth: 0.3 });
-    this.text(`${prefix}_${key}_modifier`, cx - 12, roundel - 6.5, 24, 13, { align: "center", size: modifierSize, box: "none" });
+    this.text(`${prefix}_${key}_${small}`, cx - 12, roundel - 6.5, 24, 13, { align: "center", size: sizes[small], box: "none" });
   }
 
   // --- fields -------------------------------------------------------------------
@@ -370,10 +374,15 @@ class Sheet {
     field.setFontSize(size);
     return field;
   }
-  /** A labelled entry: the field over a rule with its caption underneath. */
+  /**
+   * A labelled entry: the field over a rule with its caption underneath. The
+   * caption hangs the same gap under the rule at any size: 6.5pt down at the
+   * default 4.2pt, and lower by its extra cap height when it is larger.
+   */
   entry(name, caption, x, y, width, height, options = {}) {
     this.text(name, x, y, width, height, options);
-    this.label(caption, x, y - 6.5, { size: 4.2, align: options.captionAlign ?? "left", width });
+    const size = options.captionSize ?? 4.2;
+    this.label(caption, x, y - 6.5 - (size - 4.2) * 0.75, { size, align: options.captionAlign ?? "left", width });
   }
   /** A captioned entry: the caption above the field, as the classic sheet has it. */
   captioned(name, caption, x, y, width, height, options = {}) {
@@ -717,181 +726,332 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
 
 // ---------------------------------------------------------------------------
 // Character page, 2024 arrangement: each ability's saving throw and skills sit
-// beneath its score; weapons, class features and species traits on the right.
+// beneath its score; species traits, class features and weapons on the right.
+// Every variant shares the body; `top` picks the top band (the compact one by
+// default, or the classic header) and `readable` sets the small captions
+// larger and the free-text attack note at 7pt.
 // ---------------------------------------------------------------------------
 
-/** An ability panel: modifier roundel, score, saving throw and the ability's skills. */
-function abilityPanel2024(s, key, caption, x, y, width, height, extra) {
+/**
+ * An ability panel, after D&D Beyond's 2024 block: the modifier in a roundel
+ * with the score in a small box tucked behind its right side, then the saving
+ * throw and the ability's skills. The score prints in the body face — the
+ * writer gives a score smaller than its modifier the regular weight.
+ *
+ * Each row's contents centre between the rules above and below it: the save
+ * sits between two full-width rules, each skill total over its own short
+ * rule, every rule half a row below its row's middle.
+ */
+function abilityPanel2024(s, layout, key, caption, x, y, width, height, extra) {
+  const readable = layout.readable;
   s.frame(x, y, width, height, { radius: 6 });
   const top = y + height;
-  s.display(caption, x, top - 11, { size: 5.6, align: "center", width });
-  s.ornamentRule(x + 8, x + width - 8, top - 14.5);
-  s.circle(x + 30, top - 36, 15, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
-  s.circle(x + 30, top - 36, 12.5, { stroke: GOLD, lineWidth: 0.35 });
-  s.text(`details_${key}_modifier`, x + 14, top - 42, 32, 13, { align: "center", size: 9, box: "none" });
-  s.label("MODIFIER", x + 30 - 12, top - 56, { size: 3.6, align: "center", width: 24 });
-  s.rounded(x + 60, top - 46, width - 70, 24, 3, { fill: WHITE, stroke: GOLD, lineWidth: 0.4 });
-  s.text(`details_${key}_score`, x + 60, top - 46, width - 70, 24, { align: "center", size: 15, box: "none" });
-  s.label("SCORE", x + 60, top - 52, { size: 3.6, align: "center", width: width - 70 });
-  let rowY = top - 68;
-  s.rule(x + 6, rowY + 9, x + width - 6, rowY + 9, RULE, 0.4);
-  s.check(`details_${key}_save_proficiency`, x + 8, rowY - 1, 6.5);
-  s.text(`details_${key}_save_total`, x + 18, rowY - 2, 22, 9, { align: "center", size: 8 });
-  s.label("SAVING THROW", x + 44, rowY, { size: 4.4 });
-  rowY -= 11;
-  s.rule(x + 6, rowY + 9, x + width - 6, rowY + 9, RULE, 0.4);
+  s.display(caption, x, top - 10.5, { size: 6, align: "center", width });
+  s.ornamentRule(x + 8, x + width - 8, top - 13.5);
+  const cx = x + width / 2 - 10;
+  const cy = top - 29;
+  const r = 13;
+  // The score box first, so the roundel covers its left end.
+  const boxRight = cx + r + 19;
+  s.rounded(cx + 4, cy - 8, boxRight - cx - 4, 15, 3, { fill: WHITE, stroke: ACCENT, lineWidth: 0.8 });
+  s.rounded(cx + 6, cy - 6, boxRight - cx - 8, 11, 2, { stroke: GOLD, lineWidth: 0.35 });
+  s.circle(cx, cy, r, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
+  s.circle(cx, cy, r - 2.2, { stroke: GOLD, lineWidth: 0.35 });
+  s.text(`details_${key}_modifier`, cx - r + 1, cy - 7, r * 2 - 2, 14, { align: "center", size: 12, box: "none" });
+  s.text(`details_${key}_score`, cx + r, cy - 5.5, boxRight - 2 - (cx + r), 11, { align: "center", size: 9, box: "none" });
+  s.label("MODIFIER", cx - 15, top - 47.5, { size: readable ? 4.4 : 3.6, align: "center", width: 30 });
+  s.label("SCORE", cx + r, top - 44, { size: readable ? 4.2 : 3.4, align: "center", width: boxRight - 2 - (cx + r) });
+  const pitch = 11;
+  // A row's contents centre 2.5pt above its baseline; its rules sit half a pitch either side.
+  let rowY = top - 59;
+  const below = (baseline) => baseline + 2.5 - pitch / 2;
+  s.rule(x + 5, below(rowY) + pitch, x + width - 5, below(rowY) + pitch, RULE, 0.4);
+  s.check(`details_${key}_save_proficiency`, x + 5, rowY - 1.25, 6.5);
+  s.text(`details_${key}_save_total`, x + 15, rowY - 2, 22, 9, { align: "center", size: 8, box: "none" });
+  s.label("SAVING THROW", x + 41, rowY + (readable ? 0.2 : 0.5), { size: readable ? 5.4 : 4.6 });
+  s.rule(x + 5, below(rowY), x + width - 5, below(rowY), RULE, 0.4);
+  rowY -= pitch;
   for (const [skill, name] of SKILLS.filter(([, , ability]) => ability === key)) {
-    s.check(`details_${skill}_proficiency`, x + 8, rowY - 1, 6);
-    s.check(`details_${skill}_expertise`, x + 15.5, rowY - 1, 6);
-    s.text(`details_${skill}_total`, x + 24, rowY - 2, 20, 9, { align: "center", size: 7 });
-    s.note(name, x + 48, rowY, { size: 5.4 });
-    rowY -= 11;
+    s.check(`details_${skill}_proficiency`, x + 5, rowY - 1, 6);
+    s.check(`details_${skill}_expertise`, x + 12.5, rowY - 1, 6);
+    s.text(`details_${skill}_total`, x + 20, rowY - 2, 20, 9, { align: "center", size: 7.5, box: "none" });
+    s.rule(x + 20, below(rowY), x + 40, below(rowY), RULE, 0.5);
+    s.note(name, x + 43, rowY + 0.3, { size: Math.min(6.4, (width - 47) / s.textWidth(name, "captionLight", 1)) });
+    rowY -= pitch;
   }
   if (extra) extra(rowY, x, width);
 }
 
-/**
- * The 2024 character page's title band, identity header, armor class, hit
- * points and vitals row, shared by the 2024 and 2024 Hybrid layouts. The
- * compact top row (`layout.top`) is drawn by `compactHeader2024` instead.
- */
+/** The 2024 and Hybrid pages' top band: the compact one, or with `top` off the classic header. */
 function characterHeader2024(s, edition, style, layout) {
-  if (layout.top) {
-    compactHeader2024(s, edition, layout);
-    return;
-  }
-  if (layout.readable) {
-    readableHeader2024(s, edition, style);
-    vitalsRow2024(s);
-    return;
-  }
-  pageChrome(s, "CHARACTER", edition);
-
-  // Identity, level, armor class and hit points across the top.
-  s.brush(26, 696, 322, 64);
-  s.frame(26, 696, 322, 64);
-  s.text("details_character_name", 32, 740, 240, 16, { size: 12 });
-  s.label("CHARACTER NAME", 32, 733.5, { size: 4.2 });
-  s.entry("details_player", "PLAYER", 280, 741, 62, 11);
-  s.entry("details_build", "CLASS & LEVEL", 32, 719, 310, 11);
-  [["details_background", style.origin, 32, 118], ["details_alignment", "ALIGNMENT", 158, 88], ["details_deity", "DEITY", 254, 88]].forEach(([name, caption, x, width]) => {
-    const captionWidth = s.textWidth(caption, "caption", 3.4) + 4;
-    s.label(caption, x, 702.5, { size: 3.4, color: "lines" });
-    s.text(name, x + captionWidth, 702, width - captionWidth, 8, { size: 6 });
-  });
-  s.circle(376, 730, 24, { fill: FILL, stroke: ACCENT, lineWidth: 1 });
-  s.circle(376, 730, 21, { stroke: GOLD, lineWidth: 0.35 });
-  s.text("details_xp", 356, 722, 40, 16, { align: "center", size: 12, box: "none" });
-  s.label("XP", 356, 715.5, { size: 3.8, align: "center", width: 40 });
-  s.shield("details_armor_class", "ARMOR CLASS", 406, 762, 52, 46);
-  s.text("details_equipped_shield", 406, 705, 52, 9, { align: "center", size: 5, box: "none" });
-  s.label("SHIELD", 406, 699, { size: 3.4, align: "center", width: 52 });
-  const hp = s.section("HIT POINTS", 466, 700, 120, 60, { style: "plate", at: "top", size: 5.8 });
-  s.text("details_hp_current", hp.x + 2, hp.y + 8, 52, 26, { align: "center", size: 20, box: "none" });
-  s.rounded(hp.x + 2, hp.y + 8, 52, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
-  s.label("CURRENT", hp.x + 2, hp.y + 2, { size: 3.8, align: "center", width: 52 });
-  s.label("TEMP", hp.x + 58, hp.y + 24, { size: 3.8, color: "lines" });
-  s.text("details_hp_temp", hp.x + 74, hp.y + 22, 36, 11, { align: "center", size: 8 });
-  s.label("MAX", hp.x + 58, hp.y + 8, { size: 3.8, color: "lines" });
-  s.text("details_hp_max", hp.x + 74, hp.y + 6, 36, 11, { align: "center", size: 8 });
-
-  vitalsRow2024(s);
+  if (layout.top) topBand2024(s, edition, layout);
+  else classicHeader2024(s, edition, style, layout);
 }
 
 /**
- * The readable 2024 page's identity and armor row. Armor class is read with
- * the armor that gives it, so the armor, its notes and the stealth mark sit
- * in a frame right beside the AC shield. XP joins the identity's last line to
- * make the room, and the hit points take a little less width.
+ * The classic 2024 header, y 650..760: the identity with class and level on
+ * one line, the armor in a frame right beside the AC shield (armor class is
+ * read with the armor that gives it) and the hit points, over a row of large
+ * vitals that holds the hit dice and death saves.
  */
-function readableHeader2024(s, edition, style) {
+function classicHeader2024(s, edition, style, layout) {
+  const readable = layout.readable;
   pageChrome(s, "CHARACTER", edition);
 
-  s.brush(26, 696, 322, 64);
-  s.frame(26, 696, 322, 64);
-  s.text("details_character_name", 32, 740, 240, 16, { size: 12 });
-  s.label("CHARACTER NAME", 32, 733.5, { size: 4.2 });
-  s.entry("details_player", "PLAYER", 280, 741, 62, 11);
-  s.entry("details_build", "CLASS & LEVEL", 32, 719, 310, 11);
-  [["details_background", style.origin, 32, 110], ["details_alignment", "ALIGNMENT", 148, 76], ["details_deity", "DEITY", 230, 58], ["details_xp", "XP", 294, 48]].forEach(([name, caption, x, width]) => {
-    const captionWidth = s.textWidth(caption, "caption", 3.4) + 4;
-    s.label(caption, x, 702.5, { size: 3.4, color: "lines" });
+  s.brush(26, 696, 292, 64);
+  s.frame(26, 696, 292, 64);
+  s.text("details_character_name", 32, 740, 218, 16, { size: 12 });
+  s.label("CHARACTER NAME", 32, 733.5, { size: readable ? 5 : 4.2 });
+  s.entry("details_player", "PLAYER", 256, 741, 56, 11, { captionSize: readable ? 5 : 4.2 });
+  s.entry("details_build", "CLASS & LEVEL", 32, 719, 280, 11, { captionSize: readable ? 5 : 4.2 });
+  // The species is on the class and level line, so the background is captioned alone.
+  const captionSize = readable ? 4.4 : 3.4;
+  [["details_background", "BACKGROUND", 32, 84], ["details_alignment", "ALIGNMENT", 120, 86], ["details_deity", "DEITY", 210, 60], ["details_xp", "XP", 274, 38]].forEach(([name, caption, x, width]) => {
+    const captionWidth = s.textWidth(caption, "caption", captionSize) + 4;
+    s.label(caption, x, 702.5, { size: captionSize, color: "lines" });
     s.text(name, x + captionWidth, 702, width - captionWidth, 8, { size: 6 });
   });
 
-  armorBeside2024(s, 354, 696, 76, 64);
-  s.shield("details_armor_class", "ARMOR CLASS", 436, 762, 46, 46);
-  s.text("details_equipped_shield", 436, 705, 46, 9, { align: "center", size: 5, box: "none" });
+  // Wide enough for the longest armor line at 5.5pt.
+  armorBeside2024(s, layout, 324, 696, 108, 64);
+  s.shield("details_armor_class", "ARMOR CLASS", 436, 762, 46, 46, { captionSize: readable ? 4.2 : 3.8 });
+  s.text("details_equipped_shield", 436, 705, 46, 9, { align: "center", size: 6, box: "none" });
   s.label("SHIELD", 436, 699, { size: 5, align: "center", width: 46 });
 
   const hp = s.section("HIT POINTS", 488, 700, 98, 60, { style: "plate", at: "top", size: 5.8 });
+  const hpCaption = readable ? 4.8 : 3.8;
   s.text("details_hp_current", hp.x + 2, hp.y + 8, 44, 26, { align: "center", size: 20, box: "none" });
   s.rounded(hp.x + 2, hp.y + 8, 44, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
-  s.label("CURRENT", hp.x + 2, hp.y + 2, { size: 3.8, align: "center", width: 44 });
-  s.label("TEMP", hp.x + 50, hp.y + 24, { size: 3.8, color: "lines" });
+  s.label("CURRENT", hp.x + 2, hp.y + 2, { size: hpCaption, align: "center", width: 44 });
+  s.label("TEMP", hp.x + 50, hp.y + 24, { size: hpCaption, color: "lines" });
   s.text("details_hp_temp", hp.x + 62, hp.y + 22, 26, 11, { align: "center", size: 8 });
-  s.label("MAX", hp.x + 50, hp.y + 8, { size: 3.8, color: "lines" });
+  s.label("MAX", hp.x + 50, hp.y + 8, { size: hpCaption, color: "lines" });
   s.text("details_hp_max", hp.x + 62, hp.y + 6, 26, 11, { align: "center", size: 8 });
+
+  vitalsRow2024(s, layout);
 }
 
 /**
- * The readable pages' armor frame, drawn right beside the AC shield: the
- * armor worn, the stealth mark on a line of its own beneath it, and the armor
- * class notes below. The stealth mark ends its line, nearest the shield, with
- * its 5pt caption right-aligned against it in whichever face is chosen.
+ * The classic header's armor frame, right beside the AC shield: the armor
+ * worn, the stealth mark on a line of its own beneath it (ending the line,
+ * nearest the shield, its caption right-aligned against it in whichever face
+ * is chosen), then any other armor class sources over the resistances.
  */
-function armorBeside2024(s, x, y, width, height) {
+function armorBeside2024(s, layout, x, y, width, height) {
   const top = y + height;
   s.frame(x, y, width, height);
-  s.label("ARMOR", x + 5, top - 10, { size: 4.2, color: "lines" });
+  s.label("ARMOR", x + 5, top - 10, { size: layout.readable ? 5 : 4.2, color: "lines" });
   s.text("details_equipped_armor", x + 5, top - 23, width - 10, 9, { size: 6.5 });
   const checkX = x + width - 5 - 5.5;
   s.check("details_armor_stealth_disadvantage", checkX, top - 31.5, 5.5);
   s.label("STEALTH DISADV.", x + 5, top - 30.5, { size: 5, color: "lines", align: "right", width: checkX - 2 - (x + 5) });
-  s.text("details_armor_conditional", x + 4, y + 4, width - 8, height - 38, { multiline: true, size: 6, box: "none" });
+  s.text("details_armor_resistances", x + 4, y + 4, width - 8, height - 38, { multiline: true, size: 6, box: "none" });
 }
 
-/** The 2024 page's row of vitals under the identity: proficiency to heroic inspiration. */
-function vitalsRow2024(s) {
-  const vitalY = 640;
+/** The classic header's row of large vitals, y 650..692: proficiency to heroic inspiration. */
+function vitalsRow2024(s, layout) {
+  const readable = layout.readable;
+  const vitalY = 650;
+  const vitalH = 42;
   const vitalW = 76;
   const vitalX = (index) => 26 + index * 82;
-  s.stat("details_proficiency_bonus", "PROFICIENCY BONUS", vitalX(0), vitalY, vitalW, 52, { size: 20 });
-  s.stat("details_initiative", "INITIATIVE", vitalX(1), vitalY, vitalW, 52, { size: 20 });
-  s.check("details_initiative_advantage", vitalX(1) + 6, vitalY + 39, 6);
-  s.label("ADV", vitalX(1) + 14, vitalY + 40, { size: 3.6 });
-  s.frame(vitalX(2), vitalY, vitalW, 52);
-  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 30, vitalW - 6, 18, { align: "center", size: 16, box: "none" });
-  s.label("SPEED", vitalX(2), vitalY + 24, { size: 4.4, align: "center", width: vitalW });
-  [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, caption], index) => {
-    const x = vitalX(2) + 5 + index * 22;
-    s.text(name, x, vitalY + 12, 20, 9, { align: "center", size: 6 });
-    s.label(caption, x, vitalY + 5.5, { size: 3.4, align: "center", width: 20 });
+  const caption = readable ? 5 : 4.4;
+  const stat = (name, label, index) => {
+    s.frame(vitalX(index), vitalY, vitalW, vitalH);
+    s.text(name, vitalX(index) + 3, vitalY + 12, vitalW - 6, 26, { align: "center", size: 18, box: "none" });
+    s.label(label, vitalX(index), vitalY + 4.5, { size: Math.min(caption, (vitalW - 8) / s.textWidth(label, "caption", 1)), align: "center", width: vitalW });
+  };
+  stat("details_proficiency_bonus", "PROFICIENCY BONUS", 0);
+  stat("details_initiative", "INITIATIVE", 1);
+  s.check("details_initiative_advantage", vitalX(1) + 6, vitalY + 30, 6);
+  s.label("ADV", vitalX(1) + 14, vitalY + 31.2, { size: readable ? 4.4 : 3.6 });
+  s.frame(vitalX(2), vitalY, vitalW, vitalH);
+  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 15, 35, 20, { align: "center", size: 14, box: "none" });
+  s.label("SPEED", vitalX(2) + 3, vitalY + 5, { size: caption, align: "center", width: 35 });
+  s.rule(vitalX(2) + 40, vitalY + 6, vitalX(2) + 40, vitalY + vitalH - 6, GOLD, 0.4);
+  const modeX = vitalX(2) + 44.5 + s.textWidth("CLIMB", "caption", 3.4);
+  [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, label], index) => {
+    const y = vitalY + 27 - index * 9.5;
+    s.label(label, vitalX(2) + 43, y + 1.5, { size: 3.4, color: "lines" });
+    s.text(name, modeX, y, vitalX(2) + vitalW - 3 - modeX, 8, { align: "center", size: 5.5 });
   });
-  s.stat("details_hd", "HIT DICE", vitalX(3), vitalY, vitalW, 52, { size: 18 });
-  s.frame(vitalX(4), vitalY, vitalW, 52);
-  s.label("SUCCESSES", vitalX(4) + 6, vitalY + 35, { size: 3.4, color: "lines" });
-  s.label("FAILURES", vitalX(4) + 6, vitalY + 22.5, { size: 3.4, color: "lines" });
+  stat("details_hd", "HIT DICE", 3);
+  s.frame(vitalX(4), vitalY, vitalW, vitalH);
+  s.label("SUCCESSES", vitalX(4) + 6, vitalY + 27, { size: 3.4, color: "lines" });
+  s.label("FAILURES", vitalX(4) + 6, vitalY + 17, { size: 3.4, color: "lines" });
   for (let index = 1; index <= 3; index += 1) {
-    s.check(`details_death_save_success_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 33.5, 7);
-    s.check(`details_death_save_fail_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 21, 7);
+    s.check(`details_death_save_success_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 25, 7);
+    s.check(`details_death_save_fail_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 15, 7);
   }
-  s.label("DEATH SAVES", vitalX(4), vitalY + 4.5, { size: 4.6, align: "center", width: vitalW });
-  s.stat("details_passive_perception_total", "PASSIVE PERCEPTION", vitalX(5), vitalY, vitalW, 52, { size: 20 });
+  s.label("DEATH SAVES", vitalX(4), vitalY + 4.5, { size: caption, align: "center", width: vitalW });
+  stat("details_passive_perception_total", "PASSIVE PERCEPTION", 5);
   const inspirationW = 586 - vitalX(6);
-  s.frame(vitalX(6), vitalY, inspirationW, 52);
-  s.diamond(vitalX(6) + inspirationW / 2, vitalY + 32, 10, GOLD);
-  s.diamond(vitalX(6) + inspirationW / 2, vitalY + 32, 8, WHITE);
-  s.text("details_inspiration", vitalX(6) + inspirationW / 2 - 16, vitalY + 26, 32, 12, { align: "center", size: 12, box: "none" });
-  s.label("HEROIC INSPIRATION", vitalX(6), vitalY + 4.5, { size: Math.min(4.6, inspirationW / 16), align: "center", width: inspirationW });
+  s.frame(vitalX(6), vitalY, inspirationW, vitalH);
+  s.diamond(vitalX(6) + inspirationW / 2, vitalY + 25, 9, GOLD);
+  s.diamond(vitalX(6) + inspirationW / 2, vitalY + 25, 7.2, WHITE);
+  s.text("details_inspiration", vitalX(6) + inspirationW / 2 - 14, vitalY + 19, 28, 12, { align: "center", size: 11, box: "none" });
+  s.label("HEROIC INSPIRATION", vitalX(6), vitalY + 4.5, { size: Math.min(caption, (inspirationW - 8) / s.textWidth("HEROIC INSPIRATION", "caption", 1)), align: "center", width: inspirationW });
+}
+
+/**
+ * The compact top band, x 26..586 and y 650..760, the 2024 and Hybrid pages'
+ * default: the identity at the left; to its right the defences a reader
+ * checks first — armor class in a box with the armor, the shield and stealth
+ * marks and the resistances — then hit points and hit dice, over a row of
+ * compact vitals that ends with the death saves and heroic inspiration. Both
+ * halves share the band's top and bottom.
+ */
+function topBand2024(s, edition, layout) {
+  const readable = layout.readable;
+  pageChrome(s, "CHARACTER", edition);
+  const bandY = 650;
+  const bandTop = 760;
+
+  // Identity, x 26..268, each a labelled field of its own.
+  const captionSize = readable ? 5 : 4.2;
+  s.brush(26, bandY, 242, bandTop - bandY);
+  s.frame(26, bandY, 242, bandTop - bandY);
+  s.text("details_character_name", 32, 738, 168, 16, { size: 12 });
+  s.label("CHARACTER NAME", 32, 731.5, { size: captionSize });
+  s.entry("details_player", "PLAYER", 206, 739, 56, 11, { captionSize });
+  // One line, centred like the level beside it; the box is tall enough for a
+  // three-class line to wrap onto two lines rather than shrink past 5.5pt.
+  s.entry("details_class", "CLASS", 32, 714, 182, 16, { size: 7, captionSize });
+  s.entry("details_level", "LEVEL", 220, 714, 42, 16, { align: "center", size: 10, captionAlign: "center", captionSize });
+  s.entry("details_species", "SPECIES", 32, 690, 80, 10, { size: 7, captionSize });
+  s.entry("details_background", "BACKGROUND", 118, 690, 96, 10, { size: 7, captionSize });
+  s.entry("details_xp", "XP", 220, 690, 42, 10, { align: "center", size: 7, captionAlign: "center", captionSize });
+  s.entry("details_alignment", "ALIGNMENT", 32, 666, 106, 10, { size: 7, captionSize });
+  s.entry("details_deity", "DEITY", 144, 666, 118, 10, { size: 7, captionSize });
+
+  // The top row, x 274..586: armor and resistances, hit points, hit dice.
+  const rowY = 696;
+  const rowH = bandTop - rowY;
+  // Wide enough for the longest armor line ("Unarmored Defense (Barbarian)
+  // (10)") at 5.5pt.
+  const ax = 274;
+  const aw = 154;
+  s.frame(ax, rowY, aw, rowH);
+  // The shield stands over the box's left edge, its top on the frame's.
+  s.shield("details_armor_class", "ARMOR CLASS", ax, bandTop, 44, 60, { captionSize: readable ? 4.2 : 3.6 });
+  const tx = ax + 49;
+  const tw = ax + aw - 6 - tx;
+  const title = "ARMOR & RESISTANCES";
+  s.display(title, tx, bandTop - 10.5, { size: Math.min(5.6, (tw - 4) / s.textWidth(title, "display", 1)), align: "center", width: tw });
+  s.ornamentRule(tx, tx + tw, bandTop - 14);
+  s.text("details_equipped_armor", tx, bandTop - 25, tw, 9, { size: 6.5 });
+  // Other armor class sources over the resistances: three 6pt lines.
+  s.text("details_armor_resistances", tx, rowY + 11, tw, bandTop - 28 - rowY - 11, { multiline: true, size: 6, box: "none" });
+  // 5pt fits both ticks' captions in the widest caption face.
+  const tickSize = 5;
+  s.check("details_shield_equipped", tx, rowY + 4, 6);
+  s.label("SHIELD", tx + 8, rowY + 5.3, { size: tickSize });
+  const stealthX = tx + 12 + s.textWidth("SHIELD", "caption", tickSize);
+  s.check("details_armor_stealth_disadvantage", stealthX, rowY + 4, 6);
+  s.label("STEALTH DISADV.", stealthX + 8, rowY + 5.3, { size: tickSize });
+
+  const hpCaption = readable ? 4.8 : 3.8;
+  const hp = plateSection(s, "HIT POINTS", 434, rowY, 100, rowH);
+  s.text("details_hp_current", hp.x + 2, hp.y + 8, 44, 26, { align: "center", size: 20, box: "none" });
+  s.rounded(hp.x + 2, hp.y + 8, 44, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
+  s.label("CURRENT", hp.x + 2, hp.y + 1.5, { size: hpCaption, align: "center", width: 44 });
+  s.label("TEMP", hp.x + 50, hp.y + 26, { size: hpCaption, color: "lines" });
+  s.text("details_hp_temp", hp.x + 62, hp.y + 24, 26, 11, { align: "center", size: 8 });
+  s.label("MAX", hp.x + 50, hp.y + 10, { size: hpCaption, color: "lines" });
+  s.text("details_hp_max", hp.x + 62, hp.y + 8, 26, 11, { align: "center", size: 8 });
+
+  const dice = plateSection(s, "HIT DICE", 540, rowY, 46, rowH);
+  s.text("details_hd", dice.x, 725, dice.width, 18, { align: "center", size: 14, box: "none" });
+  s.label("MAX", dice.x, 719.5, { size: hpCaption, align: "center", width: dice.width });
+  s.text("details_hd_spent", dice.x + 4, 707, dice.width - 8, 10, { align: "center", size: 8 });
+  s.label("SPENT", dice.x, 699.5, { size: hpCaption, align: "center", width: dice.width });
+
+  // The vitals, x 274..586.
+  const vitalY = bandY;
+  const vitalH = 42;
+  const statCaption = readable ? 4.2 : 3.6;
+  compactStat(s, "details_proficiency_bonus", ["PROFICIENCY", "BONUS"], 274, vitalY, 40, vitalH, statCaption);
+  compactStat(s, "details_initiative", ["INITIATIVE"], 318, vitalY, 40, vitalH, statCaption);
+  s.check("details_initiative_advantage", 323, vitalY + vitalH - 10, 5.5);
+  s.label("ADV", 330, vitalY + vitalH - 9, { size: readable ? 4 : 3.2 });
+  compactStat(s, "details_passive_perception_total", ["PASSIVE", "PERCEPTION"], 362, vitalY, 40, vitalH, statCaption);
+
+  // Speed: walking large on the left, a labelled line for each other mode on the right.
+  const speedX = 406;
+  const speedW = 80;
+  s.frame(speedX, vitalY, speedW, vitalH);
+  s.text("details_speed_walking", speedX + 3, vitalY + 14, 37, 20, { align: "center", size: 16, box: "none" });
+  s.label("SPEED", speedX + 3, vitalY + 5, { size: readable ? 5 : 4.2, align: "center", width: 37 });
+  s.rule(speedX + 42, vitalY + 6, speedX + 42, vitalY + vitalH - 6, GOLD, 0.4);
+  // Each mode's line takes what its caption leaves: "35ft." at 6pt needs 16pt.
+  const modeCaption = readable ? 4 : 3.4;
+  const modeX = speedX + 46.5 + s.textWidth("CLIMB", "caption", modeCaption);
+  [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, caption], index) => {
+    const y = vitalY + 28 - index * 10.5;
+    s.label(caption, speedX + 45, y + 1.5, { size: modeCaption, color: "lines" });
+    s.text(name, modeX, y, speedX + speedW - 3 - modeX, 9, { align: "center", size: 6 });
+  });
+
+  const savesX = 490;
+  const savesW = 54;
+  s.frame(savesX, vitalY, savesW, vitalH);
+  s.label("SUCCESSES", savesX + 5, vitalY + 28, { size: 3.2, color: "lines" });
+  s.label("FAILURES", savesX + 5, vitalY + 18, { size: 3.2, color: "lines" });
+  for (let index = 1; index <= 3; index += 1) {
+    s.check(`details_death_save_success_${index}`, savesX + 27 + (index - 1) * 7.5, vitalY + 26.5, 6);
+    s.check(`details_death_save_fail_${index}`, savesX + 27 + (index - 1) * 7.5, vitalY + 16.5, 6);
+  }
+  s.label("DEATH SAVES", savesX, vitalY + 5, { size: readable ? 4.8 : 4, align: "center", width: savesW });
+
+  const inspirationX = 548;
+  const inspirationW = 586 - inspirationX;
+  s.frame(inspirationX, vitalY, inspirationW, vitalH);
+  s.diamond(inspirationX + inspirationW / 2, vitalY + 26, 9, GOLD);
+  s.diamond(inspirationX + inspirationW / 2, vitalY + 26, 7.2, WHITE);
+  s.text("details_inspiration", inspirationX + inspirationW / 2 - 14, vitalY + 20, 28, 12, { align: "center", size: 11, box: "none" });
+  const inspirationCaption = Math.min(statCaption, (inspirationW - 10) / s.textWidth("INSPIRATION", "caption", 1));
+  s.label("HEROIC", inspirationX, vitalY + 4.2 + statCaption + 0.8, { size: inspirationCaption, align: "center", width: inspirationW });
+  s.label("INSPIRATION", inspirationX, vitalY + 4.2, { size: inspirationCaption, align: "center", width: inspirationW });
+}
+
+/**
+ * The 2024 and Hybrid pages' right-hand column from x `areaX`: the species
+ * traits at the top, the features beneath, and five rows of weapons and
+ * damage cantrips along the foot. The features take every point the other
+ * two leave; split, they stay one box, and the writer heads its class,
+ * subclass and feat groups inside it.
+ */
+function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, featuresTitle) {
+  s.block(style.traits, "details_additional_notes", areaX, 557, areaW, 642 - 557);
+  const weaponsTop = 218;
+  s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 60, areaW, weaponsTop - 60);
+  columns.forEach(([caption, x]) => s.label(caption, x, weaponsTop - 24.5, { size: captionSize, color: "lines" }));
+  for (let row = 1; row <= 5; row += 1) {
+    const y = weaponsTop - 36 - (row - 1) * 21;
+    const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
+    s.text(`details_attack${row}_weapon`, nx, y, nw, 10, { size: 7 });
+    s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
+    s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
+    s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
+    // The note's top stands 1.05pt proud of the row, which levels its first
+    // line with the row's values to within half a point in every body face,
+    // whether the writer seats the first line by baseline (one size and 2pt
+    // down) or by cap height (4pt down). Overflow continues in the writer.
+    s.text(`details_attack${row}_description`, ox, y - 9.95, ow, 21, { multiline: true, size: 6, box: "none" });
+  }
+  // The attacks without a row and the user's own notes, under the last row's notes cell.
+  s.text("details_attack_description", areaX + 4, 64, areaW - 8, 22, { multiline: true, size: layout.readable ? 7 : 6, box: "none" });
+  // Split, the box's title must not repeat the writer's first heading, "Class Features".
+  s.block(layout.split ? "FEATURES" : featuresTitle, "details_features", areaX, weaponsTop + 8, areaW, 557 - 8 - weaponsTop - 8);
 }
 
 /** A compact framed stat: a large value over a one- or two-line caption. */
-function compactStat(s, name, lines, x, y, width, height) {
+function compactStat(s, name, lines, x, y, width, height, captionSize = 3.6) {
   s.frame(x, y, width, height);
   s.text(name, x + 3, y + 13, width - 6, height - 17, { align: "center", size: 16, box: "none" });
   lines.forEach((line, index) => {
-    s.label(line, x, lines.length === 1 ? y + 5 : y + 8.6 - index * 4.4, { size: 3.6, align: "center", width });
+    const size = Math.min(captionSize, (width - 7) / s.textWidth(line, "caption", 1));
+    s.label(line, x, lines.length === 1 ? y + 5 : y + 4.2 + (lines.length - 1 - index) * (captionSize + 0.8), { size, align: "center", width });
   });
 }
 
@@ -901,327 +1061,55 @@ function plateSection(s, title, x, y, width, height) {
   return s.section(title, x, y, width, height, { style: "plate", at: "top", size });
 }
 
-/**
- * The compact top row of the 2024 and Hybrid pages. The identity fills a
- * block at the left — name and player, class and level, species, background
- * and XP, alignment and deity, each a labelled field of its own. To its right
- * the numbers a fight changes run in one row in the order they change: armor
- * class (with a tick box for a shield), hit points, hit dice (maximum and
- * spent) and death saves. Beneath them the vitals are compact boxes, and the
- * speed box carries the walking speed large beside a line for each other mode.
- */
-function compactHeader2024(s, edition, layout) {
-  pageChrome(s, "CHARACTER", edition);
-
-  if (layout.readable) {
-    // Readable, the identity narrows to x 26..206 and the armor takes a tall
-    // frame right beside the AC shield.
-    s.brush(26, 640, 180, 120);
-    s.frame(26, 640, 180, 120);
-    s.text("details_character_name", 32, 738, 168, 16, { size: 12 });
-    s.label("CHARACTER NAME", 32, 731.5, { size: 4.2 });
-    s.entry("details_class", "CLASS", 32, 707, 126, 21, { multiline: true, size: 7 });
-    s.entry("details_level", "LEVEL", 164, 707, 36, 16, { align: "center", size: 10, captionAlign: "center" });
-    s.entry("details_species", "SPECIES", 32, 682, 62, 10, { size: 7 });
-    s.entry("details_background", "BACKGROUND", 100, 682, 58, 10, { size: 7 });
-    s.entry("details_xp", "XP", 164, 682, 36, 10, { align: "center", size: 7, captionAlign: "center" });
-    s.entry("details_alignment", "ALIGNMENT", 32, 658, 54, 10, { size: 7 });
-    s.entry("details_deity", "DEITY", 92, 658, 50, 10, { size: 7 });
-    s.entry("details_player", "PLAYER", 148, 658, 52, 10, { size: 7 });
-    armorBeside2024(s, 212, 640, 80, 120);
-  } else {
-    // Identity, x 26..290 across both rows.
-    s.brush(26, 640, 264, 120);
-    s.frame(26, 640, 264, 120);
-    s.text("details_character_name", 32, 738, 180, 16, { size: 12 });
-    s.label("CHARACTER NAME", 32, 731.5, { size: 4.2 });
-    s.entry("details_player", "PLAYER", 218, 739, 66, 11);
-    // Two lines for a multiclass character's classes and subclasses.
-    s.entry("details_class", "CLASS", 32, 707, 204, 21, { multiline: true, size: 7 });
-    s.entry("details_level", "LEVEL", 242, 707, 42, 16, { align: "center", size: 10, captionAlign: "center" });
-    s.entry("details_species", "SPECIES", 32, 682, 86, 10, { size: 7 });
-    s.entry("details_background", "BACKGROUND", 124, 682, 112, 10, { size: 7 });
-    s.entry("details_xp", "XP", 242, 682, 42, 10, { align: "center", size: 7, captionAlign: "center" });
-    s.entry("details_alignment", "ALIGNMENT", 32, 658, 118, 10, { size: 7 });
-    s.entry("details_deity", "DEITY", 156, 658, 128, 10, { size: 7 });
-  }
-
-  // The top row, x 296..586: armor class, hit points, hit dice, death saves.
-  const rowY = 690;
-  const rowH = 70;
-  s.shield("details_armor_class", "ARMOR CLASS", 298, 762, 48, 50);
-  const shieldW = 7 + 2 + s.textWidth("SHIELD", "caption", 5);
-  const shieldX = 296 + (52 - shieldW) / 2;
-  s.check("details_shield_equipped", shieldX, 696, 7);
-  s.label("SHIELD", shieldX + 9, 697.8, { size: 5 });
-
-  const hp = plateSection(s, "HIT POINTS", 354, rowY, 108, rowH);
-  s.text("details_hp_current", hp.x + 2, hp.y + 10, 48, 26, { align: "center", size: 20, box: "none" });
-  s.rounded(hp.x + 2, hp.y + 10, 48, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
-  s.label("CURRENT", hp.x + 2, hp.y + 3, { size: 3.8, align: "center", width: 48 });
-  s.label("TEMP", hp.x + 54, hp.y + 26, { size: 3.8, color: "lines" });
-  s.text("details_hp_temp", hp.x + 68, hp.y + 24, 30, 11, { align: "center", size: 8 });
-  s.label("MAX", hp.x + 54, hp.y + 10, { size: 3.8, color: "lines" });
-  s.text("details_hp_max", hp.x + 68, hp.y + 8, 30, 11, { align: "center", size: 8 });
-
-  const dice = plateSection(s, "HIT DICE", 468, rowY, 60, rowH);
-  s.text("details_hd", dice.x, 722, dice.width, 20, { align: "center", size: 14, box: "none" });
-  s.label("MAX", dice.x, 716.5, { size: 3.8, align: "center", width: dice.width });
-  s.text("details_hd_spent", dice.x + 6, 704, dice.width - 12, 10, { align: "center", size: 8 });
-  s.label("SPENT", dice.x, 696, { size: 3.8, align: "center", width: dice.width });
-
-  const saves = plateSection(s, "DEATH SAVES", 534, rowY, 52, rowH);
-  const checksX = 534 + (52 - 29) / 2;
-  s.label("SUCCESSES", 534, 735, { size: 3.4, color: "lines", align: "center", width: 52 });
-  s.label("FAILURES", 534, 714, { size: 3.4, color: "lines", align: "center", width: 52 });
-  for (let index = 1; index <= 3; index += 1) {
-    s.check(`details_death_save_success_${index}`, checksX + (index - 1) * 11, 725, 7);
-    s.check(`details_death_save_fail_${index}`, checksX + (index - 1) * 11, saves.y + 10, 7);
-  }
-
-  // The vitals beneath the top row, x 296..586.
-  const vitalY = 640;
-  const vitalH = 44;
-  compactStat(s, "details_proficiency_bonus", ["PROFICIENCY", "BONUS"], 296, vitalY, 44, vitalH);
-  compactStat(s, "details_initiative", ["INITIATIVE"], 346, vitalY, 44, vitalH);
-  s.check("details_initiative_advantage", 352, vitalY + vitalH - 10, 5.5);
-  s.label("ADV", 359, vitalY + vitalH - 9, { size: 3.2 });
-  compactStat(s, "details_passive_perception_total", ["PASSIVE", "PERCEPTION"], 396, vitalY, 44, vitalH);
-
-  // Speed: walking large on the left, a labelled line for each other mode on the right.
-  const speedX = 446;
-  const speedW = 92;
-  s.frame(speedX, vitalY, speedW, vitalH);
-  s.text("details_speed_walking", speedX + 3, vitalY + 15, 44, 22, { align: "center", size: 16, box: "none" });
-  s.label("SPEED", speedX, vitalY + 5, { size: 4.2, align: "center", width: 50 });
-  s.rule(speedX + 51, vitalY + 6, speedX + 51, vitalY + vitalH - 6, GOLD, 0.4);
-  [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, caption], index) => {
-    const y = vitalY + 29 - index * 11;
-    s.label(caption, speedX + 55, y + 1.5, { size: 3.4, color: "lines" });
-    s.text(name, speedX + 69, y, 19, 9, { align: "center", size: 6 });
-  });
-
-  const inspirationX = 544;
-  const inspirationW = 586 - inspirationX;
-  s.frame(inspirationX, vitalY, inspirationW, vitalH);
-  s.diamond(inspirationX + inspirationW / 2, vitalY + 27, 9, GOLD);
-  s.diamond(inspirationX + inspirationW / 2, vitalY + 27, 7.2, WHITE);
-  s.text("details_inspiration", inspirationX + inspirationW / 2 - 14, vitalY + 21, 28, 12, { align: "center", size: 11, box: "none" });
-  s.label("HEROIC", inspirationX, vitalY + 8.6, { size: 3.6, align: "center", width: inspirationW });
-  s.label("INSPIRATION", inspirationX, vitalY + 4.2, { size: 3.6, align: "center", width: inspirationW });
-}
-
-/**
- * The 2024 and Hybrid pages' feature boxes, split by origin, filling the
- * right-hand area between the weapons table and the traits. The writer flows
- * class, subclass and feat rows into their own boxes when the template has a
- * subclass box.
- */
-function splitFeatureBlocks(s, areaX, areaW, area) {
-  if (area === undefined) {
-    s.block("CLASS FEATURES", "details_features", areaX, 356, areaW, 136);
-    s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, 272, areaW, 76);
-    s.block("FEATS", "details_feats", areaX, 200, areaW, 64);
-    return;
-  }
-  // Between `area.bottom` and `area.top`, in about the same proportions.
-  const boxes = area.top - area.bottom - 16;
-  const classH = Math.round(boxes * 0.5);
-  const subclassH = Math.round(boxes * 0.27);
-  const featsH = boxes - classH - subclassH;
-  s.block("CLASS FEATURES", "details_features", areaX, area.top - classH, areaW, classH);
-  s.block("SUBCLASS FEATURES", "details_subclass_features", areaX, area.bottom + featsH + 8, areaW, subclassH);
-  s.block("FEATS", "details_feats", areaX, area.bottom, areaW, featsH);
-}
-
-/**
- * The readable 2024 ability panel, after D&D Beyond's: the modifier is the
- * one large number, in the panel's main shape, with the score in a small
- * badge over its lower edge. The header is shorter than the plain panel's,
- * and the rows sit closer to the frame.
- */
-function abilityPanelReadable2024(s, key, caption, x, y, width, height, extra) {
-  s.frame(x, y, width, height, { radius: 6 });
-  const top = y + height;
-  s.display(caption, x, top - 10.5, { size: 6, align: "center", width });
-  s.ornamentRule(x + 8, x + width - 8, top - 13.5);
-  const cx = x + width / 2;
-  const shapeW = 50;
-  const shapeTop = top - 16;
-  const shapeBottom = top - 40;
-  s.rounded(cx - shapeW / 2, shapeBottom, shapeW, shapeTop - shapeBottom, 5, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
-  s.rounded(cx - shapeW / 2 + 2, shapeBottom + 2, shapeW - 4, shapeTop - shapeBottom - 4, 3.5, { stroke: GOLD, lineWidth: 0.35 });
-  s.text(`details_${key}_modifier`, cx - shapeW / 2, top - 35, shapeW, 18, { align: "center", size: 16, box: "none" });
-  const badgeW = 26;
-  const badgeH = 12;
-  s.rounded(cx - badgeW / 2, shapeBottom - 6, badgeW, badgeH, badgeH / 2, { fill: FILL, stroke: ACCENT, lineWidth: 0.8 });
-  s.text(`details_${key}_score`, cx - badgeW / 2, shapeBottom - 5, badgeW, badgeH - 2, { align: "center", size: 8, box: "none" });
-  let rowY = top - 59;
-  s.rule(x + 5, rowY + 9, x + width - 5, rowY + 9, RULE, 0.4);
-  s.check(`details_${key}_save_proficiency`, x + 5, rowY - 1, 6.5);
-  s.text(`details_${key}_save_total`, x + 15, rowY - 2, 22, 9, { align: "center", size: 8 });
-  s.label("SAVING THROW", x + 41, rowY, { size: 4.6 });
-  rowY -= 11;
-  s.rule(x + 5, rowY + 9, x + width - 5, rowY + 9, RULE, 0.4);
-  for (const [skill, name] of SKILLS.filter(([, , ability]) => ability === key)) {
-    s.check(`details_${skill}_proficiency`, x + 5, rowY - 1, 6);
-    s.check(`details_${skill}_expertise`, x + 12.5, rowY - 1, 6);
-    s.text(`details_${skill}_total`, x + 20, rowY - 2, 20, 9, { align: "center", size: 7.5 });
-    s.note(name, x + 43, rowY, { size: Math.min(6.4, (width - 47) / s.textWidth(name, "captionLight", 1)) });
-    rowY -= 11;
-  }
-  if (extra) extra(rowY, x, width);
-}
-
-/**
- * The readable right-hand area shared by the 2024 and Hybrid pages: a taller
- * weapons panel whose free-text note prints at 7pt, taller feature boxes, and
- * along the foot proficiencies (where the species traits were) beside senses
- * and a shorter encounter notes box.
- */
-function readableRightArea2024(s, layout, areaX, areaW, featuresTitle, columns, captionSize) {
-  s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 486, areaW, 146);
-  columns.forEach(([caption, x]) => s.label(caption, x, 605, { size: captionSize, color: "lines" }));
-  for (let row = 1; row <= 4; row += 1) {
-    const y = 594 - (row - 1) * 21;
-    const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
-    s.text(`details_attack${row}_weapon`, nx, y, nw, 10, { size: 7 });
-    s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
-    s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
-    s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
-    s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
-  }
-  // Three 7pt lines of the attacks without a row and the user's own notes.
-  s.text("details_attack_description", areaX + 4, 490, areaW - 8, 30, { multiline: true, size: 7, box: "none" });
-  const area = { bottom: 172, top: 478 };
-  if (layout.split) splitFeatureBlocks(s, areaX, areaW, area);
-  else s.block(featuresTitle, "details_features", areaX, area.bottom, areaW, area.top - area.bottom);
-  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", areaX, 60, 436 - areaX, 104);
-  const inner = s.section("SENSES & RESISTANCES", 444, 108, 142, 56, { size: 5.6 });
-  s.label("VISION", inner.x + 2, inner.y + inner.height - 8, { size: 4.6, color: "lines" });
-  s.text("details_vision", inner.x + 24, inner.y + inner.height - 10, inner.width - 26, 9, { size: 6.5 });
-  s.text("details_resistances", inner.x, inner.y, inner.width, inner.height - 12, { multiline: true, size: 6, box: "none" });
-  s.block("ENCOUNTER NOTES", "details_encounter_box", 444, 60, 142, 40, { size: 6 });
-}
-
-/** The readable pages' conditions box, beside the abilities: conditions over the exhaustion marks. */
-function readableConditions2024(s, x, y, width, height) {
+/** The conditions box: conditions over the exhaustion marks. */
+function conditions2024(s, layout, x, y, width, height) {
   const title = "CONDITIONS & EXHAUSTION";
   const inner = s.section(title, x, y, width, height, { size: Math.min(5.6, (width - 14) / s.textWidth(title, "display", 1)) });
   const pitch = Math.min(16, (inner.width - 6) / 6);
-  s.label("EXHAUSTION", inner.x + 2, inner.y + 12, { size: 4.6, color: "lines" });
+  s.label("EXHAUSTION", inner.x + 2, inner.y + 12, { size: layout.readable ? 5.5 : 4.6, color: "lines" });
   for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, inner.x + 2 + (i - 1) * pitch, inner.y + 2, 7, { marker: "square" });
   s.text("details_conditions", inner.x, inner.y + 19, inner.width, inner.height - 19, { multiline: true, size: 6, box: "none" });
 }
 
-/**
- * The readable 2024 page's body. The tighter ability panels leave room under
- * the shorter column for conditions and exhaustion, beside the scores, and
- * under both columns for the species traits; the right-hand area is
- * `readableRightArea2024`'s.
- */
-function readableBody2024(s, style, layout) {
+async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
+  const style = EDITION[edition];
+  const readable = layout.readable;
+  const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
+  characterHeader2024(s, edition, style, layout);
+
+  // Two columns of ability panels on a grey backing panel, conditions and
+  // exhaustion under the shorter one.
   const panelW = 114;
   const heights = { str: 79, dex: 101, con: 89, int: 123, wis: 123, cha: 112 };
+  const columnTop = 642;
   const columnDepth = Math.max(heights.str + heights.dex + heights.con, heights.int + heights.wis + heights.cha) + 16;
-  s.panel(22, 632 - columnDepth - 4, 244, columnDepth + 8);
-  let top = 632;
+  s.panel(22, columnTop - columnDepth - 4, 244, columnDepth + 8);
+  let top = columnTop;
   for (const key of ["str", "dex", "con"]) {
-    abilityPanelReadable2024(s, key, ABILITY_NAME[key].toUpperCase(), 26, top - heights[key], panelW, heights[key], key === "con" ? (rowY, x, width) => {
-      s.label("SAVING THROW NOTES", x + 5, rowY + 1, { size: 4.2, color: "lines" });
+    abilityPanel2024(s, layout, key, ABILITY_NAME[key].toUpperCase(), 26, top - heights[key], panelW, heights[key], key === "con" ? (rowY, x, width) => {
+      s.label("SAVING THROW NOTES", x + 5, rowY + 1, { size: readable ? 5 : 4.2, color: "lines" });
       s.text("details_saving_throws", x + 5, rowY - 7, width - 10, 9, { size: 6, box: "none" });
     } : undefined);
     top -= heights[key] + 8;
   }
   const leftBottom = top + 8;
-  top = 632;
+  top = columnTop;
   for (const key of ["int", "wis", "cha"]) {
-    abilityPanelReadable2024(s, key, ABILITY_NAME[key].toUpperCase(), 148, top - heights[key], panelW, heights[key]);
+    abilityPanel2024(s, layout, key, ABILITY_NAME[key].toUpperCase(), 148, top - heights[key], panelW, heights[key]);
     top -= heights[key] + 8;
   }
   const rightBottom = top + 8;
+  conditions2024(s, layout, 26, rightBottom, panelW, leftBottom - 8 - rightBottom);
 
-  readableConditions2024(s, 26, rightBottom, panelW, leftBottom - 8 - rightBottom);
-  s.block(style.traits, "details_additional_notes", 26, 60, 236, rightBottom - 8 - 60);
-  readableRightArea2024(s, layout, 270, 316, "CLASS FEATURES",
-    [["NAME", 274, 68], ["RANGE", 344, 28], ["ATK / DC", 374, 34], ["DAMAGE & TYPE", 410, 64], ["NOTES", 476, 106]], 3.8);
-}
+  // Under both columns: training and languages, then senses.
+  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 144, 236, rightBottom - 8 - 144, { padTop: 4 });
+  const inner = s.section("SENSES", 26, 60, 236, 76, { size: 5.6 });
+  s.label("VISION", inner.x + 3, inner.y + inner.height - 8, { size: readable ? 5.5 : 4.6, color: "lines" });
+  s.text("details_vision", inner.x + 30, inner.y + inner.height - 10, inner.width - 33, 10, { size: 7 });
 
-async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
-  const style = EDITION[edition];
-  const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
-  characterHeader2024(s, edition, style, layout);
-  if (layout.readable) {
-    readableBody2024(s, style, layout);
-    return finish(doc, s);
-  }
-
-  // Two columns of ability panels, each on a grey backing panel.
-  const panelW = 114;
-  const heights = { str: 88, dex: 110, con: 98, int: 132, wis: 132, cha: 121 };
-  const columnDepth = Math.max(heights.str + heights.dex + heights.con, heights.int + heights.wis + heights.cha) + 16;
-  s.panel(22, 632 - columnDepth - 4, 244, columnDepth + 8);
-  let top = 632;
-  for (const key of ["str", "dex", "con"]) {
-    abilityPanel2024(s, key, ABILITY_NAME[key].toUpperCase(), 26, top - heights[key], panelW, heights[key], key === "con" ? (rowY, x, width) => {
-      s.label("SAVING THROW NOTES", x + 8, rowY + 1, { size: 3.6, color: "lines" });
-      s.text("details_saving_throws", x + 8, rowY - 7, width - 16, 9, { size: 5.5, box: "none" });
-    } : undefined);
-    top -= heights[key] + 8;
-  }
-  const leftBottom = top + 8;
-  top = 632;
-  for (const key of ["int", "wis", "cha"]) {
-    abilityPanel2024(s, key, ABILITY_NAME[key].toUpperCase(), 148, top - heights[key], panelW, heights[key]);
-    top -= heights[key] + 8;
-  }
-  const rightBottom = top + 8;
-
-  // Beneath the shorter column: senses and resistances.
-  let inner = s.section("SENSES & RESISTANCES", 26, rightBottom, panelW, leftBottom - 8 - rightBottom, { size: 5.2 });
-  s.text("details_vision", inner.x, inner.y + inner.height - 10, inner.width, 9, { size: 6 });
-  s.text("details_resistances", inner.x, inner.y, inner.width, inner.height - 13, { multiline: true, size: 5.5, box: "none" });
-
-  // Both columns: armor, then equipment training, proficiencies and languages.
-  const armorTop = rightBottom - 8;
-  inner = s.section("ARMOR", 26, armorTop - 46, 236, 46, { size: 5.6 });
-  s.text("details_equipped_armor", inner.x + 3, inner.y + 14, 91, 10, { size: 6.5 });
-  s.text("details_armor_conditional", inner.x + 100, inner.y + 2, 124, 27, { size: 6, multiline: true, box: "none" });
-  s.check("details_armor_stealth_disadvantage", inner.x + 3, inner.y + 3, 6);
-  // The compact top row's page sets the stealth caption at a readable 5pt.
-  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 4, { size: layout.top ? 5 : 3.4 });
-  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 60, 236, armorTop - 46 - 8 - 60);
-
-  // The right-hand area.
-  const areaX = 270;
-  const areaW = 316;
-  inner = s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 500, areaW, 132);
-  // Reclaimed ability-panel width gives attack notes another 20pt.
-  const columns = [["NAME", 274, 68], ["RANGE", 344, 28], ["ATK / DC", 374, 34], ["DAMAGE & TYPE", 410, 64], ["NOTES", 476, 106]];
-  columns.forEach(([caption, x]) => s.label(caption, x, 605, { size: 3.8, color: "lines" }));
-  for (let row = 1; row <= 4; row += 1) {
-    const y = 594 - (row - 1) * 21;
-    const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
-    s.text(`details_attack${row}_weapon`, nx, y, nw, 10, { size: 7 });
-    s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
-    s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
-    s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
-    // Match the first baseline to the adjacent values; overflow continues in the writer.
-    s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
-  }
-  // The free-text note under the rows is prose, so it wraps too, filling what
-  // is left between the last row's notes cell and the foot of the panel. The
-  // rows took 5pt of it to spread over the band the fourth row used to leave
-  // blank; 16pt still holds two lines of the user's own attack notes.
-  s.text("details_attack_description", 274, 504, 308, 16, { multiline: true, size: 6, box: "none" });
-  if (layout.split) splitFeatureBlocks(s, areaX, areaW);
-  else s.block("CLASS FEATURES", "details_features", areaX, 200, areaW, 292);
-  s.block(style.traits, "details_additional_notes", areaX, 60, 166, 132);
-  s.section("CONDITIONS & EXHAUSTION", 444, 132, 142, 60);
-  s.text("details_conditions", 448, 155, 134, 17, { multiline: true, size: 5.5, box: "none" });
-  s.label("EXHAUSTION", 448, 144, { size: 3.4, color: "lines" });
-  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 490 + (i - 1) * 14, 142, 7, { marker: "square" });
-  s.block("ENCOUNTER NOTES", "details_encounter_box", 444, 60, 142, 64, { size: 5.5 });
+  rightColumn2024(s, style, layout, 270, 316,
+    // RANGE holds a ranged weapon's ammunition too ("30/120; Bullet").
+    [["NAME", 274, 74], ["RANGE", 350, 40], ["ATK / DC", 392, 34], ["DAMAGE & TYPE", 428, 64], ["NOTES", 494, 88]], readable ? 5 : 3.8, "CLASS FEATURES");
   return finish(doc, s);
 }
 
@@ -1229,42 +1117,52 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
 // Character page, 2024 Hybrid arrangement: the 2024 page with the classic
 // ability column — six shields, then saving throws and an alphabetical skills
 // list — in place of the per-ability panels. The width that frees widens the
-// weapons table and the features, which split into class, subclass and feat
-// boxes.
+// species traits, features and weapons; the senses join the proficiencies.
 // ---------------------------------------------------------------------------
 
-/** The Hybrid page's classic ability column: six shields, then saving throws over the skills list. */
-function hybridAbilityColumns(s) {
+/**
+ * The Hybrid page's classic ability column: six shields, each with its
+ * modifier large and the score in the roundel, then saving throws over the
+ * skills list, from y 642 down to 268. Every row's contents centre between
+ * its rule and the one above.
+ */
+function hybridAbilityColumns(s, layout) {
   // Column A: the six ability shields on a grey backing panel.
-  const columnTop = 632;
-  const columnBottom = 300;
-  const shieldH = 48;
-  const shieldPitch = (columnTop - 2 - shieldH - columnBottom) / 5;
+  const columnTop = 642;
+  const columnBottom = 268;
+  const shieldH = 56;
+  const shieldPitch = (columnTop - 2 - shieldH - columnBottom - 4) / 5;
   s.panel(23, columnBottom - 6, 68, columnTop - columnBottom + 8);
   ABILITIES.forEach(([key, caption], index) => {
     // The brow takes the name at up to 5.6pt, the 2024 panels' size.
     const captionSize = Math.min(5.6, 48 / MEASURE.display.widthOfTextAtSize(caption, 1));
-    s.abilityShield("details", key, caption, 57, columnTop - 2 - index * shieldPitch, { width: 58, height: shieldH, captionSize });
+    s.abilityShield("details", key, caption, 57, columnTop - 2 - index * shieldPitch, { width: 58, height: shieldH, captionSize, large: "modifier" });
   });
 
   // Column B: saving throws, with their notes, over the skills list.
   const bx = 96;
   const bw = 126;
-  const saves = s.section("SAVING THROWS", bx, 516, bw, columnTop - 516);
+  const savesBottom = 518;
+  const saves = s.section("SAVING THROWS", bx, savesBottom, bw, columnTop - savesBottom);
+  const savePitch = 11.5;
   ABILITIES.forEach(([key], index) => {
-    const y = 601 - index * 11.5;
+    const y = columnTop - 32 - index * savePitch;
     s.check(`details_${key}_save_proficiency`, bx + 6, y, 6.5);
-    s.text(`details_${key}_save_total`, bx + 16, y - 1, 20, 9, { align: "center", size: 8 });
+    s.text(`details_${key}_save_total`, bx + 16, y - 1, 20, 9, { align: "center", size: 8, box: "none" });
+    s.rule(bx + 16, y + 3.5 - savePitch / 2, bx + 36, y + 3.5 - savePitch / 2, RULE, 0.5);
     s.note(ABILITY_NAME[key], bx + 40, y + 1, { size: 6.5 });
   });
-  s.label("SAVING THROW NOTES", saves.x + 2, 533, { size: 4.6, color: "lines" });
+  s.label("SAVING THROW NOTES", saves.x + 2, savesBottom + 17, { size: layout.readable ? 5.5 : 4.6, color: "lines" });
   s.text("details_saving_throws", saves.x + 2, saves.y, saves.width - 4, 12, { multiline: true, size: 6, box: "none" });
-  s.section("SKILLS", bx, columnBottom, bw, 510 - columnBottom);
+  const skillsTop = savesBottom - 6;
+  s.section("SKILLS", bx, columnBottom, bw, skillsTop - columnBottom);
+  const skillPitch = (skillsTop - 28 - (columnBottom + 9)) / (SKILLS.length - 1);
   SKILLS.forEach(([key, caption, ability], index) => {
-    const y = 484 - index * 10.2;
+    const y = skillsTop - 28 - index * skillPitch;
     s.check(`details_${key}_proficiency`, bx + 5, y, 6);
     s.check(`details_${key}_expertise`, bx + 12.5, y, 6);
-    s.text(`details_${key}_total`, bx + 20, y - 1.5, 18, 9, { align: "center", size: 7 });
+    s.text(`details_${key}_total`, bx + 20, y - 1.5, 18, 9, { align: "center", size: 7, box: "none" });
+    s.rule(bx + 20, y + 3 - skillPitch / 2, bx + 38, y + 3 - skillPitch / 2, RULE, 0.5);
     s.note(caption, bx + 41, y + 0.5, { size: 6.2 });
     s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, bx + 41 + s.textWidth(caption, "captionLight", 6.2) + 2, y + 0.5, { size: 5, color: "lines" });
   });
@@ -1272,59 +1170,22 @@ function hybridAbilityColumns(s) {
 
 async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   const style = EDITION[edition];
+  const readable = layout.readable;
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
   characterHeader2024(s, edition, style, layout);
-  if (layout.readable) {
-    hybridAbilityColumns(s);
-    // Beneath both columns: conditions beside the abilities, then the species traits.
-    readableConditions2024(s, 26, 228, 196, 64);
-    s.block(style.traits, "details_additional_notes", 26, 60, 196, 160);
-    readableRightArea2024(s, layout, 230, 356, "FEATURES",
-      [["NAME", 234, 82], ["RANGE", 318, 32], ["ATK / DC", 352, 36], ["DAMAGE & TYPE", 390, 72], ["NOTES", 464, 118]], 5);
-    return finish(doc, s);
-  }
+  hybridAbilityColumns(s, layout);
 
-  hybridAbilityColumns(s);
-
-  // Beneath both columns: senses, armor, then training and languages.
+  // Beneath both columns: training, languages and senses, then conditions.
   const lw = 196;
-  let inner = s.section("SENSES & RESISTANCES", 26, 228, lw, 64);
-  s.label("VISION", inner.x + 2, inner.y + inner.height - 8, { size: 4.6, color: "lines" });
-  s.text("details_vision", inner.x + 26, inner.y + inner.height - 10, inner.width - 30, 10, { size: 7 });
-  s.text("details_resistances", inner.x + 2, inner.y, inner.width - 4, inner.height - 14, { multiline: true, size: 6, box: "none" });
-  inner = s.section("ARMOR", 26, 172, lw, 50);
-  s.text("details_equipped_armor", inner.x + 3, inner.y + 15, 86, 10, { size: 7 });
-  s.check("details_armor_stealth_disadvantage", inner.x + 3, inner.y + 2, 6);
-  // The compact top row's page sets the stealth caption at a readable 5pt.
-  s.label("STEALTH DISADV.", inner.x + 12, inner.y + 3, { size: layout.top ? 5 : 4.6 });
-  s.text("details_armor_conditional", inner.x + 94, inner.y + 1, inner.width - 97, inner.height - 1, { multiline: true, size: 6, box: "none" });
-  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 60, lw, 104);
+  const title = "PROFICIENCIES, TRAINING, LANGUAGES & SENSES";
+  const inner = s.section(title, 26, 144, lw, 116, { size: Math.min(6.2, (lw - 14) / s.textWidth(title, "display", 1)) });
+  s.text("details_proficiencies_languages", inner.x, inner.y + 17, inner.width, inner.height - 21, { multiline: true, size: 6, box: "none" });
+  s.label("SENSES", inner.x + 3, inner.y + 6, { size: readable ? 5.5 : 4.6, color: "lines" });
+  s.text("details_vision", inner.x + 30, inner.y + 4, inner.width - 33, 10, { size: 7 });
+  conditions2024(s, layout, 26, 60, lw, 76);
 
-  // The right-hand area, 40pt wider than the 2024 page's.
-  const areaX = 230;
-  const areaW = 356;
-  s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 500, areaW, 132);
-  const columns = [["NAME", 234, 82], ["RANGE", 318, 32], ["ATK / DC", 352, 36], ["DAMAGE & TYPE", 390, 72], ["NOTES", 464, 118]];
-  columns.forEach(([caption, x]) => s.label(caption, x, 605, { size: 5, color: "lines" }));
-  for (let row = 1; row <= 4; row += 1) {
-    const y = 594 - (row - 1) * 21;
-    const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
-    s.text(`details_attack${row}_weapon`, nx, y, nw, 10, { size: 7 });
-    s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
-    s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
-    s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
-    s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
-  }
-  s.text("details_attack_description", 234, 504, 348, 16, { multiline: true, size: 6, box: "none" });
-  // Unsplit, one box holds every feature across the three boxes' area.
-  if (layout.split) splitFeatureBlocks(s, areaX, areaW);
-  else s.block("FEATURES", "details_features", areaX, 200, areaW, 292);
-  s.block(style.traits, "details_additional_notes", areaX, 60, 206, 132);
-  s.section("CONDITIONS & EXHAUSTION", 444, 132, 142, 60);
-  s.text("details_conditions", 448, 155, 134, 17, { multiline: true, size: 6, box: "none" });
-  s.label("EXHAUSTION", 448, 144, { size: 4.6, color: "lines" });
-  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 494 + (i - 1) * 14, 142, 7, { marker: "square" });
-  s.block("ENCOUNTER NOTES", "details_encounter_box", 444, 60, 142, 64, { size: 6 });
+  rightColumn2024(s, style, layout, 230, 356,
+    [["NAME", 234, 82], ["RANGE", 318, 40], ["ATK / DC", 360, 36], ["DAMAGE & TYPE", 398, 72], ["NOTES", 472, 110]], readable ? 5.5 : 5, "FEATURES");
   return finish(doc, s);
 }
 

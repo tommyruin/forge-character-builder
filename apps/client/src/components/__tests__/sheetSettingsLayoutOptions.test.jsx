@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   host.remove();
-  sheetLayoutOptionsSettingStore.set({ split: null, top: false, readable: false });
+  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false });
   sheetTemplateSettingStore.set('2014');
 });
 
@@ -80,12 +80,18 @@ describe('sheet settings layout options', () => {
     expect(topSwitch().checked).toBe(true);
     await act(async () => layoutButton('2024').click());
     expect(topSwitch().checked).toBe(true);
-    expect(host.textContent).toContain('Armor class, hit points, hit dice and death saves in one row');
+    expect(host.textContent).toContain('Armor class in one box with the armor and resistances');
     // The split choice is its own.
     expect(sheetLayoutOptionsSettingStore.getSnapshot().split).toBeNull();
     await act(async () => topSwitch().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBe(false);
-    // Top is off by default everywhere, so there is no layout default to return to.
+    expect(topSwitch().checked).toBe(false);
+    // The 2024 layouts print the compact top row by default, which a reset returns to.
+    await act(async () => resetButton().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBeNull();
+    expect(topSwitch().checked).toBe(true);
+    await act(async () => layoutButton('2014').click());
+    expect(topSwitch().checked).toBe(false);
     expect(resetButton()).toBeUndefined();
   });
 
@@ -99,10 +105,10 @@ describe('sheet settings layout options', () => {
     expect(readableSwitch().checked).toBe(true);
     await act(async () => layoutButton('2024 Hybrid').click());
     expect(readableSwitch().checked).toBe(true);
-    expect(host.textContent).toContain('Armor beside armor class');
+    expect(host.textContent).toContain('Larger captions and attack notes');
     // The other switches are their own.
     expect(sheetLayoutOptionsSettingStore.getSnapshot().split).toBeNull();
-    expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBe(false);
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().top).toBeNull();
     await act(async () => readableSwitch().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().readable).toBe(false);
     expect(resetButton()).toBeUndefined();

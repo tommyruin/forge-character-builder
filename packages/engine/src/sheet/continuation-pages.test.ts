@@ -161,7 +161,7 @@ describe("text placed in template boxes", () => {
   }, 60_000);
 
   it("never shrinks a one-line value below the readable floor: it is cut with an ellipsis and printed in full", async () => {
-    const build = "Level 20 Mountain Dwarf Druid, Circle of the Stars (7) / Warlock, The Genie (7) / Cleric, Unity Domain (6)";
+    const build = "Level 20 Mountain Dwarf Druid, Circle of the Stars (5) / Warlock, The Genie (4) / Cleric, Unity Domain (4) / Fighter, Psi Warrior (4) / Rogue, Arcane Trickster (3)";
     const written = await render({ page: 1, templateKind: "details", sections: [] }, { details_build: build });
     const shown = within(written.pages[0]!, (await rects("2014"))("details_build"));
     expect(shown).toHaveLength(1);

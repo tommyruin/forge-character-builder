@@ -154,14 +154,16 @@ describe("character sheet PDF writer", () => {
     expect(text.join(" ").replace(/\s+/g, " ")).toBe(tokens.join(" "));
   });
 
-  it.each(["spectral", "helvetica", "alegreyaSans"] as const)("fits both armor contributions in the 2024 strip using %s", async (body) => {
-    const bundle = localTemplateBundle("2024", { ...DEFAULT_SHEET_FONTS, body });
+  // The 2024 armor box lists the other armor class sources over the
+  // resistances, beside the AC on either top band.
+  it.each((["spectral", "helvetica", "alegreyaSans"] as const).flatMap((body) => [{ body, top: true }, { body, top: false }]))("fits both armor contributions in the 2024 armor box using $body, top $top", async ({ body, top }) => {
+    const bundle = localTemplateBundle("2024", { ...DEFAULT_SHEET_FONTS, body }, { top });
     const form = (await PDFDocument.load(bundle.details)).getForm();
-    const field = form.getTextField("details_armor_conditional");
+    const field = form.getTextField("details_armor_resistances");
     expect(field.isMultiline()).toBe(true);
     const rect = field.acroField.getWidgets()[0]!.getRectangle();
     const model = { characterId: "Armor", mode: "lite" as const, pageCount: 1,
-      formValues: { details_armor_conditional: "Ring of Protection +1\nCloak of Protection +1" },
+      formValues: { details_armor_resistances: "Ring of Protection +1\nCloak of Protection +1" },
       pages: [{ page: 1, templateKind: "details" as const, sections: [] }] };
     const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, bundle)) }).promise;
     const content = await (await doc.getPage(1)).getTextContent();
@@ -804,13 +806,14 @@ describe("character sheet PDF writer", () => {
       mode: "full" as const,
       pageCount: 1,
       pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
-      formValues: { details_resistances: value },
+      // The 2024 pages print the resistances in the armor box, under any other AC sources.
+      formValues: { details_resistances: value, details_armor_resistances: value },
     };
 
     for (const ruleset of ["2014", "2024"] as const) {
       const bundle = localTemplateBundle(ruleset);
       const source = await PDFDocument.load(bundle.details);
-      const rect = source.getForm().getTextField("details_resistances").acroField
+      const rect = source.getForm().getTextField(ruleset === "2014" ? "details_resistances" : "details_armor_resistances").acroField
         .getWidgets()[0]!.getRectangle();
 
       const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
@@ -847,14 +850,14 @@ describe("character sheet PDF writer", () => {
       mode: "full" as const,
       pageCount: 1,
       pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
-      formValues: { details_resistances: value },
+      formValues: { details_resistances: value, details_armor_resistances: value },
     };
 
     for (const ruleset of ["2014", "2024"] as const) {
       const bundle = localTemplateBundle(ruleset);
       // The template's own widget rectangle is the authority for the box.
       const source = await PDFDocument.load(bundle.details);
-      const rect = source.getForm().getTextField("details_resistances").acroField
+      const rect = source.getForm().getTextField(ruleset === "2014" ? "details_resistances" : "details_armor_resistances").acroField
         .getWidgets()[0]!.getRectangle();
 
       const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
@@ -973,7 +976,8 @@ describe("character sheet PDF writer", () => {
     // over the row's full pitch.
     for (let row = 1; row <= 4; row += 1) {
       const rect = rectOf(`details_attack${row}_description`);
-      expect({ width: rect.width, height: rect.height }, `row ${row} cell`).toEqual({ width: 106, height: 21 });
+      expect(rect.width, `row ${row} cell width`).toBe(88);
+      expect(rect.height, `row ${row} cell height`).toBeCloseTo(21, 5);
     }
     // A note's lines are the drawn items inside its own cell; picking them by
     // text alone would catch a weapon name that reads as part of a note.
@@ -1008,16 +1012,15 @@ describe("character sheet PDF writer", () => {
     expect(Math.abs(baselineOf(short) - baselineOf("1d8+2 Piercing"))).toBeLessThanOrEqual(0.6);
   }, 120_000);
 
-  // The reported defect behind the notes cell's 0.9pt lift: the note read as
+  // The reported defect behind the notes cell's lift: the note read as
   // sitting under the rest of its row. The writer places the two kinds of line
   // by different rules — a single-line value is centred on its box by cap
-  // height, a wrapped cell's first baseline is a fixed `top - 2 - size` inset —
-  // so sharing the row's top left the 6pt note half a point under the 7pt
-  // values' baseline and more than a point under their cap top. The cell's top
-  // is now 604.9 rather than 604, which is the one number that holds both
-  // errors inside half a point for every body face: the value baseline moves
-  // with the face's cap height and the note's does not, so the two cannot be
-  // made to coincide, only balanced.
+  // height, a wrapped cell's first line is inset from the box's top — so
+  // sharing the row's top left the 6pt note under the 7pt values. The cell's
+  // top stands 1.05pt proud of the row, which holds the baseline and cap-top
+  // errors inside 0.6pt for every body face whether the first line is inset
+  // by `top - 2 - size` or by a cap height 4pt under the top: the value
+  // baseline moves with the face's cap height, so the two can only be balanced.
   it("sets a 2024 weapon note's first line level with its row in every body face", async () => {
     const model = {
       characterId: "Level",
@@ -1181,6 +1184,8 @@ describe("character sheet PDF writer", () => {
     expect(values["details_equipped_armor"]).toMatch(/^Unarmored \(\d+\)$/);
     // The staff's +2 AC lists beneath the shield box with its contribution.
     expect(values["details_armor_conditional"]).toContain("Staff of Power (2)");
+    // The 2024 armor box lists it over the resistances.
+    expect(values["details_armor_resistances"]?.split("\n")[0]).toBe(values["details_armor_conditional"]?.split("\n")[0]);
     // Attunement alone puts the item's description in the magic-items panel.
     expect(values["equipment_page_magic_items"]).toContain("Staff of Power.");
     expect(values["equipment_page_magic_items"]).toContain("20 charges");

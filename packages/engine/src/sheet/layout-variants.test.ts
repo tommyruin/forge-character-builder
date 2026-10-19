@@ -38,9 +38,10 @@ const BASE = SHEET_TEMPLATE_CONTRACT.files.details;
 describe("sheet layout flags", () => {
   it("resolves each switch to the set's own default unless set on or off", () => {
     expect(SHEET_LAYOUT_DEFAULTS["2014"]).toEqual({ top: false, split: false, readable: false });
-    expect(SHEET_LAYOUT_DEFAULTS["2024"]).toEqual({ top: false, split: false, readable: false });
+    // The 2024 pages' own top row is the compact one.
+    expect(SHEET_LAYOUT_DEFAULTS["2024"]).toEqual({ top: true, split: false, readable: false });
     // The Hybrid page has always split its features by origin.
-    expect(SHEET_LAYOUT_DEFAULTS["2024-hybrid"]).toEqual({ top: false, split: true, readable: false });
+    expect(SHEET_LAYOUT_DEFAULTS["2024-hybrid"]).toEqual({ top: true, split: true, readable: false });
     for (const set of SHEET_TEMPLATE_SETS) {
       for (const request of [undefined, null, {}, { split: null }, { split: "yes" }, { split: 1 }, "split"]) {
         expect(resolveSheetLayout(set, request), `${set} ${JSON.stringify(request)}`).toEqual(SHEET_LAYOUT_DEFAULTS[set]);
@@ -61,7 +62,7 @@ describe("sheet layout flags", () => {
     // Flags join in the order top, split, readable whatever order they were set in.
     const every = ["top", "split", "readable"] as const;
     expect(sheetDetailsFile("2014", { readable: true, split: true, top: true }, every)).toBe("details~top.split.readable.pdf");
-    expect(sheetDetailsFile("2024-hybrid", { readable: true, split: false, top: true }, every)).toBe("details~top.unsplit.readable.pdf");
+    expect(sheetDetailsFile("2024-hybrid", { readable: true, split: false, top: false }, every)).toBe("details~untop.unsplit.readable.pdf");
     expect(sheetDetailsFile("2014", { top: false, split: true, readable: true }, every)).toBe("details~split.readable.pdf");
   });
 
@@ -69,37 +70,45 @@ describe("sheet layout flags", () => {
     for (const set of ["2014", "2024"] as const) {
       expect(sheetDetailsFile(set, resolveSheetLayout(set, { readable: true })), set).toBe("details~readable.pdf");
       expect(sheetDetailsFile(set, resolveSheetLayout(set, { readable: true, split: true })), set).toBe("details~split.readable.pdf");
-      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, readable: true })), set).toBe("details~top.readable.pdf");
-      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, split: true, readable: true })), set).toBe("details~top.split.readable.pdf");
       expect(sheetDetailsFile(set, resolveSheetLayout(set, { readable: false, split: true })), set).toBe("details~split.pdf");
     }
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, readable: true }))).toBe("details~top.readable.pdf");
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, split: true, readable: true }))).toBe("details~top.split.readable.pdf");
+    // The 2024 pages' top row is compact by default, so turning it off is the variant.
+    expect(sheetDetailsFile("2024", resolveSheetLayout("2024", { top: true, readable: true }))).toBe("details~readable.pdf");
+    expect(sheetDetailsFile("2024", resolveSheetLayout("2024", { top: false, readable: true }))).toBe("details~untop.readable.pdf");
+    expect(sheetDetailsFile("2024", resolveSheetLayout("2024", { top: false, split: true, readable: true }))).toBe("details~untop.split.readable.pdf");
     // Hybrid splits by default, so its readable page with split left alone is plain "readable".
     expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true }))).toBe("details~readable.pdf");
     expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, split: false }))).toBe("details~unsplit.readable.pdf");
-    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, top: true }))).toBe("details~top.readable.pdf");
-    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, top: true, split: false }))).toBe("details~top.unsplit.readable.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, top: false }))).toBe("details~untop.readable.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: true, top: false, split: false }))).toBe("details~untop.unsplit.readable.pdf");
     expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { readable: false }))).toBe(BASE);
   });
 
-  it("names the compact top row variants, alone and with the split switch", () => {
-    for (const set of ["2014", "2024"] as const) {
-      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true })), set).toBe("details~top.pdf");
-      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, split: true })), set).toBe("details~top.split.pdf");
-      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: true, split: false })), set).toBe("details~top.pdf");
-      expect(sheetDetailsFile(set, resolveSheetLayout(set, { top: false, split: true })), set).toBe("details~split.pdf");
-    }
-    // Hybrid splits by default, so its compact page with split left alone is plain "top".
-    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: true }))).toBe("details~top.pdf");
-    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: true, split: null }))).toBe("details~top.pdf");
-    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: true, split: false }))).toBe("details~top.unsplit.pdf");
-    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: false }))).toBe(BASE);
+  it("names the top row variants, alone and with the split switch", () => {
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true })), "2014").toBe("details~top.pdf");
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, split: true })), "2014").toBe("details~top.split.pdf");
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: true, split: false })), "2014").toBe("details~top.pdf");
+    expect(sheetDetailsFile("2014", resolveSheetLayout("2014", { top: false, split: true })), "2014").toBe("details~split.pdf");
+    // The 2024 pages print the compact top row by default; the classic header is "untop".
+    expect(sheetDetailsFile("2024", resolveSheetLayout("2024", { top: true }))).toBe(BASE);
+    expect(sheetDetailsFile("2024", resolveSheetLayout("2024", { top: true, split: true }))).toBe("details~split.pdf");
+    expect(sheetDetailsFile("2024", resolveSheetLayout("2024", { top: false }))).toBe("details~untop.pdf");
+    expect(sheetDetailsFile("2024", resolveSheetLayout("2024", { top: false, split: true }))).toBe("details~untop.split.pdf");
+    // Hybrid splits by default, so its classic header with split left alone is plain "untop".
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: false }))).toBe("details~untop.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: false, split: null }))).toBe("details~untop.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: false, split: false }))).toBe("details~untop.unsplit.pdf");
+    expect(sheetDetailsFile("2024-hybrid", resolveSheetLayout("2024-hybrid", { top: true }))).toBe(BASE);
   });
 
   it("keys a layout by its effective switches", () => {
     expect(sheetLayoutKey(resolveSheetLayout("2014", {}))).not.toBe(sheetLayoutKey(resolveSheetLayout("2014", { split: true })));
-    expect(sheetLayoutKey(resolveSheetLayout("2014", { split: true }))).toBe(sheetLayoutKey(resolveSheetLayout("2024-hybrid", {})));
+    expect(sheetLayoutKey(resolveSheetLayout("2014", { split: true }))).toBe(sheetLayoutKey(resolveSheetLayout("2024-hybrid", { top: false })));
     expect(sheetLayoutKey(resolveSheetLayout("2024-hybrid", { split: null }))).toBe(sheetLayoutKey(resolveSheetLayout("2024-hybrid", { split: true })));
-    expect(sheetLayoutKey(resolveSheetLayout("2024", { top: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", {})));
+    expect(sheetLayoutKey(resolveSheetLayout("2024", { top: false }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", {})));
+    expect(sheetLayoutKey(resolveSheetLayout("2024", { top: true }))).toBe(sheetLayoutKey(resolveSheetLayout("2024", {})));
     expect(sheetLayoutKey(resolveSheetLayout("2024", { top: true, split: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", { top: true })));
     expect(sheetLayoutKey(resolveSheetLayout("2024", { readable: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", {})));
     expect(sheetLayoutKey(resolveSheetLayout("2024", { readable: true, top: true }))).not.toBe(sheetLayoutKey(resolveSheetLayout("2024", { top: true })));
@@ -113,12 +122,12 @@ describe("sheet layout flags", () => {
         "details~readable.pdf", "details~split.readable.pdf", "details~top.readable.pdf", "details~top.split.readable.pdf",
       ],
       "2024": [
-        "details~split.pdf", "details~top.pdf", "details~top.split.pdf",
-        "details~readable.pdf", "details~split.readable.pdf", "details~top.readable.pdf", "details~top.split.readable.pdf",
+        "details~split.pdf", "details~untop.pdf", "details~untop.split.pdf",
+        "details~readable.pdf", "details~split.readable.pdf", "details~untop.readable.pdf", "details~untop.split.readable.pdf",
       ],
       "2024-hybrid": [
-        "details~unsplit.pdf", "details~top.pdf", "details~top.unsplit.pdf",
-        "details~readable.pdf", "details~unsplit.readable.pdf", "details~top.readable.pdf", "details~top.unsplit.readable.pdf",
+        "details~unsplit.pdf", "details~untop.pdf", "details~untop.unsplit.pdf",
+        "details~readable.pdf", "details~unsplit.readable.pdf", "details~untop.readable.pdf", "details~untop.unsplit.readable.pdf",
       ],
     };
     for (const set of SHEET_TEMPLATE_SETS) {
@@ -172,15 +181,15 @@ describe("loading a layout variant", () => {
     const hybrid = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { split: false }))!;
     expect(hybrid.detailsFile).toBe("details~unsplit.pdf");
     expect(hybrid.details).toEqual(file("2024-hybrid", "details~unsplit.pdf"));
-    const top = (await fetchCharacterSheetTemplateBundle(base, "2024", DEFAULT_SHEET_FONTS, { top: true, split: true }))!;
-    expect(top.detailsFile).toBe("details~top.split.pdf");
-    expect(top.details).toEqual(file("2024", "details~top.split.pdf"));
-    const hybridTop = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { top: true }))!;
-    expect(hybridTop.detailsFile).toBe("details~top.pdf");
-    expect(hybridTop.details).toEqual(file("2024-hybrid", "details~top.pdf"));
-    const readable = (await fetchCharacterSheetTemplateBundle(base, "2024", DEFAULT_SHEET_FONTS, { top: true, split: true, readable: true }))!;
-    expect(readable.detailsFile).toBe("details~top.split.readable.pdf");
-    expect(readable.details).toEqual(file("2024", "details~top.split.readable.pdf"));
+    const untop = (await fetchCharacterSheetTemplateBundle(base, "2024", DEFAULT_SHEET_FONTS, { top: false, split: true }))!;
+    expect(untop.detailsFile).toBe("details~untop.split.pdf");
+    expect(untop.details).toEqual(file("2024", "details~untop.split.pdf"));
+    const hybridUntop = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { top: false }))!;
+    expect(hybridUntop.detailsFile).toBe("details~untop.pdf");
+    expect(hybridUntop.details).toEqual(file("2024-hybrid", "details~untop.pdf"));
+    const readable = (await fetchCharacterSheetTemplateBundle(base, "2024", DEFAULT_SHEET_FONTS, { top: false, split: true, readable: true }))!;
+    expect(readable.detailsFile).toBe("details~untop.split.readable.pdf");
+    expect(readable.details).toEqual(file("2024", "details~untop.split.readable.pdf"));
     const hybridReadable = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, { readable: true, split: false }))!;
     expect(hybridReadable.detailsFile).toBe("details~unsplit.readable.pdf");
     expect(hybridReadable.details).toEqual(file("2024-hybrid", "details~unsplit.readable.pdf"));
@@ -189,7 +198,7 @@ describe("loading a layout variant", () => {
 
   it("fetches only the set's own page for the default layout", async () => {
     serve();
-    for (const layout of [undefined, {}, { top: false, split: null, readable: false }]) {
+    for (const layout of [undefined, {}, { top: null, split: null, readable: false }, { top: true, split: true, readable: false }]) {
       const bundle = (await fetchCharacterSheetTemplateBundle(base, "2024-hybrid", DEFAULT_SHEET_FONTS, layout))!;
       expect(bundle.details).toEqual(file("2024-hybrid", BASE));
       expect(bundle.detailsFile ?? BASE).toBe(BASE);
@@ -378,6 +387,16 @@ describe("writing a layout variant", () => {
     });
   });
 
+  it.each([["2024", { split: true }], ["2024-hybrid", {}]] as const)("prints every feature in one box titled FEATURES on the %s split page", async (set, layout) => {
+    const split = await placements(set, layout);
+    expect(split.hasField("details_subclass_features")).toBe(false);
+    expect(split.hasField("details_feats")).toBe(false);
+    for (const text of ["Spellcasting.", "Wild Shape.", "Alert."]) expect(split.inside(text, "details_features"), text).toBe(true);
+    expect(split.text).toContain("FEATURES");
+    expect(split.text).not.toContain("CLASS FEATURES");
+    expect(split.pages).toBe(1);
+  });
+
   it("prints every feature in one box on the unsplit Hybrid page", async () => {
     const unsplit = await placements("2024-hybrid", { split: false });
     expect(unsplit.hasField("details_subclass_features")).toBe(false);
@@ -401,7 +420,7 @@ describe("writing a layout variant", () => {
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-01-01T00:00:00Z") });
     try {
       const plain = new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(set)));
-      for (const layout of [{}, { top: false, split: null, readable: false }, { split: SHEET_LAYOUT_DEFAULTS[set].split }]) {
+      for (const layout of [{}, { top: null, split: null, readable: false }, { top: SHEET_LAYOUT_DEFAULTS[set].top, split: SHEET_LAYOUT_DEFAULTS[set].split }]) {
         const bundle = localTemplateBundle(set, DEFAULT_SHEET_FONTS, layout);
         expect(bundle.details).toEqual(new Uint8Array(readFileSync(join(SHEETS, set, BASE))));
         expect(new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, bundle)), JSON.stringify(layout)).toEqual(plain);
@@ -561,21 +580,22 @@ describe("writing the compact top row", () => {
     expect(page.text).not.toContain("CLASS & LEVEL");
   });
 
-  it.each(TOP_PAGES.filter(([set]) => set !== "2014"))("swaps the ability values when modifiers are emphasized on %s %j", async (set, layout) => {
+  // The 2024 panels and the Hybrid shields already make the modifier the
+  // large number, so emphasizing modifiers leaves the values where they are.
+  it.each(TOP_PAGES.filter(([set]) => set !== "2014"))("keeps the modifier the large number when modifiers are emphasized on %s %j", async (set, layout) => {
     const scores = { details_str_score: "18", details_str_modifier: "+4" };
     const page = await render(set, layout, model(scores), { emphasizeAbilityModifiers: true });
-    expect(page.inside("+4", "details_str_score")).toBe(true);
-    expect(page.inside("18", "details_str_modifier")).toBe(true);
+    expect(page.inside("18", "details_str_score")).toBe(true);
+    expect(page.inside("+4", "details_str_modifier")).toBe(true);
   });
 
   it.each(TOP_PAGES.filter(([set]) => set === "2014"))("keeps the 2014 identity line and prints the hit dice maximum on %s %j", async (set, layout) => {
     const page = await render(set, layout, model());
-    // Three classes' dice are wider than the compact box at the readable
-    // floor, so the box shows them cut short and marked; the continuation
-    // page prints them in full.
+    // The compact box is wide enough for three classes' dice at or above the
+    // readable floor.
     const box = page.rect("details_hd")!;
     const shown = page.items.filter((item) => item.x >= box.x - 0.5 && item.x <= box.x + box.width && item.y >= box.y - 0.5 && item.y <= box.y + box.height);
-    expect(shown.map((item) => item.str).join(" ")).toMatch(/^2d8\/.*\u2026$/);
+    expect(shown.map((item) => item.str).join(" ")).toBe("2d8/2d8/2d8");
     expect(shown.every((item) => item.x + item.width <= box.x + box.width + 0.5)).toBe(true);
     expect(page.rect("details_hd_spent")).toBeDefined();
     expect(page.text).toContain("SPENT");

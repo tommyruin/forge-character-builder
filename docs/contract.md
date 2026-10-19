@@ -632,9 +632,9 @@ The client PDF render options and the dedicated render-worker request also
 accept `layout?: { top?, split?, readable? }`, the character page's optional
 layout switches; each is `true`, `false`, or `null`/absent for the template
 set's own default (`SHEET_LAYOUT_DEFAULTS`: split is on for 2024 Hybrid, off
-for 2014 and 2024). The switches pick a variant of the set's character page
+for 2014 and 2024; top is on for 2024 and 2024 Hybrid, off for 2014). The switches pick a variant of the set's character page
 template, named for the switches that differ from the set's own page
-(`details~split.pdf`, `details~unsplit.pdf`, `details~top.pdf`,
+(`details~split.pdf`, `details~unsplit.pdf`, `details~top.pdf`, `details~untop.pdf`,
 `details~top.split.pdf`, `details~readable.pdf`,
 `details~top.unsplit.readable.pdf`, …; see `sheetDetailsFile` in
 `template-contract.ts`); every other template is shared. Every combination of
@@ -646,11 +646,12 @@ browser preferences are the `top`, `split` and `readable` members of
 `fcb-sheet-layout-options`, and the
 effective switches participate in the PDF cache key.
 
-The readable 2014 page has six attack rows. The sheet model's form values
+The readable 2014 page has six attack rows and the 2024 pages five. The sheet model's form values
 always fill the four rows every template has and list later attacks in
 `details_attack_description`; the details page also carries `attacks` (every
 displayed attack) and `attackNotes` (the user's own notes), from which the
 writer fills a template's further rows and rewords that note. With "Emphasize
 ability modifiers" on, the writer swaps an ability's score and modifier only
-where the template's score field is the larger; the readable 2024 panels
-already make the modifier the large number.
+where the template's score field is the larger; the 2024 panels and Hybrid
+shields already make the modifier the large number. A score printed smaller
+than its modifier takes the body face's regular weight.

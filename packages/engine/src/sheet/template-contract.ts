@@ -29,23 +29,24 @@ export function isSheetTemplateSet(value: unknown): value is SheetTemplateSet {
  * the fixed order of `SHEET_LAYOUT_FLAGS`, joined by `.`: `<flag>` for one
  * turned on, `un<flag>` for one turned off — `details~split.pdf`,
  * `details~top.split.pdf`, or `details~unsplit.pdf` for the Hybrid page,
- * which splits its features by default. Each set's own page keeps its name
+ * which splits its features by default (and `details~untop.pdf` for a 2024
+ * page, whose top row is compact by default). Each set's own page keeps its name
  * and its bytes, so the default layout prints exactly what it always has. The
  * set's `labels.json` carries every variant's text under its file name.
  *
- *  - `top`: a compact top row. On the 2024 pages armor class, hit points,
- *    hit dice (maximum and spent) and death saves share one row, the vitals
- *    are smaller, speed lists each movement mode, a shield is a tick box and
- *    the identity is separate species, class, level, background and XP
- *    fields. On the 2014 page initiative sits beside the proficiency bonus
- *    and the hit dice split into maximum and spent.
- *  - `split`: separate boxes for class features, subclass features and feats.
- *  - `readable`: a more readable body. On the 2024 pages the armor sits
- *    beside the armor class, the species traits move under the abilities,
- *    conditions sit beside the abilities, the feature boxes are taller, the
- *    free-text attack note prints at 7pt or more, and (2024 only) each
- *    ability panel shows the modifier as its large number with the score in
- *    a badge. On the 2014 page the small captions are larger, the skills
+ *  - `top`: a compact top row, on by default on the 2024 pages. There armor
+ *    class shares a box with the armor, shield and stealth marks and the
+ *    resistances, beside hit points and hit dice (maximum and spent); the
+ *    vitals beneath are smaller, speed lists each movement mode, the death
+ *    saves join them and the identity is separate species, class, level,
+ *    background and XP fields. Off, the 2024 pages print the classic header:
+ *    armor beside the armor class shield, and a row of large vitals with the
+ *    hit dice and death saves. On the 2014 page initiative sits beside the
+ *    proficiency bonus and the hit dice split into maximum and spent.
+ *  - `split`: class features, subclass features and feats apart. On the
+ *    2024 pages they stay in one box, the writer heading each group.
+ *  - `readable`: a more readable body. On the 2024 pages the small captions
+ *    are larger and the free-text attack note prints at 7pt. On the 2014 page the small captions are larger, the skills
  *    spread over room the saving throws give up, the middle boxes have more
  *    top padding and there are six attack rows.
  */
@@ -59,8 +60,8 @@ export type SheetLayoutRequest = Partial<Record<SheetLayoutFlag, boolean | null>
 /** Each set's own page, as switches. */
 export const SHEET_LAYOUT_DEFAULTS: Readonly<Record<SheetTemplateSet, Readonly<SheetLayout>>> = {
   "2014": { top: false, split: false, readable: false },
-  "2024": { top: false, split: false, readable: false },
-  "2024-hybrid": { top: false, split: true, readable: false },
+  "2024": { top: true, split: false, readable: false },
+  "2024-hybrid": { top: true, split: true, readable: false },
 };
 
 /**

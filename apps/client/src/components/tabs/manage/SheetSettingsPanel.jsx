@@ -88,7 +88,7 @@ function LayoutOptions({ templateSet }) {
           <span id={topHintId} className="fcb-muted-copy block">
             {templateSet === '2014'
               ? 'Initiative beside the proficiency bonus, and hit dice split into maximum and spent'
-              : 'Armor class, hit points, hit dice and death saves in one row, with a shield tick box and separate species, class and level'}
+              : 'Armor class in one box with the armor and resistances, beside hit points and hit dice, with separate species, class and level'}
           </span>
         </span>
       </label>
@@ -122,12 +122,12 @@ function LayoutOptions({ templateSet }) {
           <span id={readableHintId} className="fcb-muted-copy block">
             {templateSet === '2014'
               ? 'Larger captions, roomier skills and six attack rows'
-              : 'Armor beside armor class, traits and conditions beside the abilities, taller feature boxes and larger attack notes'}
+              : 'Larger captions and attack notes'}
           </span>
         </span>
       </label>
-      {options.split !== null && (
-        <button type="button" className="fcb-button" onClick={() => setOptions({ split: null })}>
+      {(options.top !== null || options.split !== null) && (
+        <button type="button" className="fcb-button" onClick={() => setOptions({ top: null, split: null })}>
           Use layout default
         </button>
       )}
