@@ -1071,6 +1071,11 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       return result;
     },
     element: async (id: string) => invoke(await ensureContentReady(), "contentElement", id),
+    // A loaded element as `<element>` XML, to start a house rule or a reflavour from.
+    elementSource: async (id: string) => invoke(await ensureContentReady(), "getElementSource", id),
+    // A pack's compiled file checked against the loaded library without loading it.
+    checkPack: async (request: { path: string; xml: string; overrides?: string[] }) =>
+      invoke(await ensureContentReady(), "checkPackContent", request),
     clearCache: () => undefined,
     importStatus: async () => ({ status: "succeeded" }),
     reload: async (knownStalePaths: string[] = []) => {

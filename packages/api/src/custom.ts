@@ -662,3 +662,45 @@ export interface ResourcesDto extends WireObject {
   trackers: TrackerDto[];
   switches: SwitchDto[];
 }
+
+// ---- pack health ---------------------------------------------------------------
+
+/**
+ * One thing wrong (or worth knowing) about a pack's content file, found without
+ * loading it. `overrides` is not a fault: the pack replaces a loaded element on
+ * purpose.
+ */
+export interface PackFindingDto extends WireObject {
+  kind: "missing-grant" | "duplicate-id" | "unattachable" | "append-target" | "invalid-requirements" | "overrides";
+  message: string;
+  /** The pack element the finding is about. */
+  elementId?: string;
+  elementName?: string;
+  /** missing-grant: the id (or `Type "Name"`) nothing defines, and the type the rule wants. */
+  missingId?: string;
+  missingType?: string;
+  /** append-target: the element the append names. */
+  targetId?: string;
+  /** duplicate-id and overrides: the other file that defines the id. */
+  otherFile?: string;
+}
+
+/** `checkPackContent`: checks a pack's compiled file against the loaded library without loading it. */
+export interface PackCheckRequest extends WireObject {
+  /** The path the pack is (or will be) stored under; its own library copies are not counted. */
+  path: string;
+  xml: string;
+  /** Element ids the pack replaces on purpose (a changed book element); reported as `overrides`, not as duplicates. */
+  overrides?: string[];
+}
+
+/** `getElementSource`: a loaded element as `<element>` XML, ready to be changed or reflavoured in a pack. */
+export interface ElementSourceDto extends WireObject {
+  id: string;
+  name: string;
+  type: string;
+  source: string;
+  /** The element's XML, or null when a copy would lose structure (see `reason`). */
+  xml: string | null;
+  reason?: string;
+}

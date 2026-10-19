@@ -7,6 +7,9 @@ import type {
   CustomSpellPreviewDto,
   MissingGrantDto,
   DmGrantDto,
+  ElementSourceDto,
+  PackCheckRequest,
+  PackFindingDto,
   PromotedCustomElementDto,
   ResourcesDto,
   TrackerDef,
@@ -325,6 +328,19 @@ export interface EngineMethodMap {
   equipmentCategories: MethodContract<[characterId?: string], WireList>;
   contentElements: MethodContract<[query: ContentElementsQueryDto], WireObject>;
   contentElement: MethodContract<[id: string], WireObject | null>;
+  /**
+   * A loaded element written out as `<element>` XML, the starting point for
+   * changing a book element or reflavouring it in a pack. `xml` is null (with a
+   * `reason`) for an element whose structure a copy would lose.
+   */
+  getElementSource: MethodContract<[id: string], ElementSourceDto | null>;
+  /**
+   * Checks a pack's compiled file against the loaded library without loading
+   * it: grants that resolve to nothing, ids defined twice, Background Features
+   * nothing attaches, appends to targets that are not loaded and requirements
+   * the engine cannot read.
+   */
+  checkPackContent: MethodContract<[request: PackCheckRequest], PackFindingDto[]>;
   createCharacter: MethodContract<[name: string], WireObject>;
   getCharacter: MethodContract<[id: string], WireObject>;
   deleteCharacter: MethodContract<[id: string], void>;
@@ -594,6 +610,8 @@ export const ENGINE_METHOD_NAMES = [
   "equipmentCategories",
   "contentElements",
   "contentElement",
+  "getElementSource",
+  "checkPackContent",
   "createCharacter",
   "getCharacter",
   "deleteCharacter",
@@ -716,6 +734,8 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   equipmentCategories: implemented,
   contentElements: implemented,
   contentElement: implemented,
+  getElementSource: implemented,
+  checkPackContent: implemented,
   createCharacter: implemented,
   getCharacter: implemented,
   deleteCharacter: implemented,
@@ -818,6 +838,8 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   equipmentCategories: "read-only",
   contentElements: "read-only",
   contentElement: "read-only",
+  getElementSource: "read-only",
+  checkPackContent: "read-only",
   createCharacter: "character-write",
   getCharacter: "read-only",
   deleteCharacter: "character-write",

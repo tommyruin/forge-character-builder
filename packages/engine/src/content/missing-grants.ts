@@ -39,12 +39,30 @@ function describe(element: ParsedElement): string {
  * handful of entries (a character's own pack) without scanning every element.
  * Inline elements are collected from the entries checked.
  */
-export function missingGrantDiagnostics(library: ElementLibrary, only?: readonly ParsedElement[]): ContentDiagnostic[] {
+export function missingGrantDiagnostics(
+  library: ElementLibrary,
+  only?: readonly ParsedElement[],
+  options: {
+    /** Elements that count as present though the library does not hold them yet: a pack checked before it is loaded. */
+    extra?: readonly ParsedElement[];
+    /** A file whose library copies do not count: the pack being checked replaces them. */
+    excludeFile?: string;
+  } = {},
+): ContentDiagnostic[] {
+  const extra = options.extra ?? [];
+  const defined = (id: string): boolean => {
+    const element = library.byId.get(id);
+    return element !== undefined && element.declaredBy !== options.excludeFile;
+  };
   const checked = only ?? [...library.byId.values()];
   const inline = new Set<string>();
   for (const element of checked) inlineIds(element, inline);
+  for (const element of extra) {
+    if (element.identity.id !== "") inline.add(element.identity.id);
+    inlineIds(element, inline);
+  }
   const present = (id: string): boolean =>
-    library.byId.has(id) || ENGINE_INTERNAL_ELEMENTS.has(id) || inline.has(id);
+    defined(id) || ENGINE_INTERNAL_ELEMENTS.has(id) || inline.has(id);
 
   const out: ContentDiagnostic[] = [];
   const reported = new Set<string>();
@@ -79,7 +97,11 @@ export function missingGrantDiagnostics(library: ElementLibrary, only?: readonly
         if (id !== "") {
           if (!present(id)) report(element, rule, "grants", id, rule.type);
         } else if (rule.type !== undefined && rule.name !== undefined) {
-          const found = (library.byType.get(rule.type) ?? []).some((candidate) => candidate.identity.name === rule.name);
+          const found =
+            (library.byType.get(rule.type) ?? []).some(
+              (candidate) => candidate.identity.name === rule.name && candidate.declaredBy !== options.excludeFile,
+            ) ||
+            extra.some((candidate) => candidate.identity.type === rule.type && candidate.identity.name === rule.name);
           if (!found) report(element, rule, "grants", `${rule.type} "${rule.name}"`, rule.type);
         }
       } else if (rule.kind === "select") {

@@ -156,12 +156,12 @@ export interface ElementLibrary {
 }
 
 export interface ContentDiagnostic {
-  kind: "duplicate-id" | "empty-file" | "append-target" | "missing-grant";
+  kind: "duplicate-id" | "empty-file" | "append-target" | "missing-grant" | "unattachable" | "invalid-requirements";
   /** Normalized path of the file the finding is about. */
   file: string;
   message: string;
   detail?: string;
-  /** missing-grant: the element whose rule names something that is not there. */
+  /** missing-grant, unattachable, invalid-requirements: the element the finding is about. */
   elementId?: string;
   elementName?: string;
   /** missing-grant: the id (or `Type "Name"`) that resolves to no element. */
@@ -526,6 +526,8 @@ export function replaceLibraryFiles(
           file: relative,
           message: `duplicate element id ${id}`,
           detail: `overrides the definition from ${declaredBy}`,
+          elementId: id,
+          elementName: element.identity.name,
         });
       }
       // The reviewed pack <extras> belong to the pack's contents: an uploaded

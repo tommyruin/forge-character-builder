@@ -40,7 +40,7 @@ function fakeClient() {
   const methods = [
     "boot", "createCharacter", "getCharacter", "deleteCharacter", "setCharacterSources",
     "getCharacterSources", "exportCharacterXml", "importCharacterXml", "contentStatus",
-    "contentSources", "equipmentCategories", "contentElements", "contentElement", "ingestUploaded", "removeUploaded", "patchHomebrew",
+    "contentSources", "equipmentCategories", "contentElements", "contentElement", "getElementSource", "checkPackContent", "ingestUploaded", "removeUploaded", "patchHomebrew",
     "setPortrait", "removePortrait", "updateDetails", "setAbilities", "getSelectionOptions",
     "setSelection", "clearSelection", "getOptionalRules", "getRulesetMode", "setRulesetMode", "getCharacterAdjustments",
     "setCharacterControl", "getStatistics", "levelUp", "levelUpTo", "levelDown", "delevel", "undoDelevel",
@@ -549,6 +549,15 @@ describe("typed FCB nested adapter", () => {
     await api.characters.missingGrants("Ada");
     expect(calls).toContainEqual(["getMissingGrants", "Ada"]);
     expect(api.characters.canUndo("Ada")).toBe(true);
+  });
+
+  it("reads a loaded element as XML and checks a pack's file without loading it", async () => {
+    const { client, calls } = fakeClient();
+    const api = createEngineApi({ client, store: fakeStore() });
+    await api.content.elementSource("ID_BOOK_FEAT_ONE");
+    expect(calls).toContainEqual(["getElementSource", "ID_BOOK_FEAT_ONE"]);
+    await api.content.checkPack({ path: "imports/pack.xml", xml: "<elements />", overrides: ["ID_BOOK_FEAT_ONE"] });
+    expect(calls).toContainEqual(["checkPackContent", { path: "imports/pack.xml", xml: "<elements />", overrides: ["ID_BOOK_FEAT_ONE"] }]);
   });
 
   it("reads resources and spends, switches, rests and keeps trackers as undoable edits", async () => {

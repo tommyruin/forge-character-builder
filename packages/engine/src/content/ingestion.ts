@@ -2,6 +2,7 @@ import { engineError } from "../errors.js";
 import { decodeBase64 } from "../platform.js";
 import { replaceLibraryFiles, type ContentDiagnostic, type ElementLibrary } from "./library.js";
 import { missingGrantDiagnostics } from "./missing-grants.js";
+import { packReferenceDiagnostics } from "./pack-check.js";
 
 export interface ContentInputFile {
   path: string;
@@ -100,7 +101,7 @@ function requireRawFiles(library: ElementLibrary): Map<string, string> {
 
 /** Adds the rule-reference findings to those the rebuild already recorded. */
 function recordReferenceFindings(library: ElementLibrary): void {
-  library.diagnostics = [...(library.diagnostics ?? []), ...missingGrantDiagnostics(library)];
+  library.diagnostics = [...(library.diagnostics ?? []), ...missingGrantDiagnostics(library), ...packReferenceDiagnostics(library)];
 }
 
 /** Install uploaded content in one atomic rebuild; duplicate paths replace. */

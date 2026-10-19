@@ -25,7 +25,8 @@ describe("engine method contract", () => {
     // 92: added previewCustomSpell (a spell draft's attack row) and setSpellAlias (a spell's display name).
     // 93: added getMissingGrants (grants a character holds that resolve to nothing).
     // 99: added getResources, setTrackerUsed, setResourceSwitch, restCharacter, saveManualTracker and deleteManualTracker (trackers and switches).
-    expect(ENGINE_METHOD_NAMES).toHaveLength(99);
+    // 101: added getElementSource (a loaded element as XML) and checkPackContent (a pack's health, before it is loaded).
+    expect(ENGINE_METHOD_NAMES).toHaveLength(101);
     expect(new Set(ENGINE_METHOD_NAMES).size).toBe(ENGINE_METHOD_NAMES.length);
     expect(Object.keys(METHOD_SUPPORT).sort()).toEqual([...ENGINE_METHOD_NAMES].sort());
 
@@ -241,7 +242,8 @@ describe("typed client bridge", () => {
     // 92: added previewCustomSpell (a spell draft's attack row) and setSpellAlias (a spell's display name).
     // 93: added getMissingGrants (grants a character holds that resolve to nothing).
     // 99: added getResources, setTrackerUsed, setResourceSwitch, restCharacter, saveManualTracker and deleteManualTracker (trackers and switches).
-    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 99 } });
+    // 101: added getElementSource (a loaded element as XML) and checkPackContent (a pack's health, before it is loaded).
+    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 101 } });
   });
 
   it("transfers snapshot buffers: nested request bodies and ArrayBuffer results", async () => {

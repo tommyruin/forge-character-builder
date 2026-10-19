@@ -23,6 +23,8 @@ import {
 } from "./content/equipment/categories.js";
 import type { ParsedElement } from "./content/parser.js";
 import { isContentAllowedForCharacter } from "./content/access.js";
+import { checkContentFile } from "./content/pack-check.js";
+import { serializeElement } from "./custom/element-xml.js";
 import { isRequiredSource, normalizeSourceName, sourceNamesWithElements } from "./content/sourceIdentity.js";
 import { expandDescriptionReferences } from "./content/description.js";
 import { selectionOptions, selectionRuleForSlot } from "./selection/selection.js";
@@ -412,6 +414,20 @@ export function createEngineMethodHandlers(
         ? null
         : contentElementDto(library, element);
     },
+    getElementSource: (id) => {
+      const element = library.byId.get(id);
+      if (element === undefined) return null;
+      const copy = serializeElement(element);
+      return {
+        id,
+        name: element.identity.name,
+        type: element.identity.type,
+        source: element.identity.source,
+        xml: copy.xml,
+        ...(copy.reason === undefined ? {} : { reason: copy.reason }),
+      };
+    },
+    checkPackContent: (request) => checkContentFile(library, request),
     equipmentCategories: (characterId) => {
       const state = typeof characterId === "string" && characterId !== "" ? service.getCharacter(characterId) : undefined;
       return buildEquipmentCategories(allowedElements(library, state)) as unknown as WireList;
