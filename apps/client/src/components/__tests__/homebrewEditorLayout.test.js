@@ -171,12 +171,8 @@ describe('Homebrew Editor workspace layout', () => {
   });
 
   it('passes mutation results to the library lifecycle for update and removal', () => {
-    expect(editorSource).toContain(
-      'const result = await api.content.upload',
-    );
-    expect(editorSource).toContain(
-      'result = await api.content.remove',
-    );
+    expect(editorSource).toContain('await saveCollection(api, draft)');
+    expect(editorSource).toContain('result = await removeCollection(api, draft)');
     expect(editorSource.match(/onLibraryChanged\?\.\(\{ source: "homebrew", result \}\);/g)).toHaveLength(2);
   });
 
