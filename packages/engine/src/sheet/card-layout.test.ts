@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument, StandardFonts, type PDFFont } from "pdf-lib";
 import {
+  CONTINUATION_PAGE_TEXT,
   descriptionCardRuns,
   inventoryRuns,
   layoutHtmlRuns,
@@ -332,8 +333,20 @@ describe("drawn text stays inside its box", () => {
     const pages = new Set(runs.map((run) => run.page ?? 0));
 
     expect(pages.size).toBeGreaterThan(1);
-    // No page spills past the column, and none of the prose is dropped.
-    expect(Math.min(...runs.map((run) => run.y))).toBeGreaterThan(NOTES_FLOOR);
+    // The column keeps its own box; the rest is wrapped afresh at the
+    // continuation page's width, below its "(continued)" line, and none of the
+    // prose is dropped.
+    const column = runs.filter((run) => (run.page ?? 0) === 0);
+    const continued = runs.filter((run) => (run.page ?? 0) > 0);
+    expect(Math.min(...column.map((run) => run.y))).toBeGreaterThan(NOTES_FLOOR);
+    expect(Math.min(...column.map((run) => run.x))).toBeGreaterThanOrEqual(SHEET_TEMPLATE_CONTRACT.equipmentNotes.x);
+    const area = CONTINUATION_PAGE_TEXT;
+    for (const run of continued) {
+      expect(run.x).toBeGreaterThanOrEqual(area.x);
+      expect(run.y).toBeGreaterThanOrEqual(area.bottom);
+      expect(run.y).toBeLessThanOrEqual(run.page === 1 ? area.top - area.partLine : area.top);
+    }
+    expect(Math.max(...continued.map((run) => run.x + run.width))).toBeGreaterThan(area.x + SHEET_TEMPLATE_CONTRACT.equipmentNotes.width);
     expect(runs.filter((run) => run.text === "Winged")).toHaveLength(overwhelming.length);
     expect((await drawnBounds(runs)).filter((word) => word.overflow > 0.001)).toEqual([]);
   });

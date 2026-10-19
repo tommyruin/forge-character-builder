@@ -1,6 +1,6 @@
 import type { SpellResourceDto } from "@forge-cb/api";
 import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection, SheetSpellListSection } from "./model.js";
-import type { LayoutRun } from "./card-layout.js";
+import { CONTINUATION_PAGE_TEXT, type LayoutRun } from "./card-layout.js";
 import { measuredTextWidth, winAnsiText } from "./text.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote } from "./attack-notes.js";
 import { decodeBase64 } from "../platform.js";
@@ -662,8 +662,17 @@ interface FieldRect {
   height: number;
 }
 
+/** Text a template box could not hold even at its smallest size. */
+interface BoxOverflow {
+  field: string;
+  /** The words not drawn, from the first one on, paragraphs kept apart by newlines. */
+  text: string;
+}
+
 interface FilledTemplatePage {
   page: PDFPage;
+  /** What each box that would have clipped could not hold, for a continuation page. */
+  overflow: BoxOverflow[];
   /** Widget rectangles by field name, captured before the form was flattened
    *  so hand-drawn rich text can bound itself to the template's own boxes.
    *  Shared with every page drawn from the same template, so it is read-only. */
@@ -805,6 +814,7 @@ async function addFilledTemplatePage(
   const page = output.addPage([art.width, art.height]);
   page.drawPage(embedded, { x: 0, y: 0, width: art.width, height: art.height });
   const textColour = SHEET_PALETTE[colours.text].rgb;
+  const overflow: BoxOverflow[] = [];
   for (const [name, field] of art.fields) {
     // Values render through WinAnsi, so an unencodable glyph in third-party
     // content degrades rather than aborting the whole build. A multiline
@@ -844,15 +854,20 @@ async function addFilledTemplatePage(
         continue;
       }
     }
-    drawBoxedValue(page, field.rect, value, font, field.base, textColour);
+    const rest = drawBoxedValue(page, field.rect, value, font, field.base, textColour);
+    if (rest !== undefined) overflow.push({ field: name, text: rest });
   }
-  return { page, fieldRects: art.rects };
+  return { page, overflow, fieldRects: art.rects };
 }
 
 /**
  * Draws a value that will not sit on one line in its box: wrapped, shrunk to
  * fit, and clipped to the widget rectangle the way the form's own appearance
  * clipped it. Only a prose box reaches this — every other value is one line.
+ *
+ * A value too long even at the floor size keeps the box's own size, draws
+ * the lines that fit, and returns the rest for a continuation page rather
+ * than losing it below the box's edge.
  */
 function drawBoxedValue(
   page: PDFPage,
@@ -861,23 +876,38 @@ function drawBoxedValue(
   font: PDFFont,
   base: number,
   colour: PdfColor,
-): void {
-  const size = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) =>
+): string | undefined {
+  const fitted = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) =>
     font.widthOfTextAtSize(winAnsiText(text), fontSize));
   const usable = rect.width - 4;
-  const lines: string[] = [];
-  for (const paragraph of value.split(/\r?\n/)) {
-    let line = "";
-    for (const word of paragraph.split(/[ \t]+/).filter((part) => part !== "")) {
-      const candidate = line === "" ? word : `${line} ${word}`;
-      if (line !== "" && font.widthOfTextAtSize(candidate, size) > usable) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = candidate;
-      }
-    }
-    lines.push(line);
+  const paragraphs = value.split(/\r?\n/).map((paragraph) => paragraph.split(/[ \t]+/).filter((part) => part !== ""));
+  const wrapAt = (size: number): Array<{ text: string; paragraph: number; start: number }> => {
+    const lines: Array<{ text: string; paragraph: number; start: number }> = [];
+    paragraphs.forEach((words, paragraph) => {
+      let line = "";
+      let start = 0;
+      words.forEach((word, index) => {
+        const candidate = line === "" ? word : `${line} ${word}`;
+        if (line !== "" && font.widthOfTextAtSize(candidate, size) > usable) {
+          lines.push({ text: line, paragraph, start });
+          line = word;
+          start = index;
+        } else {
+          line = candidate;
+        }
+      });
+      lines.push({ text: line, paragraph, start });
+    });
+    return lines;
+  };
+  const room = (size: number): number => Math.floor((rect.height - 4) / (size * 1.2) + 1e-9);
+  let size = fitted;
+  let lines = wrapAt(size);
+  let cut = lines.length;
+  if (lines.length > room(size)) {
+    size = base;
+    lines = wrapAt(size);
+    cut = Math.min(lines.length, room(size));
   }
   page.pushOperators(
     pushGraphicsState(),
@@ -890,13 +920,19 @@ function drawBoxedValue(
     endPath(),
   );
   let y = rect.y + rect.height - 2 - size;
-  for (const line of lines) {
-    if (line !== "") {
-      page.drawText(line, { x: rect.x + 2, y, size, font, color: rgb(colour[0], colour[1], colour[2]) });
+  for (const line of lines.slice(0, cut)) {
+    if (line.text !== "") {
+      page.drawText(line.text, { x: rect.x + 2, y, size, font, color: rgb(colour[0], colour[1], colour[2]) });
     }
     y -= size * 1.2;
   }
   page.pushOperators(popGraphicsState());
+  const first = lines[cut];
+  if (first === undefined) return undefined;
+  return [
+    paragraphs[first.paragraph]!.slice(first.start).join(" "),
+    ...paragraphs.slice(first.paragraph + 1).map((words) => words.join(" ")),
+  ].join("\n");
 }
 
 interface DrawnValue {
@@ -1060,8 +1096,6 @@ interface FeatureFlowLine {
  */
 interface FeatureContinuation {
   paragraphs: readonly FeatureParagraph[];
-  fontSize: number;
-  lineHeight: number;
   /** The box this continues, as its printed name. */
   heading: string;
 }
@@ -1338,33 +1372,37 @@ function richTextBox(
   };
 }
 
-const CONTINUATION_TEXT_X = 44;
-const CONTINUATION_TEXT_WIDTH = 524;
-const CONTINUATION_TEXT_TOP = 716;
-const CONTINUATION_TEXT_BOTTOM = 48;
+const CONTINUATION_TEXT_X = CONTINUATION_PAGE_TEXT.x;
+const CONTINUATION_TEXT_WIDTH = CONTINUATION_PAGE_TEXT.width;
+const CONTINUATION_TEXT_TOP = CONTINUATION_PAGE_TEXT.top;
+const CONTINUATION_TEXT_BOTTOM = CONTINUATION_PAGE_TEXT.bottom;
+
+/** A plain page in the attack-note style: a titled band and the footer. */
+function addContinuationPage(
+  output: PDFDocument, title: string, fonts: SheetFonts, colours: SheetLabelColours, footerText: string,
+): PDFPage {
+  const page = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  page.drawRectangle({ x: 32, y: 738, width: 548, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
+  page.drawText(title, { x: 44, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
+  drawSheetFooter(page, fonts, footerText);
+  return page;
+}
 
 /**
- * Whatever the character page's boxes could not hold continues on plain pages
- * in the attack-note style, each box's part under a bold "<box> (continued)"
- * line, rewrapped at the page's full width rather than repeating the
- * character page to fill the same small boxes again. Each part keeps its
- * box's normal type size.
+ * Whatever a page's boxes could not hold continues on plain pages in the
+ * attack-note style, each box's part under a bold "<box> (continued)" line,
+ * rewrapped at the page's full width rather than repeating the page to fill
+ * the same small boxes again. Every part is set at the features' normal size,
+ * so the page reads as one run of text whichever boxes it came from.
  */
 function addFeatureContinuationPages(
   output: PDFDocument, parts: readonly FeatureContinuation[], fonts: SheetFonts,
-  colours: SheetLabelColours, footerText: string,
+  colours: SheetLabelColours, footerText: string, title: string,
 ): void {
   const measure = fontMeasure(fonts);
+  const fontSize = DEFAULT_FEATURE_FONT_SIZE;
   let page: PDFPage | undefined;
   let y = 0;
-  const newPage = (): PDFPage => {
-    const next = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    next.drawRectangle({ x: 32, y: 738, width: 548, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
-    next.drawText("FEATURES & TRAITS (CONTINUED)", { x: 44, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
-    drawSheetFooter(next, fonts, footerText);
-    y = CONTINUATION_TEXT_TOP;
-    return next;
-  };
   for (const part of parts) {
     // A part that opens on a group heading is named for that group already, so
     // its part line stands in for the heading.
@@ -1375,10 +1413,13 @@ function addFeatureContinuationPages(
     ];
     if (page !== undefined) y -= CONTINUATION_PART_GAP;
     while (rest !== undefined) {
-      if (page === undefined || y < CONTINUATION_TEXT_BOTTOM) page = newPage();
-      const lines = featureFlowLines(rest, CONTINUATION_TEXT_WIDTH, part.fontSize, measure);
+      if (page === undefined || y < CONTINUATION_TEXT_BOTTOM) {
+        page = addContinuationPage(output, title, fonts, colours, footerText);
+        y = CONTINUATION_TEXT_TOP;
+      }
+      const lines = featureFlowLines(rest, CONTINUATION_TEXT_WIDTH, fontSize, measure);
       const drawn: FeatureFlowResult = drawFeatureFlow(page, rest, lines, fonts, CONTINUATION_TEXT_X, y, CONTINUATION_TEXT_WIDTH,
-        CONTINUATION_TEXT_BOTTOM, part.fontSize, part.lineHeight, colours.lines);
+        CONTINUATION_TEXT_BOTTOM, fontSize, fontSize, colours.lines);
       y = drawn.y;
       rest = drawn.rest;
       if (rest !== undefined) page = undefined;
@@ -1386,11 +1427,52 @@ function addFeatureContinuationPages(
   }
 }
 
-/** The title a details box prints, as a continuation names it. */
-function detailsBoxName(labels: SheetTemplateLabels[string] | undefined, candidates: readonly string[], fallback: string): string {
-  const printed = new Set(labels?.labels.map((label) => label.text) ?? []);
-  const title = candidates.find((candidate) => printed.has(candidate)) ?? fallback;
-  return title.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, space: string, letter: string) => space + letter.toUpperCase());
+// A box's title sits just above or just below it (2024 heads its boxes, 2014
+// captions them underneath), centred over a span that covers the box.
+const BOX_TITLE_REACH = 30;
+const BOX_TITLE_SLACK = 6;
+const BOX_TITLE_MAX_SPAN = 2.2;
+
+function printedName(text: string): string {
+  return text.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, space: string, letter: string) => space + letter.toUpperCase());
+}
+
+/**
+ * The name a continuation gives a box: the title the page itself prints for
+ * it, found by geometry in the page's labels so a renamed or moved box keeps
+ * its name, else `fallback`.
+ */
+function boxTitle(labels: SheetTemplateLabels[string] | undefined, rect: FieldRect | undefined, fallback: string): string {
+  if (rect === undefined) return fallback;
+  let best: { text: string; distance: number } | undefined;
+  for (const label of labels?.labels ?? []) {
+    const width = label.width ?? 0;
+    if (label.align !== "center" || !/\p{Lu}{2}/u.test(label.text) || label.text !== label.text.toUpperCase()) continue;
+    if (label.x > rect.x + BOX_TITLE_SLACK || label.x + width < rect.x + rect.width - BOX_TITLE_SLACK) continue;
+    if (width > rect.width * BOX_TITLE_MAX_SPAN) continue;
+    const top = rect.y + rect.height;
+    const distance = label.y >= top ? label.y - top : label.y <= rect.y ? rect.y - label.y : 0;
+    if (distance <= BOX_TITLE_REACH && (best === undefined || distance < best.distance)) best = { text: label.text, distance };
+  }
+  return best === undefined ? fallback : printedName(best.text);
+}
+
+/** A form box's name when its page prints no title for it: the field's own. */
+function fieldFallbackName(field: string): string {
+  return printedName(field.replace(/^(details|background|companion|equipment_page)_/, "").replace(/_/g, " "));
+}
+
+/** Text a form box could not hold, as plain paragraphs for a continuation. */
+function fieldContinuations(
+  overflow: readonly BoxOverflow[], fieldRects: ReadonlyMap<string, FieldRect>, labels: SheetTemplateLabels[string] | undefined,
+): FeatureContinuation[] {
+  return overflow.map(({ field, text }) => ({
+    heading: boxTitle(labels, fieldRects.get(field), fieldFallbackName(field)),
+    paragraphs: text.split("\n").flatMap((paragraph): FeatureParagraph[] => {
+      const words = paragraph.split(/\s+/).filter(Boolean);
+      return words.length === 0 ? [] : [{ words: words.map((word) => ({ text: word, style: "regular" as const })), indent: 0, gapAfter: "paragraph" }];
+    }),
+  }));
 }
 
 /**
@@ -1400,6 +1482,7 @@ function detailsBoxName(labels: SheetTemplateLabels[string] | undefined, candida
  */
 interface DetailsFeatureLayout {
   split: boolean;
+  /** The page's printed titles, which name the boxes a continuation carries on. */
   labels?: SheetTemplateLabels[string];
   ruleColour?: PdfColor;
 }
@@ -1424,15 +1507,13 @@ function drawDetailsRichText(
     // Cut inside a headed group, the part continues that group, by its name.
     const group = paragraphs.slice(0, paragraphs.length - rest.length + 1).reverse().find((paragraph) => paragraph.kind === "heading");
     continuations.push({
-      paragraphs: rest, fontSize, lineHeight,
-      heading: group === undefined ? heading : group.words.map((word) => word.text).join(" "),
+      paragraphs: rest,
+      heading: group === undefined ? boxTitle(layout.labels, fieldRects.get(field), heading) : group.words.map((word) => word.text).join(" "),
     });
   };
   const racial = find("racial-traits");
   if (racial !== undefined) {
-    draw("details_additional_notes", sectionParagraphs(racial),
-      detailsBoxName(layout.labels, ["RACIAL TRAITS", "SPECIES TRAITS"], "Traits"),
-      { x: 222, top: 372, width: 169, bottom: 125 });
+    draw("details_additional_notes", sectionParagraphs(racial), "Traits", { x: 222, top: 372, width: 169, bottom: 125 });
   }
   // A layout with its own subclass and feat boxes (2024 Hybrid, and the split
   // layout of the others) splits the feature rows by origin; a split layout
@@ -1442,7 +1523,6 @@ function drawDetailsRichText(
   const groups = modelPage.featureGroups;
   const featureBox = { x: 409, top: 653, width: 169, bottom: 132 };
   const features = find("features");
-  const combinedName = detailsBoxName(layout.labels, ["FEATURES & TRAITS", "FEATURES", "CLASS FEATURES"], "Features");
   const grouped: ReadonlyArray<readonly [string, string, readonly SheetRow[]]> = groups === undefined ? [] : [
     ["details_features", "Class Features", groups["class-features"] ?? []],
     ["details_subclass_features", "Subclass Features", groups["subclass-features"] ?? []],
@@ -1451,9 +1531,9 @@ function drawDetailsRichText(
   if (fieldRects.has("details_subclass_features") && groups !== undefined) {
     for (const [field, heading, rows] of grouped) draw(field, featureParagraphs(rows), heading, featureBox);
   } else if (layout.split && groups !== undefined) {
-    draw("details_features", groupedFeatureParagraphs(grouped.map(([, heading, rows]) => [heading, rows] as const)), combinedName, featureBox);
+    draw("details_features", groupedFeatureParagraphs(grouped.map(([, heading, rows]) => [heading, rows] as const)), "Features", featureBox);
   } else if (features !== undefined) {
-    draw("details_features", sectionParagraphs(features), combinedName, featureBox);
+    draw("details_features", sectionParagraphs(features), "Features", featureBox);
   }
 
   const proficiencyRows = [
@@ -1462,8 +1542,7 @@ function drawDetailsRichText(
   ];
   // A list box — proficiencies and languages — is one run of like items, not a
   // sequence of features, so it keeps the plain paragraph rhythm.
-  draw("details_proficiencies_languages", featureParagraphs(proficiencyRows, false),
-    detailsBoxName(layout.labels, ["PROFICIENCIES & LANGUAGES", "PROFICIENCIES, TRAINING & LANGUAGES"], "Proficiencies & Languages"),
+  draw("details_proficiencies_languages", featureParagraphs(proficiencyRows, false), "Proficiencies & Languages",
     { x: 409, top: 119, width: 169, bottom: 33 }, 7.4, 9.2);
   return continuations;
 }
@@ -1471,23 +1550,26 @@ function drawDetailsRichText(
 /**
  * The companion page's flowed text. The template sizes its own
  * `companion_features` box, so the geometry comes from that field's widget
- * rectangle rather than pinned coordinates.
+ * rectangle rather than pinned coordinates. Returns what the box could not
+ * hold, named by the page's title for it.
  */
 function drawCompanionRichText(
   page: PDFPage,
   modelPage: SheetPage,
   fonts: SheetFonts,
   fieldRects: ReadonlyMap<string, FieldRect>,
-): void {
+  labels: SheetTemplateLabels[string] | undefined,
+): FeatureContinuation[] {
   const section = modelPage.sections.find((candidate) => candidate.title === "companion-features");
-  if (section === undefined || section.rows.length === 0) return;
+  if (section === undefined || section.rows.length === 0) return [];
   const box = richTextBox(fieldRects, "companion_features", DEFAULT_FEATURE_FONT_SIZE, {
     x: 36,
     top: 360,
     width: 250,
     bottom: 40,
   });
-  drawRichFeatureSection(page, sectionParagraphs(section), fonts, box.x, box.top, box.width, box.bottom);
+  const rest = drawRichFeatureSection(page, sectionParagraphs(section), fonts, box.x, box.top, box.width, box.bottom);
+  return rest === undefined ? [] : [{ paragraphs: rest, heading: boxTitle(labels, fieldRects.get("companion_features"), "Features") }];
 }
 
 function equipmentSidebarRuns(modelPage: SheetPage): LayoutRun[] {
@@ -1536,12 +1618,8 @@ function addAttackNotePages(
   let page: PDFPage | undefined;
   let top = 0;
   const newPage = (): PDFPage => {
-    const next = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    next.drawRectangle({ x, y: 738, width, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
-    next.drawText("ATTACK NOTES", { x: x + padding, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
-    drawSheetFooter(next, fonts, footerText);
     top = 724;
-    return next;
+    return addContinuationPage(output, "ATTACK NOTES", fonts, colours, footerText);
   };
   for (const card of cards) {
     const lines = attackNoteLines(card.text, fonts.regular, 8, width - padding * 2);
@@ -2044,7 +2122,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   for (const modelPage of model.pages) {
     await yieldToEventLoop();
     if (modelPage.templateKind === "details") {
-      const { page, fieldRects } = await fill("details", bundle.details, {
+      const { page, fieldRects, overflow: boxOverflow } = await fill("details", bundle.details, {
         ...values,
         details_features: "",
         details_subclass_features: "",
@@ -2059,49 +2137,65 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         labels: detailsLabels,
         ruleColour: labelInk.lines,
       }));
-      addFeatureContinuationPages(output, overflow, fonts, labelInk, footerText);
+      addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, detailsLabels)],
+        fonts, labelInk, footerText, "FEATURES & TRAITS (CONTINUED)");
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
       continue;
     }
     if (modelPage.templateKind === "background") {
-      const { page, fieldRects } = await fill("background", bundle.background, values);
+      const { page, fieldRects, overflow } = await fill("background", bundle.background, values);
       drawTemplateText(page, bundle.labels[files.background], fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       await timed("portrait", () => drawFieldImage(output, page, fieldRects, "background_portrait_image", images["background_portrait_image"] ?? ""));
       drawSheetFooter(page, fonts, footerText);
+      addFeatureContinuationPages(output, fieldContinuations(overflow, fieldRects, bundle.labels[files.background]),
+        fonts, labelInk, footerText, "BACKGROUND (CONTINUED)");
       continue;
     }
     if (modelPage.templateKind === "companion") {
-      const { page, fieldRects } = await fill("companion", bundle.companion, {
+      const { page, fieldRects, overflow } = await fill("companion", bundle.companion, {
         ...values,
         companion_features: "",
       });
-      drawTemplateText(page, bundle.labels[files.companion], fonts, labelInk);
+      const companionLabels = bundle.labels[files.companion];
+      drawTemplateText(page, companionLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       await timed("portrait", () => drawFieldImage(output, page, fieldRects, "companion_portrait_image", images["companion_portrait_image"] ?? ""));
-      timed("richText:companion", () => drawCompanionRichText(page, modelPage, fonts, fieldRects));
+      const rest = timed("richText:companion", () => drawCompanionRichText(page, modelPage, fonts, fieldRects, companionLabels));
       drawSheetFooter(page, fonts, footerText);
+      addFeatureContinuationPages(output, [...rest, ...fieldContinuations(overflow, fieldRects, companionLabels)],
+        fonts, labelInk, footerText, "COMPANION (CONTINUED)");
       continue;
     }
     if (modelPage.templateKind === "equipment") {
       const sidebarRuns = equipmentSidebarRuns(modelPage);
       const lastPage = sidebarRuns.reduce((highest, run) => Math.max(highest, run.page ?? 0), 0);
-      for (let equipmentPage = 0; equipmentPage <= lastPage; equipmentPage += 1) {
+      await yieldToEventLoop();
+      const { page, fieldRects, overflow } = await fill("equipment", bundle.equipment, {
+        ...values,
+        equipment_page_magic_items: "",
+      });
+      const equipmentLabels = bundle.labels[files.equipment];
+      drawTemplateText(page, equipmentLabels, fonts, labelInk);
+      timed("richText:equipment", () => drawEquipmentRichText(page, modelPage, fonts, 0));
+      drawSheetFooter(page, fonts, footerText);
+      // The notes column's overflow is laid out at the continuation page's own
+      // width (card-layout.ts), on plain pages rather than further copies of
+      // the inventory page.
+      for (let equipmentPage = 1; equipmentPage <= lastPage; equipmentPage += 1) {
         await yieldToEventLoop();
-        // A continuation carries only the overflowing notes column: repeating
-        // the gear, treasure and quest tables would print the same inventory
-        // twice.
-        const { page } = await fill("equipment", bundle.equipment, {
-          ...(equipmentPage === 0
-            ? values
-            : Object.fromEntries(Object.entries(values).map(([key, value]) =>
-              [key, key.startsWith("equipment_page_") ? "" : value]))),
-          equipment_page_magic_items: "",
-        });
-        drawTemplateText(page, bundle.labels[files.equipment], fonts, labelInk);
-        timed("richText:equipment", () => drawEquipmentRichText(page, modelPage, fonts, equipmentPage));
-        drawSheetFooter(page, fonts, footerText);
+        const continuation = addContinuationPage(output, "EQUIPMENT (CONTINUED)", fonts, labelInk, footerText);
+        if (equipmentPage === 1) {
+          const notes = boxTitle(equipmentLabels, fieldRects.get("equipment_page_magic_items"), "Notes");
+          const part = [headingParagraph(`${notes} (continued)`, "part")];
+          drawFeatureFlow(continuation, part, featureFlowLines(part, CONTINUATION_TEXT_WIDTH, DEFAULT_FEATURE_FONT_SIZE, fontMeasure(fonts)),
+            fonts, CONTINUATION_TEXT_X, CONTINUATION_TEXT_TOP, CONTINUATION_TEXT_WIDTH, CONTINUATION_TEXT_BOTTOM,
+            DEFAULT_FEATURE_FONT_SIZE, DEFAULT_FEATURE_FONT_SIZE);
+        }
+        timed("richText:equipment", () => drawEquipmentRichText(continuation, modelPage, fonts, equipmentPage));
       }
+      addFeatureContinuationPages(output, fieldContinuations(overflow, fieldRects, equipmentLabels),
+        fonts, labelInk, footerText, "EQUIPMENT (CONTINUED)");
       continue;
     }
     if (modelPage.templateKind === "spell-list") {

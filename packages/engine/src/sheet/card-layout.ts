@@ -40,7 +40,30 @@ export interface HtmlLayoutOptions {
   card?: number;
   firstLineIndent?: number;
   lineHeight?: number;
+  /**
+   * The areas a flow fills in turn, one per page, by page index; with them a
+   * line that would start below its area's floor starts at the top of the
+   * next one instead, wrapped at that area's width, and each run carries its
+   * page. `x` and `width` give way to the starting area's.
+   */
+  frames?: (page: number) => HtmlFrame;
+  /** The page, and so the area, the flow starts on. */
+  frame?: number;
 }
+
+export interface HtmlFrame {
+  x: number;
+  top: number;
+  width: number;
+  bottom: number;
+}
+
+/**
+ * The text area of a plain continuation page (the attack-note style the
+ * writer draws), and the drop a bold "<box> (continued)" line at its top
+ * takes: an 8pt line and the gap after it.
+ */
+export const CONTINUATION_PAGE_TEXT = { x: 44, top: 716, width: 524, bottom: 48, partLine: 8 + 8 * 0.45 } as const;
 
 const CARD_CONTRACT = SHEET_TEMPLATE_CONTRACT.cards;
 const PAGE_MARGIN = CARD_CONTRACT.originX;
@@ -128,34 +151,50 @@ export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): Layout
   const space = measuredWidth(" ", options.fontSize);
   const indent = measuredWidth("    ", options.fontSize);
   const lineHeight = options.lineHeight ?? options.fontSize;
+  const frames = options.frames;
+  let frame = options.frame ?? 0;
+  let left = frames === undefined ? options.x : frames(frame).x;
+  let width = frames === undefined ? options.width : frames(frame).width;
   let y = options.top;
+  /** Moves a line that would start below its area's floor to the next area. */
+  const fit = (): void => {
+    if (frames === undefined || y >= frames(frame).bottom) return;
+    frame += 1;
+    ({ x: left, width, top: y } = frames(frame));
+  };
+  const push = (run: LayoutRun): void => {
+    runs.push(frames === undefined ? run : { ...run, page: frame });
+  };
   htmlBlocks(html).forEach((block, blockIndex) => {
+    fit();
     const contentIndent = block.list ? indent * 2 : blockIndex === 0 ? 0 : indent;
-    const bulletX = options.x + (block.list ? indent : 0);
+    const bulletX = left + (block.list ? indent : 0);
     const firstLineIndent = blockIndex === 0 ? options.firstLineIndent ?? 0 : 0;
-    let x = options.x + contentIndent + firstLineIndent;
-    if (block.list) runs.push({ text: "\u0007", x: bulletX, y, width: space, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: "regular" });
+    let x = left + contentIndent + firstLineIndent;
+    if (block.list) push({ text: "\u0007", x: bulletX, y, width: space, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: "regular" });
     for (const word of block.words) {
       const wordWidth = styledWidth(word, options.fontSize);
-      if (x > options.x + contentIndent + firstLineIndent && x + wordWidth > options.x + options.width) {
+      if (x > left + contentIndent + firstLineIndent && x + wordWidth > left + width) {
         const hyphen = /^(.+-)([^-]+)$/.exec(word.text);
         if (hyphen !== null) {
           const prefix = hyphen[1]!;
           const suffix = hyphen[2]!;
           const prefixWidth = measuredWidth(prefix, options.fontSize, word.style);
-          if (x + prefixWidth <= options.x + options.width) {
-            runs.push({ text: prefix, x, y, width: prefixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
+          if (x + prefixWidth <= left + width) {
+            push({ text: prefix, x, y, width: prefixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
             y -= lineHeight;
+            fit();
             const suffixWidth = measuredWidth(suffix, options.fontSize, word.style);
-            runs.push({ text: suffix, x: options.x + contentIndent, y, width: suffixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
-            x = options.x + contentIndent + suffixWidth + space;
+            push({ text: suffix, x: left + contentIndent, y, width: suffixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
+            x = left + contentIndent + suffixWidth + space;
             continue;
           }
         }
         y -= lineHeight;
-        x = options.x + contentIndent;
+        fit();
+        x = left + contentIndent;
       }
-      runs.push({ text: word.text, x, y, width: wordWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
+      push({ text: word.text, x, y, width: wordWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
       x += wordWidth + space;
     }
     y -= lineHeight;
@@ -466,11 +505,20 @@ const SIDEBAR_X = SHEET_TEMPLATE_CONTRACT.equipmentNotes.x + 3;
 const SIDEBAR_WIDTH = SHEET_TEMPLATE_CONTRACT.equipmentNotes.width - 6;
 const SIDEBAR_GAP = 13;
 
-/** One flowed column of item descriptions, leading and gaps scaled to `fontSize`. */
-function sidebarBlockRuns(sidebars: readonly InventorySidebar[], fontSize: number): LayoutRun[] {
+/**
+ * One flowed column of item descriptions, leading and gaps scaled to
+ * `fontSize`. With `frames`, text the column cannot hold flows on into the
+ * further areas, one per page.
+ */
+function sidebarBlockRuns(
+  sidebars: readonly InventorySidebar[],
+  fontSize: number,
+  frames?: (page: number) => HtmlFrame,
+): LayoutRun[] {
   const scale = fontSize / SIDEBAR_FONT_SIZE;
   const runs: LayoutRun[] = [];
   let y = SIDEBAR_TOP;
+  let frame = 0;
   for (const sidebar of sidebars) {
     const sidebarRuns = layoutHtmlRuns(
       `<strong><em>${sidebar.title}.</em></strong> ${sidebar.html}`,
@@ -481,20 +529,31 @@ function sidebarBlockRuns(sidebars: readonly InventorySidebar[], fontSize: numbe
         fontSize,
         lineHeight: SIDEBAR_LINE_HEIGHT * scale,
         role: "sidebar",
+        ...(frames === undefined ? {} : { frames, frame }),
       },
     );
     runs.push(...sidebarRuns);
-    y = Math.min(...sidebarRuns.map((run) => run.y)) - SIDEBAR_GAP * scale;
+    frame = sidebarRuns.reduce((last, run) => Math.max(last, run.page ?? 0), frame);
+    y = Math.min(...sidebarRuns.filter((run) => (run.page ?? 0) === frame).map((run) => run.y)) - SIDEBAR_GAP * scale;
   }
   return runs;
+}
+
+/** The notes column, then the text area of each continuation page after it. */
+function sidebarFrame(page: number): HtmlFrame {
+  if (page === 0) return { x: SIDEBAR_X, top: SIDEBAR_TOP, width: SIDEBAR_WIDTH, bottom: SIDEBAR_BOTTOM };
+  const { x, top, width, bottom, partLine } = CONTINUATION_PAGE_TEXT;
+  // The first continuation page opens with the column's "(continued)" line.
+  return { x, top: page === 1 ? top - partLine : top, width, bottom };
 }
 
 /**
  * The item-descriptions column, kept inside its box. A character carrying more
  * attunements than the column holds gets smaller text rather than prose walking
- * off the bottom of the page, and prose too long even at the floor size
- * continues onto a further copy of the page -- a sidebar item is not guaranteed
- * a card elsewhere in the sheet, so overflow here would otherwise be lost.
+ * off the bottom of the page, and prose too long even at the floor size keeps
+ * its size and flows on to continuation pages, wrapped at their width -- a
+ * sidebar item is not guaranteed a card elsewhere in the sheet, so overflow
+ * here would otherwise be lost.
  */
 function boundedSidebarRuns(sidebars: readonly InventorySidebar[]): LayoutRun[] {
   const normal = sidebarBlockRuns(sidebars, SIDEBAR_FONT_SIZE);
@@ -513,24 +572,7 @@ function boundedSidebarRuns(sidebars: readonly InventorySidebar[]): LayoutRun[] 
     return sidebarBlockRuns(sidebars, low);
   }
 
-  // Beyond what shrinking can rescue: keep the text legible and spill whole
-  // lines onto continuation pages, each restarting at the top of the column.
-  const paginated: LayoutRun[] = [];
-  const groups = bodyLineGroups(normal);
-  let groupIndex = 0;
-  let page = 0;
-  while (groupIndex < groups.length) {
-    const firstY = groups[groupIndex]![0]!.y;
-    let end = groupIndex;
-    while (end < groups.length && groups[end]![0]!.y + SIDEBAR_TOP - firstY >= SIDEBAR_BOTTOM) end += 1;
-    if (end === groupIndex) end += 1;
-    for (const run of groups.slice(groupIndex, end).flat()) {
-      paginated.push({ ...run, page, y: run.y + SIDEBAR_TOP - firstY });
-    }
-    groupIndex = end;
-    page += 1;
-  }
-  return paginated;
+  return sidebarBlockRuns(sidebars, SIDEBAR_FONT_SIZE, sidebarFrame);
 }
 
 export function inventoryRuns(
