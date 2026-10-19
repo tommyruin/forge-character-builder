@@ -422,6 +422,9 @@ describe("caster-less spell grants", () => {
     const casters = service.getSpellcasting(id);
     expect(casters).toHaveLength(1);
     expect(casters[0]!.name).toBe("Infernal Legacy");
+    // "Charisma is your spellcasting ability for these spells", not the
+    // Intelligence fallback a character with no class caster would get.
+    expect(casters[0]!.ability).toBe("Charisma");
     expect(casters[0]!.knownSpells.map((spell) => spell.id)).toEqual([THAUMATURGY]);
     // The trait's text never says the spell is cast without a spell slot, so
     // no allowance is claimed for it (and a cantrip never carries one).

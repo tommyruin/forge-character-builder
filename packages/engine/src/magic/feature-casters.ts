@@ -114,16 +114,23 @@ function abilitySibling(
 }
 
 /**
- * The ability a feature states in its own text. The 2014 Magic Initiate class
- * sub-features carry no ability element; each says "Spellcasting ability:
- * Intelligence." on its sheet (and in its description), naming exactly one.
+ * The ability a feature states in its own text, when the sentence that names
+ * its spellcasting ability names exactly one: the 2014 Magic Initiate options
+ * ("Spellcasting ability: Intelligence."), racial casting ("Charisma is your
+ * spellcasting ability for these spells.", the High Elf's "... for it") and
+ * feats ("... using Wisdom as your spellcasting ability"). A sentence offering
+ * a choice ("Intelligence, Wisdom, or Charisma is ...") names none; the
+ * choice is a sub-feature (abilitySibling).
  */
 function statedAbility(element: ParsedElement): string | null {
   const texts = [...element.sheets.flatMap((sheet) => sheet.descriptions.map((entry) => entry.text)), element.descriptionXml ?? ""];
   for (const raw of texts) {
-    const text = raw.replace(/<[^>]*>/g, " ");
-    const match = /spellcasting ability(?: for (?:these|this) spells?)?(?: is|:)\s*(intelligence|wisdom|charisma)\b/i.exec(text);
-    if (match !== null) return match[1]!.charAt(0).toUpperCase() + match[1]!.slice(1).toLowerCase();
+    const sentences = raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").split(/(?<=[.!?])\s+/);
+    for (const sentence of sentences) {
+      if (!/spellcasting ability/i.test(sentence)) continue;
+      const named = SPELLCASTING_ABILITIES.filter((ability) => new RegExp(`\\b${ability}\\b`, "i").test(sentence));
+      if (named.length === 1) return named[0]!;
+    }
   }
   return null;
 }
