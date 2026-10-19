@@ -88,14 +88,6 @@ const FROSTBITE = {
   },
 };
 
-const WHISTLE = {
-  kind: "item",
-  elementId: "ID_CUSTOM_WHISTLE00000000A",
-  granted: true,
-  installed: true,
-  draft: { schemaVersion: 1, id: "ID_CUSTOM_WHISTLE00000000A", template: "gear", name: "Signal Whistle", description: "", blocks: [], stackable: true },
-};
-
 const workspace = {
   id: "Ada",
   busy: false,

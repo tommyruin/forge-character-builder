@@ -68,8 +68,8 @@ References:
 Only the Character Builder library is eligible:
 
 - `characters`: raw `.dnd5e` XML, summary, and local update time. The XML carries the
-  character's own custom content (the `forge-builder` block, see `docs/contract.md`), so it
-  syncs with the character without a separate record
+  character's own custom content (features and items, in the `forge-builder` block, see
+  `docs/contract.md`), so it syncs with the character without a separate record
 - `content`: uploaded `.xml`/`.index` bytes and source/path metadata
 - `content-import-sources`: labels and refresh metadata for imported content sources
 - `homebrew`: complete editable drafts, including their stable element identifiers

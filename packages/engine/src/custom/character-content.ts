@@ -14,7 +14,6 @@ import type {
   ChoiceIdentityReportDto,
   CustomContentDto,
   CustomDiagnosticDto,
-  CustomDraft,
   CustomDraftEntryDto,
   CustomEntryDraft,
   CustomItemDraft,

@@ -111,7 +111,6 @@ export default function EquipmentTab() {
   // rename / notes dialog for one record.
   const [customDialog, setCustomDialog] = useState(null);
   const [detailsDialog, setDetailsDialog] = useState(null);
-  const mutateRef = useRef(null);
   const [inspected, setInspected] = useState(null);
   const [extracting, setExtracting] = useState(null);
   const [stowing, setStowing] = useState(null);
@@ -150,11 +149,10 @@ export default function EquipmentTab() {
     } else refreshInventory();
     return result;
   };
-  mutateRef.current = mutate;
 
   const rulesetMode = detail?.rulesetMode;
-  // Every change the custom item dialog makes goes through the tab's own mutate, then reads the
-  // inventory again: a save answers with the character, not the inventory.
+  // A custom item save answers with the character, not the inventory, so every change the
+  // dialog makes reads the inventory again afterwards.
   const customServices = useMemo(
     () =>
       canCustom
@@ -163,14 +161,14 @@ export default function EquipmentTab() {
             store: localStore,
             id,
             run: async (operation) => {
-              const result = await mutateRef.current(operation);
+              const result = await run(operation);
               refreshInventory(true);
               return result;
             },
             ruleset: rulesetMode,
           })
         : null,
-    [id, rulesetMode, refreshInventory],
+    [id, rulesetMode, run, refreshInventory],
   );
   const { entries: customItems } = useCustomContent(customServices, inventory, "item");
   const customItemsById = useMemo(
