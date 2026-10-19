@@ -2,7 +2,7 @@
 //
 // The draft (persisted verbatim in IndexedDB via localStore.putHomebrew) is the source of
 // truth; the generated XML is re-derived on every Save & Ingest and uploaded under a stable
-// path (`homebrew/<slug>.xml`) so re-saving a collection overwrites it in place.
+// path (see collectionStoragePath) so re-saving a collection overwrites it in place.
 //
 // Draft model:
 //   {
@@ -18,6 +18,7 @@
 //   }
 
 import { requirementsSyntaxError } from '@forge-cb/engine/requirements';
+import { contentStoragePath } from '../../transport/contentStorage.js';
 
 export const UPLOAD_CATEGORY = 'homebrew';
 
@@ -363,8 +364,17 @@ export function collectionFileName(draft) {
   return `${fileSlug(draft.slug || draft.name) || 'homebrew-collection'}.xml`;
 }
 
-export function collectionFilePath(draft) {
-  return `${UPLOAD_CATEGORY}/${collectionFileName(draft)}`;
+// Where a collection lives in the content store. The source id comes from the draft's own id and
+// the file name is fixed, so saving, the warnings filter and delete name one path no matter how
+// often the collection is saved or renamed.
+export const COLLECTION_STORED_FILE = 'collection.xml';
+
+export function collectionContentSourceId(draft) {
+  return `homebrew-${draft.id}`;
+}
+
+export function collectionStoragePath(draft) {
+  return contentStoragePath(collectionContentSourceId(draft), COLLECTION_STORED_FILE);
 }
 
 // ---------------------------------------------------------------------------

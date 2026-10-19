@@ -17,11 +17,9 @@ import Icon from '../Icon';
 import {
   ELEMENT_TYPES,
   RULESET_OPTIONS,
-  UPLOAD_CATEGORY,
   buildCollectionXml,
   buildElementXml,
   collectionFileName,
-  collectionFilePath,
   createCollection,
   createElement,
   deriveAbbreviation,
@@ -30,6 +28,7 @@ import {
   normalizeCollectionRuleset,
   validateDraft,
 } from "./xmlBuilder";
+import { consolidateStrayCopies, removeCollection, saveCollection } from "./homebrewStorage";
 
 const ELEMENT_TYPE_GROUPS = [
   { label: "Magic", types: ["Spell"] },
@@ -50,9 +49,11 @@ const ELEMENT_TYPE_GROUPS = [
   },
 ];
 
+let strayCopiesChecked = false;
+
 // In-app homebrew content editor. Collections are structured drafts
 // stored in IndexedDB (localStore.homebrew); Save & Ingest generates compatible XML and
-// uploads it under the stable path homebrew/<slug>.xml, so re-saving edits in place.
+// uploads it under one stable stored path per collection, so re-saving edits in place.
 const HomebrewEditor = forwardRef(function HomebrewEditor(
   {
     beforeLibraryMutation,
@@ -99,6 +100,22 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
   useEffect(() => {
     refreshList();
   }, [refreshList]);
+
+  // Earlier versions stored a new copy of a collection on every save. Fold any such copies into
+  // each collection's single stored file, once per page load.
+  useEffect(() => {
+    if (strayCopiesChecked) return;
+    strayCopiesChecked = true;
+    (async () => {
+      const records = await localStore.listHomebrew();
+      const removed = await consolidateStrayCopies(api, records);
+      if (removed > 0) {
+        api.content.clearCache();
+        await onLibraryChanged?.({ source: "homebrew", result: {} });
+      }
+    })().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a one-time check; later handler identities do not matter
+  }, []);
 
   const flushPendingDraft = useCallback(async () => {
     window.clearTimeout(persistTimerRef.current);
@@ -303,19 +320,9 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     try {
       await beforeLibraryMutation?.();
       await localStore.putHomebrew(draft); // draft JSON is the source of truth
-      const xml = buildCollectionXml(draft);
-      const file = new File([xml], collectionFileName(draft), {
-        type: "application/xml",
-      });
-      const result = await api.content.upload([file], UPLOAD_CATEGORY);
+      const { result, diagnostics, warnings, rejected } = await saveCollection(api, draft);
       api.content.clearCache();
       await onLibraryChanged?.({ source: "homebrew", result });
-
-      const path = collectionFilePath(draft);
-      const diagnostics = (result.diagnostics ?? []).filter(
-        (d) => d.file && d.file.endsWith(path),
-      );
-      const rejected = (result.files ?? []).filter((f) => !f.accepted);
 
       if (diagnostics.length === 0 && rejected.length === 0) {
         // Ingested clean: freeze element ids (stable across renames / re-uploads).
@@ -332,7 +339,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
         await localStore.putHomebrew(locked);
         setDraft(locked);
         setDraftSaveState("saved");
-        setIngestResult({ ok: true, count: result.elementCountAfterReload });
+        setIngestResult({ ok: true, count: result.elementCountAfterReload, warnings });
       } else {
         setIngestResult({ ok: false, diagnostics, rejected });
       }
@@ -375,8 +382,9 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     try {
       await beforeLibraryMutation?.();
       let result = { characterReloadRequired: false };
-      if (draft.ingestedAt && canRemoveContent) {
-        result = await api.content.remove([collectionFilePath(draft)]);
+      // Always: a collection that loaded with advice never gets ingestedAt, but its file is stored.
+      if (canRemoveContent) {
+        result = await removeCollection(api, draft);
         api.content.clearCache();
       }
       await localStore.deleteHomebrew(draft.id);
@@ -688,6 +696,18 @@ function IngestResult({ result }) {
           </span>
         </p>
       )}
+      {result?.ok && (result.warnings ?? []).length > 0 && (
+        <div className="fcb-warning-note" data-testid="hb-ingest-warnings">
+          <p className="font-semibold">Loaded, with content warnings:</p>
+          <ul className="mt-1 list-disc pl-5">
+            {result.warnings.map((warning, index) => (
+              <li key={index}>
+                [{warning.kind}] {warning.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {result && !result.ok && (
         <div className="fcb-alert" role="alert">
           <p className="font-semibold">
@@ -945,7 +965,7 @@ function CollectionDetails({ draft, busy, onFieldChange }) {
           </div>
         </details>
         <p className="fcb-homebrew-file-path">
-          Generated file: <code>{collectionFilePath(draft)}</code>
+          Download file: <code>{collectionFileName(draft)}</code>
         </p>
       </div>
     </section>

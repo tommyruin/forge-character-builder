@@ -1161,6 +1161,39 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       const reloaded = await contentApi.reload(stalePaths.length ? stalePaths : list);
       return { status: "succeeded", removed: removed ?? list, elementCountAfterReload: reloaded.elementCountAfterReload, diagnostics: [] };
     },
+    /**
+     * Folds the stored copies of one homebrew collection into the single file at its stable path.
+     * Earlier versions saved each collection under a new random source id every time, so a
+     * collection could hold several stored copies; those are found by the collection's Source
+     * element id, the newest is kept (moved to the stable path unless the stable file exists) and
+     * the rest are removed. Content that does not declare the marker is never touched.
+     */
+    consolidateHomebrew: async (request: AnyRecord) => {
+      const sourceId = String(request.sourceId ?? "");
+      const relativePath = String(request.relativePath ?? "");
+      const marker = String(request.marker ?? "");
+      if (sourceId === "" || relativePath === "") throw new Error("consolidateHomebrew needs a source id and a file name.");
+      const keepPath = contentStoragePath(sourceId, relativePath);
+      const stored = ((await store.listContent()) as AnyRecord[]).filter((record) => {
+        if (String(record.path) === keepPath) return true;
+        if (marker === "") return false;
+        try {
+          return base64ToUtf8(String(record.base64)).includes(`id="${marker}"`);
+        } catch {
+          return false;
+        }
+      });
+      const stable = stored.find((record) => String(record.path) === keepPath);
+      const strays = stored.filter((record) => String(record.path) !== keepPath);
+      if (strays.length === 0) return { status: "succeeded", removed: 0 };
+      const newest = [...strays].sort((a, b) => Number(b.uploadedAt ?? 0) - Number(a.uploadedAt ?? 0))[0]!;
+      if (stable === undefined) {
+        await store.putContentBatch([{ path: keepPath, base64: String(newest.base64), sourceId, relativePath }]);
+      }
+      const removed = await store.deleteContentBatch(strays.map((record) => String(record.path)));
+      const reloaded = await contentApi.reload(contentRecordPaths(removed));
+      return { status: "succeeded", removed: strays.length, elementCountAfterReload: reloaded.elementCountAfterReload };
+    },
     listSources: () => store.listContentSources(),
     replaceSource: async (inputs: unknown[], source: AnyRecord, replaceOptions: AnyRecord = {}) => {
       const sourceId = String(source?.id ?? createContentSourceId());
