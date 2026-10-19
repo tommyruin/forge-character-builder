@@ -153,6 +153,33 @@ export function spellScrollSlug(spellId: string): string {
   return index < 0 ? tokens.slice(1).join("_") : tokens.slice(index + 1).join("_");
 }
 
+/**
+ * The slug a homebrew pack's proxies carry. A pack has no entry in the source
+ * table above, so the marker the builder writes on its Source element (the
+ * `homebrew` setter) is what says an element's source is a pack; each proxy is
+ * told apart by the granted element's whole id, which is unique already.
+ */
+export const HOMEBREW_PROXY_SLUG = "HB";
+
+/** The category Manage lists a homebrew proxy under, by the type it grants. */
+const HOMEBREW_PROXY_CATEGORY: Readonly<Record<string, string>> = {
+  Language: "Additional Language",
+  Proficiency: "Additional Proficiency",
+  Feat: "Additional Feature",
+  "Ability Score Improvement": "Additional Feature",
+};
+
+/** Names of the sources marked `homebrew`. */
+function homebrewSourceNames(sources: ElementLibrary["sources"]): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const source of sources.values()) {
+    if (source.setters.some((setter) => setter.name === "homebrew" && setter.value.trim().toLowerCase() === "true")) {
+      names.add(source.identity.name);
+    }
+  }
+  return names;
+}
+
 /** The granted element's source slug for a proxy id. */
 export function proxySourceSlug(
   source: string,
@@ -180,15 +207,46 @@ export function proxyKindSlug(id: string, typeToken: string): string {
   return tokens.slice(last).join("_");
 }
 
+/** The "Additional X" item for one element of a homebrew pack. */
+function homebrewProxy(element: ParsedElement, type: string, token: string, category: string): ParsedElement {
+  const grantedId = element.identity.id;
+  const kind = grantedId.slice(3);
+  const label = type === "Ability Score Improvement" ? "Ability Score Improvement" : `${token[0]!}${token.slice(1).toLowerCase()}`;
+  const infix = type === "Ability Score Improvement" ? "PROXY_ASI" : `${token}_PROXY`;
+  return {
+    identity: {
+      id: `ID_${HOMEBREW_PROXY_SLUG}_INTERNAL_ITEM_${infix}_${kind}`,
+      name: `Additional ${label}, ${element.identity.name}`,
+      type: "Item",
+      source: element.identity.source,
+    },
+    descriptionXml: `${PROXY_DESCRIPTION}${grantedId}" />\n\t\t\t</div>`,
+    setters: [{ name: "category", value: category }],
+    rules: [{ kind: "grant", type, id: grantedId }],
+    supports: [],
+    compendiumHidden: false,
+    sheets: [],
+    children: [],
+    declaredBy: "",
+  };
+}
+
 /** Builds the ingest-generated proxy items for a library. */
 export function generateItemProxies(library: {
   byType: ElementLibrary["byType"];
   sources: ElementLibrary["sources"];
 }): ParsedElement[] {
   const out: ParsedElement[] = [];
+  const homebrewSources = homebrewSourceNames(library.sources);
   for (const { type, token } of PROXY_TYPES) {
     const elements = library.byType.get(type) ?? [];
     for (const element of elements) {
+      if (homebrewSources.has(element.identity.source)) {
+        const category = HOMEBREW_PROXY_CATEGORY[type];
+        // Spells are added from the Magic tab, so a pack's spells get no proxy.
+        if (category !== undefined) out.push(homebrewProxy(element, type, token, category));
+        continue;
+      }
       if (
         type === "Ability Score Improvement" &&
         !/^ID_INTERNAL_ASI_(STRENGTH|DEXTERITY|CONSTITUTION|INTELLIGENCE|WISDOM|CHARISMA)$/.test(
