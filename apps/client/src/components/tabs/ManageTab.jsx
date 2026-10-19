@@ -25,7 +25,7 @@ const SUB_TABS = [
   ['notes', 'Notes'],
   ['allies', 'Allies & Organizations'],
   ['attacks', 'Attacks'],
-  ['sheet', 'Sheet'],
+  ['sheet', 'Sheet options'],
 ];
 
 // Randomize scopes: which editable fields each Randomize button previews/overwrites.
