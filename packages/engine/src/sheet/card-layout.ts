@@ -10,6 +10,12 @@ export interface LayoutRun {
   card?: number;
   /** Zero-based PDF page within the containing card-page model page. */
   page?: number;
+  /**
+   * The description card the run belongs to, in input order. A long card's
+   * continuation takes the next free slot, so a slot (`card`, `page`) no
+   * longer tells which card it holds.
+   */
+  cardIndex?: number;
   role?: "title" | "subtitle" | "metadata" | "metadata-value" | "body" | "footer" | "table" | "sidebar";
   fontSize?: number;
   style?: "regular" | "bold" | "italic" | "bold-italic";
@@ -343,6 +349,17 @@ function canonicalDescriptionCardRuns(cards: readonly DescriptionCard[]): Layout
   return runs;
 }
 
+/** A card slot's page, position on the page (0-8, reading order) and frame. */
+function cardSlot(slot: number): { page: number; local: number; x: number; top: number } {
+  const local = slot % 9;
+  return {
+    page: Math.floor(slot / 9),
+    local,
+    x: PAGE_MARGIN + (local % 3) * (CARD_WIDTH + CARD_GUTTER),
+    top: CARD_TOPS[Math.floor(local / 3)]!,
+  };
+}
+
 export function descriptionCardRuns(
   cards: readonly DescriptionCard[],
   options: { richText?: boolean; face?: string } = {},
@@ -350,14 +367,13 @@ export function descriptionCardRuns(
   const { face } = options;
   if (options.richText === false) return canonicalDescriptionCardRuns(cards);
   const runs: LayoutRun[] = [];
+  // Slots are handed out in reading order: a card, then each continuation
+  // of its body, then the next card. Placing cards by their index instead
+  // gave a continuation the slot of the card nine places later.
+  let nextSlot = 0;
   cards.forEach((card, cardIndex) => {
-    const pageIndex = Math.floor(cardIndex / 9);
-    const localCardIndex = cardIndex % 9;
-    const column = localCardIndex % 3;
-    const row = Math.floor(localCardIndex / 3);
-    const top = CARD_TOPS[row];
-    if (top === undefined) return;
-    const x = PAGE_MARGIN + column * (CARD_WIDTH + CARD_GUTTER);
+    const first = cardSlot(nextSlot++);
+    const { local: localCardIndex, top } = first;
     const add = (
       text: string,
       y: number,
@@ -367,17 +383,18 @@ export function descriptionCardRuns(
       xOffset = 3,
       align: LayoutRun["align"] = "left",
       rightInset = 3,
-      targetPage = pageIndex,
+      slot = first,
     ): void => {
       if (text === "") return;
       const run: LayoutRun = {
         text,
-        x: x + xOffset,
-        y,
+        x: slot.x + xOffset,
+        y: y - top + slot.top,
         width: CARD_WIDTH - xOffset - rightInset,
         height: fontSize,
-        card: localCardIndex,
-        page: targetPage,
+        card: slot.local,
+        page: slot.page,
+        cardIndex,
         role,
         fontSize,
         style,
@@ -388,9 +405,31 @@ export function descriptionCardRuns(
     add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0);
     add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0);
 
-    const appendBody = (bodyRuns: readonly LayoutRun[], targetPage: number, yShift = 0): void => {
-      for (const run of bodyRuns) {
-        runs.push({ ...run, card: localCardIndex, page: targetPage, y: run.y + yShift });
+    /**
+     * Lays the chosen body runs into the card's slot and, past its band, into
+     * further slots of their own (each with the title and subtitle again).
+     * `bodyDrop` and `bandDepth` place the band below a slot's top.
+     */
+    const placeBody = (bodyRuns: readonly LayoutRun[], bodyDrop: number, bandDepth: number): void => {
+      const groups = bodyLineGroups(bodyRuns);
+      let groupIndex = 0;
+      let slot = first;
+      while (groupIndex < groups.length) {
+        const firstY = groups[groupIndex]![0]!.y;
+        let end = groupIndex;
+        while (end < groups.length && groups[end]![0]!.y - firstY >= -bandDepth) end += 1;
+        if (end === groupIndex) end += 1;
+        const yShift = slot.top - bodyDrop - firstY;
+        const xShift = slot.x - first.x;
+        for (const run of groups.slice(groupIndex, end).flat()) {
+          runs.push({ ...run, x: run.x + xShift, y: run.y + yShift, card: slot.local, page: slot.page, cardIndex });
+        }
+        groupIndex = end;
+        if (groupIndex < groups.length) {
+          slot = cardSlot(nextSlot++);
+          add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0, slot);
+          add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, slot);
+        }
       }
     };
 
@@ -429,24 +468,7 @@ export function descriptionCardRuns(
           chosenRuns = minimumRuns;
         }
       }
-      const groups = bodyLineGroups(chosenRuns);
-      let groupIndex = 0;
-      let bodyPage = pageIndex;
-      while (groupIndex < groups.length) {
-        const firstY = groups[groupIndex]![0]!.y;
-        let end = groupIndex;
-        while (end < groups.length && groups[end]![0]!.y + bodyTop - firstY >= bodyBottom) end += 1;
-        if (end === groupIndex) end += 1;
-        const pageGroups = groups.slice(groupIndex, end);
-        const pageRuns = pageGroups.flat();
-        appendBody(pageRuns, bodyPage, bodyTop - firstY);
-        if (bodyPage > pageIndex) {
-          add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0, bodyPage);
-          add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, bodyPage);
-        }
-        groupIndex = end;
-        bodyPage += 1;
-      }
+      placeBody(chosenRuns, top - bodyTop, bodyTop - bodyBottom);
     } else {
       const bodyTop = top - 38;
       const bodyBottom = top - 225;
@@ -472,27 +494,11 @@ export function descriptionCardRuns(
           chosenRuns = minimumRuns;
         }
       }
-      const groups = bodyLineGroups(chosenRuns);
-      let groupIndex = 0;
-      let bodyPage = pageIndex;
-      while (groupIndex < groups.length) {
-        const firstY = groups[groupIndex]![0]!.y;
-        let end = groupIndex;
-        while (end < groups.length && groups[end]![0]!.y + bodyTop - firstY >= bodyBottom) end += 1;
-        if (end === groupIndex) end += 1;
-        const pageGroups = groups.slice(groupIndex, end);
-        appendBody(pageGroups.flat(), bodyPage, bodyTop - firstY);
-        if (bodyPage > pageIndex) {
-          add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0, bodyPage);
-          add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, bodyPage);
-        }
-        groupIndex = end;
-        bodyPage += 1;
-      }
+      placeBody(chosenRuns, top - bodyTop, bodyTop - bodyBottom);
     }
-    add(card.footer, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "left", CARD_FOOTER_INSET, pageIndex);
+    add(card.footer, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "left", CARD_FOOTER_INSET);
     if (card.footerRight !== undefined) {
-      add(card.footerRight, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "right", CARD_FOOTER_INSET, pageIndex);
+      add(card.footerRight, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "right", CARD_FOOTER_INSET);
     }
   });
   return runs;

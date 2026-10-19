@@ -150,8 +150,10 @@ describe("positioned card layout", () => {
     ]);
     const bodyRuns = runs.filter((run) => run.role === "body");
 
-    expect(new Set(bodyRuns.map((run) => run.page ?? 0)).size).toBeGreaterThan(1);
-    expect(bodyRuns.every((run) => run.y >= 532)).toBe(true);
+    // The body continues into further slots, each kept above its own band floor.
+    expect(new Set(bodyRuns.map((run) => `${run.page ?? 0}:${run.card}`)).size).toBeGreaterThan(1);
+    const floor = (run: LayoutRun) => SHEET_TEMPLATE_CONTRACT.cards.rowTops[Math.floor((run.card ?? 0) / 3)]! - 225;
+    expect(bodyRuns.every((run) => run.y >= floor(run))).toBe(true);
     expect(bodyRuns.some((run) => run.text === "card-token-599")).toBe(true);
   });
 
@@ -370,3 +372,34 @@ describe("spell card metadata", () => {
 function measuredWidthAt1(text: string): number {
   return measuredTextWidth(text, 1);
 }
+
+describe("card slots", () => {
+  it("gives a long first card's continuation its own slot among ten cards", () => {
+    const long = Array.from({ length: 700 }, (_, index) => `long-${index}`).join(" ");
+    const cards: DescriptionCard[] = Array.from({ length: 10 }, (_, index) => ({
+      kind: "generic", title: `Item ${index + 1}`, subtitle: "Gear", metadata: [],
+      body: index === 0 ? `<p>${long}</p>` : "<p>A short description.</p>", footer: "1 lb.",
+    }));
+    const runs = descriptionCardRuns(cards);
+    const owners = new Map<string, Set<number>>();
+    for (const run of runs) {
+      const slot = `${run.page ?? 0}:${run.card}`;
+      owners.set(slot, (owners.get(slot) ?? new Set()).add(run.cardIndex!));
+    }
+    // No slot holds two cards' text.
+    expect([...owners.values()].every((cards) => cards.size === 1)).toBe(true);
+    // Reading order: the long card and its continuation, then the other nine.
+    const order = [...owners.entries()]
+      .sort(([left], [right]) => {
+        const [lp, ls] = left.split(":").map(Number);
+        const [rp, rs] = right.split(":").map(Number);
+        return lp! - rp! || ls! - rs!;
+      })
+      .map(([, cards]) => [...cards][0]!);
+    expect(order[0]).toBe(0);
+    expect(order[1]).toBe(0);
+    expect(order.filter((card) => card !== 0)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    // Every card's title prints once in its first slot (the continuation repeats card 0's).
+    expect(runs.filter((run) => run.role === "title" && run.cardIndex === 9)).toHaveLength(1);
+  });
+});

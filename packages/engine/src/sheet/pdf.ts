@@ -2061,11 +2061,11 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           modelPage.templateKind === "spell-cards" ? bundle.spellCard : bundle.genericCard,
           bundle.labels[modelPage.templateKind === "spell-cards" ? files.spellCard : files.genericCard],
           fragments,
-          cardPage === 0
-            ? modelPage.sections.length
-            : Math.max(1, ...positionedRuns
-              .filter((run) => (run.page ?? 0) === cardPage)
-              .map((run) => (run.card ?? 0) + 1)),
+          // The slots the layout filled on this page (a continuation takes a
+          // slot of its own, so the count is not the page's section count).
+          Math.max(1, ...positionedRuns
+            .filter((run) => (run.page ?? 0) === cardPage)
+            .map((run) => (run.card ?? 0) + 1)),
           fonts,
           labelInk,
         ));

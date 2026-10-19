@@ -2699,7 +2699,7 @@ function buildSpellDescriptionPages(
         return {
           title: "spell-description",
           rows: descriptionPageRows(entry.spell, element, origin),
-          positionedRuns: positioned.filter((run) => run.card === card),
+          positionedRuns: positioned.filter((run) => run.cardIndex === card),
           ...(canonicalPositioned === undefined
             ? {}
             : { canonicalRuns: canonicalPositioned.filter((run) => run.card === card) }),
@@ -2889,7 +2889,7 @@ function buildItemDescriptionPage(
   const canonicalPositioned = canonical ? descriptionCardRuns(cards, { richText: false }) : undefined;
   const sections: SheetSection[] = items.map((item, card) => ({
     title: "item-description",
-    positionedRuns: positioned.filter((run) => run.card === card),
+    positionedRuns: positioned.filter((run) => run.cardIndex === card),
     ...(canonicalPositioned === undefined
       ? {}
       : { canonicalRuns: canonicalPositioned.filter((run) => run.card === card) }),
