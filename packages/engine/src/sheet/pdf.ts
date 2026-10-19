@@ -644,6 +644,72 @@ function boxedLineRoom(height: number, size: number, capHeight: number): number 
   return below < 0 ? 0 : Math.floor(below / (size * 1.2) + 1e-9) + 1;
 }
 
+/** One breakable piece of a form box's value. */
+interface BoxedToken {
+  text: string;
+  /** Follows the piece before it with no space: the part after a "/" in a word. */
+  glued: boolean;
+}
+
+/**
+ * A form value's paragraphs as breakable pieces: its words, with a word
+ * joined by slashes ("2d10/2d8/3d6", "and/or") breakable after each slash, so
+ * a compound value wraps there instead of running out of its box.
+ */
+function boxedTokens(value: string): BoxedToken[][] {
+  return value.split(/\r?\n/).map((paragraph) => paragraph.split(/[ \t]+/).filter((word) => word !== "")
+    .flatMap((word) => word.split(/(?<=\/)(?=.)/).map((text, index) => ({ text, glued: index > 0 }))));
+}
+
+interface BoxedLine {
+  text: string;
+  paragraph: number;
+  /** The paragraph's tokens on this line, `start` to before `end`. */
+  start: number;
+  end: number;
+  /** A single token wider than the whole line, which only shrinking can fit. */
+  overwide: boolean;
+}
+
+function boxedText(tokens: readonly BoxedToken[]): string {
+  return tokens.map((token, index) => (index > 0 && !token.glued ? ` ${token.text}` : token.text)).join("");
+}
+
+/**
+ * Breaks a form value into lines no wider than `usable`, given each piece's
+ * width and a space's at the size being tried. Words are never broken; a
+ * piece wider than a line stands alone on it, marked, so a fit can refuse it.
+ */
+function wrapBoxed(
+  paragraphs: readonly (readonly BoxedToken[])[],
+  usable: number,
+  width: (text: string) => number,
+  space: number,
+): BoxedLine[] {
+  const lines: BoxedLine[] = [];
+  paragraphs.forEach((tokens, paragraph) => {
+    let start = 0;
+    let lineWidth = 0;
+    const push = (end: number): void => {
+      const text = boxedText(tokens.slice(start, end));
+      lines.push({ text, paragraph, start, end, overwide: end - start === 1 && width(tokens[start]!.text) > usable });
+    };
+    tokens.forEach((token, index) => {
+      const tokenWidth = width(token.text);
+      const gap = index === start || token.glued ? 0 : space;
+      if (index > start && lineWidth + gap + tokenWidth > usable) {
+        push(index);
+        start = index;
+        lineWidth = tokenWidth;
+      } else {
+        lineWidth += gap + tokenWidth;
+      }
+    });
+    push(tokens.length);
+  });
+  return lines;
+}
+
 export function fitMultilineFontSize(
   value: string,
   width: number,
@@ -655,35 +721,22 @@ export function fitMultilineFontSize(
 ): number {
   if (value === "" || width <= 0 || height <= 0) return base;
   const usable = width - 4;
-  const paragraphs = value.split(/\r?\n/).map((line) => line.split(/[ \t]+/).filter((word) => word !== ""));
-  // Glyph advance widths scale linearly with size, so each word is measured
+  const paragraphs = boxedTokens(value);
+  // Glyph advance widths scale linearly with size, so each piece is measured
   // once at size 1 and reused across candidate sizes.
   const unitWidths = new Map<string, number>();
-  const unitWidth = (word: string): number => {
-    let cached = unitWidths.get(word);
+  const unitWidth = (text: string): number => {
+    let cached = unitWidths.get(text);
     if (cached === undefined) {
-      cached = measure(word, 1);
-      unitWidths.set(word, cached);
+      cached = measure(text, 1);
+      unitWidths.set(text, cached);
     }
     return cached;
   };
   const spaceUnit = measure(" ", 1);
   const fits = (size: number): boolean => {
-    let lines = 0;
-    for (const words of paragraphs) {
-      lines += 1;
-      let lineWidth = 0;
-      for (const word of words) {
-        const wordWidth = unitWidth(word) * size;
-        if (lineWidth !== 0 && lineWidth + spaceUnit * size + wordWidth > usable) {
-          lines += 1;
-          lineWidth = wordWidth;
-        } else {
-          lineWidth += (lineWidth === 0 ? 0 : spaceUnit * size) + wordWidth;
-        }
-      }
-    }
-    return lines <= boxedLineRoom(height, size, capHeight);
+    const lines = wrapBoxed(paragraphs, usable, (text) => unitWidth(text) * size, spaceUnit * size);
+    return lines.length <= boxedLineRoom(height, size, capHeight) && lines.every((line) => !line.overwide);
   };
   for (let size = base; size >= floor; size -= 0.25) {
     if (fits(size)) return size;
@@ -906,8 +959,8 @@ async function addFilledTemplatePage(
         continue;
       }
     }
-    const rest = drawBoxedValue(page, field.rect, value, font, field.base, textColour);
-    if (rest !== undefined) overflow.push({ field: name, text: rest });
+    const rest = drawBoxedValue(page, field.rect, value, font, field.base, textColour, !field.multiline, field.align);
+    if (rest !== undefined) overflow.push({ field: name, ...rest });
   }
   return { page, overflow, fieldRects: art.rects };
 }
@@ -915,11 +968,13 @@ async function addFilledTemplatePage(
 /**
  * Draws a value that will not sit on one line in its box: wrapped, shrunk to
  * fit, and clipped to the widget rectangle the way the form's own appearance
- * clipped it. Only a prose box reaches this — every other value is one line.
+ * clipped it.
  *
- * A value too long even at the floor size keeps the box's own size, draws
- * the lines that fit, and returns the rest for a continuation page rather
- * than losing it below the box's edge.
+ * A value that will not fit even at the readable floor is never cut unseen:
+ * the box's last line ends in an ellipsis. A one-line field's value (`whole`)
+ * keeps the floor size and is returned entire, to print in full; a prose
+ * box keeps its own size and returns the words after the ellipsis, to
+ * continue.
  */
 function drawBoxedValue(
   page: PDFPage,
@@ -928,39 +983,64 @@ function drawBoxedValue(
   font: PDFFont,
   base: number,
   colour: PdfColor,
-): string | undefined {
+  whole = false,
+  align: TextAlignment = TextAlignment.Left,
+): Omit<BoxOverflow, "field"> | undefined {
   const capHeight = capHeightRatio(font);
-  const fitted = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) =>
-    drawnWidth(font, winAnsiText(text), fontSize), capHeight);
+  const measure = (text: string, fontSize: number): number => drawnWidth(font, winAnsiText(text), fontSize);
+  const fitted = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, measure, capHeight);
   const usable = rect.width - 4;
-  const paragraphs = value.split(/\r?\n/).map((paragraph) => paragraph.split(/[ \t]+/).filter((part) => part !== ""));
-  const wrapAt = (size: number): Array<{ text: string; paragraph: number; start: number }> => {
-    const lines: Array<{ text: string; paragraph: number; start: number }> = [];
-    paragraphs.forEach((words, paragraph) => {
-      let line = "";
-      let start = 0;
-      words.forEach((word, index) => {
-        const candidate = line === "" ? word : `${line} ${word}`;
-        if (line !== "" && drawnWidth(font, candidate, size) > usable) {
-          lines.push({ text: line, paragraph, start });
-          line = word;
-          start = index;
-        } else {
-          line = candidate;
-        }
-      });
-      lines.push({ text: line, paragraph, start });
-    });
-    return lines;
-  };
+  const paragraphs = boxedTokens(value);
+  const layout = (size: number): BoxedLine[] =>
+    wrapBoxed(paragraphs, usable, (text) => measure(text, size), measure(" ", size));
   const room = (size: number): number => boxedLineRoom(rect.height, size, capHeight);
   let size = fitted;
-  let lines = wrapAt(size);
-  let cut = lines.length;
-  if (lines.length > room(size)) {
-    size = base;
-    lines = wrapAt(size);
-    cut = Math.min(lines.length, room(size));
+  let lines = layout(size);
+  let shown = lines.map((line) => line.text);
+  let rest: Omit<BoxOverflow, "field"> | undefined;
+  if (lines.length > room(size) || lines.some((line) => line.overwide)) {
+    size = whole ? Math.min(READABLE_MIN_FONT_SIZE, base) : base;
+    lines = layout(size);
+    const overwide = lines.findIndex((line) => line.overwide);
+    const cut = Math.min(lines.length, room(size), overwide < 0 ? lines.length : overwide);
+    // The last line shown makes room for the ellipsis: a prose box gives up its
+    // last words to the continuation; a one-line field is cut where it must,
+    // since it prints whole there anyway.
+    let resume = lines[cut];
+    shown = lines.slice(0, cut).map((line) => line.text);
+    const last = lines[cut - 1];
+    if (last !== undefined) {
+      const tokens = paragraphs[last.paragraph]!;
+      let end = last.end;
+      // A prose box's cut falls between whole words: never inside a word
+      // broken at a slash, whose halves would land in two places.
+      while (!whole && end > last.start + 1 &&
+        (tokens[end]?.glued === true || measure(`${boxedText(tokens.slice(last.start, end))}\u2026`, size) > usable)) end -= 1;
+      const kept = boxedText(tokens.slice(last.start, end));
+      const marked = measure(`${kept}\u2026`, size) <= usable;
+      shown[cut - 1] = marked ? `${kept}\u2026` : ellipsized(kept, font, size, usable);
+      // A word cut short continues whole, from its start; words given up
+      // continue from the first.
+      let wordStart = end;
+      while (wordStart > 0 && tokens[wordStart]?.glued === true) wordStart -= 1;
+      if (!marked) resume = last;
+      else if (wordStart < last.end) resume = { ...last, start: wordStart };
+    } else if (room(size) > 0) {
+      shown = ["\u2026"];
+    }
+    if (whole) {
+      // Named on the continuation page by the box's first line, which is
+      // where a reader starts looking for it.
+      const first = shown[0] ?? "";
+      rest = { text: value, shown: shown.length > 1 && !first.endsWith("\u2026") ? `${first}\u2026` : first };
+    } else if (resume !== undefined) {
+      rest = {
+        text: [
+          boxedText(paragraphs[resume.paragraph]!.slice(resume.start)),
+          ...paragraphs.slice(resume.paragraph + 1).map(boxedText),
+        ].join("\n"),
+      };
+    }
   }
   page.pushOperators(
     pushGraphicsState(),
@@ -973,19 +1053,20 @@ function drawBoxedValue(
     endPath(),
   );
   let y = rect.y + rect.height - BOX_TEXT_TOP_INSET - capHeight * size;
-  for (const line of lines.slice(0, cut)) {
-    if (line.text !== "") {
-      page.drawText(line.text, { x: rect.x + 2, y, size, font, color: rgb(colour[0], colour[1], colour[2]) });
+  // Wrapped lines keep the field's own alignment, so a centred value stays
+  // centred when it takes a second line.
+  for (const text of shown) {
+    if (text !== "") {
+      const width = measure(text, size);
+      const x = align === TextAlignment.Center
+        ? rect.x + (rect.width - width) / 2
+        : align === TextAlignment.Right ? rect.x + rect.width - 2 - width : rect.x + 2;
+      page.drawText(text, { x, y, size, font, color: rgb(colour[0], colour[1], colour[2]) });
     }
     y -= size * 1.2;
   }
   page.pushOperators(popGraphicsState());
-  const first = lines[cut];
-  if (first === undefined) return undefined;
-  return [
-    paragraphs[first.paragraph]!.slice(first.start).join(" "),
-    ...paragraphs.slice(first.paragraph + 1).map((words) => words.join(" ")),
-  ].join("\n");
+  return rest;
 }
 
 /** As much of `text` as fits `width` at `size`, ending in an ellipsis. */
@@ -1165,8 +1246,8 @@ type FeatureFlowGap = "paragraph" | "feature" | "heading" | "group" | null;
 /**
  * One unwrapped paragraph of a feature box. A `heading` names a group of
  * features (a split layout's class features, subclass features and feats in
- * one box) and is ruled underneath; a `part` names the box a continuation
- * page carries on. Neither is left as the last line of a box.
+ * one box); a `part` names the box a continuation page carries on. Both are
+ * ruled underneath alike, and neither is left as the last line of a box.
  */
 interface FeatureParagraph {
   words: readonly StyledWord[];
@@ -1243,12 +1324,12 @@ function sectionParagraphs(section: SheetSection, featureGap = true): FeaturePar
   return featureParagraphs(section.renderRows ?? section.rows, featureGap);
 }
 
-/** A heading or part line, in the body's bold face; a heading is ruled beneath. */
+/** A heading or part line, in the body's bold face and ruled beneath. */
 function headingParagraph(text: string, kind: "heading" | "part"): FeatureParagraph {
   return {
     words: text.split(" ").map((word) => ({ text: word, style: "bold" as const })),
     indent: 0,
-    gapAfter: kind === "heading" ? "heading" : "feature",
+    gapAfter: "heading",
     kind,
   };
 }
@@ -1378,7 +1459,8 @@ function drawFeatureFlow(
       cursor += drawnWidth(font, value, fontSize) + spaceWidth;
     }
     flush();
-    if (line.kind === "heading") {
+    // Group headings and continuation lines alike are ruled beneath.
+    if (line.kind !== undefined) {
       const ruleY = y - fontSize * FEATURE_RULE_DROP_RATIO;
       page.drawLine({ start: { x, y: ruleY }, end: { x: x + width, y: ruleY }, thickness: 0.5, color: rgb(...ruleColour) });
     }
@@ -2336,7 +2418,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           const part = [headingParagraph(`${notes} (continued)`, "part")];
           drawFeatureFlow(continuation, part, featureFlowLines(part, CONTINUATION_TEXT_WIDTH, DEFAULT_FEATURE_FONT_SIZE, fontMeasure(fonts)),
             fonts, CONTINUATION_TEXT_X, CONTINUATION_TEXT_TOP, CONTINUATION_TEXT_WIDTH, CONTINUATION_TEXT_BOTTOM,
-            DEFAULT_FEATURE_FONT_SIZE, DEFAULT_FEATURE_FONT_SIZE);
+            DEFAULT_FEATURE_FONT_SIZE, DEFAULT_FEATURE_FONT_SIZE, labelInk.lines);
         }
         timed("richText:equipment", () => drawEquipmentRichText(continuation, modelPage, fonts, equipmentPage));
       }

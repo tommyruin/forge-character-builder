@@ -443,3 +443,20 @@ describe("card body sizes", () => {
     expect(capTop(smaller)).toBeCloseTo(capTop(normal), 6);
   });
 });
+
+describe("card bodies across slots", () => {
+  it("never ends a slot on the first half of a word split at its hyphen", () => {
+    for (let lead = 0; lead < 40; lead += 1) {
+      const body = `<p>${"alpha ".repeat(lead)}${"two-handed weapon-master ".repeat(300)}</p>`;
+      const runs = descriptionCardRuns([{ kind: "generic", title: "Long", subtitle: "", metadata: [], body, footer: "" }])
+        .filter((run) => run.role === "body");
+      const slots = [...new Set(runs.map((run) => `${run.page ?? 0}:${run.card ?? 0}`))];
+      expect(slots.length, `lead ${lead}`).toBeGreaterThan(1);
+      for (const slot of slots.slice(0, -1)) {
+        const inSlot = runs.filter((run) => `${run.page ?? 0}:${run.card ?? 0}` === slot);
+        const last = inSlot.reduce((low, run) => (run.y < low.y || (run.y === low.y && run.x > low.x) ? run : low));
+        expect(last.text.endsWith("-"), `lead ${lead} slot ${slot} ends "${last.text}"`).toBe(false);
+      }
+    }
+  });
+});

@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { PDFDocument, PDFTextField } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { inventoryRuns } from "./card-layout.js";
 import type { CharacterSheetModel, SheetPage } from "./model.js";
@@ -120,7 +121,6 @@ describe("continuation pages", () => {
 describe("text placed in template boxes", () => {
   /** Widget rectangles of `set`'s character page. */
   async function rects(set: "2014" | "2024") {
-    const { PDFDocument } = await import("pdf-lib");
     const form = (await PDFDocument.load(localTemplateBundle(set).details)).getForm();
     return (name: string) => form.getTextField(name).acroField.getWidgets()[0]!.getRectangle();
   }
@@ -169,5 +169,80 @@ describe("text placed in template boxes", () => {
     expect(shown[0]!.str).toMatch(/^Level 20 Mountain Dwarf .*…$/);
     expect(written.text[1]).toContain(`${shown[0]!.str} (in full)`);
     expect(written.text[1]).toContain(build);
+  }, 60_000);
+});
+
+describe("no value hidden in a template box", () => {
+  // The boxes the writer fills from the model's sections, not from their values.
+  const HAND_DRAWN = /^details_(features|subclass_features|feats|proficiencies_languages|additional_notes)$/;
+  // Long attack notes move whole to the attack-note pages, leaving a pointer.
+  const ATTACK_NOTE = /^details_attack\d*_description$/;
+
+  it.each([["2014", {}], ["2014", { top: true }], ["2024", {}], ["2024", { top: false }], ["2024-hybrid", {}], ["2024-hybrid", { top: false }]] as const)(
+    "shows every %s %j field's value whole, or marks the cut and prints all of it",
+    async (set, layout) => {
+      const bundle = localTemplateBundle(set, undefined, layout);
+      const fields = (await PDFDocument.load(bundle.details)).getForm().getFields()
+        .filter((field): field is PDFTextField => field instanceof PDFTextField && !HAND_DRAWN.test(field.getName()))
+        .map((field, index) => ({ name: field.getName(), rect: field.acroField.getWidgets()[0]!.getRectangle(), prefix: `q${index}w` }));
+      // Each field gets a value of its own, longer than any box holds, its
+      // words told apart by field so each can be found again.
+      const values = Object.fromEntries(fields.map(({ name, prefix }) => [name, tokens(prefix, 60)]));
+      const written = await render({ page: 1, templateKind: "details", sections: [] }, values, bundle);
+      const elsewhere = written.text.slice(1).join(" ");
+      for (const { name, rect, prefix } of fields) {
+        const shown = written.pages[0]!.filter((item) =>
+          item.x >= rect.x - 0.5 && item.x <= rect.x + rect.width && item.y >= rect.y - 0.5 && item.y <= rect.y + rect.height);
+        // Whatever is drawn in the box is visible: nothing runs past its edge.
+        for (const item of shown) {
+          expect(item.x + item.width, `${name} "${item.str}" right edge`).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
+        }
+        const inBox = shown.map((item) => item.str).join(" ");
+        const words = Array.from({ length: 60 }, (_, index) => `${prefix}${index}`);
+        if (words.every((word) => new RegExp(`\\b${word}\\b`).test(inBox))) continue;
+        // Cut: the box says so, and every word is printed elsewhere.
+        expect(inBox, `${name} marks its cut`).toMatch(ATTACK_NOTE.test(name) ? /See attack notes|…/ : /…/);
+        for (const word of words) {
+          expect(new RegExp(`\\b${word}\\b`).test(inBox) || new RegExp(`\\b${word}\\b`).test(elsewhere), `${name}: ${word}`).toBe(true);
+        }
+      }
+    },
+    120_000,
+  );
+});
+
+describe("continued headings and whole words", () => {
+  it("rules every continued heading on a continuation page, as inline group headings are", async () => {
+    const model: CharacterSheetModel = {
+      characterId: "Ruled", mode: "lite", pageCount: 1,
+      pages: [{
+        page: 1, templateKind: "details",
+        sections: [
+          { title: "racial-traits", rows: [line(`Ancestry. ${tokens("racial", 400)}`)] },
+          { title: "features", rows: [line(`Spellcasting. ${tokens("feature", 900)}`)] },
+          { title: "proficiencies", rows: [line(`Tools. ${tokens("prof", 200)}`)] },
+        ],
+      }],
+    };
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle("2024"));
+    const loaded = await PDFDocument.load(pdf);
+    const { PDFArray, PDFStream, decodePDFRawStream } = await import("pdf-lib");
+    const contents = loaded.getPages()[1]!.node.Contents();
+    const streams = contents instanceof PDFArray ? contents.asArray().map((ref) => loaded.context.lookup(ref, PDFStream)) : [contents as InstanceType<typeof PDFStream>];
+    const operators = streams.map((stream) => new TextDecoder("latin1").decode(decodePDFRawStream(stream as never).decode())).join("\n");
+    // Rules across the continuation page's text width, one under each part line.
+    const rules = [...operators.matchAll(/([\d.]+) ([\d.]+) m\s+([\d.]+) \2 l\s+S/g)].filter((match) => Math.abs(Number(match[3]) - Number(match[1]) - 524) < 0.01);
+    const doc = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+    const parts = (await (await doc.getPage(2)).getTextContent()).items.filter((item) => "str" in item && item.str.endsWith("(continued)"));
+    expect(parts.length).toBe(3);
+    expect(rules).toHaveLength(parts.length);
+  }, 60_000);
+
+  it("never prints a soft hyphen: a word marked where it may break prints whole", async () => {
+    const written = await render({ page: 1, templateKind: "details", sections: [{ title: "racial-traits", rows: [line("Healing Hands. Touch one tar­get and dam­age heals.")] }] });
+    const text = written.text.join(" ");
+    expect(text).toContain("target");
+    expect(text).toContain("damage");
+    expect(text).not.toMatch(/tar-get|dam-age/);
   }, 60_000);
 });
