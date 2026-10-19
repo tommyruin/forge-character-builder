@@ -55,6 +55,34 @@ export function migratePack(record) {
 }
 
 /**
+ * The version of an element's draft that is in the library now, kept so a later edit to one of its
+ * choices can be checked against the picks characters made under it. Only a draft that holds a
+ * choice needs one.
+ */
+export function withLoadedDraft(element) {
+  const holdsChoice = element.customDraft?.blocks?.some((block) => block.kind === 'choice');
+  if (!holdsChoice) {
+    const { loadedDraft: _gone, ...rest } = element;
+    return rest;
+  }
+  return { ...element, loadedDraft: structuredClone(element.customDraft) };
+}
+
+/**
+ * A pack after its file went into the library without a finding: the ids its elements write are
+ * frozen (so renames and re-uploads never orphan a character that uses them) and each element's
+ * loaded version is remembered.
+ */
+export function loadedPack(pack, now = Date.now()) {
+  return {
+    ...pack,
+    ingestedAt: now,
+    hasUnloadedChanges: false,
+    elements: (pack.elements ?? []).map((element) => withLoadedDraft({ ...element, id: elementIdOf(element, pack), idLocked: true })),
+  };
+}
+
+/**
  * How an element is edited: `form` (made with a form: its draft is the source of truth and its XML
  * is derived), `raw` (its XML is the source) or `legacy` (made with the earlier structured editor,
  * whose fields the forms cannot represent; it opens as its XML).

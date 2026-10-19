@@ -22,7 +22,7 @@ import PackDetails from "./PackDetails";
 import PackHealthCard from "./PackHealthCard";
 import { buildHomebrewPreviewElement } from "./homebrewPreview";
 import { checkPackHealth, problemsIn } from "./packHealth";
-import { CHARACTER_PACK_PREFIX, convertToFeature, elementForDraft, elementIdOf, elementMeta, migratePack } from "./packModel";
+import { CHARACTER_PACK_PREFIX, convertToFeature, elementForDraft, elementMeta, loadedPack, migratePack } from "./packModel";
 import { makePackFormServices } from "./packServices";
 import Icon from "../Icon";
 import {
@@ -37,18 +37,6 @@ import {
 import { consolidateStrayCopies, removeCollection, saveCollection } from "./homebrewStorage";
 
 let strayCopiesChecked = false;
-
-// The version of an element's draft that is in the library now, kept so a later edit to one of its
-// choices can be checked against the picks characters made under it. Only a draft that holds a
-// choice needs one.
-function withLoadedDraft(element) {
-  const holdsChoice = element.customDraft?.blocks?.some((block) => block.kind === "choice");
-  if (!holdsChoice) {
-    const { loadedDraft: _gone, ...rest } = element;
-    return rest;
-  }
-  return { ...element, loadedDraft: structuredClone(element.customDraft) };
-}
 
 // In-app homebrew pack editor. Packs are structured drafts stored in IndexedDB (localStore.homebrew,
 // the name the earlier collections used); Update builder generates compatible XML and uploads it
@@ -452,14 +440,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
       if (diagnostics.length === 0 && rejected.length === 0) {
         // Ingested clean: freeze element ids (stable across renames / re-uploads) and remember the
         // version of each element's draft that is now in the library.
-        const locked = {
-          ...draft,
-          ingestedAt: Date.now(),
-          hasUnloadedChanges: false,
-          elements: draft.elements.map((el) =>
-            withLoadedDraft({ ...el, id: elementIdOf(el, draft), idLocked: true }),
-          ),
-        };
+        const locked = loadedPack(draft);
         await localStore.putHomebrew(locked);
         setDraft(locked);
         setDraftSaveState("saved");
