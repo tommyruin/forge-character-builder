@@ -42,6 +42,19 @@ describe('BuildTab panel header actions', () => {
   });
 });
 
+describe('companion rule types', () => {
+  const api = readFileSync(new URL('../../api.js', import.meta.url), 'utf8');
+
+  it('routes every companion-granted choice to the companion section, not Other', () => {
+    // A rule type missing from this list falls into Build > Other: the Ancient
+    // Companion spirit pick is authored as type "Companion Trait".
+    const list = api.match(/COMPANION_RULE_TYPES = \[([^\]]*)\]/s)?.[1] ?? '';
+    for (const type of ['Companion', 'Companion Feature', 'Companion Trait']) {
+      expect(list).toContain(`'${type}'`);
+    }
+  });
+});
+
 describe('Magic tab no longer owns the companion', () => {
   const magic = readFileSync(new URL('../tabs/MagicTab.jsx', import.meta.url), 'utf8');
 

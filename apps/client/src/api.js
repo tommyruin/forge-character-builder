@@ -34,4 +34,8 @@ export { isImprovementOptionRule } from './components/buildSectionRules.js';
 
 export const MANAGE_RULE_TYPES = ['Alignment', 'Deity'];
 export const MAGIC_RULE_TYPES = ['Spell'];
-export const COMPANION_RULE_TYPES = ['Companion', 'Companion Feature'];
+export const COMPANION_RULE_TYPES = [
+  'Companion',
+  'Companion Feature',
+  'Companion Trait',
+];
