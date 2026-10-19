@@ -8,7 +8,7 @@ import { computeStatistics, createEmptyLibrary, replaceLibraryFiles } from '@for
 import { createCustomDraft, createCustomItemDraft, newCustomBlockId, packElementFor } from '@forge-cb/engine/custom';
 import { buildFighter3 } from '../../../../../../packages/engine/src/testing/character-factory.ts';
 import { baselineFiles, libraryWithHomebrew } from './homebrewHarness.js';
-import { PACK_FILE_NAMESPACE, buildPackFile, isPackFile, packVersion, readPackFile } from '../packFile.js';
+import { PACK_FILE_NAMESPACE, buildPackFile, isPackFile, packVersion, readPackFile, sniffPackFile } from '../packFile.js';
 import { applyPackImport, planPackImport } from '../packTransfer.js';
 import { planPromotion, promoteToPack, refsOfDraft } from '../promotion.js';
 import { elementIdOf } from '../packModel.js';
@@ -202,9 +202,18 @@ describe('a second device', () => {
   });
 });
 
+describe('telling a pack file from content', () => {
+  it('reads only the start of a file', async () => {
+    expect(await sniffPackFile(new File([sharedText], 'moon.pack.xml'))).toBe(true);
+    expect(await sniffPackFile(new File([buildCollectionXml(deviceA.pack)], 'plain.xml'))).toBe(false);
+    expect(await sniffPackFile(new File([sharedText], 'moon.zip'))).toBe(false);
+  });
+});
+
 describe('the share file keeps the pack loadable on its own', () => {
   it('lists the same elements as the pack loads from', () => {
     const plain = buildCollectionXml(deviceA.pack);
-    expect(sharedText.startsWith(plain.slice(0, plain.lastIndexOf('</elements>')))).toBe(true);
+    const withoutMark = sharedText.replace(/<!-- Character Builder pack file[^\n]*\n/, '');
+    expect(withoutMark.startsWith(plain.slice(0, plain.lastIndexOf('</elements>')))).toBe(true);
   });
 });

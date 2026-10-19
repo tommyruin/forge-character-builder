@@ -12,17 +12,24 @@ import { api } from "../../api";
 import { localStore } from "../../transport/localStore";
 import ContentRenderer from "../ContentRenderer";
 import ContentLoadingProgress from "../ContentLoadingProgress";
+import CustomFeatureModal from "../custom/CustomFeatureModal";
+import CustomItemModal from "../custom/CustomItemModal";
 import CustomSpellModal from "../custom/CustomSpellModal";
-import { MY_HOMEBREW_NAME, writePromotedElement } from "../custom/customServices";
+import { MY_HOMEBREW_NAME, makeCustomServices, writePromotedElement } from "../custom/customServices";
 import { spellDraftFromMissing } from "../custom/draftModel";
 import CharacterPackView, { characterEntryMeta } from "./CharacterPackView";
 import ElementEditor from "./ElementEditor";
 import NewElementDialog from "./NewElementDialog";
 import PackDetails from "./PackDetails";
 import PackHealthCard from "./PackHealthCard";
+import PackImportPanel from "./PackImportPanel";
+import PromoteDialog from "./PromoteDialog";
+import usePackImport from "./usePackImport";
 import { buildHomebrewPreviewElement } from "./homebrewPreview";
+import { buildPackFile } from "./packFile";
 import { checkPackHealth, problemsIn } from "./packHealth";
-import { CHARACTER_PACK_PREFIX, convertToFeature, elementForDraft, elementMeta, loadedPack, migratePack } from "./packModel";
+import { planPromotion, promoteToPack, refsOfDraft, refsOfElement } from "./promotion";
+import { CHARACTER_PACK_PREFIX, convertToFeature, elementForDraft, elementIdOf, elementMeta, loadedPack, migratePack } from "./packModel";
 import { makePackFormServices } from "./packServices";
 import Icon from "../Icon";
 import {
@@ -51,6 +58,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     onLibraryMutationFinished,
     characterId = null,
     onOpenContent,
+    onCharacterChanged,
   },
   ref,
 ) {
@@ -74,6 +82,11 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
   const [identityReport, setIdentityReport] = useState(null);
   const [riskPrompt, setRiskPrompt] = useState(null);
   const [spellFix, setSpellFix] = useState(null);
+  const [characterEdit, setCharacterEdit] = useState(null);
+  const [promotion, setPromotion] = useState(null);
+  const [rawStart, setRawStart] = useState(false);
+  const [shareNotice, setShareNotice] = useState(null);
+  const importInput = useRef(null);
   const draftRef = useRef(draft);
   const persistTimerRef = useRef(null);
   const packRequestRef = useRef(0);
@@ -207,7 +220,8 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
       if (!previous) return previous;
       const next = typeof updater === "function" ? updater(previous) : updater;
       if (!next || next === previous) return next;
-      return { ...next, hasUnloadedChanges: Boolean(previous.ingestedAt) };
+      // A change is what makes this copy of the pack newer than a shared one, so it moves the version.
+      return { ...next, hasUnloadedChanges: Boolean(previous.ingestedAt), version: Date.now() };
     });
     setDraftSaveState("saving");
   }, []);
@@ -391,6 +405,8 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
       }));
     } else if (fix.action === "create-spell") {
       setSpellFix({ finding });
+    } else if (fix.action === "find-source") {
+      onOpenContent?.({ missing: fix.need });
     }
   };
 
@@ -458,17 +474,76 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     }
   };
 
-  // Download of the generated pack XML.
-  const download = () => {
-    if (!draft) return;
-    const url = URL.createObjectURL(new Blob([buildCollectionXml(draft)], { type: "application/xml" }));
+  const saveFile = (text, filename) => {
+    const url = URL.createObjectURL(new Blob([text], { type: "application/xml" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = collectionFileName(draft);
+    anchor.download = filename;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
+  };
+
+  // Download of the generated pack XML, as the library loads it.
+  const download = () => {
+    if (!draft) return;
+    saveFile(buildCollectionXml(draft), collectionFileName(draft));
+  };
+
+  // The one-file share: the same XML plus the pack as the editor keeps it, so another device opens
+  // it editable. A pack that does not pass validation is not shared, like one that is not loaded.
+  const sharePack = async () => {
+    if (!draft) return;
+    const errors = validateDraft(draftRef.current ?? draft);
+    if (errors.length) {
+      setShowIssues(true);
+      setIngestResult({ ok: false, errors });
+      return;
+    }
+    try {
+      await flushPendingDraft();
+    } catch {
+      return;
+    }
+    const record = draftRef.current ?? draft;
+    const filename = `${fileSlug(record.slug || record.name) || "pack"}.pack.xml`;
+    saveFile(buildPackFile(record), filename);
+    setShareNotice(
+      `${record.name} was saved as ${filename}. Whoever gets it adds it under Homebrew › Import pack, or Content › Manage files, and has it with the same ids and the drafts to edit.`,
+    );
+  };
+
+  const packImport = usePackImport({
+    api,
+    store: localStore,
+    beforeLibraryMutation,
+    onLibraryChanged,
+    onLibraryMutationFinished,
+    onImported: (pack) => {
+      refreshList();
+      // The open pack is the one that was replaced: show the file's copy, not the one it replaced.
+      if (draftRef.current?.id === pack.id) {
+        window.clearTimeout(persistTimerRef.current);
+        setDraft(pack);
+        resetSelection();
+      }
+    },
+  });
+
+  const chooseImportFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setShareNotice(null);
+    try {
+      const kind = await packImport.start(file);
+      if (kind === "not-pack") {
+        setShareNotice(`${file.name} is a plain content file, not a pack file. Add it under Content › Manage files.`);
+      }
+    } catch (error) {
+      setIngestResult({ ok: false, errors: [{ where: "Import", message: error.message }] });
+    }
   };
 
   const deletePack = async () => {
@@ -513,6 +588,82 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
       setCharacterNotice(`${entry.draft.name} is in ${MY_HOMEBREW_NAME}. Open that pack and update the builder to share it.`);
     } catch (e) {
       setIngestResult({ ok: false, errors: [{ where: "Copy", message: e.message }] });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Editing one of the character's own entries here is the same form the Build, Equipment and Magic
+  // tabs open, saved through the same character calls; the open workspace is told to refresh.
+  const runOnCharacter = useCallback(
+    async (operation) => {
+      const result = await operation();
+      await refreshCharacterPack();
+      onCharacterChanged?.();
+      return result;
+    },
+    [refreshCharacterPack, onCharacterChanged],
+  );
+
+  const openCharacterEntry = async (entry) => {
+    let ruleset;
+    try {
+      ruleset = (await api.characters.get?.(characterId))?.rulesetMode;
+    } catch {
+      ruleset = undefined;
+    }
+    setCharacterEdit({ entry, ruleset });
+  };
+
+  const characterServices = useMemo(
+    () =>
+      characterEdit && characterId
+        ? makeCustomServices({ api, store: localStore, id: characterId, run: runOnCharacter, ruleset: characterEdit.ruleset })
+        : null,
+    [characterEdit, characterId, runOnCharacter],
+  );
+
+  // Promotion: where an entry goes, and what it refers to that should come with it.
+  const startCharacterPromotion = (entry) => {
+    const byId = new Map((characterContent?.entries ?? []).map((candidate) => [candidate.elementId, candidate]));
+    const describe = (candidate) => ({ name: candidate.draft.name, meta: characterEntryMeta(candidate), draft: candidate.draft, refs: refsOfDraft(candidate.draft) });
+    const plan = planPromotion({
+      primary: { id: entry.elementId, ...describe(entry) },
+      find: (id) => (byId.has(id) ? describe(byId.get(id)) : null),
+      target: null,
+    });
+    setPromotion({ subject: entry.draft.name, plan: { ...plan, sourceNoun: "character's pack" }, sourcePack: null, excludePackId: null, error: null });
+  };
+
+  const startElementPromotion = (element) => {
+    const source = draftRef.current;
+    if (!source) return;
+    const describe = (candidate) => ({ name: candidate.name || `New ${candidate.type}`, meta: elementMeta(candidate), element: candidate, refs: refsOfElement(candidate) });
+    const plan = planPromotion({
+      primary: { id: elementIdOf(element, source), ...describe(element) },
+      find: (id) => {
+        const found = source.elements.find((candidate) => elementIdOf(candidate, source) === id);
+        return found ? describe(found) : null;
+      },
+      target: null,
+    });
+    setPromotion({ subject: element.name || element.type, plan: { ...plan, sourceNoun: "pack" }, sourcePack: source, excludePackId: source.id, error: null });
+  };
+
+  const confirmPromotion = async ({ target, items }) => {
+    setBusy(true);
+    setPromotion((current) => (current ? { ...current, error: null } : current));
+    try {
+      await flushPendingDraft();
+      const outcome = await promoteToPack({ store: localStore, target, items, sourcePack: promotion?.sourcePack ?? null });
+      refreshList();
+      const done = [...outcome.added, ...outcome.replaced];
+      setShareNotice(
+        `${done.join(", ")} ${done.length === 1 ? "is" : "are"} in ${outcome.pack.name} with the same ${done.length === 1 ? "id" : "ids"}. Open that pack and update the builder to load it, or share it from there.`,
+      );
+      setPromotion(null);
+    } catch (e) {
+      setPromotion((current) => (current ? { ...current, error: e.message } : current));
     } finally {
       setBusy(false);
     }
@@ -573,13 +724,38 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
         draft={draft}
         characterId={characterId}
         characterView={characterView}
-        busy={busy}
+        busy={busy || packImport.busy}
         draftSaveState={draftSaveState}
         onPackChange={selectPack}
         onNewPack={createNewPack}
         onLoad={() => saveAndIngest()}
         onDownload={download}
+        onShare={sharePack}
+        onImport={() => importInput.current?.click()}
         onDelete={deletePack}
+      />
+      <input
+        ref={importInput}
+        type="file"
+        accept=".xml,application/xml,text/xml"
+        hidden
+        data-testid="hb-import-input"
+        aria-label="Pack file to import"
+        onChange={chooseImportFile}
+      />
+
+      {shareNotice && (
+        <p role="status" className="fcb-status-badge fcb-status-complete" data-testid="hb-share-notice">
+          {shareNotice}
+        </p>
+      )}
+      <PackImportPanel
+        plan={packImport.plan}
+        outcome={packImport.outcome}
+        busy={packImport.busy}
+        onApply={packImport.apply}
+        onCancel={packImport.cancel}
+        onDismiss={packImport.dismiss}
       />
 
       {busy ? (
@@ -656,6 +832,8 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
               busy={busy}
               notice={characterNotice}
               onCopy={copyCharacterEntry}
+              onEdit={openCharacterEntry}
+              onPromote={startCharacterPromotion}
             />
           )}
           {draft && !characterView && !selectedElement && (
@@ -674,6 +852,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
               showIssues={showIssues}
               identityReport={identityReport}
               onChange={changeElement}
+              onCopyToPack={() => startElementPromotion(selectedElement)}
             />
           )}
         </section>
@@ -692,9 +871,68 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
         />
       </div>
 
-      {newElementOpen && draft && (
-        <NewElementDialog pack={draft} api={api} onClose={() => setNewElementOpen(false)} onCreate={addElement} />
+      {(newElementOpen || rawStart) && draft && (
+        <NewElementDialog
+          pack={draft}
+          api={api}
+          startAt={rawStart ? "raw" : undefined}
+          onClose={() => {
+            setNewElementOpen(false);
+            setRawStart(false);
+          }}
+          onCreate={addElement}
+        />
       )}
+
+      {characterEdit && characterServices && characterEdit.entry.kind === "item" && (
+        <CustomItemModal
+          key={characterEdit.entry.elementId}
+          services={characterServices}
+          characterName={characterId}
+          entry={characterEdit.entry}
+          onClose={() => setCharacterEdit(null)}
+        />
+      )}
+      {characterEdit && characterServices && characterEdit.entry.kind === "spell" && (
+        <CustomSpellModal
+          key={characterEdit.entry.elementId}
+          services={characterServices}
+          characterName={characterId}
+          entry={characterEdit.entry}
+          onClose={() => setCharacterEdit(null)}
+        />
+      )}
+      {characterEdit && characterServices && (characterEdit.entry.kind ?? "feature") === "feature" && (
+        <CustomFeatureModal
+          key={characterEdit.entry.elementId}
+          services={characterServices}
+          characterName={characterId}
+          entry={characterEdit.entry}
+          initialShowsUnder={characterEdit.entry.draft.showsUnder}
+          onClose={() => setCharacterEdit(null)}
+        />
+      )}
+
+      {promotion && (
+        <PromoteDialog
+          subject={promotion.subject}
+          plan={promotion.plan}
+          packs={(packs ?? []).filter((pack) => pack.id !== promotion.excludePackId)}
+          busy={busy}
+          error={promotion.error}
+          onConfirm={confirmPromotion}
+          onClose={() => setPromotion(null)}
+        />
+      )}
+
+      <HomebrewAdvanced
+        hasPack={Boolean(draft) && !characterView}
+        busy={busy || packImport.busy}
+        onImport={() => importInput.current?.click()}
+        onRawElement={() => setRawStart(true)}
+        onDownload={download}
+        onOpenContent={onOpenContent ? () => onOpenContent() : undefined}
+      />
 
       {spellFix && spellServices && (
         <CustomSpellModal
@@ -721,6 +959,8 @@ function HomebrewToolbar({
   onNewPack,
   onLoad,
   onDownload,
+  onShare,
+  onImport,
   onDelete,
 }) {
   const builderState = !draft?.ingestedAt
@@ -797,6 +1037,26 @@ function HomebrewToolbar({
         </button>
         <button
           type="button"
+          data-testid="hb-share-pack"
+          className="fcb-button"
+          onClick={onShare}
+          disabled={busy || !draft}
+          title="Save one file with the pack and its drafts, to give to another device or person"
+        >
+          Share pack
+        </button>
+        <button
+          type="button"
+          data-testid="hb-import-pack"
+          className="fcb-button"
+          onClick={onImport}
+          disabled={busy}
+          title="Add a pack file someone shared"
+        >
+          Import pack
+        </button>
+        <button
+          type="button"
           data-testid="hb-download"
           className="fcb-button fcb-homebrew-download-button"
           onClick={onDownload}
@@ -827,6 +1087,44 @@ function HomebrewToolbar({
         </button>
       </div>
     </header>
+  );
+}
+
+// The XML side of the editor, kept out of the way: a pack file someone shared, an element written as
+// XML, the plain pack XML, and the content files that arrive from Content › Manage files.
+function HomebrewAdvanced({ hasPack, busy, onImport, onRawElement, onDownload, onOpenContent }) {
+  return (
+    <details className="fcb-panel fcb-homebrew-advanced-page" data-testid="hb-advanced">
+      <summary className="fcb-panel-header cursor-pointer">
+        <span className="fcb-panel-title">Advanced</span>
+      </summary>
+      <div className="fcb-panel-body space-y-3 text-sm">
+        <p>
+          Everything here is also reachable from the forms: any element can be edited as XML, and a content file you already have can be added
+          as it always could.
+        </p>
+        <div className="fcb-toolbar">
+          <button type="button" className="fcb-button" data-testid="hb-advanced-import" disabled={busy} onClick={onImport}>
+            Import a pack file
+          </button>
+          <button type="button" className="fcb-button" data-testid="hb-advanced-raw" disabled={busy || !hasPack} onClick={onRawElement}>
+            New element written as XML
+          </button>
+          <button type="button" className="fcb-button" data-testid="hb-advanced-download" disabled={busy || !hasPack} onClick={onDownload}>
+            Download the pack&apos;s XML
+          </button>
+          {onOpenContent && (
+            <button type="button" className="fcb-button" data-testid="hb-advanced-manage-files" onClick={onOpenContent}>
+              Content › Manage files
+            </button>
+          )}
+        </div>
+        <p className="fcb-muted-copy text-xs">
+          To change an element&apos;s XML, open it and use Advanced › Edit raw XML. That works for every element, including a change to a book
+          element. Content › Manage files takes XML files, ZIPs, folders and web addresses, and a pack file shared from here.
+        </p>
+      </div>
+    </details>
   );
 }
 

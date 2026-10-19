@@ -51,3 +51,18 @@ export function fixFor(finding, pack) {
   if (element) return { action: 'open', label: 'Open element', element };
   return null;
 }
+
+/**
+ * What to import to settle a finding about something the library lacks: the id (or `Type "Name"`)
+ * nothing defines, the type the rule wants, and the element that needs it. Null for a finding that
+ * is not about a missing definition.
+ */
+export function sourceNeedFor(finding) {
+  if (finding.kind === 'missing-grant') {
+    return { label: finding.missingId ?? '', type: finding.missingType ?? '', neededBy: finding.elementName ?? '' };
+  }
+  if (finding.kind === 'append-target') {
+    return { label: finding.targetId ?? '', type: '', neededBy: finding.elementName ?? '' };
+  }
+  return null;
+}

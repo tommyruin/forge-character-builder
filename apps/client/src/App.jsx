@@ -62,6 +62,8 @@ export default function App() {
     () => api.content.getLoadState?.() ?? DEFAULT_CONTENT_LOAD_STATE,
   );
   const [notice, setNotice] = useState(null);
+  // What the pack health card asked Content › Manage files to help find: an id or name nothing defines.
+  const [contentNeed, setContentNeed] = useState(null);
   // A character switch held back by the unsaved-changes dialog (autosave off).
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [pendingSaving, setPendingSaving] = useState(false);
@@ -295,6 +297,13 @@ export default function App() {
     [openCharacterId],
   );
 
+  // An edit to the open character made outside its workspace (the Homebrew page edits its own pack
+  // entries): the engine already holds the change, so the workspace only has to re-read it.
+  const characterContentChanged = useCallback(() => {
+    setLibraryCharacterReloadRequired(undefined);
+    setLibraryRevision((revision) => revision + 1);
+  }, []);
+
   const libraryMutationFinished = useCallback(() => {
     setLibraryBusy(false);
     setLibraryPhase('idle');
@@ -454,6 +463,8 @@ export default function App() {
                   onDuplicateReviewHandled={() =>
                     setDuplicateReviewRequested(false)
                   }
+                  importNeed={contentNeed}
+                  onDismissNeed={() => setContentNeed(null)}
                   registerSectionDeactivate={registerSectionDeactivate}
                 />
               </Suspense>
@@ -469,7 +480,11 @@ export default function App() {
                   ref={homebrewRef}
                   active={activeSection === 'homebrew'}
                   characterId={openCharacterId}
-                  onOpenContent={() => selectSection('content')}
+                  onOpenContent={(request) => {
+                    setContentNeed(request?.missing ?? null);
+                    selectSection('content');
+                  }}
+                  onCharacterChanged={characterContentChanged}
                   beforeLibraryMutation={beforeLibraryMutation}
                   libraryPhase={libraryPhase}
                   libraryProgress={libraryProgress}

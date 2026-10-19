@@ -116,7 +116,7 @@ export default function PackDetails({ pack, busy, onFieldChange, onOpenContent }
             <div>
               <p className="text-sm">A content file you already have (XML, ZIP, a folder, a web address) is added from Content.</p>
               {onOpenContent && (
-                <button type="button" className="fcb-button mt-2" data-testid="hb-open-manage-files" onClick={onOpenContent}>
+                <button type="button" className="fcb-button mt-2" data-testid="hb-open-manage-files" onClick={() => onOpenContent()}>
                   Content › Manage files
                 </button>
               )}

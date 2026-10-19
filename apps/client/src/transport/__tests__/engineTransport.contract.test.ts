@@ -1268,6 +1268,29 @@ describe("homebrew packs in a character package", () => {
     expect(paths.some((path) => path.endsWith("other.xml"))).toBe(true);
   });
 
+  it("round-trips: what one device exports, a fresh device opens as the same editable pack", async () => {
+    const source = fakeClient();
+    const sourceStore = fakeStore();
+    const original = packRecord();
+    withPacks(sourceStore, [original]);
+    (sourceStore as unknown as Record<string, unknown>).listContent = vi.fn(async () => [{ path: stablePath, base64: btoa("<elements />"), uploadedAt: 1 }]);
+    await sourceStore.putCharacter({ id: "Ada", xml: "<character />", summary: { id: "Ada", name: "Ada" } });
+    (source.client.exportCharacterXml as unknown as ReturnType<typeof vi.fn>).mockImplementation(async () => ({
+      base64: btoa("<character><display-properties><name>Ada</name></display-properties><register id=\"ID_CUSTOM_TIDEGIFT0001\" /></character>"),
+    }));
+    const exported = await createEngineApi({ client: source.client, store: sourceStore }).characters.exportPackage("Ada");
+    const text = await exported.blob.text();
+
+    const { client, store } = statefulContentHarness();
+    const kept = withPacks(store, []);
+    const result = await createEngineApi({ client, store }).characters.import({ name: exported.filename, text: async () => text } as unknown as File);
+    expect(result).toMatchObject({ restoredPacks: ["Moon World"] });
+    const restored = kept.get(PACK_ID) as Record<string, unknown>;
+    expect(restored.elements).toEqual(original.elements);
+    expect(restored).toMatchObject({ name: "Moon World", slug: "moon-world", version: 10 });
+    expect(restored.ingestedAt).toEqual(expect.any(Number));
+  });
+
   it("keeps a pack the device already has when its own copy is newer", async () => {
     const { client, store } = statefulContentHarness();
     const kept = withPacks(store, [packRecord({ version: 50, name: "Moon World (edited here)" })]);

@@ -11,7 +11,7 @@ export function characterEntryMeta(entry) {
   return entry.kind === 'feature' || entry.kind === undefined ? `${kind} · ${typeLabel(entry.type)}` : kind;
 }
 
-export default function CharacterPackView({ characterName, content, busy, notice, onCopy }) {
+export default function CharacterPackView({ characterName, content, busy, notice, onCopy, onEdit, onPromote }) {
   const entries = content?.entries ?? [];
   const problems = content?.problems ?? [];
   return (
@@ -20,8 +20,8 @@ export default function CharacterPackView({ characterName, content, busy, notice
         <div>
           <h2 className="fcb-panel-title">{characterName}&apos;s pack</h2>
           <p className="fcb-panel-subtitle">
-            Made on this character and saved in its file. Edit an entry from Build, Equipment or Magic; copy it here to share it with other
-            characters.
+            Made on this character and saved in its file. Edit an entry here or from Build, Equipment or Magic; add it to a pack to share it
+            with other characters.
           </p>
         </div>
       </header>
@@ -51,6 +51,22 @@ export default function CharacterPackView({ characterName, content, busy, notice
                   <span className="font-semibold">{entry.draft.name}</span>
                   <span className="fcb-custom-entry-meta">{characterEntryMeta(entry)}</span>
                 </span>
+                {onEdit && (
+                  <button type="button" className="fcb-button px-2 py-1 text-xs" disabled={busy} aria-label={`Edit ${entry.draft.name}`} onClick={() => onEdit(entry)}>
+                    Edit
+                  </button>
+                )}
+                {onPromote && (
+                  <button
+                    type="button"
+                    className="fcb-button px-2 py-1 text-xs"
+                    disabled={busy}
+                    aria-label={`Add ${entry.draft.name} to a pack`}
+                    onClick={() => onPromote(entry)}
+                  >
+                    Add to a pack…
+                  </button>
+                )}
                 <button
                   type="button"
                   className="fcb-button px-2 py-1 text-xs"

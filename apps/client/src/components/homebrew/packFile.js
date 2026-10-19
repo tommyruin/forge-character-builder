@@ -22,6 +22,20 @@ export { packVersion, portablePack };
 export const PACK_FILE_NAMESPACE = 'urn:forge-cb:pack:1';
 export const PACK_FILE_FORMAT = 1;
 
+// A comment right after the XML declaration names the format, so a file can be recognised from
+// its first few hundred bytes without reading a content file of several megabytes.
+const HEAD_MARK = `<!-- Character Builder pack file (${PACK_FILE_NAMESPACE}) -->`;
+
+/** Whether the start of a file says it is a pack file. */
+export const hasPackFileHead = (head) => typeof head === 'string' && head.includes(HEAD_MARK);
+
+/** Reads only the start of a file to tell a pack file from any other content file. */
+export async function sniffPackFile(file) {
+  if (!/\.xml$/i.test(file?.name ?? '')) return false;
+  const head = typeof file.slice === 'function' ? file.slice(0, 600) : file;
+  return hasPackFileHead(await head.text());
+}
+
 /** The share file for a pack: its loadable XML plus the builder's own record of it. */
 export function buildPackFile(pack, { exportedAt = new Date() } = {}) {
   const portable = portablePack(pack);
@@ -40,7 +54,7 @@ export function buildPackFile(pack, { exportedAt = new Date() } = {}) {
     `    <fcb:data>${escapeText(JSON.stringify(portable))}</fcb:data>`,
     '  </fcb:pack>',
   ].join('\n');
-  const xml = buildCollectionXml(pack);
+  const xml = buildCollectionXml(pack).replace('\n<elements>', `\n${HEAD_MARK}\n<elements>`);
   const close = xml.lastIndexOf('</elements>');
   return `${xml.slice(0, close)}${carrier}\n${xml.slice(close)}`;
 }

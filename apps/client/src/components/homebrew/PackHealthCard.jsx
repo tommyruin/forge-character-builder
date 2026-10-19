@@ -2,7 +2,7 @@
 // something that is not loaded and unreadable requirement the engine found in the pack's file, each
 // with the element that carries it and the fix on offer.
 
-import { findingTitle, fixFor, problemsIn } from './packHealth';
+import { findingTitle, fixFor, problemsIn, sourceNeedFor } from './packHealth';
 
 export default function PackHealthCard({ pack, health, busy, onFix }) {
   const { status, findings } = health;
@@ -24,6 +24,7 @@ export default function PackHealthCard({ pack, health, busy, onFix }) {
         <ul className="fcb-pack-health-list">
           {problems.map((finding, index) => {
             const fix = fixFor(finding, pack);
+            const need = sourceNeedFor(finding);
             return (
               <li key={`${finding.kind}-${finding.elementId ?? ''}-${finding.missingId ?? ''}-${index}`} className="fcb-pack-health-item" data-kind={finding.kind}>
                 <div className="min-w-0 flex-1">
@@ -34,6 +35,16 @@ export default function PackHealthCard({ pack, health, busy, onFix }) {
                   {fix && fix.action !== 'open' && (
                     <button type="button" className="fcb-button fcb-button-primary" disabled={busy} onClick={() => onFix(finding, fix)}>
                       {fix.label}
+                    </button>
+                  )}
+                  {need && (
+                    <button
+                      type="button"
+                      className="fcb-button"
+                      data-testid="hb-find-source"
+                      onClick={() => onFix(finding, { action: 'find-source', label: 'Find a source', need })}
+                    >
+                      Find a source
                     </button>
                   )}
                   {fix?.element && (

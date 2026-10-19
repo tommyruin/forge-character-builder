@@ -368,10 +368,10 @@ describe('pack health', () => {
       'missing-grant', 'duplicate-id', 'unattachable', 'append-target', 'invalid-requirements',
     ]);
     const labelsOf = (kind) => [...card.querySelector(`li[data-kind="${kind}"]`).querySelectorAll('button')].map((button) => button.textContent);
-    expect(labelsOf('missing-grant')).toEqual(['Create spell', 'Open element']);
+    expect(labelsOf('missing-grant')).toEqual(['Create spell', 'Find a source', 'Open element']);
     expect(labelsOf('unattachable')).toEqual(['Convert to feature', 'Open element']);
     expect(labelsOf('duplicate-id')).toEqual(['Open element']);
-    expect(labelsOf('append-target')).toEqual(['Open element']);
+    expect(labelsOf('append-target')).toEqual(['Find a source', 'Open element']);
     expect(labelsOf('invalid-requirements')).toEqual(['Open element']);
     // It asked the engine about this pack's own file.
     expect(h.api.content.checkPack).toHaveBeenCalledWith(expect.objectContaining({ xml: expect.stringContaining('Hermit') }));

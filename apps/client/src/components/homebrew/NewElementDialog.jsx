@@ -106,9 +106,10 @@ function RawTypeStep({ onBack, onCreate }) {
   );
 }
 
-export default function NewElementDialog({ pack, api, onClose, onCreate }) {
-  const [templateId, setTemplateId] = useState(null);
-  const [step, setStep] = useState('pick');
+export default function NewElementDialog({ pack, api, startAt, onClose, onCreate }) {
+  // `startAt="raw"` goes straight to naming an element written as XML.
+  const [templateId, setTemplateId] = useState(startAt === 'raw' ? 'raw' : null);
+  const [step, setStep] = useState(startAt === 'raw' ? 'raw' : 'pick');
   const [ruleset, setRuleset] = useState('inherit');
   const template = templateId ? templateById(templateId) : null;
   const route = template?.route ?? null;

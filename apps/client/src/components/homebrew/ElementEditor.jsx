@@ -97,7 +97,7 @@ function FormDialogCard({ element, family, api, pack, onChange }) {
   );
 }
 
-export default function ElementEditor({ element, pack, api, disabled = false, showIssues = false, identityReport = null, onChange }) {
+export default function ElementEditor({ element, pack, api, disabled = false, showIssues = false, identityReport = null, onChange, onCopyToPack }) {
   const kind = elementKind(element);
   const latest = useRef(element);
   useEffect(() => {
@@ -153,6 +153,11 @@ export default function ElementEditor({ element, pack, api, disabled = false, sh
           <h2 className="fcb-panel-title">{element.name || `New ${element.type}`}</h2>
           <p className="fcb-panel-subtitle">{elementMeta(element)} · {pack.name}</p>
         </div>
+        {onCopyToPack && (
+          <button type="button" className="fcb-button" data-testid="hb-copy-to-pack" disabled={disabled} onClick={onCopyToPack}>
+            Copy to another pack…
+          </button>
+        )}
       </header>
       <div className="fcb-panel-body space-y-4">
         <IdentityWarning report={identityReport} />

@@ -18,6 +18,9 @@ import { localStore } from '../transport/localStore';
 import CustomSpellModal from './custom/CustomSpellModal';
 import { makePackSpellServices } from './custom/customServices';
 import { spellDraftFromMissing } from './custom/draftModel';
+import PackImportPanel from './homebrew/PackImportPanel';
+import { sniffPackFile } from './homebrew/packFile';
+import usePackImport from './homebrew/usePackImport';
 import { collectionStoragePath } from './homebrew/xmlBuilder';
 import ContentImportControls from './ContentImportControls';
 import DescriptionPanel from './DescriptionPanel';
@@ -223,6 +226,8 @@ function ContentFilesDrawer({
   keepDuplicateSource,
   keepAllDuplicates,
   onCreateSpell,
+  importNeed,
+  packImport,
 }) {
   const drawerRef = useRef(null);
   const closeButtonRef = useRef(null);
@@ -322,6 +327,27 @@ function ContentFilesDrawer({
               {error}
             </p>
           )}
+
+          {importNeed && (
+            <section className="fcb-warning-note space-y-1" role="status" data-testid="cm-import-need">
+              <p className="font-semibold">Looking for a source</p>
+              <p className="text-sm">
+                {importNeed.neededBy ? `${importNeed.neededBy} needs ` : 'A pack needs '}
+                <strong data-testid="cm-import-need-label">{importNeed.label}</strong>
+                {importNeed.type ? ` (${importNeed.type})` : ''}, which nothing in your library defines. Import the file that defines it below;
+                this note goes away once the library has it.
+              </p>
+            </section>
+          )}
+
+          <PackImportPanel
+            plan={packImport.plan}
+            outcome={packImport.outcome}
+            busy={packImport.busy}
+            onApply={packImport.apply}
+            onCancel={packImport.cancel}
+            onDismiss={packImport.dismiss}
+          />
 
           {pendingDuplicate && (
             <DuplicateImportPrompt
@@ -514,6 +540,8 @@ export default function ContentManager({
   onLibraryChanged,
   onLibraryMutationFinished,
   onDuplicateReviewHandled,
+  importNeed = null,
+  onDismissNeed,
   registerSectionDeactivate,
 }) {
   const [status, setStatus] = useState(null);
@@ -571,11 +599,35 @@ export default function ContentManager({
     () => filterUploadedFiles(uploadedFiles ?? [], deferredFileFilter),
     [deferredFileFilter, uploadedFiles],
   );
-  const effectiveFileManagerOpen = fileManagerOpen || duplicateReviewRequested;
+  const effectiveFileManagerOpen = fileManagerOpen || duplicateReviewRequested || importNeed !== null;
   const closeFileManager = useCallback(() => {
     setFileManagerOpen(false);
     onDuplicateReviewHandled?.();
-  }, [onDuplicateReviewHandled]);
+    onDismissNeed?.();
+  }, [onDuplicateReviewHandled, onDismissNeed]);
+
+  // A pack file shared from the Homebrew page opens as a pack, editable, wherever it is added.
+  const packImport = usePackImport({
+    api,
+    store: localStore,
+    beforeLibraryMutation,
+    onLibraryChanged,
+    onLibraryMutationFinished,
+  });
+
+  // The note about what to import goes away once the library defines it.
+  useEffect(() => {
+    if (!importNeed || !/^ID_[A-Z0-9_]+$/.test(importNeed.label)) return undefined;
+    let alive = true;
+    Promise.resolve(api.content.element(importNeed.label))
+      .then((found) => {
+        if (alive && found) onDismissNeed?.();
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [importNeed, libraryRevision, onDismissNeed]);
 
   const startSpellFix = useCallback(async (diag) => {
     const records = await localStore.listHomebrew();
@@ -860,11 +912,18 @@ export default function ContentManager({
     }
   };
 
-  const upload = (event) => {
+  const upload = async (event) => {
     event.preventDefault();
-    const files = Array.from(fileInput.current?.files ?? []);
-    if (!files.length) return;
+    const picked = Array.from(fileInput.current?.files ?? []);
+    if (!picked.length) return;
     fileInput.current.value = '';
+    // Pack files the builder wrote go to the pack importer; everything else is content as before.
+    const files = [];
+    for (const file of picked) {
+      if (await sniffPackFile(file)) await packImport.start(file).catch((e) => setError(e.message));
+      else files.push(file);
+    }
+    if (!files.length) return;
     if (!canManageSources) {
       void uploadUntrackedFiles(files);
       return;
@@ -1358,6 +1417,8 @@ export default function ContentManager({
         keepDuplicateSource={keepDuplicateSource}
         keepAllDuplicates={keepAllDuplicates}
         onCreateSpell={startSpellFix}
+        importNeed={importNeed}
+        packImport={packImport}
       />
 
       {spellFix && (
