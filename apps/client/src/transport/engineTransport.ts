@@ -1417,6 +1417,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         ...(modelInclude ? { include: modelInclude } : {}),
         // Item notes widen the inventory notes column; off sends the old request.
         ...(opts.inventoryNotes === true ? { inventoryNotes: true } : {}),
+        // Card prose is laid out in the body face it will be drawn in.
+        ...(typeof (opts.fonts as AnyRecord | undefined)?.body === "string" ? { bodyFace: (opts.fonts as AnyRecord).body as string } : {}),
       });
       return renderSheetBytes(model, {
         templateSet: typeof opts.templateSet === "string" ? (opts.templateSet as SheetRenderOptions["templateSet"]) : undefined,

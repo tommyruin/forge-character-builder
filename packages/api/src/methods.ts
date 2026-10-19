@@ -421,6 +421,8 @@ export interface EngineMethodMap {
         include?: SheetPageInclusionsDto;
         /** Item notes: the inventory notes column also describes magic items, tools and useful gear. */
         inventoryNotes?: boolean;
+        /** The body face the sheet will be drawn in, so card prose is measured in its widths. */
+        bodyFace?: string;
       },
     ],
     WireObject

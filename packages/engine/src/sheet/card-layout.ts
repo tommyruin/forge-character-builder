@@ -40,6 +40,8 @@ export interface HtmlLayoutOptions {
   card?: number;
   firstLineIndent?: number;
   lineHeight?: number;
+  /** The body face the runs will be drawn in (see measuredTextWidth); Helvetica when absent. */
+  face?: string;
 }
 
 const CARD_CONTRACT = SHEET_TEMPLATE_CONTRACT.cards;
@@ -60,8 +62,8 @@ const LABEL_BOXES = [
 
 type InlineStyle = TextStyle;
 
-function measuredWidth(text: string, fontSize: number, style: InlineStyle = "regular"): number {
-  return measuredTextWidth(text, fontSize, style);
+function measuredWidth(text: string, fontSize: number, style: InlineStyle = "regular", face?: string): number {
+  return measuredTextWidth(text, fontSize, style, face);
 }
 
 
@@ -117,16 +119,16 @@ function htmlBlocks(html: string): HtmlBlock[] {
   return blocks;
 }
 
-function styledWidth(word: InlineWord, fontSize: number): number {
-  return measuredWidth(word.text, fontSize, word.style);
+function styledWidth(word: InlineWord, fontSize: number, face?: string): number {
+  return measuredWidth(word.text, fontSize, word.style, face);
 }
 
 /** iText-style composite flow: inline chunks share baselines; later paragraphs
  * receive the four-space indentation inserted by FillCardDescription. */
 export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): LayoutRun[] {
   const runs: LayoutRun[] = [];
-  const space = measuredWidth(" ", options.fontSize);
-  const indent = measuredWidth("    ", options.fontSize);
+  const space = measuredWidth(" ", options.fontSize, "regular", options.face);
+  const indent = measuredWidth("    ", options.fontSize, "regular", options.face);
   const lineHeight = options.lineHeight ?? options.fontSize;
   let y = options.top;
   htmlBlocks(html).forEach((block, blockIndex) => {
@@ -136,17 +138,17 @@ export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): Layout
     let x = options.x + contentIndent + firstLineIndent;
     if (block.list) runs.push({ text: "\u0007", x: bulletX, y, width: space, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: "regular" });
     for (const word of block.words) {
-      const wordWidth = styledWidth(word, options.fontSize);
+      const wordWidth = styledWidth(word, options.fontSize, options.face);
       if (x > options.x + contentIndent + firstLineIndent && x + wordWidth > options.x + options.width) {
         const hyphen = /^(.+-)([^-]+)$/.exec(word.text);
         if (hyphen !== null) {
           const prefix = hyphen[1]!;
           const suffix = hyphen[2]!;
-          const prefixWidth = measuredWidth(prefix, options.fontSize, word.style);
+          const prefixWidth = measuredWidth(prefix, options.fontSize, word.style, options.face);
           if (x + prefixWidth <= options.x + options.width) {
             runs.push({ text: prefix, x, y, width: prefixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
             y -= lineHeight;
-            const suffixWidth = measuredWidth(suffix, options.fontSize, word.style);
+            const suffixWidth = measuredWidth(suffix, options.fontSize, word.style, options.face);
             runs.push({ text: suffix, x: options.x + contentIndent, y, width: suffixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
             x = options.x + contentIndent + suffixWidth + space;
             continue;
@@ -163,15 +165,15 @@ export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): Layout
   return runs;
 }
 
-function wrap(text: string, width: number, fontSize: number): string[] {
+function wrap(text: string, width: number, fontSize: number, face?: string): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
   for (const word of words) {
     const candidate = line === "" ? word : `${line} ${word}`;
-    if (line !== "" && measuredWidth(candidate, fontSize) > width) {
+    if (line !== "" && measuredWidth(candidate, fontSize, "regular", face) > width) {
       const hyphen = /^(.+-)([^-]+)$/.exec(word);
-      if (hyphen !== null && measuredWidth(`${line} ${hyphen[1]}`, fontSize) <= width) {
+      if (hyphen !== null && measuredWidth(`${line} ${hyphen[1]}`, fontSize, "regular", face) <= width) {
         lines.push(`${line} ${hyphen[1]}`);
         line = hyphen[2]!;
         continue;
@@ -204,12 +206,12 @@ function wrapWithContinuation(text: string, firstWidth: number, continuationWidt
   return lines;
 }
 
-function clippedText(text: string, width: number, fontSize: number): string {
+function clippedText(text: string, width: number, fontSize: number, face?: string): string {
   const words = text.split(/\s+/).filter(Boolean);
   const kept: string[] = [];
   for (const word of words) {
     const candidate = [...kept, word].join(" ");
-    if (kept.length > 0 && measuredWidth(candidate, fontSize) > width) break;
+    if (kept.length > 0 && measuredWidth(candidate, fontSize, "regular", face) > width) break;
     kept.push(word);
   }
   return kept.join(" ");
@@ -230,16 +232,16 @@ function escapeHtml(text: string): string {
  * trigger) prints its head with "(see below)", and the whole value follows
  * the description as a labelled paragraph, so no word is dropped.
  */
-function fittedMetadata(label: string, value: string): { text: string; fontSize: number; note?: string } {
+function fittedMetadata(label: string, value: string, face?: string): { text: string; fontSize: number; note?: string } {
   const fit = (text: string): number => {
-    const width = measuredWidth(text, METADATA_SIZE);
+    const width = measuredWidth(text, METADATA_SIZE, "regular", face);
     return width <= METADATA_WIDTH ? METADATA_SIZE : METADATA_SIZE * METADATA_WIDTH / width;
   };
   const size = fit(value);
   if (size >= METADATA_MIN_SIZE) return { text: value, fontSize: size };
   // "V, S, M (a pearl ...)" keeps "V, S, M"; "1 reaction, which you take ..." keeps "1 reaction".
   const head = value.includes(" (") ? value.slice(0, value.indexOf(" (")) : /^(.+?),\s/.exec(value)?.[1];
-  if (head === undefined) return { text: clippedText(value, METADATA_WIDTH, METADATA_MIN_SIZE), fontSize: METADATA_MIN_SIZE };
+  if (head === undefined) return { text: clippedText(value, METADATA_WIDTH, METADATA_MIN_SIZE, face), fontSize: METADATA_MIN_SIZE };
   const text = `${head} (see below)`;
   const name = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
   return {
@@ -273,14 +275,16 @@ function cardBodyRuns(
   fontSize: number,
   bodyWidth: number,
   bodyTop: number,
+  face?: string,
 ): LayoutRun[] {
   const plainBody = decodeHtml(card.body.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
   const firstLineIndent = card.kind === "spell"
-    ? wrap(plainBody, 160, fontSize).length * fontSize > SHORT_SPELL_BODY_HEIGHT
-      ? measuredWidth("    ", fontSize)
+    ? wrap(plainBody, 160, fontSize, face).length * fontSize > SHORT_SPELL_BODY_HEIGHT
+      ? measuredWidth("    ", fontSize, "regular", face)
       : 0
     : 0;
   const runs = layoutHtmlRuns(card.body, {
+    face,
     x: PAGE_MARGIN + (cardIndex % 3) * (CARD_WIDTH + CARD_GUTTER) + 5,
     top: bodyTop,
     width: bodyWidth,
@@ -341,8 +345,9 @@ function canonicalDescriptionCardRuns(cards: readonly DescriptionCard[]): Layout
 
 export function descriptionCardRuns(
   cards: readonly DescriptionCard[],
-  options: { richText?: boolean } = {},
+  options: { richText?: boolean; face?: string } = {},
 ): LayoutRun[] {
+  const { face } = options;
   if (options.richText === false) return canonicalDescriptionCardRuns(cards);
   const runs: LayoutRun[] = [];
   cards.forEach((card, cardIndex) => {
@@ -394,7 +399,7 @@ export function descriptionCardRuns(
       const notes: string[] = [];
       for (const [label, value] of card.metadata) {
         add(label, metadataY, "metadata", 6, "bold");
-        const fitted = fittedMetadata(label, value);
+        const fitted = fittedMetadata(label, value, face);
         add(fitted.text, metadataY, "metadata-value", fitted.fontSize, "regular", 53.5);
         if (fitted.note !== undefined) notes.push(fitted.note);
         metadataY -= 11;
@@ -403,22 +408,22 @@ export function descriptionCardRuns(
       const bodyTop = top - 83;
       const bodyBottom = top - 225;
       const normalSize = 5;
-      const normalRuns = cardBodyRuns(bodyCard, localCardIndex, normalSize, SPELL_BODY_WIDTH, bodyTop);
+      const normalRuns = cardBodyRuns(bodyCard, localCardIndex, normalSize, SPELL_BODY_WIDTH, bodyTop, face);
       let chosenSize = normalSize;
       let chosenRuns = normalRuns;
       if (!bodyFits(normalRuns, bodyBottom)) {
-        const minimumRuns = cardBodyRuns(bodyCard, localCardIndex, CARD_BODY_MIN_FONT_SIZE, SPELL_BODY_WIDTH, bodyTop);
+        const minimumRuns = cardBodyRuns(bodyCard, localCardIndex, CARD_BODY_MIN_FONT_SIZE, SPELL_BODY_WIDTH, bodyTop, face);
         if (bodyFits(minimumRuns, bodyBottom)) {
           let low = CARD_BODY_MIN_FONT_SIZE;
           let high = normalSize;
           for (let pass = 0; pass < 8; pass += 1) {
             const candidate = (low + high) / 2;
-            const candidateRuns = cardBodyRuns(bodyCard, localCardIndex, candidate, SPELL_BODY_WIDTH, bodyTop);
+            const candidateRuns = cardBodyRuns(bodyCard, localCardIndex, candidate, SPELL_BODY_WIDTH, bodyTop, face);
             if (bodyFits(candidateRuns, bodyBottom)) low = candidate;
             else high = candidate;
           }
           chosenSize = low;
-          chosenRuns = cardBodyRuns(bodyCard, localCardIndex, chosenSize, SPELL_BODY_WIDTH, bodyTop);
+          chosenRuns = cardBodyRuns(bodyCard, localCardIndex, chosenSize, SPELL_BODY_WIDTH, bodyTop, face);
         } else {
           chosenSize = CARD_BODY_MIN_FONT_SIZE;
           chosenRuns = minimumRuns;
@@ -446,22 +451,22 @@ export function descriptionCardRuns(
       const bodyTop = top - 38;
       const bodyBottom = top - 225;
       const normalSize = 6;
-      const normalRuns = cardBodyRuns(card, localCardIndex, normalSize, 162, bodyTop);
+      const normalRuns = cardBodyRuns(card, localCardIndex, normalSize, 162, bodyTop, face);
       let chosenSize = normalSize;
       let chosenRuns = normalRuns;
       if (!bodyFits(normalRuns, bodyBottom)) {
-        const minimumRuns = cardBodyRuns(card, localCardIndex, CARD_BODY_MIN_FONT_SIZE, 162, bodyTop);
+        const minimumRuns = cardBodyRuns(card, localCardIndex, CARD_BODY_MIN_FONT_SIZE, 162, bodyTop, face);
         if (bodyFits(minimumRuns, bodyBottom)) {
           let low = CARD_BODY_MIN_FONT_SIZE;
           let high = normalSize;
           for (let pass = 0; pass < 8; pass += 1) {
             const candidate = (low + high) / 2;
-            const candidateRuns = cardBodyRuns(card, localCardIndex, candidate, 162, bodyTop);
+            const candidateRuns = cardBodyRuns(card, localCardIndex, candidate, 162, bodyTop, face);
             if (bodyFits(candidateRuns, bodyBottom)) low = candidate;
             else high = candidate;
           }
           chosenSize = low;
-          chosenRuns = cardBodyRuns(card, localCardIndex, chosenSize, 162, bodyTop);
+          chosenRuns = cardBodyRuns(card, localCardIndex, chosenSize, 162, bodyTop, face);
         } else {
           chosenSize = CARD_BODY_MIN_FONT_SIZE;
           chosenRuns = minimumRuns;

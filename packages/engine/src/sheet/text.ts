@@ -8,6 +8,7 @@
  */
 
 import { Encodings, Font, FontNames } from "@pdf-lib/standard-fonts";
+import { FACE_METRIC_CHARACTERS, FACE_METRICS } from "./face-metrics.js";
 
 /**
  * The drawable form of a string: control codes and the sheet's private bullet
@@ -49,13 +50,24 @@ function glyphName(codePoint: number): string {
 // size 1 and reused for every candidate size the shrink-to-fit searches try.
 const unitWidths = new Map<string, number>();
 
-function unitWidth(text: string, style: TextStyle): number {
-  const key = `${style} ${text}`;
+const faceTableStyles: Record<TextStyle, "regular" | "bold" | "italic" | "boldItalic"> = {
+  regular: "regular", bold: "bold", italic: "italic", "bold-italic": "boldItalic",
+};
+const faceCharacterIndex = new Map([...FACE_METRIC_CHARACTERS].map((character, index) => [character, index]));
+const QUESTION_INDEX = faceCharacterIndex.get("?")!;
+
+function unitWidth(text: string, style: TextStyle, face: string | undefined): number {
+  const table = face === undefined ? undefined : FACE_METRICS[face]?.[faceTableStyles[style]];
+  const key = `${table === undefined ? "" : face} ${style} ${text}`;
   const cached = unitWidths.get(key);
   if (cached !== undefined) return cached;
-  const font = styleFonts[style];
   let units = 0;
-  for (const character of text) units += font.getWidthOfGlyph(glyphName(character.codePointAt(0)!)) || 0;
+  if (table !== undefined) {
+    for (const character of text) units += table[faceCharacterIndex.get(character) ?? QUESTION_INDEX] ?? 0;
+  } else {
+    const font = styleFonts[style];
+    for (const character of text) units += font.getWidthOfGlyph(glyphName(character.codePointAt(0)!)) || 0;
+  }
   unitWidths.set(key, units);
   return units;
 }
@@ -69,7 +81,11 @@ function unitWidth(text: string, style: TextStyle): number {
  * on capitals ("AVATAR" at 7pt renders 28.01pt wide, not 25.28pt), and
  * measuring the narrower number is what lets a line wrap a word too late and
  * print past the edge of its box.
+ *
+ * `face` names the body face the text will be drawn in (a SHEET_FONT_FACES
+ * key); a face with generated width tables (face-metrics.ts) is measured in
+ * its own advances, any other in Helvetica's.
  */
-export function measuredTextWidth(text: string, fontSize: number, style: TextStyle = "regular"): number {
-  return unitWidth(winAnsiText(text), style) * fontSize / 1000;
+export function measuredTextWidth(text: string, fontSize: number, style: TextStyle = "regular", face?: string): number {
+  return unitWidth(winAnsiText(text), style, face) * fontSize / 1000;
 }

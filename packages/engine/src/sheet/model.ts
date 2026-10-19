@@ -171,6 +171,12 @@ export interface BuildSheetOptions {
    * `inventoryColumnEntries`). Absent or `false` prints the column as always.
    */
   inventoryNotes?: boolean;
+  /**
+   * The body face the sheet will be drawn in (a SHEET_FONT_FACES key), so card
+   * prose is measured in that face's widths. Absent measures in Helvetica,
+   * the default body face.
+   */
+  bodyFace?: string;
 }
 
 const ABILITY_KEYS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
@@ -339,10 +345,10 @@ export function buildCharacterSheetModel(
     pages.push(...buildSpellListPages(state, library, options.canonical === true ? spellcasters : mergeSheetSpellcasters(spellcasters)));
   }
   if (options.mode === "full" && wants("spellCards")) {
-    pages.push(...buildSpellDescriptionPages(state, library, spellcasters, options.canonical === true));
+    pages.push(...buildSpellDescriptionPages(state, library, spellcasters, options.canonical === true, options.bodyFace));
   }
   if (options.mode === "full" && wants("itemCards")) {
-    const itemPage = buildItemDescriptionPage(state, library, options.canonical === true);
+    const itemPage = buildItemDescriptionPage(state, library, options.canonical === true, options.bodyFace);
     if (itemPage !== null) pages.push(itemPage);
   }
   // The page builders each carry their own idea of where they sit (the
@@ -2620,6 +2626,7 @@ function buildSpellDescriptionPages(
   library: ElementLibrary,
   casters: readonly SpellcasterDto[],
   canonical: boolean,
+  bodyFace?: string,
 ): SheetPage[] {
   // Description cards are a projection of active spell identities, not the
   // complete DTO class lists. Cantrips are active by registration; prepared
@@ -2681,7 +2688,7 @@ function buildSpellDescriptionPages(
   for (let i = 0; i < entries.length; i += 9) {
     const slice = entries.slice(i, i + 9);
     const cards = slice.map((entry) => spellDescriptionCard(state, library, entry));
-    const positioned = descriptionCardRuns(cards);
+    const positioned = descriptionCardRuns(cards, { face: bodyFace });
     const canonicalPositioned = canonical ? descriptionCardRuns(cards, { richText: false }) : undefined;
     pages.push({
       page: pages.length + 1,
@@ -2843,7 +2850,12 @@ function ordinalLevel(level: number): string {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-function buildItemDescriptionPage(state: CharacterState, library: ElementLibrary, canonical: boolean): SheetPage | null {
+function buildItemDescriptionPage(
+  state: CharacterState,
+  library: ElementLibrary,
+  canonical: boolean,
+  bodyFace?: string,
+): SheetPage | null {
   const items: Array<{ name: string; category: string; description: string; descriptionHtml: string; weight: string; source: string }> = [];
   for (const item of state.items) {
     if (!item.card) continue;
@@ -2873,7 +2885,7 @@ function buildItemDescriptionPage(state: CharacterState, library: ElementLibrary
     footer: item.weight,
     footerRight: item.source,
   }));
-  const positioned = descriptionCardRuns(cards);
+  const positioned = descriptionCardRuns(cards, { face: bodyFace });
   const canonicalPositioned = canonical ? descriptionCardRuns(cards, { richText: false }) : undefined;
   const sections: SheetSection[] = items.map((item, card) => ({
     title: "item-description",

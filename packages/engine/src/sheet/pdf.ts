@@ -334,6 +334,8 @@ export interface SheetFaces {
   captions: SheetFaceSource;
   numbers: SheetFaceSource;
   body: { regular: SheetFaceSource; bold: SheetFaceSource; italic: SheetFaceSource; boldItalic: SheetFaceSource };
+  /** The body face's SHEET_FONT_FACES key, which picks its advance widths (see measuredTextWidth). */
+  bodyFace?: string;
 }
 
 export const DEFAULT_SHEET_FACES: SheetFaces = {
@@ -400,6 +402,8 @@ interface SheetFonts {
   titles: PDFFont;
   captions: PDFFont;
   numbers: PDFFont;
+  /** Positioned body runs measured as drawn, the way the model laid them out. */
+  bodyMeasure: TextMeasure;
 }
 
 /** The label colours of a scheme, as pdf-lib colours. */
@@ -433,14 +437,23 @@ async function embedFace(document: PDFDocument, source: SheetFaceSource, name: s
 
 async function embedSheetFonts(document: PDFDocument, faces: SheetFaces): Promise<SheetFonts> {
   document.registerFontkit(await loadFontkit());
-  return {
+  const body = {
     regular: await embedFace(document, faces.body.regular, "FCB-Body"),
     bold: await embedFace(document, faces.body.bold, "FCB-Body-Bold"),
     italic: await embedFace(document, faces.body.italic, "FCB-Body-Italic"),
     boldItalic: await embedFace(document, faces.body.boldItalic, "FCB-Body-BoldItalic"),
+  };
+  // A named or standard body face measures on its advance widths, as the
+  // model's layout did; custom bytes with no name fall back to the font.
+  const bodyMeasure: TextMeasure = faces.bodyFace !== undefined || "standard" in faces.body.regular
+    ? (text, fontSize, style) => measuredTextWidth(text, fontSize, style ?? "regular", faces.bodyFace)
+    : (text, fontSize, style) => runFont(body, style).widthOfTextAtSize(winAnsiText(text), fontSize);
+  return {
+    ...body,
     titles: await embedFace(document, faces.titles, "FCB-Titles"),
     captions: await embedFace(document, faces.captions, "FCB-Captions"),
     numbers: await embedFace(document, faces.numbers, "FCB-Numbers"),
+    bodyMeasure,
   };
 }
 
@@ -918,7 +931,7 @@ function drawFieldValue(page: PDFPage, item: DrawnValue, font: PDFFont, colour: 
   });
 }
 
-function runFont(fonts: SheetFonts, style: LayoutRun["style"]): PDFFont {
+function runFont(fonts: Pick<SheetFonts, "regular" | "bold" | "italic" | "boldItalic">, style: LayoutRun["style"]): PDFFont {
   if (style === "bold") return fonts.bold;
   if (style === "italic") return fonts.italic;
   if (style === "bold-italic") return fonts.boldItalic;
@@ -933,7 +946,7 @@ function fontMeasure(fonts: SheetFonts): TextMeasure {
 }
 
 function drawPositionedRuns(page: PDFPage, runs: readonly LayoutRun[], fonts: SheetFonts): void {
-  const measure = fontMeasure(fonts);
+  const measure = fonts.bodyMeasure;
   const ink = rgb(0.08, 0.08, 0.08);
   let previousFlow:
     | { card: number | undefined; role: LayoutRun["role"]; y: number; endX: number; space: number }

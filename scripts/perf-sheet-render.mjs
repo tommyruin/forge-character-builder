@@ -57,6 +57,8 @@ const fonts = BODY === undefined
   ? DEFAULT_SHEET_FONTS
   : { ...DEFAULT_SHEET_FONTS, body: BODY, numbers: BODY };
 const bundle = localTemplateBundle(SET, fonts);
+// The app lays card prose out in the body face it draws in; so does the benchmark.
+const FACE = { bodyFace: fonts.body };
 
 /**
  * Spell ids the corpus knows. Library elements carry their type in the id
@@ -103,18 +105,18 @@ function withExtraItems(state, count) {
 const fixtures = [
   {
     name: "rogue5 (lite)",
-    model: () => buildCharacterSheetModel(buildRogue5(library, "perf-rogue").state, library, { mode: "lite" }),
+    model: () => buildCharacterSheetModel(buildRogue5(library, "perf-rogue").state, library, { mode: "lite", ...FACE }),
   },
   {
     name: "full sheet",
-    model: () => buildCharacterSheetModel(buildFullSheetCharacter(library, "perf-full").state, library, { mode: "full" }),
+    model: () => buildCharacterSheetModel(buildFullSheetCharacter(library, "perf-full").state, library, { mode: "full", ...FACE }),
   },
   {
     name: "full sheet +120 items",
     model: () => buildCharacterSheetModel(
       withExtraItems(buildFullSheetCharacter(library, "perf-items").state, 120),
       library,
-      { mode: "full" },
+      { mode: "full", ...FACE },
     ),
   },
   {
@@ -122,7 +124,7 @@ const fixtures = [
     model: () => buildCharacterSheetModel(
       withExtraSpells(buildFullSheetCharacter(library, "perf-spells").state, EXTRA_SPELLS),
       library,
-      { mode: "full" },
+      { mode: "full", ...FACE },
     ),
   },
 ];
