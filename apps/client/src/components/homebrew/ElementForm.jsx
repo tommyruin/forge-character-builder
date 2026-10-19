@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { api } from "../../api";
 import Icon from '../Icon';
 import {
-  ARMOR_CATEGORIES,
+  ARMOR_GROUPS,
   ELEMENT_RULESET_OPTIONS,
   GRANT_TYPES,
+  REQUIREMENT_ABILITIES,
   STAT_NAMES,
   TYPE_SPECS,
   WEAPON_CATEGORIES,
   WEAPON_PROPERTIES,
   buildElementXml,
+  buildRequirementsExpression,
+  normalizeSupportIds,
   resolveElementId,
   normalizeElementRuleset,
   validateHtmlFragment,
@@ -183,6 +186,14 @@ export default function ElementForm({
                 </label>
               )}
 
+              {spec.requirements && (
+                <RequirementsControl
+                  element={element}
+                  onChange={(patch) => set(patch)}
+                  disabled={disabled}
+                />
+              )}
+
               <SupportsControl
                 spec={spec.supports}
                 element={element}
@@ -198,8 +209,14 @@ export default function ElementForm({
                     <SetterField
                       key={field.key}
                       field={field}
+                      setters={setters}
                       value={setters[field.key] ?? ""}
-                      onChange={(value) => setSetter(field.key, value)}
+                      onChange={(value) =>
+                        field.key === "baseKind"
+                          ? // The scope list depends on the kind, so a stale scope would name the wrong tags.
+                            set({ setters: { ...setters, baseKind: value, baseScope: "" } })
+                          : setSetter(field.key, value)
+                      }
                       disabled={disabled}
                     />
                   ))}
@@ -276,7 +293,7 @@ function validateRawXml(rawXml) {
 }
 
 // One setter field, rendered from its spec entry.
-function SetterField({ field, value, onChange, disabled }) {
+function SetterField({ field, setters, value, onChange, disabled }) {
   if (field.kind === "boolean") {
     return (
       <label className="flex items-center gap-2 self-end pb-1 text-sm text-[var(--fcb-text-muted)]">
@@ -300,7 +317,7 @@ function SetterField({ field, value, onChange, disabled }) {
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
         >
-          {(field.options ?? []).map((option) => {
+          {(typeof field.options === "function" ? field.options(setters) : (field.options ?? [])).map((option) => {
             const [optionValue, optionLabel] = optionPair(option);
             return (
               <option key={optionValue} value={optionValue}>
@@ -366,11 +383,11 @@ function SupportsControl({
         {spec.label}
         <select
           className="fcb-select"
-          value={supports[0] ?? ""}
+          value={normalizeSupportIds(supports)[0] ?? ""}
           onChange={(e) => onSupports(e.target.value ? [e.target.value] : [])}
           disabled={disabled}
         >
-          {(spec.options ?? ARMOR_CATEGORIES).map(
+          {(spec.options ?? ARMOR_GROUPS).map(
             ([optionValue, optionLabel]) => (
               <option key={optionValue} value={optionValue}>
                 {optionLabel}
@@ -382,9 +399,45 @@ function SupportsControl({
     );
   }
 
+  if (spec.mode === "tags") {
+    return (
+      <div>
+        <p className="fcb-field-label">{spec.label}</p>
+        <div className="mt-1 grid grid-cols-2 gap-1">
+          {(spec.options ?? []).map(([tag, label]) => (
+            <label
+              key={tag}
+              className="flex items-center gap-2 text-sm text-[var(--fcb-text-muted)]"
+            >
+              <input
+                type="checkbox"
+                checked={supports.includes(tag)}
+                onChange={(e) =>
+                  onSupports(
+                    e.target.checked
+                      ? [...supports, tag]
+                      : supports.filter((value) => value !== tag),
+                  )
+                }
+                disabled={disabled}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        {spec.hint && (
+          <span className="text-xs normal-case tracking-normal text-[var(--fcb-text-faint)]">
+            {spec.hint}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   // spec.mode === 'weapon'
-  const category = supports.find((id) => WEAPON_CATEGORY_IDS.has(id)) ?? "";
-  const properties = supports.filter((id) => !WEAPON_CATEGORY_IDS.has(id));
+  const normalized = normalizeSupportIds(supports);
+  const category = normalized.find((id) => WEAPON_CATEGORY_IDS.has(id)) ?? "";
+  const properties = normalized.filter((id) => !WEAPON_CATEGORY_IDS.has(id));
   return (
     <div className="space-y-2">
       <label className="fcb-field-label">
@@ -432,6 +485,142 @@ function SupportsControl({
   );
 }
 
+// The feat's real prerequisites: simple rows the engine reads as a requirements expression, plus an
+// advanced expression for anything the rows cannot say. The line shown next to the feat is
+// filled from the rows unless a prerequisite text is typed above.
+function RequirementsControl({ element, onChange, disabled }) {
+  const rows = element.requirementRows ?? [];
+  const update = (index, patch) =>
+    onChange({
+      requirementRows: rows.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    });
+  const expression = buildRequirementsExpression(element);
+  const advanced = String(element.requirements ?? "").trim() !== "";
+  return (
+    <div>
+      <p className="fcb-field-label">Requirements (enforced when the feat is offered)</p>
+      <div className="mt-1 space-y-2">
+        {rows.map((row, index) => (
+          <div key={index} className="fcb-homebrew-stat-row">
+            <label className="fcb-field-label">
+              Condition
+              <select
+                className="fcb-select"
+                value={row.kind}
+                onChange={(e) => onChange({
+                  requirementRows: rows.map((r, i) => (i === index ? { kind: e.target.value } : r)),
+                })}
+                disabled={disabled || advanced}
+              >
+                <option value="ability">Ability score</option>
+                <option value="level">Character level</option>
+                <option value="classLevel">Class level</option>
+                <option value="element">Has or lacks an element</option>
+              </select>
+            </label>
+            {row.kind === "ability" && (
+              <label className="fcb-field-label">
+                Ability
+                <select
+                  className="fcb-select"
+                  value={row.ability ?? ""}
+                  onChange={(e) => update(index, { ability: e.target.value })}
+                  disabled={disabled || advanced}
+                >
+                  <option value="">Choose…</option>
+                  {REQUIREMENT_ABILITIES.map(([abbr, label]) => (
+                    <option key={abbr} value={abbr}>{label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {row.kind === "classLevel" && (
+              <label className="fcb-field-label">
+                Class
+                <input
+                  className="fcb-input normal-case"
+                  value={row.className ?? ""}
+                  onChange={(e) => update(index, { className: e.target.value })}
+                  disabled={disabled || advanced}
+                  placeholder="Wizard"
+                />
+              </label>
+            )}
+            {row.kind === "element" ? (
+              <>
+                <label className="fcb-field-label">
+                  Element id
+                  <input
+                    className="fcb-input normal-case text-xs"
+                    value={row.id ?? ""}
+                    onChange={(e) => update(index, { id: e.target.value.trim(), name: "" })}
+                    disabled={disabled || advanced}
+                    placeholder="ID_…"
+                  />
+                </label>
+                <label className="flex items-center gap-2 self-end pb-1 text-sm text-[var(--fcb-text-muted)]">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(row.negate)}
+                    onChange={(e) => update(index, { negate: e.target.checked })}
+                    disabled={disabled || advanced}
+                  />
+                  Must not have
+                </label>
+              </>
+            ) : (
+              <label className="fcb-field-label">
+                At least
+                <input
+                  inputMode="numeric"
+                  className="fcb-input"
+                  value={row.min ?? ""}
+                  onChange={(e) => update(index, { min: e.target.value })}
+                  disabled={disabled || advanced}
+                  placeholder="13"
+                />
+              </label>
+            )}
+            <button
+              type="button"
+              className="fcb-button fcb-homebrew-row-remove"
+              onClick={() => onChange({ requirementRows: rows.filter((_, i) => i !== index) })}
+              disabled={disabled}
+              aria-label="Remove requirement"
+            >
+              <Icon name="close" />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="fcb-button"
+          onClick={() => onChange({ requirementRows: [...rows, { kind: "ability", ability: "", min: "" }] })}
+          disabled={disabled || advanced}
+        >
+          Add requirement
+        </button>
+      </div>
+      <details className="fcb-homebrew-advanced mt-2">
+        <summary>Advanced requirements expression</summary>
+        <label className="fcb-field-label mt-2">
+          Expression (replaces the rows above while filled in)
+          <input
+            className="fcb-input normal-case font-mono text-xs"
+            value={element.requirements ?? ""}
+            onChange={(e) => onChange({ requirements: e.target.value })}
+            disabled={disabled}
+            placeholder="[str:13],[level:4]"
+          />
+        </label>
+      </details>
+      <p className="mt-1 text-xs text-[var(--fcb-text-faint)]">
+        {expression ? <>Written as <code>{expression}</code></> : "No requirements: any character may take this feat."}
+      </p>
+    </div>
+  );
+}
+
 // <stat name value/> rows: dropdown of common stat names (via datalist) with free-text override.
 function StatRows({ stats, onChange, disabled }) {
   const update = (index, patch) =>
@@ -458,7 +647,7 @@ function StatRows({ stats, onChange, disabled }) {
             <label className="fcb-field-label">
               Bonus value
               <input
-                type="number"
+                inputMode="numeric"
                 className="fcb-input"
                 value={stat.value}
                 onChange={(e) => update(index, { value: e.target.value })}

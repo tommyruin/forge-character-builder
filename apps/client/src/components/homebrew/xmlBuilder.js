@@ -10,11 +10,14 @@
 //     slugTouched, abbrTouched, ingestedAt,
 //     elements: [{
 //       localId, type, name, description, sheetText, prerequisite,
+//       requirements (advanced expression), requirementRows (simple builder; Feat only),
 //       supports: [...], setters: {...}, stats: [{ name, value }], grants: [{ type, id, name }],
 //       rawXml: string|null,       // advanced mode: emitted verbatim when set
 //       id: string, idLocked: bool // engine element id, frozen after the first ingest
 //     }]
 //   }
+
+import { requirementsSyntaxError } from '@forge-cb/engine/requirements';
 
 export const UPLOAD_CATEGORY = 'homebrew';
 
@@ -75,19 +78,108 @@ export const WEAPON_PROPERTIES = [
   ['ID_INTERNAL_WEAPON_PROPERTY_HEAVY', 'Heavy'],
   ['ID_INTERNAL_WEAPON_PROPERTY_THROWN', 'Thrown'],
   ['ID_INTERNAL_WEAPON_PROPERTY_REACH', 'Reach'],
-  ['ID_INTERNAL_WEAPON_PROPERTY_TWO_HANDED', 'Two-Handed'],
+  ['ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED', 'Two-Handed'],
   ['ID_INTERNAL_WEAPON_PROPERTY_VERSATILE', 'Versatile'],
   ['ID_INTERNAL_WEAPON_PROPERTY_LOADING', 'Loading'],
   ['ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION', 'Ammunition'],
   ['ID_INTERNAL_WEAPON_PROPERTY_SPECIAL', 'Special'],
 ];
 
-export const ARMOR_CATEGORIES = [
-  ['ID_INTERNAL_ARMOR_CATEGORY_LIGHT', 'Light Armor'],
-  ['ID_INTERNAL_ARMOR_CATEGORY_MEDIUM', 'Medium Armor'],
-  ['ID_INTERNAL_ARMOR_CATEGORY_HEAVY', 'Heavy Armor'],
-  ['ID_INTERNAL_ARMOR_CATEGORY_SHIELD', 'Shield'],
+// The engine's armor groups (`<supports>` on armor, and the pick that decides the dexterity cap,
+// the `armor` setter and the equip slot).
+export const ARMOR_GROUPS = [
+  ['ID_INTERNAL_ARMOR_GROUP_LIGHT', 'Light Armor'],
+  ['ID_INTERNAL_ARMOR_GROUP_MEDIUM', 'Medium Armor'],
+  ['ID_INTERNAL_ARMOR_GROUP_HEAVY', 'Heavy Armor'],
+  ['ID_INTERNAL_ARMOR_GROUP_SHIELD', 'Shield'],
 ];
+
+// What each armor group writes: the `armor` setter the engine reads for the dexterity cap and
+// the worn state, the equip slot, the group-wide proficiency element (class grants register it),
+// and the AC line shown in the item card.
+const ARMOR_GROUP_DETAILS = {
+  ID_INTERNAL_ARMOR_GROUP_LIGHT: {
+    armor: 'Light', slot: 'body', proficiency: 'ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR',
+    display: (ac) => `${ac} + Dex modifier`,
+  },
+  ID_INTERNAL_ARMOR_GROUP_MEDIUM: {
+    armor: 'Medium', slot: 'body', proficiency: 'ID_PROFICIENCY_ARMOR_PROFICIENCY_MEDIUM_ARMOR',
+    display: (ac) => `${ac} + Dex modifier (max 2)`,
+  },
+  ID_INTERNAL_ARMOR_GROUP_HEAVY: {
+    armor: 'Heavy', slot: 'body', proficiency: 'ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR',
+    display: (ac) => `${ac}`,
+  },
+  ID_INTERNAL_ARMOR_GROUP_SHIELD: {
+    armor: 'Shield', slot: 'onehand,secondary', type: 'Shield',
+    proficiency: 'ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS',
+    display: (ac) => `+${ac}`,
+  },
+};
+
+// Weapon category -> the category-wide proficiency element a character holds when a class grants
+// "Simple Weapons", "Martial Weapons" and so on. Attacks add the proficiency bonus when the
+// weapon's `proficiency` setter names an element the character has.
+const WEAPON_CATEGORY_PROFICIENCY = {
+  ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE: 'ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_MELEE_WEAPONS',
+  ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED: 'ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_RANGED_WEAPONS',
+  ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE: 'ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_MELEE_WEAPONS',
+  ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED: 'ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_RANGED_WEAPONS',
+};
+
+const VERSATILE_PROPERTY = 'ID_INTERNAL_WEAPON_PROPERTY_VERSATILE';
+
+// Ids written by earlier versions of the editor that no bundled content defines. Saved drafts keep
+// working: the builder rewrites them to the real id when it emits XML.
+const LEGACY_SUPPORT_IDS = {
+  ID_INTERNAL_ARMOR_CATEGORY_LIGHT: 'ID_INTERNAL_ARMOR_GROUP_LIGHT',
+  ID_INTERNAL_ARMOR_CATEGORY_MEDIUM: 'ID_INTERNAL_ARMOR_GROUP_MEDIUM',
+  ID_INTERNAL_ARMOR_CATEGORY_HEAVY: 'ID_INTERNAL_ARMOR_GROUP_HEAVY',
+  ID_INTERNAL_ARMOR_CATEGORY_SHIELD: 'ID_INTERNAL_ARMOR_GROUP_SHIELD',
+  ID_INTERNAL_WEAPON_PROPERTY_TWO_HANDED: 'ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED',
+};
+
+export function normalizeSupportIds(list) {
+  return (list ?? []).map((id) => LEGACY_SUPPORT_IDS[id] ?? id);
+}
+
+// Feat categories: the `<supports>` tags the bundled feat pickers filter on (a class's Fighting
+// Style pick, a background's Origin pick, the level-19 Epic Boon pick, the ASI levels' General pick).
+export const FEAT_CATEGORIES = [
+  ['Origin', 'Origin'],
+  ['General', 'General'],
+  ['Fighting Style', 'Fighting Style'],
+  ['Epic Boon', 'Epic Boon'],
+];
+
+// Magic items that sit on a base weapon or armor name what they can sit on in the `weapon` or
+// `armor` setter: an expression over the base's support tags (`A||B` is "either"), or a single
+// base name.
+export const MAGIC_BASE_KINDS = [
+  ['', 'Not based on a weapon or armor'],
+  ['weapon', 'Layered on a weapon'],
+  ['armor', 'Layered on armor'],
+];
+
+export const MAGIC_BASE_SCOPES = {
+  weapon: [
+    ['', 'Any weapon'],
+    ['ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE', 'Any melee weapon'],
+    ['ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED', 'Any ranged weapon'],
+    ['ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE||ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED', 'Any simple weapon'],
+    ['ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE||ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED', 'Any martial weapon'],
+  ],
+  armor: [
+    ['', 'Any armor except shields'],
+    ['ID_INTERNAL_ARMOR_GROUP_LIGHT', 'Light armor'],
+    ['ID_INTERNAL_ARMOR_GROUP_MEDIUM', 'Medium armor'],
+    ['ID_INTERNAL_ARMOR_GROUP_HEAVY', 'Heavy armor'],
+    ['ID_INTERNAL_ARMOR_GROUP_SHIELD', 'Shield'],
+  ],
+};
+
+const ANY_WEAPON_BASE = Object.keys(WEAPON_CATEGORY_PROFICIENCY).join('||');
+const ANY_ARMOR_BASE = 'ID_INTERNAL_ARMOR_GROUP_LIGHT||ID_INTERNAL_ARMOR_GROUP_MEDIUM||ID_INTERNAL_ARMOR_GROUP_HEAVY';
 
 export const LANGUAGE_CATEGORIES = [
   ['Standard', 'Standard'],
@@ -125,6 +217,8 @@ export const GRANT_TYPES = [
 //   setAttrs: static attributes on the <set> (e.g. cost currency="gp")
 //   attrFrom: { attrName: otherFieldKey } — pull an attribute value from another field
 //   emit: 'attr' — the field only feeds another setter's attribute (no <set> of its own)
+//   emit: 'derived' — the field feeds derivedParts(), which writes the setters/rules it implies
+//   options may be a function of the current setters (for selects whose list depends on another field)
 //   format: 'weight' — emits <set name="weight" lb="N">N lb.</set>
 //   trueValue/omitFalse: boolean emitted as a word when on, omitted when off
 //   showIf(setters): hide the field (and skip emission) unless the predicate passes
@@ -150,7 +244,17 @@ export const TYPE_SPECS = {
       { key: 'isRitual', label: 'Ritual', kind: 'boolean', default: 'false' },
     ],
   },
-  Feat: { prerequisite: true, fields: [] },
+  Feat: {
+    prerequisite: true,
+    requirements: true,
+    supports: {
+      mode: 'tags',
+      label: 'Feat categories',
+      hint: 'The pickers that offer this feat: a class\'s Fighting Style pick, a background\'s Origin feat, the Epic Boon pick, or the General pick at ability score increases.',
+      options: FEAT_CATEGORIES,
+    },
+    fields: [],
+  },
   'Racial Trait': { fields: [] },
   'Class Feature': { fields: [] },
   'Archetype Feature': { fields: [] },
@@ -173,16 +277,17 @@ export const TYPE_SPECS = {
       { key: 'slot', label: 'Hands', kind: 'select', options: [['onehand', 'One-handed'], ['twohand', 'Two-handed']], default: 'onehand' },
       { key: 'damage', label: 'Damage Dice', default: '1d8', required: true, attrFrom: { type: 'damageType' } },
       { key: 'damageType', label: 'Damage Type', kind: 'select', options: ['slashing', 'piercing', 'bludgeoning'], default: 'slashing', emit: 'attr' },
+      { key: 'versatile', label: 'Versatile damage (two hands)', placeholder: '1d10' },
       { key: 'range', label: 'Range', placeholder: '20/60' },
     ],
   },
   Armor: {
-    supports: { mode: 'select', label: 'Armor Category', options: ARMOR_CATEGORIES, defaults: ['ID_INTERNAL_ARMOR_CATEGORY_LIGHT'] },
+    supports: { mode: 'select', label: 'Armor Group', options: ARMOR_GROUPS, defaults: ['ID_INTERNAL_ARMOR_GROUP_LIGHT'] },
     fields: [
       { key: 'category', fixed: 'Armor' },
       { key: 'cost', label: 'Cost (gp)', default: '10', setAttrs: { currency: 'gp' } },
       { key: 'weight', label: 'Weight (lb)', kind: 'number', default: '10', format: 'weight' },
-      { key: 'armorClass', label: 'Armor Class', default: '14', required: true },
+      { key: 'armorClass', label: 'Base AC (shield: bonus)', default: '14', required: true, emit: 'derived' },
       { key: 'strength', label: 'Minimum Strength', placeholder: '13' },
       { key: 'stealth', label: 'Stealth Disadvantage', kind: 'boolean', default: 'false', trueValue: 'Disadvantage', omitFalse: true },
     ],
@@ -198,10 +303,13 @@ export const TYPE_SPECS = {
   'Magic Item': {
     fields: [
       { key: 'category', label: 'Category', default: 'Wondrous Items', required: true },
-      { key: 'type', label: 'Type', kind: 'select', options: ['Wondrous Item', 'Ring', 'Rod', 'Staff', 'Wand', 'Potion', 'Scroll', 'Armor', 'Weapon'], default: 'Wondrous Item', required: true },
+      { key: 'type', label: 'Type', kind: 'select', options: ['Wondrous Item', 'Ring', 'Rod', 'Staff', 'Wand', 'Potion', 'Scroll'], default: 'Wondrous Item', required: true },
       { key: 'rarity', label: 'Rarity', kind: 'select', options: ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Artifact'], default: 'Uncommon', required: true },
       { key: 'attunement', label: 'Requires Attunement', kind: 'boolean', default: 'false' },
       { key: 'slot', label: 'Worn Slot', kind: 'select', options: [['', '(none)'], 'ring', 'neck', 'head', 'body', 'hands', 'feet', 'waist', 'wrists'] },
+      { key: 'baseKind', label: 'Layered on', kind: 'select', options: MAGIC_BASE_KINDS, default: '', emit: 'derived' },
+      { key: 'baseScope', label: 'Base may be', kind: 'select', options: (setters) => MAGIC_BASE_SCOPES[setters.baseKind] ?? [], emit: 'derived', showIf: (s) => Boolean(s.baseKind) },
+      { key: 'baseName', label: 'Or a single named base', placeholder: 'Longsword', emit: 'derived', showIf: (s) => Boolean(s.baseKind) },
     ],
   },
 };
@@ -291,6 +399,8 @@ export function createElement(type) {
     description: '',
     sheetText: '',
     prerequisite: '',
+    requirements: '',
+    requirementRows: [],
     supports: spec.supports?.defaults ? [...spec.supports.defaults] : [],
     ruleset: 'inherit',
     setters,
@@ -346,27 +456,98 @@ export function validateHtmlFragment(html) {
   return `Description markup is not well-formed XML (${firstLine.trim()}). Close every tag and escape bare & as &amp;.`;
 }
 
+// What the type derives from the draft beyond its plain fields: setters whose value depends on
+// other fields (the armor group decides the `armor` setter and the equip slot), the rules those
+// setters stand for, supports the engine needs, and plain fields to write differently.
+function derivedParts(element) {
+  const setters = element.setters ?? {};
+  const supports = normalizeSupportIds(element.supports).filter(Boolean);
+  const parts = { overrides: {}, sets: [], rules: [], supports: [] };
+
+  if (element.type === 'Armor') {
+    const group = supports.find((id) => ARMOR_GROUP_DETAILS[id]) ?? 'ID_INTERNAL_ARMOR_GROUP_LIGHT';
+    const details = ARMOR_GROUP_DETAILS[group];
+    const ac = armorBaseValue(setters.armorClass);
+    parts.sets.push({ name: 'slot', value: details.slot });
+    if (details.type) parts.sets.push({ name: 'type', value: details.type });
+    parts.sets.push({ name: 'armor', value: details.armor });
+    parts.sets.push({ name: 'armorClass', value: details.display(ac) });
+    parts.sets.push({ name: 'proficiency', value: details.proficiency });
+    if (!supports.includes(group)) parts.supports.push(group);
+    if (setters.stealth === 'true') {
+      parts.rules.push('<grant type="Grants" id="ID_INTERNAL_GRANTS_STEALTH_DISADVANTAGE" />');
+    }
+    parts.rules.push(group === 'ID_INTERNAL_ARMOR_GROUP_SHIELD'
+      ? `<stat name="ac:shield" value="${ac}" bonus="shield" />`
+      : `<stat name="ac:armored:armor" value="${ac}" />`);
+    const strength = Number.parseInt(String(setters.strength ?? ''), 10);
+    if (Number.isFinite(strength) && strength > 0 && group !== 'ID_INTERNAL_ARMOR_GROUP_SHIELD') {
+      parts.rules.push(`<stat name="speed" value="-10" bonus="armor" requirements="!([str:${strength}]||ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT)" />`);
+    }
+  }
+
+  if (element.type === 'Weapon') {
+    const category = supports.find((id) => WEAPON_CATEGORY_PROFICIENCY[id]);
+    if (category) parts.sets.push({ name: 'proficiency', value: WEAPON_CATEGORY_PROFICIENCY[category] });
+    const versatile = String(setters.versatile ?? '').trim();
+    if (versatile && !supports.includes(VERSATILE_PROPERTY)) parts.supports.push(VERSATILE_PROPERTY);
+    const damageType = String(setters.damageType ?? '').trim().toLowerCase();
+    const damageSupport = DAMAGE_TYPE_SUPPORT_IDS[damageType];
+    if (damageSupport && !supports.includes(damageSupport)) parts.supports.push(damageSupport);
+  }
+
+  if (element.type === 'Magic Item') {
+    const base = magicItemBase(element);
+    if (base) {
+      parts.overrides.category = base.kind === 'weapon' ? 'Magic Weapons' : 'Magic Armor';
+      parts.overrides.type = base.kind === 'weapon' ? 'Weapon' : 'Armor';
+      parts.sets.push({ name: base.kind, value: base.expression });
+    }
+  }
+  return parts;
+}
+
+// The leading whole number of an armor's AC text ("14", or a legacy "14 + Dex modifier").
+function armorBaseValue(text) {
+  const parsed = Number.parseInt(String(text ?? '').trim(), 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+// The base a Magic Item layers on, or null. A draft saved before the form had a base picker with
+// type Weapon or Armor is read as "any weapon" / "any armor": that type without a base setter
+// could never be equipped to a hand or the body.
+export function magicItemBase(element) {
+  const setters = element.setters ?? {};
+  const legacyKind = setters.type === 'Weapon' ? 'weapon' : setters.type === 'Armor' ? 'armor' : '';
+  const kind = String(setters.baseKind ?? '').trim() || legacyKind;
+  if (kind !== 'weapon' && kind !== 'armor') return null;
+  const name = String(setters.baseName ?? '').trim();
+  const scope = String(setters.baseScope ?? '').trim();
+  const expression = name || scope || (kind === 'weapon' ? ANY_WEAPON_BASE : ANY_ARMOR_BASE);
+  return { kind, expression };
+}
+
 // Full supports list. Legacy Language drafts predate the category field, so treat a blank
 // category as Standard; otherwise those elements cannot appear in ordinary language pickers.
 // Weapons also derive their internal damage-type id so the picker and damage setter agree.
 function supportsList(element) {
-  const list = (element.supports ?? []).filter(Boolean);
+  const list = normalizeSupportIds(element.supports).filter(Boolean);
   if (element.type === 'Language' && list.length === 0) return ['Standard'];
-  if (element.type === 'Weapon') {
-    const damageType = String(element.setters?.damageType ?? '').trim().toLowerCase();
-    const supportId = DAMAGE_TYPE_SUPPORT_IDS[damageType];
-    if (supportId && !list.includes(supportId)) return [...list, supportId];
+  if (element.type === 'Armor' || element.type === 'Weapon') {
+    const extra = derivedParts(element).supports;
+    return [...list, ...extra.filter((id) => !list.includes(id))];
   }
   return list;
 }
 
 function setterLines(element, spec) {
   const setters = element.setters ?? {};
+  const derived = derivedParts(element);
   const lines = [];
   for (const field of spec.fields ?? []) {
-    if (field.emit === 'attr') continue;
+    if (field.emit) continue;
     if (field.showIf && !field.showIf(setters)) continue;
-    let value = field.fixed ?? String(setters[field.key] ?? field.default ?? '').trim();
+    let value = field.fixed ?? derived.overrides[field.key] ?? String(setters[field.key] ?? field.default ?? '').trim();
 
     if (field.kind === 'boolean') {
       const on = value === 'true';
@@ -398,6 +579,7 @@ function setterLines(element, spec) {
     }
     lines.push(`<set name="${field.key}"${attrs}>${escapeXml(value)}</set>`);
   }
+  for (const set of derived.sets) lines.push(`<set name="${set.name}">${escapeXml(set.value)}</set>`);
   return lines;
 }
 
@@ -409,7 +591,7 @@ function elementRulesetLines(element) {
 }
 
 function ruleLines(element) {
-  const lines = [];
+  const lines = [...derivedParts(element).rules];
   for (const stat of element.stats ?? []) {
     const name = String(stat.name ?? '').trim();
     const value = String(stat.value ?? '').trim();
@@ -425,6 +607,67 @@ function ruleLines(element) {
   return lines;
 }
 
+// ---------------------------------------------------------------------------
+// Feat requirements
+// ---------------------------------------------------------------------------
+
+export const REQUIREMENT_ABILITIES = [
+  ['str', 'Strength'], ['dex', 'Dexterity'], ['con', 'Constitution'],
+  ['int', 'Intelligence'], ['wis', 'Wisdom'], ['cha', 'Charisma'],
+];
+
+// One simple-builder row as an engine requirement atom, or '' while it is incomplete.
+function requirementAtom(row) {
+  const min = Number.parseInt(String(row.min ?? ''), 10);
+  if (row.kind === 'ability') {
+    return REQUIREMENT_ABILITIES.some(([abbr]) => abbr === row.ability) && min > 0 ? `[${row.ability}:${min}]` : '';
+  }
+  if (row.kind === 'level') return min > 0 ? `[level:${min}]` : '';
+  if (row.kind === 'classLevel') {
+    const cls = String(row.className ?? '').trim().toLowerCase();
+    return cls && min > 0 ? `[level:${cls}:${min}]` : '';
+  }
+  if (row.kind === 'element') {
+    const id = String(row.id ?? '').trim();
+    return id ? `${row.negate ? '!' : ''}${id}` : '';
+  }
+  return '';
+}
+
+function requirementPhrase(row) {
+  const min = Number.parseInt(String(row.min ?? ''), 10);
+  if (row.kind === 'ability') {
+    const name = REQUIREMENT_ABILITIES.find(([abbr]) => abbr === row.ability)?.[1];
+    return name && min > 0 ? `${name} ${min} or higher` : '';
+  }
+  if (row.kind === 'level') return min > 0 ? `Character level ${min} or higher` : '';
+  if (row.kind === 'classLevel') {
+    const cls = String(row.className ?? '').trim();
+    return cls && min > 0 ? `${cls} level ${min} or higher` : '';
+  }
+  if (row.kind === 'element') {
+    const label = String(row.name ?? row.id ?? '').trim();
+    return label ? `${row.negate ? 'Without' : 'Has'} ${label}` : '';
+  }
+  return '';
+}
+
+// The engine requirements expression for a feat: the advanced text when set, otherwise the
+// builder rows joined with "and".
+export function buildRequirementsExpression(element) {
+  const text = String(element.requirements ?? '').trim();
+  if (text) return text;
+  return (element.requirementRows ?? []).map(requirementAtom).filter(Boolean).join(',');
+}
+
+// The line the picker shows next to the feat. Authors can write their own; a blank one is
+// filled from the builder rows so the gating the engine enforces is also visible.
+export function requirementsDisplayText(element) {
+  const own = String(element.prerequisite ?? '').trim();
+  if (own) return own;
+  return (element.requirementRows ?? []).map(requirementPhrase).filter(Boolean).join('; ');
+}
+
 export function buildElementXml(element, collection) {
   if (element.rawXml != null && element.rawXml.trim()) return element.rawXml.trim();
 
@@ -434,8 +677,13 @@ export function buildElementXml(element, collection) {
   const supports = supportsList(element);
   if (supports.length) children.push(`<supports>${escapeXml(supports.join(', '))}</supports>`);
 
-  if (spec.prerequisite && element.prerequisite?.trim()) {
-    children.push(`<prerequisite>${escapeXml(element.prerequisite.trim())}</prerequisite>`);
+  if (spec.prerequisite) {
+    const display = requirementsDisplayText(element);
+    if (display) children.push(`<prerequisite>${escapeXml(display)}</prerequisite>`);
+  }
+  if (spec.requirements) {
+    const expression = buildRequirementsExpression(element);
+    if (expression) children.push(`<requirements>${escapeXml(expression)}</requirements>`);
   }
 
   children.push('<description>');
@@ -547,6 +795,21 @@ export function validateDraft(draft) {
       if (!value) errors.push({ where: label, message: `${field.label ?? field.key} is required for a ${element.type}.` });
     }
 
+    if (spec.requirements) {
+      const syntax = requirementsSyntaxError(buildRequirementsExpression(element));
+      if (syntax) errors.push({ where: label, message: `Requirements are not a valid expression (${syntax}).` });
+    }
+
+    if (element.type === 'Armor' && !/^\d+/.test(String(element.setters?.armorClass ?? '').trim())) {
+      errors.push({ where: label, message: 'Armor needs a whole-number base AC.' });
+    }
+    if (element.type === 'Weapon') {
+      const supports = normalizeSupportIds(element.supports);
+      if (supports.includes(VERSATILE_PROPERTY) && !String(element.setters?.versatile ?? '').trim()) {
+        errors.push({ where: label, message: 'A versatile weapon needs its two-handed damage dice.' });
+      }
+    }
+
     const htmlError = validateHtmlFragment(element.description);
     if (htmlError) errors.push({ where: label, message: htmlError });
 
@@ -555,7 +818,8 @@ export function validateDraft(draft) {
       const value = String(stat.value ?? '').trim();
       if (!name && !value) continue; // fully empty row is skipped at build time
       if (!name) errors.push({ where: label, message: 'A stat bonus row is missing its stat name.' });
-      if (!/^-?\d+$/.test(value)) errors.push({ where: label, message: `Stat bonus "${name || '?'}" needs a whole-number value.` });
+      // A leading + is how bonuses are written ("+2"); the engine reads it as the number.
+      if (!/^[+-]?\d+$/.test(value)) errors.push({ where: label, message: `Stat bonus "${name || '?'}" needs a whole-number value.` });
     }
 
     for (const grant of element.grants ?? []) {
