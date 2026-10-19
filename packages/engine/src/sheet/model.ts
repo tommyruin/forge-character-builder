@@ -2741,29 +2741,34 @@ function buildSpellDescriptionPages(
       left.spell.name.localeCompare(right.spell.name) ||
       left.spell.source.localeCompare(right.spell.source),
   );
-  const pages: SheetPage[] = [];
-  for (let i = 0; i < entries.length; i += 9) {
-    const slice = entries.slice(i, i + 9);
-    const cards = slice.map((entry) => spellDescriptionCard(state, library, entry));
-    const positioned = descriptionCardRuns(cards, { face: bodyFace });
-    const canonicalPositioned = canonical ? descriptionCardRuns(cards, { richText: false }) : undefined;
-    pages.push({
-      page: pages.length + 1,
-      templateKind: "spell-cards",
-      sections: slice.map((entry, card) => {
-        const element = library.byId.get(entry.spell.id);
-        const origin = spellOriginLabel(state, entry);
-        return {
-          title: "spell-description",
-          rows: descriptionPageRows(entry.spell, element, origin),
-          positionedRuns: positioned.filter((run) => run.cardIndex === card),
-          ...(canonicalPositioned === undefined
-            ? {}
-            : { canonicalRuns: canonicalPositioned.filter((run) => run.card === card) }),
-        };
-      }),
-    });
-  }
+  if (entries.length === 0) return [];
+  // One card page for every spell: the slots run on across PDF pages, so a
+  // long card's continuation pushes the next card along instead of leaving a
+  // part-filled page before the next group of nine.
+  const cards = entries.map((entry) => spellDescriptionCard(state, library, entry));
+  const positioned = descriptionCardRuns(cards, { face: bodyFace });
+  // The canonical projection keeps its nine-card pages.
+  const canonicalPositioned = canonical
+    ? entries.map((_, index) => index).filter((index) => index % 9 === 0)
+      .flatMap((start) => descriptionCardRuns(cards.slice(start, start + 9), { richText: false })
+        .map((run) => ({ ...run, card: (run.card ?? 0) + start })))
+    : undefined;
+  const pages: SheetPage[] = [{
+    page: 1,
+    templateKind: "spell-cards",
+    sections: entries.map((entry, card) => {
+      const element = library.byId.get(entry.spell.id);
+      const origin = spellOriginLabel(state, entry);
+      return {
+        title: "spell-description",
+        rows: descriptionPageRows(entry.spell, element, origin),
+        positionedRuns: positioned.filter((run) => run.cardIndex === card),
+        ...(canonicalPositioned === undefined
+          ? {}
+          : { canonicalRuns: canonicalPositioned.filter((run) => run.card === card) }),
+      };
+    }),
+  }];
   return pages;
 }
 

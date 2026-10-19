@@ -16,6 +16,12 @@ export interface LayoutRun {
    * longer tells which card it holds.
    */
   cardIndex?: number;
+  /**
+   * The run's slot continues a card begun in an earlier slot: the writer
+   * frames it as a plain card (no spell metadata labels), whatever the page's
+   * card kind.
+   */
+  continued?: boolean;
   role?: "title" | "subtitle" | "metadata" | "metadata-value" | "body" | "footer" | "table" | "sidebar";
   fontSize?: number;
   style?: "regular" | "bold" | "italic" | "bold-italic";
@@ -336,7 +342,7 @@ function fitCardBody(
   top: number,
   design: CardBodyDesign,
   face: string | undefined,
-): { runs: LayoutRun[]; drop: number } {
+): { runs: LayoutRun[]; drop: number; size: number } {
   const floor = Math.min(READABLE_MIN_FONT_SIZE, design.size);
   const bottom = top - CARD_CONTRACT.bodyBottom;
   const dropAt = (size: number): number => design.bandTop + BOX_TEXT_TOP_INSET + faceCapHeight(face) * size;
@@ -360,7 +366,7 @@ function fitCardBody(
       runs = minimum;
     }
   }
-  return { runs, drop: dropAt(size) };
+  return { runs, drop: dropAt(size), size };
 }
 
 function bodyLineGroups(runs: readonly LayoutRun[]): LayoutRun[][] {
@@ -447,15 +453,66 @@ function canonicalDescriptionCardRuns(cards: readonly DescriptionCard[]): Layout
   return runs;
 }
 
+interface CardSlot { page: number; local: number; x: number; top: number; continued: boolean }
+
 /** A card slot's page, position on the page (0-8, reading order) and frame. */
-function cardSlot(slot: number): { page: number; local: number; x: number; top: number } {
+function cardSlot(slot: number, continued = false): CardSlot {
   const local = slot % 9;
   return {
     page: Math.floor(slot / 9),
     local,
     x: PAGE_MARGIN + (local % 3) * (CARD_WIDTH + CARD_GUTTER),
     top: CARD_TOPS[Math.floor(local / 3)]!,
+    continued,
   };
+}
+
+const CARD_FOOTER_SIZE = 6;
+/** The air kept between a footer's two halves. */
+const CARD_FOOTER_GAP = 6;
+
+/**
+ * A card footer's two halves (origin left, source right) at 6pt, or smaller
+ * down to the readable floor when together they would meet ("Additional
+ * Spell, Tasha's Hideous Laughter" beside "Player's Handbook"); past the
+ * floor the left half is cut with an ellipsis.
+ */
+function fittedFooter(left: string, right: string, face: string | undefined): { left: string; right: string; fontSize: number } {
+  const room = CARD_WIDTH - CARD_FOOTER_INSET * 2 - (left !== "" && right !== "" ? CARD_FOOTER_GAP : 0);
+  const widthAt = (text: string, size: number): number => measuredWidth(text, size, "regular", face);
+  const total = widthAt(left, CARD_FOOTER_SIZE) + widthAt(right, CARD_FOOTER_SIZE);
+  if (total <= room) return { left, right, fontSize: CARD_FOOTER_SIZE };
+  const fontSize = Math.max(READABLE_MIN_FONT_SIZE, CARD_FOOTER_SIZE * room / total);
+  const leftRoom = room - widthAt(right, fontSize);
+  if (widthAt(left, fontSize) <= leftRoom + 0.01) return { left, right, fontSize };
+  let kept = "";
+  for (const character of left) {
+    if (widthAt(`${kept}${character}\u2026`, fontSize) > leftRoom) break;
+    kept += character;
+  }
+  return { left: `${kept.trimEnd()}\u2026`, right, fontSize };
+}
+
+const CARD_TITLE_SIZE = 10;
+/** The title band's inner width: the card frame less its border and a little air. */
+const CARD_TITLE_WIDTH = CARD_WIDTH - 12;
+
+/**
+ * A card title at 10pt, or smaller down to the readable floor when it would
+ * outrun the title band ("Tasha's Hideous Laughter (continued)"); past the
+ * floor it is cut with an ellipsis.
+ */
+function fittedTitle(title: string, face: string | undefined): { text: string; fontSize: number } {
+  const width = measuredWidth(title, CARD_TITLE_SIZE, "regular", face);
+  if (width <= CARD_TITLE_WIDTH) return { text: title, fontSize: CARD_TITLE_SIZE };
+  const fontSize = Math.max(READABLE_MIN_FONT_SIZE, CARD_TITLE_SIZE * CARD_TITLE_WIDTH / width);
+  if (measuredWidth(title, fontSize, "regular", face) <= CARD_TITLE_WIDTH + 0.01) return { text: title, fontSize };
+  let kept = "";
+  for (const character of title) {
+    if (measuredWidth(`${kept}${character}\u2026`, fontSize, "regular", face) > CARD_TITLE_WIDTH) break;
+    kept += character;
+  }
+  return { text: `${kept.trimEnd()}\u2026`, fontSize };
 }
 
 export function descriptionCardRuns(
@@ -493,6 +550,7 @@ export function descriptionCardRuns(
         card: slot.local,
         page: slot.page,
         cardIndex,
+        ...(slot.continued ? { continued: true } : {}),
         role,
         fontSize,
         style,
@@ -500,36 +558,50 @@ export function descriptionCardRuns(
       };
       if (!overlapsFixedLabel(run)) runs.push(run);
     };
-    add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0);
-    add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0);
+    const footer = fittedFooter(card.footer, card.footerRight ?? "", face);
+    /** The title, subtitle and footer every slot of the card carries; a continuation marks its title. */
+    const addFrameText = (slot: CardSlot): void => {
+      const title = fittedTitle(slot.continued ? `${card.title} (continued)` : card.title, face);
+      add(title.text, top - 13.5, "title", title.fontSize, "regular", 0, "center", 0, slot);
+      add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, slot);
+      add(footer.left, top - 233.5, "footer", footer.fontSize, "regular", CARD_FOOTER_INSET, "left", CARD_FOOTER_INSET, slot);
+      add(footer.right, top - 233.5, "footer", footer.fontSize, "regular", CARD_FOOTER_INSET, "right", CARD_FOOTER_INSET, slot);
+    };
+    addFrameText(first);
 
     /**
      * Lays the chosen body runs into the card's slot and, past its band, into
-     * further slots of their own (each with the title and subtitle again).
-     * `bodyDrop` and `bandDepth` place the band below a slot's top.
+     * further slots of their own. A continuation slot is a plain card: its
+     * body starts where a generic card's does (no metadata above it), at the
+     * size the card was set in, and runs to the same floor. `bodyDrop` places
+     * the first slot's band below its top.
      */
-    const placeBody = (bodyRuns: readonly LayoutRun[], bodyDrop: number, bandDepth: number): void => {
+    const placeBody = (bodyRuns: readonly LayoutRun[], bodyDrop: number, size: number): void => {
+      const continuedDrop = GENERIC_BODY.bandTop + BOX_TEXT_TOP_INSET + faceCapHeight(face) * size;
       const groups = bodyLineGroups(bodyRuns);
       let groupIndex = 0;
       let slot = first;
       while (groupIndex < groups.length) {
+        const drop = slot.continued ? continuedDrop : bodyDrop;
         const firstY = groups[groupIndex]![0]!.y;
         let end = groupIndex;
-        while (end < groups.length && groups[end]![0]!.y - firstY >= -bandDepth) end += 1;
+        while (end < groups.length && groups[end]![0]!.y - firstY >= drop - CARD_CONTRACT.bodyBottom) end += 1;
         if (end === groupIndex) end += 1;
         // A line ending on the first half of a word split at its hyphen goes on
         // with the other half, so no word is split across two slots.
         if (end < groups.length && end - groupIndex > 1 && groups[end - 1]!.at(-1)!.text.endsWith("-")) end -= 1;
-        const yShift = slot.top - bodyDrop - firstY;
+        const yShift = slot.top - drop - firstY;
         const xShift = slot.x - first.x;
         for (const run of groups.slice(groupIndex, end).flat()) {
-          runs.push({ ...run, x: run.x + xShift, y: run.y + yShift, card: slot.local, page: slot.page, cardIndex });
+          runs.push({
+            ...run, x: run.x + xShift, y: run.y + yShift, card: slot.local, page: slot.page, cardIndex,
+            ...(slot.continued ? { continued: true } : {}),
+          });
         }
         groupIndex = end;
         if (groupIndex < groups.length) {
-          slot = cardSlot(nextSlot++);
-          add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0, slot);
-          add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, slot);
+          slot = cardSlot(nextSlot++, true);
+          addFrameText(slot);
         }
       }
     };
@@ -546,14 +618,10 @@ export function descriptionCardRuns(
       }
       const bodyCard = notes.length > 0 ? { ...card, body: `${card.body}${notes.join("")}` } : card;
       const body = fitCardBody(bodyCard, localCardIndex, top, SPELL_BODY, face);
-      placeBody(body.runs, body.drop, CARD_CONTRACT.bodyBottom - body.drop);
+      placeBody(body.runs, body.drop, body.size);
     } else {
       const body = fitCardBody(card, localCardIndex, top, GENERIC_BODY, face);
-      placeBody(body.runs, body.drop, CARD_CONTRACT.bodyBottom - body.drop);
-    }
-    add(card.footer, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "left", CARD_FOOTER_INSET);
-    if (card.footerRight !== undefined) {
-      add(card.footerRight, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "right", CARD_FOOTER_INSET);
+      placeBody(body.runs, body.drop, body.size);
     }
   });
   return runs;
