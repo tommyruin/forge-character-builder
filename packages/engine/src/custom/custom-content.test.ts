@@ -151,6 +151,16 @@ describe("a boon made on a character", () => {
     expect(sheetLines(service, id)).toContain("Ember Boon (Bonus Action—1/Long Rest). A warmth that never fades.");
   });
 
+  it("names the granting custom feature as the source of the spells it grants", () => {
+    const { service, id } = fighter();
+    const saved = service.saveCustomDraft(id, { draft: boon() });
+    const feature = service.getSpellcasting(id).find((caster) => caster.name === "Ember Boon");
+    expect(feature!.knownSpells[0]).toMatchObject({
+      id: "ID_TEST_SPELL_EMBER_SPARK",
+      grantedBy: { elementId: saved.entry.elementId, name: "Ember Boon", isCustom: true },
+    });
+  });
+
   it("is the same element after a save, a reload and an export", () => {
     const { service, id } = fighter();
     const draft = boon();

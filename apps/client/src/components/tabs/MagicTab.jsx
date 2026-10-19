@@ -13,6 +13,7 @@ import {
 } from '../InspectableItemControls';
 import SpellBrowser from './magic/SpellBrowser';
 import SpellDetails from './magic/SpellDetails';
+import SpellSource from './magic/SpellSource';
 import AddSpellModal from './magic/AddSpellModal';
 import { spellLevelLabel } from './magic/spellLevels';
 import { castingTimeBadge } from './magic/castingTime';
@@ -894,7 +895,7 @@ export default function MagicTab() {
                                 className="text-xs text-[var(--fcb-text-muted)]"
                                 data-label="Source"
                               >
-                                {spell.source}
+                                <SpellSource spell={spell} />
                               </td>
                               {activeCaster.requiresPreparation && (
                                 <td

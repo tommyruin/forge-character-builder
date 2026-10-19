@@ -32,6 +32,7 @@ import {
 } from "./spelllist.js";
 import { featureSpellCasters, type FeatureSpellCaster } from "./feature-casters.js";
 import { additionalSpellPool, isDmGrantSource, isGeneratedSpellProxyId } from "./granted-spells.js";
+import { contentOrigin } from "../custom/placement.js";
 
 /**
  * Magic DTO projections.
@@ -503,12 +504,20 @@ function featureCasterDto(
   abilityModifier: (ability: string) => number,
 ): SpellcasterDto {
   const modifier = abilityModifier(feature.ability);
+  // A feature's spells are filed under the feature that gave them, not under the
+  // spell's own book, so a boon's Moonbeam reads as the boon's.
+  const grantedBy = {
+    elementId: feature.elementId,
+    name: library.byId.get(feature.elementId)?.identity.name ?? feature.name,
+    isCustom: contentOrigin(library, feature.elementId) !== "book",
+  };
   const toDto = (id: string, usage: string | null): KnownSpellDto | null => {
     const info = spellInfo(library, id);
     if (info === null) return null;
     return {
       ...toKnownSpellDto(info, { prepared: false, always: true }),
       ...(usage === null ? {} : { usage }),
+      grantedBy,
     };
   };
   const knownSpells = [

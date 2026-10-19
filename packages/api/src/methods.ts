@@ -135,6 +135,12 @@ export interface KnownSpellDto {
   usage?: string | null;
   /** Conditions or shared-feature limits on the free-cast allowance. */
   usageNote?: string;
+  /**
+   * The feature or item that gave the character this spell, for spells a
+   * feature caster projects. The spell lists name it in place of the spell's
+   * own book, and mark it when it is custom content.
+   */
+  grantedBy?: { elementId: string; name: string; isCustom: boolean };
 }
 
 export interface SpellcasterDto {
