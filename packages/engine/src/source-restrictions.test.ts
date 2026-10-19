@@ -195,6 +195,15 @@ describe("source restrictions on catalogue queries", () => {
     expect(after.options).toEqual([]);
   });
 
+  it("lays a single-name magic item over a base the character's sources allow when no base is chosen", () => {
+    const STAFF_OF_POWER = "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_POWER";
+    const { service, id } = restrictedCharacter("auto-base", [PHB_SOURCE]);
+    service.addItem(id, { itemId: STAFF_OF_POWER, amount: 1, baseElementId: null });
+    const record = service.getCharacter(id).items.at(-1)!;
+    expect(record.adorners).toEqual([STAFF_OF_POWER]);
+    expect(record.itemId).toBe("ID_WOTC_PHB24_WEAPON_QUARTERSTAFF");
+  });
+
   it("filters adjustments and optional rules to the character's sources", () => {
     const { service, id } = restrictedCharacter("adjustments", [FIZBAN_SOURCE, TASHA_SOURCE]);
     const state = service.getCharacter(id);

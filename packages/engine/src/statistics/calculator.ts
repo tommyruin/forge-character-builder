@@ -1313,10 +1313,16 @@ export function computeStatistics(
     // identifier, by exact name, and (for re-added items) by shared words.
     const byIdentifier = state.items.find((item) => item.identifier === attack.identifier);
     addWeapon(byIdentifier ? library.byId.get(byIdentifier.itemId) : undefined);
-    const byName = state.items.find((item) => item.name.toLowerCase() === attack.name.toLowerCase());
-    addWeapon(byName ? library.byId.get(byName.itemId) : undefined);
-    if (!byName) {
-      const attackWords = new Set(attack.name.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2));
+    // The identifier names the one item the attack is for; a name only stands in
+    // when it does not, and then every item carrying it counts (two editions'
+    // Longswords share a name), never just the first.
+    const attackName = attack.name.toLowerCase();
+    const byName = byIdentifier?.name.toLowerCase() === attackName
+      ? [byIdentifier]
+      : state.items.filter((item) => item.name.toLowerCase() === attackName);
+    for (const item of byName) addWeapon(library.byId.get(item.itemId));
+    if (byName.length === 0) {
+      const attackWords = new Set(attackName.split(/[^a-z]+/).filter((w) => w.length > 2));
       const shared = state.items.find((item) => {
         const words = item.name.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2);
         return words.some((word) => attackWords.has(word));

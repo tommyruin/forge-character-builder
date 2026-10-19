@@ -955,7 +955,10 @@ export function planAddItemEdits(
   } else {
     const setter = baseSlotSetter(element);
     if (setter && !/[|,]/.test(setter.value)) {
-      const candidates = library.byType.get(setter.name === "weapon" ? "Weapon" : "Armor") ?? [];
+      // Two editions' "Quarterstaff" are two elements; with no base chosen, the
+      // one the character's source restrictions allow is the one to lay it over.
+      const candidates = (library.byType.get(setter.name === "weapon" ? "Weapon" : "Armor") ?? [])
+        .filter((candidate) => isContentAllowedForCharacter(state, library, candidate));
       const match = candidates.find((candidate) => candidate.identity.name.toLowerCase() === setter.value.toLowerCase());
       if (match) {
         base = match;
