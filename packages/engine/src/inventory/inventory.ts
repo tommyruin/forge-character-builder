@@ -571,7 +571,9 @@ export function itemBaseOptions(library: ElementLibrary, itemId: string, state?:
 
 /** Support-expression matching for base setters ("A||B" groups, "," tags). */
 function matchesBaseSupports(expression: string, candidate: ParsedElement): boolean {
-  const have = new Set(candidate.supports.map((tag) => tag.trim()));
+  // A tag may also be the candidate's own element id, which names exactly one
+  // base (two editions' Longswords share a name but not an id).
+  const have = new Set([...candidate.supports.map((tag) => tag.trim()), candidate.identity.id]);
   return expression
     .split("|")
     .map((group) => group.trim())
@@ -992,7 +994,9 @@ export function planAddItemEdits(
       // one the character's source restrictions allow is the one to lay it over.
       const candidates = (library.byType.get(setter.name === "weapon" ? "Weapon" : "Armor") ?? [])
         .filter((candidate) => isContentAllowedForCharacter(state, library, candidate));
-      const match = candidates.find((candidate) => candidate.identity.name.toLowerCase() === setter.value.toLowerCase());
+      const match =
+        candidates.find((candidate) => candidate.identity.id === setter.value) ??
+        candidates.find((candidate) => candidate.identity.name.toLowerCase() === setter.value.toLowerCase());
       if (match) {
         base = match;
         adornerId = element.identity.id;

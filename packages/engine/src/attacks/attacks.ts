@@ -249,12 +249,20 @@ const effectiveElement = (library: ElementLibrary, item: { itemId: string; adorn
   item.adorners.length > 0 ? elementById(library, item.adorners[0]!) : elementById(library, item.itemId);
 
 /** The weapon's default attack ability (finesse: higher of STR/DEX; ranged: DEX). */
-function weaponDefaultAbility(state: CharacterState, base: ParsedElement, statistics: StatisticsValues): string {
-  const supports = base.supports.join(" ");
+function weaponDefaultAbility(
+  state: CharacterState,
+  base: ParsedElement,
+  statistics: StatisticsValues,
+  own: ItemWeaponSetters = NO_ITEM_SETTERS,
+): string {
+  // An item that names its ability decides it before the weapon's shape does.
+  if (own.ability !== null) return own.ability;
+  const categories = base.supports.join(" ");
+  const supports = effectiveSupports(base, own).join(" ");
   const ranged =
-    supports.includes("ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED") ||
-    supports.includes("ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED") ||
-    supports.includes("ID_INTERNAL_WEAPON_CATEGORY_FIREARM");
+    categories.includes("ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_RANGED") ||
+    categories.includes("ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED") ||
+    categories.includes("ID_INTERNAL_WEAPON_CATEGORY_FIREARM");
   if (ranged) return "Dexterity";
   const finesse = supports.includes("ID_INTERNAL_WEAPON_PROPERTY_FINESSE");
   if (finesse) {
@@ -301,13 +309,80 @@ function enhancementOf(element: ParsedElement | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+const isPropertyTag = (tag: string): boolean =>
+  tag.startsWith("ID_INTERNAL_WEAPON_PROPERTY_") || PROPERTY_ID_NAMES[tag] !== undefined;
+
 /** The property list of a weapon ("Ammunition, Two-Handed", "Versatile", ...). */
-function weaponProperties(base: ParsedElement): string {
-  const names = base.supports
-    .filter((tag) => tag.startsWith("ID_INTERNAL_WEAPON_PROPERTY_") || PROPERTY_ID_NAMES[tag] !== undefined)
-    .map(propertyName);
-  return names.join(", ");
+function weaponProperties(supports: readonly string[]): string {
+  return supports.filter(isPropertyTag).map(propertyName).join(", ");
 }
+
+/** One damage term an item adds or substitutes: dice and a damage type. */
+interface DamageTerm {
+  dice: string;
+  type: string;
+}
+
+/**
+ * What a magic weapon says about its own attack row, read from the setters of
+ * the element laid over the base:
+ *  - `extra damage` (repeatable, `type` attribute): dice added after the
+ *    weapon's own damage ("1d8+3 slashing + 1d6 cold");
+ *  - `attack ability`: the ability its attack and damage rolls use by default;
+ *  - `damage` (`type` attribute), `versatile` and `range`: replace the base's;
+ *  - `weapon properties`: a comma-separated list of weapon property ids that
+ *    replaces the base's own (finesse, light, thrown ...).
+ * A plain Weapon element is its own base, so a homebrew weapon may use the same
+ * setters.
+ */
+export interface ItemWeaponSetters {
+  extraDamage: DamageTerm[];
+  ability: string | null;
+  damage: DamageTerm | null;
+  versatile: string | null;
+  range: string | null;
+  properties: string[] | null;
+}
+
+const NO_ITEM_SETTERS: ItemWeaponSetters = {
+  extraDamage: [],
+  ability: null,
+  damage: null,
+  versatile: null,
+  range: null,
+  properties: null,
+};
+
+export function itemWeaponSetters(element: ParsedElement | undefined): ItemWeaponSetters {
+  if (element === undefined) return NO_ITEM_SETTERS;
+  const extraDamage = element.setters
+    .filter((setter) => setter.name === "extra damage" && setter.value.trim() !== "")
+    .map((setter) => ({ dice: setter.value.trim(), type: setter.attrs?.type?.trim() ?? "" }));
+  const abilityName = setterValue(element, "attack ability")?.trim().toLowerCase();
+  const ability = abilityName === undefined ? undefined : ABILITY_NAMES.find((entry) => entry.name.toLowerCase() === abilityName);
+  const damage = setterValue(element, "damage")?.trim();
+  const properties = setterValue(element, "weapon properties");
+  return {
+    extraDamage,
+    ability: ability?.name ?? null,
+    damage: damage === undefined || damage === "" ? null : { dice: damage, type: setterType(element, "damage") ?? "" },
+    versatile: setterValue(element, "versatile")?.trim() || null,
+    range: setterValue(element, "range")?.trim() || null,
+    properties: properties === undefined
+      ? null
+      : properties.split(",").map((tag) => tag.trim()).filter((tag) => tag !== ""),
+  };
+}
+
+/** The tags a weapon answers to once an item's property list has replaced the base's. */
+function effectiveSupports(base: ParsedElement, own: ItemWeaponSetters): string[] {
+  if (own.properties === null) return base.supports;
+  return [...base.supports.filter((tag) => !isPropertyTag(tag)), ...own.properties];
+}
+
+/** The terms an item adds after a weapon's damage ("+ 1d6 cold"). */
+const extraDamageText = (terms: readonly DamageTerm[]): string =>
+  terms.map((term) => ` + ${term.dice}${term.type === "" ? "" : ` ${term.type}`}`).join("");
 
 // ---------------------------------------------------------------------------
 // Weapon mastery (2024)
@@ -527,17 +602,22 @@ function resolveWeaponRow(
       mastery: null,
     };
   }
-  const defaultAbility = weaponDefaultAbility(state, base, statistics);
+  // An attunement-requiring weapon fights as its mundane base until attuned:
+  // the enhancement bonus and everything the item says about its own attack row
+  // (extra dice, ability, die, range, properties) apply only once the wielder
+  // is attuned to it.
+  const requiresAttunement = setterValue(effective, "attunement") === "true";
+  const itemActive = !requiresAttunement || item.attuned === true;
+  const declared = itemWeaponSetters(effective);
+  const own = itemActive ? declared : NO_ITEM_SETTERS;
+  const defaultAbility = weaponDefaultAbility(state, base, statistics, own);
   const ability = row.abilityMode === "explicit" && row.ability !== "" ? row.ability : defaultAbility;
   const abilityKey = ABILITY_KEY[ability.toLowerCase()];
   const modifier = abilityKey === undefined
     ? abilityModifier(scoreFor(state, ability))
     : (statistics[`${abilityKey}:modifier`] ?? abilityModifier(state.abilities[abilityKey]));
   const proficiency = isProficient(state, base) ? proficiencyBonus(state.level) : 0;
-  // An attunement-requiring weapon fights as its mundane base until attuned;
-  // the enhancement bonus only applies once the wielder is attuned to it.
-  const requiresAttunement = setterValue(effective, "attunement") === "true";
-  const enhancement = requiresAttunement && item.attuned !== true ? 0 : enhancementOf(effective);
+  const enhancement = itemActive ? enhancementOf(effective) : 0;
   const category = weaponCategory(base);
   const statisticName = base.identity.name.toLowerCase();
   const categoryAttack = category === null ? 0 : (statistics[`${category}:attack`] ?? 0);
@@ -545,15 +625,17 @@ function resolveWeaponRow(
   const attackTotal = modifier + proficiency + enhancement + categoryAttack + (statistics[`${statisticName}:attack`] ?? 0);
   // A versatile weapon wielded in both hands deals its versatile die. The
   // state carries the document's display location ("Two-Handed").
-  const versatileDice = item.location === "Two-Handed" ? setterValue(base, "versatile") : undefined;
-  const dice = versatileDice ?? setterValue(base, "damage") ?? "";
-  const type = setterType(base, "damage") ?? "";
+  const versatileDice = item.location === "Two-Handed" ? (own.versatile ?? setterValue(base, "versatile")) : undefined;
+  const dice = versatileDice ?? own.damage?.dice ?? setterValue(base, "damage") ?? "";
+  const type = own.damage?.type ?? setterType(base, "damage") ?? "";
   const damageTotal = modifier + enhancement + categoryDamage + (statistics[`${statisticName}:damage`] ?? 0);
-  const range = setterValue(base, "range") ?? "5 ft";
+  const damageText = `${weaponDamageString(dice, damageTotal, type)}${extraDamageText(own.extraDamage)}`;
+  const baseRange = setterValue(base, "range") ?? "5 ft";
+  const range = own.range ?? baseRange;
   // A mastery property only reads as part of the weapon once the character has
   // chosen it, so an unchosen one is reported but never printed on the sheet.
   const mastery = weaponMastery(library, base, masteries);
-  const properties = weaponProperties(base);
+  const properties = weaponProperties(effectiveSupports(base, own));
   const masteryDescription = mastery !== null
     ? [properties, `Mastery: ${mastery.name}`].filter((part) => part !== "").join(", ")
     : properties;
@@ -565,22 +647,34 @@ function resolveWeaponRow(
     name: customNameOf(item) || effective.identity.name,
     range,
     bonus: bonusString(attackTotal),
-    damage: weaponDamageString(dice, damageTotal, type),
+    damage: damageText,
     description,
   };
-  // Both forms are generated text: the bare properties and this weapon's
-  // mastery suffix from an earlier selection. Clearing or replacing mastery
-  // must not turn the old suffix into a manual override. Other prose stays put.
-  const generatedDescription = (value: string): boolean => value === masteryDescription || value === properties;
+  // The stored range and description are the generated text of an earlier
+  // pass, so every form the weapon can generate (attuned or not) is generated
+  // text, never a typed override. Attuning must not freeze the unattuned range.
+  const propertyForms = [
+    ...new Set([
+      properties,
+      weaponProperties(base.supports),
+      weaponProperties(effectiveSupports(base, declared)),
+    ]),
+  ];
+  const generatedDescriptions = new Set([
+    ...propertyForms,
+    ...(mastery === null ? [] : propertyForms.map((form) => [form, `Mastery: ${mastery.name}`].filter((part) => part !== "").join(", "))),
+  ]);
+  const generatedDescription = (value: string): boolean => generatedDescriptions.has(value);
+  const generatedRange = (value: string): boolean => value === baseRange || value === declared.range;
   const overriddenFields: string[] = [];
   if (row.name !== "" && row.name !== generated.name) overriddenFields.push("name");
-  if (row.range !== "" && row.range !== generated.range) overriddenFields.push("range");
+  if (row.range !== "" && !generatedRange(row.range) && row.range !== generated.range) overriddenFields.push("range");
   if (row.description !== "" && !generatedDescription(row.description)) overriddenFields.push("description");
   return {
     name: row.name === "" ? generated.name : row.name,
-    range: row.range === "" ? generated.range : row.range,
+    range: row.range === "" || generatedRange(row.range) ? generated.range : row.range,
     bonus: bonusString(attackTotal),
-    damage: weaponDamageString(dice, damageTotal, type),
+    damage: damageText,
     description: row.description === "" || generatedDescription(row.description) ? description : row.description,
     generated,
     overriddenFields,
