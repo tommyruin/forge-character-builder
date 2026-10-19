@@ -450,6 +450,7 @@ function serializeRule(rule: Rule): Rule {
     case "stat": {
       const out: StatRule = { kind: "stat", name: rule.name };
       setEncodedOptional(out, rule, "value", rule.value);
+      setEncodedOptional(out, rule, "maximum", rule.maximum);
       setEncodedOptional(out, rule, "bonus", rule.bonus);
       setEncodedOptional(out, rule, "group", rule.group);
       setEncodedOptional(out, rule, "requirements", rule.requirements);
@@ -619,9 +620,10 @@ function decodeRule(value: unknown, context: string): Rule {
       return rule;
     }
     case "stat": {
-      expectKeys(record, ["kind", "name"], ["value", "bonus", "group", "requirements", "entry", "type", "level", "equipped", "alt", "inline", "condition"], context);
+      expectKeys(record, ["kind", "name"], ["value", "maximum", "bonus", "group", "requirements", "entry", "type", "level", "equipped", "alt", "inline", "condition"], context);
       const rule: StatRule = { kind: "stat", name: expectString(record.name, `${context}.name`) };
       setDecodedOptional(rule, record, "value", context, expectString);
+      setDecodedOptional(rule, record, "maximum", context, expectString);
       setDecodedOptional(rule, record, "bonus", context, expectString);
       setDecodedOptional(rule, record, "group", context, expectString);
       setDecodedOptional(rule, record, "requirements", context, expectString);

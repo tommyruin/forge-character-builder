@@ -44,6 +44,11 @@ export interface StatRule {
   kind: "stat";
   name: string;
   value?: string;
+  /**
+   * Upper bound on the resolved value ("Dexterity modifier, maximum of +2"):
+   * a literal or a reference, resolved like `value`.
+   */
+  maximum?: string;
   bonus?: string;
   group?: string;
   requirements?: string;
@@ -288,6 +293,7 @@ function parseRule(node: XmlNode): Rule {
         kind,
         name: node.attrs.name ?? "",
         value: node.attrs.value,
+        ...(node.attrs.maximum !== undefined && node.attrs.maximum.trim() !== "" ? { maximum: node.attrs.maximum } : {}),
         bonus: node.attrs.bonus,
         group: node.attrs.group,
         requirements: node.attrs.requirements,

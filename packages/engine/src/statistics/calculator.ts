@@ -450,15 +450,29 @@ function weaponMatches(id: string, value: string, library: ElementLibrary): bool
   }
 }
 
-/** Resolves a stat rule value: numeric literal or reference to an existing key. */
+/**
+ * Stat keys hold whole numbers, so a literal is an optionally signed number
+ * ("2", "-1", "+2"); a fraction rounds down, as D&D does, instead of
+ * resolving to a key lookup that yields 0.
+ */
+const NUMERIC_LITERAL = /^[+-]?(?:\d+\.?\d*|\.\d+)$/;
+
+/** Resolves a stat value: numeric literal or reference to an existing key. */
 function resolveValue(value: string | undefined, values: StatisticsValues): number {
   if (value === undefined || value.trim() === "") return 0;
   const trimmed = value.trim();
-  if (/^-?\d+$/.test(trimmed)) return Number(trimmed);
+  if (NUMERIC_LITERAL.test(trimmed)) return Math.floor(Number(trimmed));
   const negative = trimmed.startsWith("-");
-  const name = negative ? trimmed.slice(1) : trimmed;
+  const name = trimmed.startsWith("-") || trimmed.startsWith("+") ? trimmed.slice(1) : trimmed;
   const resolved = values[name] ?? 0;
   return negative ? -resolved : resolved;
+}
+
+/** A stat rule's value with its `maximum` applied. */
+export function resolveRuleValue(rule: Pick<StatRule, "value" | "maximum">, values: StatisticsValues): number {
+  const value = resolveValue(rule.value, values);
+  if (rule.maximum === undefined || rule.maximum.trim() === "") return value;
+  return Math.min(value, resolveValue(rule.maximum, values));
 }
 
 function isMovementValueReference(rule: StatRule): boolean {
@@ -925,7 +939,7 @@ function cappedAbilityIncreases(
     if (match === null || !ABILITIES.includes(match[1] as (typeof ABILITIES)[number])) continue;
     if (source.rule.bonus !== "base" || !passes(source)) continue;
     const byAbility = caps.get(source.element) ?? new Map<string, number>();
-    const extra = abilityMaxTier(resolveValue(source.rule.value, values));
+    const extra = abilityMaxTier(resolveRuleValue(source.rule, values));
     byAbility.set(match[1]!, Math.max(byAbility.get(match[1]!) ?? 0, extra));
     caps.set(source.element, byAbility);
   }
@@ -936,7 +950,7 @@ function cappedAbilityIncreases(
     if (extra === undefined || !passes(source)) continue;
     const byAbility = increases.get(source.element) ?? new Map<string, CappedIncrease>();
     const increase = byAbility.get(ability) ?? { bonus: 0, extra };
-    increase.bonus += resolveValue(source.rule.value, values);
+    increase.bonus += resolveRuleValue(source.rule, values);
     byAbility.set(ability, increase);
     increases.set(source.element, byAbility);
   }
@@ -1013,7 +1027,7 @@ export function computeStatistics(
     if (collect !== undefined && collect.keys.has(rule.name)) {
       collect.out.push({
         key: rule.name,
-        value: resolveValue(rule.value, values),
+        value: resolveRuleValue(rule, values),
         // The corpus convention: `alt` is the rule's display name, otherwise
         // the owning element speaks for itself.
         label: rule.alt ?? source.element.identity.name,
@@ -1021,7 +1035,7 @@ export function computeStatistics(
       });
     }
     if (rule.bonus === "base") {
-      const value = resolveValue(rule.value, values);
+      const value = resolveRuleValue(rule, values);
       const previous = baseValue.get(rule.name);
       const current = previous ?? seeds[rule.name] ?? 0;
       const next = previous === undefined ? value : Math.max(previous, value);
@@ -1029,7 +1043,7 @@ export function computeStatistics(
       baseValue.set(rule.name, next);
     } else if (rule.bonus !== undefined) {
       const bucket = `${rule.name}\u0000${rule.bonus}`;
-      const value = resolveValue(rule.value, values);
+      const value = resolveRuleValue(rule, values);
       const previous = bonusBucketMax.get(bucket);
       if (previous === undefined) {
         bonusBucketMax.set(bucket, value);
@@ -1039,7 +1053,7 @@ export function computeStatistics(
         bonusBucketMax.set(bucket, value);
       }
     } else {
-      values[rule.name] = (values[rule.name] ?? 0) + resolveValue(rule.value, values);
+      values[rule.name] = (values[rule.name] ?? 0) + resolveRuleValue(rule, values);
     }
   };
   const abilityRule = (source: RuleSource): boolean =>
@@ -1129,7 +1143,7 @@ export function computeStatistics(
     for (const rule of source.element.rules) {
       if (rule.kind !== "stat" || rule.name !== source.rule.name) continue;
       if (!passesRuleGates({ element: source.element, rule, classLevel: source.classLevel }, ctx)) continue;
-      total += resolveValue(rule.value, values);
+      total += resolveRuleValue(rule, values);
     }
     return total;
   };

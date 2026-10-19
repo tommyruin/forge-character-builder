@@ -21,6 +21,7 @@ import {
   computeStatistics,
   elementRequirementContext,
   initiativeAdvantageSources,
+  resolveRuleValue,
   type StatisticsValues,
 } from "../statistics/calculator.js";
 import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
@@ -1149,8 +1150,7 @@ function acContributionLines(state: CharacterState, library: ElementLibrary, val
       if (rule.kind !== "stat" || rule.name !== "ac:misc") continue;
       if (rule.condition !== undefined && rule.condition.trim() !== "") continue;
       if (rule.value === undefined) continue;
-      const literal = Number(rule.value);
-      total += Number.isFinite(literal) ? literal : values[rule.value] ?? 0;
+      total += resolveRuleValue(rule, values);
       if (rule.alt !== undefined) alt = rule.alt;
     }
     // A group summing to zero or less is dropped from the AC total, so it
