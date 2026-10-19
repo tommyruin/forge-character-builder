@@ -10,6 +10,7 @@ import type { ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { buildCharacterSheetModel } from "../sheet/model.js";
 import { buildFighter3, sharedLibrary } from "../testing/character-factory.js";
+import { SAMPLE_CHARACTER } from "../testing/dnd5e-samples.js";
 
 const SCIMITAR = "ID_WOTC_PHB_WEAPON_SCIMITAR";
 const ROPE = "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET";
@@ -149,5 +150,31 @@ describe("a renamed record", () => {
     expect(() => service.setItemDetails(id, record.identifier, { notes: "y".repeat(2001) })).toThrow(/notes/i);
     expect(() => service.setItemDetails(id, "missing", { name: "x" })).toThrow(/not found/i);
     expect(() => service.setItemDetails(id, record.identifier, { name: "a\u0000b" })).toThrow(/name/i);
+  });
+});
+
+describe("a record whose file already carries a name and notes", () => {
+  const named = SAMPLE_CHARACTER.replace(
+    "\t\t\t\t\t<name>\r\n\t\t\t\t\t</name>\r\n\t\t\t\t\t<notes>\r\n\t\t\t\t\t</notes>",
+    "\t\t\t\t\t<name>\r\nCounting Frame\r\n\t\t\t\t\t</name>\r\n\t\t\t\t\t<notes>\r\nBead three sticks.\r\n\t\t\t\t\t</notes>",
+  );
+
+  it("reads them and exports the file exactly as it came", () => {
+    expect(named).not.toBe(SAMPLE_CHARACTER);
+    const service = new CharacterService(undefined, library);
+    service.importCharacterXml("Imported", named);
+    const abacus = service.getInventory("Imported").items[0]!;
+    expect(abacus).toMatchObject({ name: "Counting Frame", customName: "Counting Frame", baseName: "Abacus", notes: "Bead three sticks." });
+    expect(service.exportCharacterXml("Imported")).toBe(named);
+  });
+
+  it("writes nothing when asked for what is already there, and only the notes when they change", () => {
+    const service = new CharacterService(undefined, library);
+    service.importCharacterXml("Imported", named);
+    const identifier = service.getInventory("Imported").items[0]!.identifier;
+    service.setItemDetails("Imported", identifier, { name: "Counting Frame", notes: "Bead three sticks." });
+    expect(service.exportCharacterXml("Imported")).toBe(named);
+    service.setItemDetails("Imported", identifier, { notes: "Missing a bead." });
+    expect(service.exportCharacterXml("Imported")).toBe(named.replace("Bead three sticks.", "Missing a bead."));
   });
 });

@@ -64,7 +64,7 @@ There are currently no public roadmap-unsupported methods. Groups:
   `deleteCustomDraft`, `promoteCustomDraft`, `getChoiceIdentityImpact`
 - **Inventory**: `getInventory`, `getItemBaseOptions`, `addItem`, `removeItem`,
   `setItemAmount`, `extractItem`, `equipItem`, `attuneItem`, `setItemStorage`,
-  `setItemPresentation`, `setItemCards`, `setCoins`
+  `setItemPresentation`, `setItemCards`, `setItemDetails`, `setCoins`
 - **Attacks**: `getAttacks`, `getAttackOptions`, `createAttack`, `updateAttack`,
   `setAttackVisibility`, `moveAttack`, `deleteAttack`
 - **Sheet**: `generateSheet` (lite flag, optional `include`, optional `inventoryNotes`), `getSheetBuffer`.
@@ -305,6 +305,8 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
 - `InventoryItemDto`: `{identifier, itemId, name, type, amount, isEquippable, isEquipped, equippedLocation, isAttunable, isAttuned, displayPrice, source, equipLocations, weight, category, isPhysicalEquipment, description, rarity, attunement: {required, addition}, isExtractable, extractableContents: {itemId, name, amount}[], hasAttackRow: boolean, card: boolean, sidebar: boolean}`
   (`hasAttackRow` is true when an attack row is stored for this inventory record; a slotless item that can be worn — real equipment that is not a weapon, armor, an unbased magic overlay or a stackable consumable — has `equipLocations: ["worn"]`, `isEquippable: true`, and `equippedLocation: null` while worn)
 - `card` mirrors the record's `<details card="true">` (an item card on the full sheet) and `sidebar` its `<item sidebar="true">` (its description in the equipment page's inventory notes). `setItemPresentation({identifier, card?, sidebar?})` toggles either flag and `setItemCards({policy: "all"|"significant"|"none"})` sets every physical record's card at once (control records and records whose content is not installed are skipped); both return `InventoryDto`. A flag is only ever written as `"true"`: switching on rewrites another value (an imported `card="false"`) or appends the attribute after the tag's last one, switching off removes it whole, and a record with no `<details>` gains the empty details element a new record carries. All other bytes are unchanged, so toggling back restores the imported bytes. `significant` means `itemSignificance` (`content/equipment/significance.ts`) is not `trivial`: magic items, tools (tools, poison, spellcasting foci, instruments) and adventuring gear whose description reads as rules.
+- Any record, book or custom, can carry its own name and notes on this character. `setItemDetails(id, identifier, {name?, notes?})` writes the record's `<details><name>` and `<notes>` (an omitted field is left alone, an empty name goes back to the item's own, a value equal to the stored one writes nothing, and clearing both of a record that had neither restores its bytes) and returns `InventoryDto`. A name is one line of at most 120 characters, notes at most 2000; both refuse control characters. The record keeps its element, so its rules and attack math do not change. `InventoryItemDto` carries `name` (the custom name when there is one), `customName` ("" when none), `baseName` (the physical base element, `Longsword`), `defaultName` (what the record is called without a custom name, `Frostbite` or `Longsword +1`) and `isCustom` (the record's element was made on the character or in a homebrew collection). The name is what the inventory, the record's automatic attack row (unless the player typed a row name by hand), the equipment lines (`Grandfather's Blade (Scimitar)`), the equipment tables, the item cards and the armor and shield boxes print.
+- A Magic Item laid over a base weapon may shape the weapon's attack row through setters, applied only while the wielder is attuned when the item requires attunement: `extra damage` (repeatable, `type` attribute; `1d8+3 slashing + 1d6 cold`), `attack ability` (the ability its attack and damage rolls use by default), `damage` (with `type`), `versatile` and `range` (replace the base's), and `weapon properties` (comma-separated property ids replacing the base's own). The `weapon` and `armor` base setters accept an element id as well as a name or a tag expression; an id names exactly one edition's base.
 - `getItemBaseOptions(itemId)` → `{slot: "weapon"|"armor"|null, options: {id, name}[]}`
 - `addItem({itemId, amount, baseElementId, cardPolicy?})` (`cardPolicy: "significant"` writes `card="true"` only for significant items; omitted or `"all"` cards every new record) / `removeItem(identifier, amount?)` (amount omitted removes the whole record) / `setItemAmount(identifier, {amount})` (a positive integer; registrations, equip and attunement state do not change) / `equipItem(identifier, {location})` (keys `primary|secondary|armor|primary-twohanded|worn|none`; `worn` writes `<equipped>true</equipped>` with no location, evicts nothing and is never applied automatically on add) / `attuneItem(identifier, {attuned})` / `setItemStorage(identifier, {storage, amount?})` (`amount` omitted moves the whole record; a smaller amount splits off that many units into a new plain record or an identical stack already in the destination) / `setCoins(Coinage)` / `extractItem(identifier, selections?, {cardPolicy?}?)` (the policy is `addItem`'s, applied to each unpacked record; unpacked armor is worn the way `addItem` would wear it, body armor first and then a shield, each only into a free location, so it never evicts worn armor or an occupied off hand, including a two-handed weapon; every other unpacked record, weapons included, stays carried; the unpacking and these equips are one stored change) — all return `InventoryDto`. A carried add of an identical plain stackable item (same `itemId`, no adorners, not equipped or attuned, not stowed) grows that record instead of appending a row; it is only the resulting `amount` that changes, so the caller can identify the stack from `InventoryDto` alone.
 - An item conveys its benefits while it is not stowed and: for a weapon or armor, equipped (and attuned when it requires attunement); for a slotless item, attuned, or worn when it requires no attunement. While it does, the item's own element registers as a top-level `<elements>` node holding what it grants (the compatible imported shape for an adorner such as Weapon of Warning), with its `<sum>` entries following the base's (`base, base grants, adorner, adorner grants`); an item with nothing to grant or choose registers as a sum entry alone. Spells, choices, languages, senses and resistances the item grants therefore reach the same surfaces a feat's do, and leave with the item. A file saved in the earlier flat form (sum entries, no node) is migrated on import; an imported compatible file round-trips byte-identically.
@@ -359,7 +361,10 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
     filing granted spells under the `<additional>` entry's own `source`.
 - `KnownSpellDto`: `{id, name, source, isPrepared, isChosen, level, school,
   isRitual, isConcentration, isAlwaysPrepared, castingTime, components, range,
-  duration, description, usage?, usageNote?}`
+  duration, description, usage?, usageNote?, grantedBy?}`
+  - `grantedBy` (`{elementId, name, isCustom}`) names the feature or item that
+    gave the character a spell a feature caster projects; the spell lists show
+    it in place of the spell's own book, with a Custom badge for custom content.
   - `isPrepared` excludes always-prepared spells (their count is not in
     `currentPreparedCount`); `isAlwaysPrepared`/`isChosen` derive from the
     character's spell rules (domain/oath/known-spell rules), NOT from XML
@@ -472,6 +477,8 @@ A custom element is made on a character without writing XML. The wire contract
 is `packages/api/src/custom.ts`; the compiler, the catalogue a form offers and
 the pure helpers are `@forge-cb/engine/custom` (`packages/engine/src/custom/`).
 
+**Items.** A character pack also holds custom items (`CustomItemDraft`, same `schemaVersion`, told apart from a feature by `template`: `weapon`, `armor`, `worn`, `gear`). `base` (`{id, name, shield?}`) is the library weapon or armor a `weapon` or `armor` item sits on; `bonus` is the enhancement bonus (weapon) or the armor class bonus (armor); `weapon` holds `extraDamage` (dice and a damage type, up to four), `attackAbility`, `damage`, `versatile`, `range` and `properties`; a `worn` item has a `slot`; `rarity`, `attunement`, `uses` (sheet text about charges, not tracked), `weight` and `cost` (worn items and gear), `stackable` (gear) and `blocks` (modifiers and grants that apply while the item conveys its benefits: wielded or worn, and attuned when `attunement` is set; choices are refused, an item grants a custom feature that holds them). `weapon` and `armor` compile to a Magic Item whose `weapon`/`armor` setter names the base by element id, `worn` to a Magic Item, `gear` to an Item. Adding one to the inventory is the ordinary `addItem` with the base as `baseElementId`.
+
 **Draft.** One custom element as plain JSON (`CustomDraft`, `schemaVersion: 1`;
 a draft without a version reads as 1, a newer one is refused):
 `template` (feature, feat, racialTrait, classFeature, curse, boon), `name`,
@@ -538,16 +545,22 @@ and is excluded from every snapshot so library digests do not move. Deleting
 the character or its last copy of an entry removes it.
 
 **Methods.**
-- `getCustomContent(id)` -> `{entries, problems}`; an entry is `{draft,
-  elementId, type, section, granted, installed}`.
-- `saveCustomDraft(id, {draft, grant?})` -> `{character, content, entry,
-  diagnostics}`. Stores the draft, compiles and installs it, and grants a new
-  draft (unless `grant: false`). Editing a granted draft takes it off and puts
-  it back on with the new definition and makes the picks again whose choice
-  identity is unchanged. `diagnostics` names grants to content that does not
-  exist (`missing-grant`, with the missing id) and id collisions (`skipped`).
+- `getCustomContent(id)` -> `{entries, problems}`; an entry is `{kind:
+  "feature" | "item", draft, elementId, type, section, granted, installed}`
+  (`granted` is "in the inventory" for an item).
+- `saveCustomDraft(id, {draft, grant?, amount?, notes?})` -> `{character,
+  content, entry, diagnostics}`. Stores the draft, compiles and installs it, and
+  grants a new feature (unless `grant: false`) or adds a new item to the
+  inventory with `amount` copies and `notes` on its record. Editing a granted
+  feature takes it off and puts it back on with the new definition and makes the
+  picks again whose choice identity is unchanged. Editing a carried item brings
+  its records up to date in place (registrations, names, attack row) and keeps
+  equipped and attuned state; moving it onto another base answers `conflict`.
+  `diagnostics` names grants to content that does not exist (`missing-grant`,
+  with the missing id) and id collisions (`skipped`).
 - `deleteCustomDraft(id, {draftId})` -> the same shape with `entry: null`.
-  Removes the grant, the stored copy and the installed element.
+  Removes the grant (or every inventory record of an item), the stored copy and
+  the installed element.
 - `promoteCustomDraft(id, {draftId, source})` -> `{id, xml, element}`. The
   homebrew collection store belongs to the client, so the engine does not write
   it: `element` is the entry in the homebrew editor's draft shape (`rawXml` is

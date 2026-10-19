@@ -29,6 +29,24 @@ project uses [Semantic Versioning](https://semver.org/).
   Custom badge and Edit and Remove buttons, and the form can also copy it to My
   homebrew. Saving an edit warns first if it would clear picks already made.
 
+- You can make your own items: a magic weapon on a real base (with a bonus,
+  extra damage dice, a different attack ability, die, range or properties), a
+  magic armor or shield, a worn item, or plain gear. A weapon's attack row shows
+  its extra damage ("1d8+3 slashing + 1d6 cold"). While worn or wielded (and
+  attuned, if it asks) an item can add bonuses and grant resistances, spells and
+  features; take it off or end the attunement and they go. Custom items are
+  stored in the character file, travel with exports, and can be edited,
+  removed or copied into a homebrew collection.
+- Any item in the inventory can be renamed and given notes. The new name shows
+  in the inventory, the attack row, the equipment list, the item cards and the
+  armor box on the sheet, with the item's own name beside it on the equipment
+  list; the item keeps its rules.
+- Equipment has a Custom item button in the catalog and a quick Add custom gear
+  line in the inventory; custom items carry a Custom badge, and Edit, Rename and
+  Notes buttons.
+- A spell a feature or item gave you is listed under that feature in the Magic
+  tab's Source column, with a Custom badge when you made it.
+
 ### Changed
 
 - The 2024 and Hybrid character pages are redesigned: one Armor Class box holds
@@ -60,6 +78,14 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Fields in the custom feature form no longer show what you type in the bold
+  capitals of their captions.
+- The library search in the custom feature form shows results only after you
+  type, as option rows with the source in muted text, and works with the arrow
+  keys and Enter.
+- The buttons in Build's section header sit together on the right.
+- A spell added to a custom feature is cast with your spellcasting ability, and
+  the form asks for one if you have none.
 - Passive Perception on the sheet and in VTT exports includes features that
   raise the passive score.
 - A multiclass caster lists each class's spells only up to that class's own
