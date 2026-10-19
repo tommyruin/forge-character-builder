@@ -1,4 +1,4 @@
-import { measuredTextWidth, type TextStyle } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, READABLE_MIN_FONT_SIZE, faceCapHeight, measuredTextWidth, type TextStyle } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 export interface LayoutRun {
@@ -225,8 +225,8 @@ function clippedText(text: string, width: number, fontSize: number, face?: strin
 
 const METADATA_WIDTH = 120.5;
 const METADATA_SIZE = 6;
-/** Not below the card body's own size, so a shrunk value stays readable. */
-const METADATA_MIN_SIZE = 5;
+/** The readable floor: a value too long even there moves under the description. */
+const METADATA_MIN_SIZE = READABLE_MIN_FONT_SIZE;
 
 function escapeHtml(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -264,6 +264,62 @@ function overlapsFixedLabel(run: LayoutRun): boolean {
 }
 
 const CARD_BODY_MIN_FONT_SIZE = 4.5;
+
+/**
+ * A card body's design: its size, line width, and the top edge of its band
+ * below the card's top. The spell band starts at the rule under the metadata
+ * (the template draws it 8pt above the designed first baseline); the generic
+ * band is placed so its 6pt body keeps the baseline the template was laid
+ * out for.
+ */
+interface CardBodyDesign { size: number; width: number; bandTop: number }
+const SPELL_BODY: CardBodyDesign = { size: 5, width: SPELL_BODY_WIDTH, bandTop: CARD_CONTRACT.spell.bodyTop - 8 };
+const GENERIC_BODY: CardBodyDesign = {
+  size: 6,
+  width: 162,
+  bandTop: CARD_CONTRACT.generic.bodyTop - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 6,
+};
+
+/**
+ * Sets a card body at its design size, or smaller down to the readable floor
+ * (never below the design size's own floor: a 5pt spell body keeps 5pt), and
+ * places its first line's cap height BOX_TEXT_TOP_INSET under the band top
+ * for the size chosen. A body too long even at the floor continues into
+ * further slots (descriptionCardRuns). `drop` is the first baseline's depth
+ * below the card's top.
+ */
+function fitCardBody(
+  card: DescriptionCard,
+  slot: number,
+  top: number,
+  design: CardBodyDesign,
+  face: string | undefined,
+): { runs: LayoutRun[]; drop: number } {
+  const floor = Math.min(READABLE_MIN_FONT_SIZE, design.size);
+  const bottom = top - CARD_CONTRACT.bodyBottom;
+  const dropAt = (size: number): number => design.bandTop + BOX_TEXT_TOP_INSET + faceCapHeight(face) * size;
+  const at = (size: number): LayoutRun[] => cardBodyRuns(card, slot, size, design.width, top - dropAt(size), face);
+  let size = design.size;
+  let runs = at(size);
+  if (!bodyFits(runs, bottom) && floor < design.size) {
+    const minimum = at(floor);
+    if (bodyFits(minimum, bottom)) {
+      let low = floor;
+      let high = design.size;
+      for (let pass = 0; pass < 8; pass += 1) {
+        const candidate = (low + high) / 2;
+        if (bodyFits(at(candidate), bottom)) low = candidate;
+        else high = candidate;
+      }
+      size = low;
+      runs = at(size);
+    } else {
+      size = floor;
+      runs = minimum;
+    }
+  }
+  return { runs, drop: dropAt(size) };
+}
 
 function bodyLineGroups(runs: readonly LayoutRun[]): LayoutRun[][] {
   const groups: LayoutRun[][] = [];
@@ -444,57 +500,11 @@ export function descriptionCardRuns(
         metadataY -= 11;
       }
       const bodyCard = notes.length > 0 ? { ...card, body: `${card.body}${notes.join("")}` } : card;
-      const bodyTop = top - 83;
-      const bodyBottom = top - 225;
-      const normalSize = 5;
-      const normalRuns = cardBodyRuns(bodyCard, localCardIndex, normalSize, SPELL_BODY_WIDTH, bodyTop, face);
-      let chosenSize = normalSize;
-      let chosenRuns = normalRuns;
-      if (!bodyFits(normalRuns, bodyBottom)) {
-        const minimumRuns = cardBodyRuns(bodyCard, localCardIndex, CARD_BODY_MIN_FONT_SIZE, SPELL_BODY_WIDTH, bodyTop, face);
-        if (bodyFits(minimumRuns, bodyBottom)) {
-          let low = CARD_BODY_MIN_FONT_SIZE;
-          let high = normalSize;
-          for (let pass = 0; pass < 8; pass += 1) {
-            const candidate = (low + high) / 2;
-            const candidateRuns = cardBodyRuns(bodyCard, localCardIndex, candidate, SPELL_BODY_WIDTH, bodyTop, face);
-            if (bodyFits(candidateRuns, bodyBottom)) low = candidate;
-            else high = candidate;
-          }
-          chosenSize = low;
-          chosenRuns = cardBodyRuns(bodyCard, localCardIndex, chosenSize, SPELL_BODY_WIDTH, bodyTop, face);
-        } else {
-          chosenSize = CARD_BODY_MIN_FONT_SIZE;
-          chosenRuns = minimumRuns;
-        }
-      }
-      placeBody(chosenRuns, top - bodyTop, bodyTop - bodyBottom);
+      const body = fitCardBody(bodyCard, localCardIndex, top, SPELL_BODY, face);
+      placeBody(body.runs, body.drop, CARD_CONTRACT.bodyBottom - body.drop);
     } else {
-      const bodyTop = top - 38;
-      const bodyBottom = top - 225;
-      const normalSize = 6;
-      const normalRuns = cardBodyRuns(card, localCardIndex, normalSize, 162, bodyTop, face);
-      let chosenSize = normalSize;
-      let chosenRuns = normalRuns;
-      if (!bodyFits(normalRuns, bodyBottom)) {
-        const minimumRuns = cardBodyRuns(card, localCardIndex, CARD_BODY_MIN_FONT_SIZE, 162, bodyTop, face);
-        if (bodyFits(minimumRuns, bodyBottom)) {
-          let low = CARD_BODY_MIN_FONT_SIZE;
-          let high = normalSize;
-          for (let pass = 0; pass < 8; pass += 1) {
-            const candidate = (low + high) / 2;
-            const candidateRuns = cardBodyRuns(card, localCardIndex, candidate, 162, bodyTop, face);
-            if (bodyFits(candidateRuns, bodyBottom)) low = candidate;
-            else high = candidate;
-          }
-          chosenSize = low;
-          chosenRuns = cardBodyRuns(card, localCardIndex, chosenSize, 162, bodyTop, face);
-        } else {
-          chosenSize = CARD_BODY_MIN_FONT_SIZE;
-          chosenRuns = minimumRuns;
-        }
-      }
-      placeBody(chosenRuns, top - bodyTop, bodyTop - bodyBottom);
+      const body = fitCardBody(card, localCardIndex, top, GENERIC_BODY, face);
+      placeBody(body.runs, body.drop, CARD_CONTRACT.bodyBottom - body.drop);
     }
     add(card.footer, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "left", CARD_FOOTER_INSET);
     if (card.footerRight !== undefined) {

@@ -9,7 +9,7 @@ import {
   type DescriptionCard,
   type LayoutRun,
 } from "./card-layout.js";
-import { measuredTextWidth, winAnsiText } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, measuredTextWidth, winAnsiText } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 const spell = (title: string, body: string): DescriptionCard => ({
@@ -89,7 +89,8 @@ describe("positioned card layout", () => {
     ]).filter((run) => run.role === "body");
 
     expect([0, 1, 2].map((card) => Math.min(...runs.filter((run) => run.card === card).map((run) => run.x)))).toEqual([31, 220, 409]);
-    expect(new Set(runs.map((run) => run.y))).toEqual(new Set([683]));
+    // The first line's cap height sits BOX_TEXT_TOP_INSET under the rule below the metadata.
+    expect(new Set(runs.map((run) => run.y))).toEqual(new Set([766 - (SHEET_TEMPLATE_CONTRACT.cards.spell.bodyTop - 8) - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 5]));
     expect(new Set(runs.map((run) => run.fontSize))).toEqual(new Set([5]));
   });
 
@@ -130,7 +131,7 @@ describe("positioned card layout", () => {
     const first = descriptionCardRuns([spell("Long", body)]).find((run) => run.role === "body")!;
 
     expect(first.x).toBeCloseTo(36.56, 2);
-    expect(first.y).toBe(683);
+    expect(first.y).toBeCloseTo(683.41, 2);
   });
 
   it("keeps long generic bodies based on geometry, without a card-count gate", () => {
@@ -401,5 +402,31 @@ describe("card slots", () => {
     expect(order.filter((card) => card !== 0)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     // Every card's title prints once in its first slot (the continuation repeats card 0's).
     expect(runs.filter((run) => run.role === "title" && run.cardIndex === 9)).toHaveLength(1);
+  });
+});
+
+describe("card body sizes", () => {
+  const generic = (body: string): DescriptionCard => ({ kind: "generic", title: "Gear", subtitle: "Item", metadata: [], body, footer: "" });
+  const words = (count: number) => `<p>${Array.from({ length: count }, (_, index) => `word${index}`).join(" ")}</p>`;
+  const bodyRuns = (runs: readonly LayoutRun[]) => runs.filter((run) => run.role === "body");
+
+  it("never sets a body below the readable floor, nor a spell body below its 5pt design", () => {
+    for (const count of [300, 420, 2000]) {
+      const sizes = bodyRuns(descriptionCardRuns([generic(words(count)), spell("Long", words(count))])).map((run) => run.fontSize!);
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(5);
+    }
+    const shrunk = bodyRuns(descriptionCardRuns([generic(words(420))]));
+    expect(Math.min(...shrunk.map((run) => run.fontSize!))).toBeGreaterThanOrEqual(5.5);
+  });
+
+  it("holds the first line's cap height the same inset under the band at any size", () => {
+    const capTop = (runs: readonly LayoutRun[]) => {
+      const first = bodyRuns(runs).filter((run) => (run.page ?? 0) === 0 && run.card === 0)[0]!;
+      return first.y + LAYOUT_CAP_HEIGHT * first.fontSize!;
+    };
+    const normal = descriptionCardRuns([generic(words(20))]);
+    const smaller = descriptionCardRuns([generic(words(330))]);
+    expect(bodyRuns(smaller)[0]!.fontSize).toBeLessThan(6);
+    expect(capTop(smaller)).toBeCloseTo(capTop(normal), 6);
   });
 });

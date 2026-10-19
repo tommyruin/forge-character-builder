@@ -3,6 +3,9 @@
 /** The characters each width table covers, in table order. */
 export const FACE_METRIC_CHARACTERS = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
 
+/** Cap height as a fraction of the type size, per body face with font files (regular style). */
+export const FACE_CAP_HEIGHTS: Readonly<Record<string, number>> = {"spectral":0.66,"alegreyaSans":0.641};
+
 /** Advance widths in 1/1000 em, per body face with font files, per style. */
 export const FACE_METRICS: Readonly<Record<string, Readonly<Record<"regular" | "bold" | "italic" | "boldItalic", readonly number[]>>>> = {
   spectral: {

@@ -8,7 +8,7 @@
  */
 
 import { Encodings, Font, FontNames } from "@pdf-lib/standard-fonts";
-import { FACE_METRIC_CHARACTERS, FACE_METRICS } from "./face-metrics.js";
+import { FACE_CAP_HEIGHTS, FACE_METRIC_CHARACTERS, FACE_METRICS } from "./face-metrics.js";
 
 /**
  * The drawable form of a string: control codes and the sheet's private bullet
@@ -70,6 +70,29 @@ function unitWidth(text: string, style: TextStyle, face: string | undefined): nu
   }
   unitWidths.set(key, units);
   return units;
+}
+
+/**
+ * How far below a text box's top edge its first line's cap height sits, at
+ * whatever size the text is set: every box the sheet fills with flowed text
+ * shares it, so the gap under a box's title is the same everywhere.
+ */
+export const BOX_TEXT_TOP_INSET = 4;
+
+/** The layout face's cap height, as a fraction of the type size. */
+export const LAYOUT_CAP_HEIGHT = (styleFonts.regular.CapHeight || 718) / 1000;
+
+/**
+ * The smallest size the sheet sets text in. A box whose text would need less
+ * prints at this size up to an ellipsis and continues the full text on a
+ * page of its own; a box designed smaller than this (a card's 5pt spell body)
+ * keeps its own size and never shrinks.
+ */
+export const READABLE_MIN_FONT_SIZE = 5.5;
+
+/** The cap height of `face` (a SHEET_FONT_FACES key) as a fraction of the size; Helvetica's when it has no tables. */
+export function faceCapHeight(face?: string): number {
+  return (face === undefined ? undefined : FACE_CAP_HEIGHTS[face]) ?? LAYOUT_CAP_HEIGHT;
 }
 
 /**
