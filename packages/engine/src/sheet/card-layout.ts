@@ -188,7 +188,10 @@ export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): Layout
           const prefix = hyphen[1]!;
           const suffix = hyphen[2]!;
           const prefixWidth = measuredWidth(prefix, options.fontSize, word.style, options.face);
-          if (x + prefixWidth <= left + width) {
+          // The halves stay in one area: a hyphenated word is never split
+          // across a page.
+          const nextLineInFrame = frames === undefined || y - lineHeight >= frames(frame).bottom;
+          if (x + prefixWidth <= left + width && nextLineInFrame) {
             push({ text: prefix, x, y, width: prefixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
             y -= lineHeight;
             fit();
@@ -514,6 +517,9 @@ export function descriptionCardRuns(
         let end = groupIndex;
         while (end < groups.length && groups[end]![0]!.y - firstY >= -bandDepth) end += 1;
         if (end === groupIndex) end += 1;
+        // A line ending on the first half of a word split at its hyphen goes on
+        // with the other half, so no word is split across two slots.
+        if (end < groups.length && end - groupIndex > 1 && groups[end - 1]!.at(-1)!.text.endsWith("-")) end -= 1;
         const yShift = slot.top - bodyDrop - firstY;
         const xShift = slot.x - first.x;
         for (const run of groups.slice(groupIndex, end).flat()) {

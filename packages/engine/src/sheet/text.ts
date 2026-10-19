@@ -20,6 +20,10 @@ export function winAnsiText(value: string): string {
     .replaceAll("♊", "•")
     .replaceAll("✝", "†")
     .replaceAll("\u00a0", " ")
+    // A soft hyphen marks where a word may break, not a glyph: drawn, it
+    // prints a hyphen inside the word wherever the word lands ("tar-get").
+    // Words are never broken at one, so it goes.
+    .replaceAll("\u00ad", "")
     .replace(/[\u0000-\u001f]/g, " ")
     // Any remaining glyph outside WinAnsi (Latin-1 plus the cp1252 typographic
     // block) degrades to "?" instead of aborting the whole sheet build --
