@@ -644,8 +644,17 @@ export function buildSpellBrowseDto(
   const spells: SpellBrowseEntryDto[] = [];
   const isCantripRule = rule.name.startsWith("Cantrip");
   const eligibleIds = new Set<string>();
+  // An empty slot takes a new pick at the level that granted it; a filled
+  // slot can be swapped up to the caster's current ceiling. A spell only a
+  // swap admits reads "limit", so picking it replaces a pick instead of
+  // filling an empty slot that would refuse it.
+  const newPickIds = new Set<string>();
   for (const slotRule of groupRules) {
-    for (const option of selectionOptions(state, library, slotRule)) eligibleIds.add(option.id);
+    const empty = (slotRule.selectedElementIds[0] ?? null) === null || slotRule.selectedElementIds[0] === "";
+    for (const option of selectionOptions(state, library, slotRule)) {
+      eligibleIds.add(option.id);
+      if (empty) newPickIds.add(option.id);
+    }
   }
 
   if (caster === null) {
@@ -660,7 +669,7 @@ export function buildSpellBrowseDto(
       let status: string;
       if (selectedNumber !== null) status = "selected";
       else if (known.has(info.id)) status = "known";
-      else if (selectionFull) status = "limit";
+      else if (selectionFull || !newPickIds.has(info.id)) status = "limit";
       else status = "learnable";
       spells.push({
         id: info.id,
@@ -703,10 +712,11 @@ export function buildSpellBrowseDto(
   }
 
   // The same ceiling the select's supports expand to, so the panel offers and
-  // labels exactly the levels the select accepts.
+  // labels exactly the levels the select accepts (a swap's, when any slot is
+  // filled).
   const progressionLevel = isCantripRule
     ? 0
-    : spellSlotCeilingFor(state, library, rule, caster.name);
+    : Math.max(0, ...(groupRules.length > 0 ? groupRules : [rule]).map((slotRule) => spellSlotCeilingFor(state, library, slotRule, caster.name)));
   const maxLevel = isCantripRule
     ? 0
     : progressionLevel > 0 ? progressionLevel : maxSlotLevel(slotsArray(caster));
@@ -738,7 +748,7 @@ export function buildSpellBrowseDto(
     if (selectedNumber !== null) status = "selected";
     else if (known.has(info.id)) status = "known";
     else if (!eligibleIds.has(info.id)) status = !isCantripRule && info.level > maxLevel ? "level" : "unavailable";
-    else if (selectionFull) status = "limit";
+    else if (selectionFull || !newPickIds.has(info.id)) status = "limit";
     else status = "learnable";
     spells.push({
       id: info.id,

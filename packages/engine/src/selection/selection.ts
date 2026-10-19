@@ -192,7 +192,7 @@ function isEligible(
   candidate: ParsedElement,
   allowedRegisteredId?: string,
   authored = authoredSelectResolution(state, library, rule),
-  supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined,
+  supports = authored.select ? expandSelectSupports(state, library, authored.select, isFilledSlot(rule)) : undefined,
 ): boolean {
   if (candidate.identity.type !== rule.type) return false;
   if (isRestrictedForCharacter(state, library, candidate)) return false;
@@ -345,7 +345,7 @@ export function selectRuleFor(state: CharacterState, library: ElementLibrary, ru
 
 export function selectSupportsFor(state: CharacterState, library: ElementLibrary, rule: SelectionRule): string | undefined {
   const select = selectRuleFor(state, library, rule);
-  return select ? expandSelectSupports(state, library, select) : undefined;
+  return select ? expandSelectSupports(state, library, select, isFilledSlot(rule)) : undefined;
 }
 
 /**
@@ -493,13 +493,19 @@ function casterBlockNamed(
  *   with every registered extension expression;
  * - `$(spellcasting:slots)` becomes the OR of every slot level from 1 up to
  *   the caster's highest slot level (its own class's progression at the level
- *   slotCeilingClassLevel picks when derivable, else the serialized slots);
+ *   slotCeilingClassLevel picks for an empty or a filled slot when derivable,
+ *   else the serialized slots);
  * - extension spell ids are admitted by id when their own level fits.
  */
 const supportsExpansionCache = new WeakMap<
   CharacterState,
-  Map<SelectRule, { revision: number; value: string | undefined }>
+  Map<SelectRule, { revision: number; filled: boolean; value: string | undefined }>
 >();
+
+/** Whether a rule (or one numbered slot of it) already holds a pick. */
+function isFilledSlot(rule: SelectionRule): boolean {
+  return rule.selectedElementIds.some((id) => id !== null && id !== "");
+}
 
 /** The original uploaded 2024 Bard repertoire used a fixed level-one tag.
  * Resolve it at runtime so saved checksums and uploaded bytes stay intact. */
@@ -513,7 +519,12 @@ export function effectiveSpellSupports(state: CharacterState, library: ElementLi
     ? "$(spellcasting:list), $(spellcasting:slots)" : select.supports;
 }
 
-function expandSelectSupports(state: CharacterState, library: ElementLibrary, select: SelectRule): string | undefined {
+function expandSelectSupports(
+  state: CharacterState,
+  library: ElementLibrary,
+  select: SelectRule,
+  filled: boolean,
+): string | undefined {
   const supports = effectiveSpellSupports(state, library, select);
   if (supports === undefined) return undefined;
   const casterName = select.spellcasting ?? state.spellcasting[0]?.name ?? "";
@@ -527,13 +538,15 @@ function expandSelectSupports(state: CharacterState, library: ElementLibrary, se
   const revision = library.revision ?? 0;
   let perState = supportsExpansionCache.get(state);
   const cached = perState?.get(select);
-  if (cached !== undefined && cached.revision === revision) return cached.value;
-  const value = expandSelectSupportsUncached(state, library, select, casterName, hasListToken, hasSlotsToken);
+  if (cached !== undefined && cached.revision === revision && (cached.filled === filled || !hasSlotsToken)) {
+    return cached.value;
+  }
+  const value = expandSelectSupportsUncached(state, library, select, casterName, hasListToken, hasSlotsToken, filled);
   if (perState === undefined) {
     perState = new Map();
     supportsExpansionCache.set(state, perState);
   }
-  perState.set(select, { revision, value });
+  perState.set(select, { revision, filled, value });
   return value;
 }
 
@@ -544,6 +557,7 @@ function expandSelectSupportsUncached(
   casterName: string,
   hasListToken: boolean,
   hasSlotsToken: boolean,
+  filled: boolean,
 ): string | undefined {
 
   const extensions = spellListExtensions(state, library, casterName);
@@ -551,7 +565,7 @@ function expandSelectSupportsUncached(
   const listParts = [baseList, ...extensions.expressions].filter((part) => part.trim() !== "");
   const listExpression = listParts.length > 1 ? `(${listParts.map((part) => `(${part})`).join("||")})` : (listParts[0] ?? casterName);
 
-  const ceilingLevel = select.type === "Spell" ? slotCeilingClassLevel(state, library, select, casterName) : undefined;
+  const ceilingLevel = select.type === "Spell" ? slotCeilingClassLevel(state, library, select, casterName, filled) : undefined;
   const progressionSlots =
     ceilingLevel !== undefined ? spellSlotLevelAtClassLevel(library, casterName, ceilingLevel) : 0;
   const maxSlot = progressionSlots > 0 ? progressionSlots : maxSpellSlotLevel(state);
@@ -634,17 +648,21 @@ export function casterOwnSpellLevel(state: CharacterState, library: ElementLibra
 
 /**
  * The class level a select's `$(spellcasting:slots)` ceiling is read at.
- * Spells known are the caster's current repertoire: every one of those choices
- * may hold a spell of any level the caster has slots for now, so the ceiling
- * follows its current level in its own class. Spellbook selects keep the level
- * that granted them, because a wizard copies those spells in when it gains the
- * level, of a level it had slots for then. Undefined when neither is known.
+ * A new pick is learned at the level that granted the choice, so an empty
+ * slot keeps that level's ceiling even when several levels were gained at
+ * once (a 1->5 level-up's level-2 pick is a 1st-level spell). Spells known are
+ * the caster's current repertoire, so swapping a filled slot may take a spell
+ * of any level the caster has slots for now: the ceiling follows its current
+ * level in its own class. Spellbook selects always keep the level that granted
+ * them, because a wizard copies those spells in when it gains the level, of a
+ * level it had slots for then. Undefined when neither is known.
  */
 function slotCeilingClassLevel(
   state: CharacterState,
   library: ElementLibrary,
   select: SelectRule,
   casterName: string,
+  filled: boolean,
 ): number | undefined {
   // A prepared caster without a full known list acquires spells individually
   // into a book. This also covers Savant and homebrew book choices regardless
@@ -652,7 +670,7 @@ function slotCeilingClassLevel(
   const source = state.magic?.casters.find((block) => block.name === casterName)?.source;
   const casting = source === undefined ? undefined : library.byId.get(source)?.spellcasting;
   const isSpellbook = casting?.prepare === true && casting.listKnown !== true;
-  const current = isSpellbook ? 0 : casterClassLevel(state, library, casterName);
+  const current = isSpellbook || !filled ? 0 : casterClassLevel(state, library, casterName);
   return current > 0 ? current : select.level;
 }
 
@@ -674,7 +692,7 @@ export function spellSlotCeilingFor(
   const caster = casterName ?? select?.spellcasting ?? state.spellcasting[0]?.name ?? "";
   const classLevel =
     select !== undefined && (effectiveSpellSupports(state, library, select) ?? "").includes("$(spellcasting:slots)")
-      ? slotCeilingClassLevel(state, library, select, caster)
+      ? slotCeilingClassLevel(state, library, select, caster, isFilledSlot(rule))
       : rule.requiredLevel;
   return classLevel !== undefined ? spellSlotLevelAtClassLevel(library, caster, classLevel) : 0;
 }
@@ -1084,7 +1102,7 @@ export function selectionOptions(
   }
   const requirementCtx = ctx ?? requirementContext(state, library);
   const authored = authoredSelectResolution(state, library, rule);
-  const supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined;
+  const supports = authored.select ? expandSelectSupports(state, library, authored.select, isFilledSlot(rule)) : undefined;
   if (authored.hasCandidates && (authored.select === undefined || !authored.active)) return [];
   // Reopening a filled rule must keep its current value in the option list. For a
   // numbered group the rule passed here is the individual slot, so this also
@@ -1125,7 +1143,7 @@ export function hasAvailableSelectionOptions(
   }
   const requirementCtx = ctx ?? requirementContext(state, library);
   const authored = authoredSelectResolution(state, library, rule);
-  const supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined;
+  const supports = authored.select ? expandSelectSupports(state, library, authored.select, isFilledSlot(rule)) : undefined;
   if (authored.hasCandidates && (authored.select === undefined || !authored.active)) return false;
   const allowedRegisteredId = rule.selectedElementIds.find((id): id is string => id !== null);
   return (library.byType.get(rule.type) ?? []).some((candidate) =>
