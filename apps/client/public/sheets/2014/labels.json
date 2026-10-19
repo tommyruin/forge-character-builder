@@ -48,14 +48,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -65,7 +57,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -73,7 +65,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -81,6 +73,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -521,29 +521,17 @@
    },
    {
     "text": "INITIATIVE",
-    "x": 40,
-    "y": 199,
-    "size": 3.8,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 36
-   },
-   {
-    "text": "ADVANTAGE",
-    "x": 70,
-    "y": 203,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines",
-    "align": "center",
-    "width": 26
-   },
-   {
-    "text": "ACTIONS",
     "x": 104,
-    "y": 217.5,
-    "size": 3.8,
+    "y": 218,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ADV.",
+    "x": 154,
+    "y": 218.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
@@ -736,7 +724,7 @@
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -756,7 +744,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -764,7 +752,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -772,7 +760,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -780,7 +768,7 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -1902,14 +1890,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -1919,7 +1899,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -1927,7 +1907,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -1935,6 +1915,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -2375,29 +2363,17 @@
    },
    {
     "text": "INITIATIVE",
-    "x": 40,
-    "y": 199,
-    "size": 3.8,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 36
-   },
-   {
-    "text": "ADVANTAGE",
-    "x": 70,
-    "y": 203,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines",
-    "align": "center",
-    "width": 26
-   },
-   {
-    "text": "ACTIONS",
     "x": 104,
-    "y": 217.5,
-    "size": 3.8,
+    "y": 218,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ADV.",
+    "x": 154,
+    "y": 218.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
@@ -2590,7 +2566,7 @@
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -2610,7 +2586,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -2618,7 +2594,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -2626,7 +2602,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -2634,33 +2610,13 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
    },
    {
-    "text": "CLASS FEATURES",
-    "x": 404,
-    "y": 415,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "SUBCLASS FEATURES",
-    "x": 404,
-    "y": 267,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "FEATS",
+    "text": "FEATURES & TRAITS",
     "x": 404,
     "y": 155,
     "size": 5,
@@ -2731,14 +2687,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -2748,7 +2696,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -2756,7 +2704,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -2764,6 +2712,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -2831,41 +2787,33 @@
     "width": 54
    },
    {
-    "text": "PROF.",
-    "x": 101,
-    "y": 639.1,
+    "text": "PROFICIENCY BONUS",
+    "x": 104,
+    "y": 636,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "BONUS",
-    "x": 101,
-    "y": 633.1,
-    "size": 5.5,
-    "font": "captions",
-    "color": "text"
-   },
-   {
-    "text": "INIT.",
-    "x": 155,
-    "y": 639.1,
+    "text": "INITIATIVE",
+    "x": 104,
+    "y": 609,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "ADV.",
-    "x": 165,
-    "y": 630.5,
-    "size": 3.4,
+    "x": 154,
+    "y": 609.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SAVING THROWS",
     "x": 96,
-    "y": 501,
+    "y": 477,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -2875,7 +2823,7 @@
    {
     "text": "Strength",
     "x": 131,
-    "y": 606.6,
+    "y": 582.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -2883,7 +2831,7 @@
    {
     "text": "Dexterity",
     "x": 131,
-    "y": 594.6,
+    "y": 570.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -2891,7 +2839,7 @@
    {
     "text": "Constitution",
     "x": 131,
-    "y": 582.6,
+    "y": 558.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -2899,7 +2847,7 @@
    {
     "text": "Intelligence",
     "x": 131,
-    "y": 570.6,
+    "y": 546.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -2907,7 +2855,7 @@
    {
     "text": "Wisdom",
     "x": 131,
-    "y": 558.6,
+    "y": 534.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -2915,7 +2863,7 @@
    {
     "text": "Charisma",
     "x": 131,
-    "y": 546.6,
+    "y": 522.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -2923,7 +2871,7 @@
    {
     "text": "SKILLS",
     "x": 96,
-    "y": 267,
+    "y": 240,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -2933,7 +2881,7 @@
    {
     "text": "Acrobatics",
     "x": 131,
-    "y": 476.9,
+    "y": 452.9,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -2941,7 +2889,7 @@
    {
     "text": "(Dex)",
     "x": 157.2736,
-    "y": 476.9,
+    "y": 452.9,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -2949,7 +2897,7 @@
    {
     "text": "Animal Handling",
     "x": 131,
-    "y": 465.7,
+    "y": 441.5235294117647,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -2957,7 +2905,7 @@
    {
     "text": "(Wis)",
     "x": 170.856,
-    "y": 465.7,
+    "y": 441.5235294117647,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -2965,7 +2913,7 @@
    {
     "text": "Arcana",
     "x": 131,
-    "y": 454.5,
+    "y": 430.1470588235294,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -2973,7 +2921,7 @@
    {
     "text": "(Int)",
     "x": 149.4736,
-    "y": 454.5,
+    "y": 430.1470588235294,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -2981,7 +2929,7 @@
    {
     "text": "Athletics",
     "x": 131,
-    "y": 443.29999999999995,
+    "y": 418.7705882352941,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -2989,7 +2937,7 @@
    {
     "text": "(Str)",
     "x": 152.6508,
-    "y": 443.29999999999995,
+    "y": 418.7705882352941,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -2997,7 +2945,7 @@
    {
     "text": "Deception",
     "x": 131,
-    "y": 432.09999999999997,
+    "y": 407.3941176470588,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3005,7 +2953,7 @@
    {
     "text": "(Cha)",
     "x": 156.4104,
-    "y": 432.09999999999997,
+    "y": 407.3941176470588,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3013,7 +2961,7 @@
    {
     "text": "History",
     "x": 131,
-    "y": 420.9,
+    "y": 396.0176470588235,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3021,7 +2969,7 @@
    {
     "text": "(Int)",
     "x": 149.3332,
-    "y": 420.9,
+    "y": 396.0176470588235,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3029,7 +2977,7 @@
    {
     "text": "Insight",
     "x": 131,
-    "y": 409.7,
+    "y": 384.6411764705882,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3037,7 +2985,7 @@
    {
     "text": "(Wis)",
     "x": 148.3192,
-    "y": 409.7,
+    "y": 384.6411764705882,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3045,7 +2993,7 @@
    {
     "text": "Intimidation",
     "x": 131,
-    "y": 398.5,
+    "y": 373.2647058823529,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3053,7 +3001,7 @@
    {
     "text": "(Cha)",
     "x": 159.5876,
-    "y": 398.5,
+    "y": 373.2647058823529,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3061,7 +3009,7 @@
    {
     "text": "Investigation",
     "x": 131,
-    "y": 387.29999999999995,
+    "y": 361.88823529411764,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3069,7 +3017,7 @@
    {
     "text": "(Int)",
     "x": 161.9588,
-    "y": 387.29999999999995,
+    "y": 361.88823529411764,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3077,7 +3025,7 @@
    {
     "text": "Medicine",
     "x": 131,
-    "y": 376.09999999999997,
+    "y": 350.51176470588234,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3085,7 +3033,7 @@
    {
     "text": "(Wis)",
     "x": 153.8052,
-    "y": 376.09999999999997,
+    "y": 350.51176470588234,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3093,7 +3041,7 @@
    {
     "text": "Nature",
     "x": 131,
-    "y": 364.9,
+    "y": 339.13529411764705,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3101,7 +3049,7 @@
    {
     "text": "(Int)",
     "x": 148.6052,
-    "y": 364.9,
+    "y": 339.13529411764705,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3109,7 +3057,7 @@
    {
     "text": "Perception",
     "x": 131,
-    "y": 353.7,
+    "y": 327.75882352941176,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3117,7 +3065,7 @@
    {
     "text": "(Wis)",
     "x": 157.596,
-    "y": 353.7,
+    "y": 327.75882352941176,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3125,7 +3073,7 @@
    {
     "text": "Performance",
     "x": 131,
-    "y": 342.5,
+    "y": 316.38235294117646,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3133,7 +3081,7 @@
    {
     "text": "(Cha)",
     "x": 162.4788,
-    "y": 342.5,
+    "y": 316.38235294117646,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3141,7 +3089,7 @@
    {
     "text": "Persuasion",
     "x": 131,
-    "y": 331.29999999999995,
+    "y": 305.00588235294117,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3149,7 +3097,7 @@
    {
     "text": "(Cha)",
     "x": 158.7504,
-    "y": 331.29999999999995,
+    "y": 305.00588235294117,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3157,7 +3105,7 @@
    {
     "text": "Religion",
     "x": 131,
-    "y": 320.1,
+    "y": 293.6294117647059,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3165,7 +3113,7 @@
    {
     "text": "(Int)",
     "x": 151.7824,
-    "y": 320.1,
+    "y": 293.6294117647059,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3173,7 +3121,7 @@
    {
     "text": "Sleight of Hand",
     "x": 131,
-    "y": 308.9,
+    "y": 282.2529411764706,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3181,7 +3129,7 @@
    {
     "text": "(Dex)",
     "x": 168.5524,
-    "y": 308.9,
+    "y": 282.2529411764706,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3189,7 +3137,7 @@
    {
     "text": "Stealth",
     "x": 131,
-    "y": 297.7,
+    "y": 270.8764705882353,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3197,7 +3145,7 @@
    {
     "text": "(Dex)",
     "x": 149.1876,
-    "y": 297.7,
+    "y": 270.8764705882353,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3205,7 +3153,7 @@
    {
     "text": "Survival",
     "x": 131,
-    "y": 286.5,
+    "y": 259.5,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3213,7 +3161,7 @@
    {
     "text": "(Wis)",
     "x": 151.5172,
-    "y": 286.5,
+    "y": 259.5,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3221,18 +3169,10 @@
    {
     "text": "PASSIVE PERCEPTION",
     "x": 122,
-    "y": 245,
+    "y": 218,
     "size": 4.4,
     "font": "captions",
     "color": "text"
-   },
-   {
-    "text": "ACTIONS",
-    "x": 38,
-    "y": 217.5,
-    "size": 3.8,
-    "font": "captions",
-    "color": "lines"
    },
    {
     "text": "ARMOR CLASS",
@@ -3326,17 +3266,17 @@
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
+    "x": 270,
     "y": 518,
     "size": 3.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
@@ -3443,7 +3383,7 @@
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -3463,7 +3403,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -3471,7 +3411,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -3479,7 +3419,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -3487,7 +3427,7 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -3564,14 +3504,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -3581,7 +3513,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -3589,7 +3521,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -3597,6 +3529,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -3664,41 +3604,33 @@
     "width": 54
    },
    {
-    "text": "PROF.",
-    "x": 101,
-    "y": 639.1,
+    "text": "PROFICIENCY BONUS",
+    "x": 104,
+    "y": 636,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "BONUS",
-    "x": 101,
-    "y": 633.1,
-    "size": 5.5,
-    "font": "captions",
-    "color": "text"
-   },
-   {
-    "text": "INIT.",
-    "x": 155,
-    "y": 639.1,
+    "text": "INITIATIVE",
+    "x": 104,
+    "y": 609,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "ADV.",
-    "x": 165,
-    "y": 630.5,
-    "size": 3.4,
+    "x": 154,
+    "y": 609.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SAVING THROWS",
     "x": 96,
-    "y": 501,
+    "y": 477,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -3708,7 +3640,7 @@
    {
     "text": "Strength",
     "x": 131,
-    "y": 606.6,
+    "y": 582.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -3716,7 +3648,7 @@
    {
     "text": "Dexterity",
     "x": 131,
-    "y": 594.6,
+    "y": 570.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -3724,7 +3656,7 @@
    {
     "text": "Constitution",
     "x": 131,
-    "y": 582.6,
+    "y": 558.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -3732,7 +3664,7 @@
    {
     "text": "Intelligence",
     "x": 131,
-    "y": 570.6,
+    "y": 546.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -3740,7 +3672,7 @@
    {
     "text": "Wisdom",
     "x": 131,
-    "y": 558.6,
+    "y": 534.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -3748,7 +3680,7 @@
    {
     "text": "Charisma",
     "x": 131,
-    "y": 546.6,
+    "y": 522.6,
     "size": 5.6,
     "font": "notes",
     "color": "text"
@@ -3756,7 +3688,7 @@
    {
     "text": "SKILLS",
     "x": 96,
-    "y": 267,
+    "y": 240,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -3766,7 +3698,7 @@
    {
     "text": "Acrobatics",
     "x": 131,
-    "y": 476.9,
+    "y": 452.9,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3774,7 +3706,7 @@
    {
     "text": "(Dex)",
     "x": 157.2736,
-    "y": 476.9,
+    "y": 452.9,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3782,7 +3714,7 @@
    {
     "text": "Animal Handling",
     "x": 131,
-    "y": 465.7,
+    "y": 441.5235294117647,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3790,7 +3722,7 @@
    {
     "text": "(Wis)",
     "x": 170.856,
-    "y": 465.7,
+    "y": 441.5235294117647,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3798,7 +3730,7 @@
    {
     "text": "Arcana",
     "x": 131,
-    "y": 454.5,
+    "y": 430.1470588235294,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3806,7 +3738,7 @@
    {
     "text": "(Int)",
     "x": 149.4736,
-    "y": 454.5,
+    "y": 430.1470588235294,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3814,7 +3746,7 @@
    {
     "text": "Athletics",
     "x": 131,
-    "y": 443.29999999999995,
+    "y": 418.7705882352941,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3822,7 +3754,7 @@
    {
     "text": "(Str)",
     "x": 152.6508,
-    "y": 443.29999999999995,
+    "y": 418.7705882352941,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3830,7 +3762,7 @@
    {
     "text": "Deception",
     "x": 131,
-    "y": 432.09999999999997,
+    "y": 407.3941176470588,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3838,7 +3770,7 @@
    {
     "text": "(Cha)",
     "x": 156.4104,
-    "y": 432.09999999999997,
+    "y": 407.3941176470588,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3846,7 +3778,7 @@
    {
     "text": "History",
     "x": 131,
-    "y": 420.9,
+    "y": 396.0176470588235,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3854,7 +3786,7 @@
    {
     "text": "(Int)",
     "x": 149.3332,
-    "y": 420.9,
+    "y": 396.0176470588235,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3862,7 +3794,7 @@
    {
     "text": "Insight",
     "x": 131,
-    "y": 409.7,
+    "y": 384.6411764705882,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3870,7 +3802,7 @@
    {
     "text": "(Wis)",
     "x": 148.3192,
-    "y": 409.7,
+    "y": 384.6411764705882,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3878,7 +3810,7 @@
    {
     "text": "Intimidation",
     "x": 131,
-    "y": 398.5,
+    "y": 373.2647058823529,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3886,7 +3818,7 @@
    {
     "text": "(Cha)",
     "x": 159.5876,
-    "y": 398.5,
+    "y": 373.2647058823529,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3894,7 +3826,7 @@
    {
     "text": "Investigation",
     "x": 131,
-    "y": 387.29999999999995,
+    "y": 361.88823529411764,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3902,7 +3834,7 @@
    {
     "text": "(Int)",
     "x": 161.9588,
-    "y": 387.29999999999995,
+    "y": 361.88823529411764,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3910,7 +3842,7 @@
    {
     "text": "Medicine",
     "x": 131,
-    "y": 376.09999999999997,
+    "y": 350.51176470588234,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3918,7 +3850,7 @@
    {
     "text": "(Wis)",
     "x": 153.8052,
-    "y": 376.09999999999997,
+    "y": 350.51176470588234,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3926,7 +3858,7 @@
    {
     "text": "Nature",
     "x": 131,
-    "y": 364.9,
+    "y": 339.13529411764705,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3934,7 +3866,7 @@
    {
     "text": "(Int)",
     "x": 148.6052,
-    "y": 364.9,
+    "y": 339.13529411764705,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3942,7 +3874,7 @@
    {
     "text": "Perception",
     "x": 131,
-    "y": 353.7,
+    "y": 327.75882352941176,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3950,7 +3882,7 @@
    {
     "text": "(Wis)",
     "x": 157.596,
-    "y": 353.7,
+    "y": 327.75882352941176,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3958,7 +3890,7 @@
    {
     "text": "Performance",
     "x": 131,
-    "y": 342.5,
+    "y": 316.38235294117646,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3966,7 +3898,7 @@
    {
     "text": "(Cha)",
     "x": 162.4788,
-    "y": 342.5,
+    "y": 316.38235294117646,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3974,7 +3906,7 @@
    {
     "text": "Persuasion",
     "x": 131,
-    "y": 331.29999999999995,
+    "y": 305.00588235294117,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3982,7 +3914,7 @@
    {
     "text": "(Cha)",
     "x": 158.7504,
-    "y": 331.29999999999995,
+    "y": 305.00588235294117,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -3990,7 +3922,7 @@
    {
     "text": "Religion",
     "x": 131,
-    "y": 320.1,
+    "y": 293.6294117647059,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -3998,7 +3930,7 @@
    {
     "text": "(Int)",
     "x": 151.7824,
-    "y": 320.1,
+    "y": 293.6294117647059,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -4006,7 +3938,7 @@
    {
     "text": "Sleight of Hand",
     "x": 131,
-    "y": 308.9,
+    "y": 282.2529411764706,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -4014,7 +3946,7 @@
    {
     "text": "(Dex)",
     "x": 168.5524,
-    "y": 308.9,
+    "y": 282.2529411764706,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -4022,7 +3954,7 @@
    {
     "text": "Stealth",
     "x": 131,
-    "y": 297.7,
+    "y": 270.8764705882353,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -4030,7 +3962,7 @@
    {
     "text": "(Dex)",
     "x": 149.1876,
-    "y": 297.7,
+    "y": 270.8764705882353,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -4038,7 +3970,7 @@
    {
     "text": "Survival",
     "x": 131,
-    "y": 286.5,
+    "y": 259.5,
     "size": 5.2,
     "font": "notes",
     "color": "text"
@@ -4046,7 +3978,7 @@
    {
     "text": "(Wis)",
     "x": 151.5172,
-    "y": 286.5,
+    "y": 259.5,
     "size": 4.2,
     "font": "notes",
     "color": "lines"
@@ -4054,18 +3986,10 @@
    {
     "text": "PASSIVE PERCEPTION",
     "x": 122,
-    "y": 245,
+    "y": 218,
     "size": 4.4,
     "font": "captions",
     "color": "text"
-   },
-   {
-    "text": "ACTIONS",
-    "x": 38,
-    "y": 217.5,
-    "size": 3.8,
-    "font": "captions",
-    "color": "lines"
    },
    {
     "text": "ARMOR CLASS",
@@ -4159,17 +4083,17 @@
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
+    "x": 270,
     "y": 518,
     "size": 3.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
@@ -4276,7 +4200,7 @@
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -4296,7 +4220,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -4304,7 +4228,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -4312,7 +4236,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
@@ -4320,33 +4244,13 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 3.8,
     "font": "captions",
     "color": "lines"
    },
    {
-    "text": "CLASS FEATURES",
-    "x": 404,
-    "y": 415,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "SUBCLASS FEATURES",
-    "x": 404,
-    "y": 267,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "FEATS",
+    "text": "FEATURES & TRAITS",
     "x": 404,
     "y": 155,
     "size": 5,
@@ -4417,14 +4321,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -4434,7 +4330,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -4442,7 +4338,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -4450,6 +4346,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -4458,63 +4362,63 @@
    },
    {
     "text": "STRENGTH",
-    "x": 29.5,
+    "x": 33.6,
     "y": 652,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "DEXTERITY",
-    "x": 29.5,
+    "x": 33.6,
     "y": 580.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CONSTITUTION",
-    "x": 29.5,
+    "x": 33.6,
     "y": 509,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "INTELLIGENCE",
-    "x": 29.5,
+    "x": 33.6,
     "y": 437.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "WISDOM",
-    "x": 29.5,
+    "x": 33.6,
     "y": 366,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CHARISMA",
-    "x": 29.5,
+    "x": 33.6,
     "y": 294.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "PROFICIENCY BONUS",
@@ -4890,36 +4794,24 @@
    },
    {
     "text": "INITIATIVE",
-    "x": 40,
-    "y": 199,
-    "size": 3.8,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 36
-   },
-   {
-    "text": "ADVANTAGE",
-    "x": 70,
-    "y": 203,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines",
-    "align": "center",
-    "width": 26
-   },
-   {
-    "text": "ACTIONS",
     "x": 104,
-    "y": 217.5,
-    "size": 3.8,
+    "y": 218,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ADV.",
+    "x": 154,
+    "y": 218.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "ARMOR CLASS",
     "x": 213,
-    "y": 585,
+    "y": 592,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -4929,7 +4821,7 @@
    {
     "text": "ARMOR",
     "x": 224,
-    "y": 652,
+    "y": 653,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -4937,7 +4829,7 @@
    {
     "text": "SHIELD",
     "x": 224,
-    "y": 630,
+    "y": 629,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -4945,7 +4837,7 @@
    {
     "text": "STEALTH DISADV.",
     "x": 262,
-    "y": 651,
+    "y": 652,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -4953,7 +4845,7 @@
    {
     "text": "AC",
     "x": 355,
-    "y": 665,
+    "y": 662.5,
     "size": 7,
     "font": "captions",
     "color": "text",
@@ -4963,7 +4855,7 @@
    {
     "text": "CURRENT HIT POINTS",
     "x": 213,
-    "y": 526,
+    "y": 519,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -4973,7 +4865,7 @@
    {
     "text": "MAXIMUM",
     "x": 225,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -4983,7 +4875,7 @@
    {
     "text": "TEMPORARY",
     "x": 337,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -4993,7 +4885,7 @@
    {
     "text": "HIT DICE",
     "x": 213,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5003,7 +4895,7 @@
    {
     "text": "DEATH SAVES",
     "x": 307,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5013,23 +4905,23 @@
    {
     "text": "SUCCESSES",
     "x": 315,
-    "y": 504.9,
-    "size": 6,
+    "y": 499.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "FAILURES",
     "x": 315,
-    "y": 496.9,
-    "size": 6,
+    "y": 491.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SPEED, SENSES & CONDITIONS",
     "x": 213,
-    "y": 389,
+    "y": 386,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5039,8 +4931,8 @@
    {
     "text": "SPEED",
     "x": 224,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5049,8 +4941,8 @@
    {
     "text": "FLY",
     "x": 267,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5059,8 +4951,8 @@
    {
     "text": "CLIMB",
     "x": 310,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5069,8 +4961,8 @@
    {
     "text": "SWIM",
     "x": 353,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5079,16 +4971,16 @@
    {
     "text": "VISION",
     "x": 224,
-    "y": 444,
-    "size": 5.5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "INSPIRATION",
     "x": 296,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5097,15 +4989,15 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5125,7 +5017,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5133,7 +5025,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5141,7 +5033,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5149,7 +5041,7 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5226,14 +5118,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -5243,7 +5127,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -5251,7 +5135,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -5259,6 +5143,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -5267,63 +5159,63 @@
    },
    {
     "text": "STRENGTH",
-    "x": 29.5,
+    "x": 33.6,
     "y": 652,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "DEXTERITY",
-    "x": 29.5,
+    "x": 33.6,
     "y": 580.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CONSTITUTION",
-    "x": 29.5,
+    "x": 33.6,
     "y": 509,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "INTELLIGENCE",
-    "x": 29.5,
+    "x": 33.6,
     "y": 437.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "WISDOM",
-    "x": 29.5,
+    "x": 33.6,
     "y": 366,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CHARISMA",
-    "x": 29.5,
+    "x": 33.6,
     "y": 294.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "PROFICIENCY BONUS",
@@ -5699,36 +5591,24 @@
    },
    {
     "text": "INITIATIVE",
-    "x": 40,
-    "y": 199,
-    "size": 3.8,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 36
-   },
-   {
-    "text": "ADVANTAGE",
-    "x": 70,
-    "y": 203,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines",
-    "align": "center",
-    "width": 26
-   },
-   {
-    "text": "ACTIONS",
     "x": 104,
-    "y": 217.5,
-    "size": 3.8,
+    "y": 218,
+    "size": 4.4,
+    "font": "captions",
+    "color": "text"
+   },
+   {
+    "text": "ADV.",
+    "x": 154,
+    "y": 218.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "ARMOR CLASS",
     "x": 213,
-    "y": 585,
+    "y": 592,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5738,7 +5618,7 @@
    {
     "text": "ARMOR",
     "x": 224,
-    "y": 652,
+    "y": 653,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5746,7 +5626,7 @@
    {
     "text": "SHIELD",
     "x": 224,
-    "y": 630,
+    "y": 629,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5754,7 +5634,7 @@
    {
     "text": "STEALTH DISADV.",
     "x": 262,
-    "y": 651,
+    "y": 652,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5762,7 +5642,7 @@
    {
     "text": "AC",
     "x": 355,
-    "y": 665,
+    "y": 662.5,
     "size": 7,
     "font": "captions",
     "color": "text",
@@ -5772,7 +5652,7 @@
    {
     "text": "CURRENT HIT POINTS",
     "x": 213,
-    "y": 526,
+    "y": 519,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5782,7 +5662,7 @@
    {
     "text": "MAXIMUM",
     "x": 225,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -5792,7 +5672,7 @@
    {
     "text": "TEMPORARY",
     "x": 337,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -5802,7 +5682,7 @@
    {
     "text": "HIT DICE",
     "x": 213,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5812,7 +5692,7 @@
    {
     "text": "DEATH SAVES",
     "x": 307,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5822,23 +5702,23 @@
    {
     "text": "SUCCESSES",
     "x": 315,
-    "y": 504.9,
-    "size": 6,
+    "y": 499.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "FAILURES",
     "x": 315,
-    "y": 496.9,
-    "size": 6,
+    "y": 491.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SPEED, SENSES & CONDITIONS",
     "x": 213,
-    "y": 389,
+    "y": 386,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5848,8 +5728,8 @@
    {
     "text": "SPEED",
     "x": 224,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5858,8 +5738,8 @@
    {
     "text": "FLY",
     "x": 267,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5868,8 +5748,8 @@
    {
     "text": "CLIMB",
     "x": 310,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5878,8 +5758,8 @@
    {
     "text": "SWIM",
     "x": 353,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5888,16 +5768,16 @@
    {
     "text": "VISION",
     "x": 224,
-    "y": 444,
-    "size": 5.5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "INSPIRATION",
     "x": 296,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -5906,15 +5786,15 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5934,7 +5814,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5942,7 +5822,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5950,7 +5830,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -5958,33 +5838,13 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
    },
    {
-    "text": "CLASS FEATURES",
-    "x": 404,
-    "y": 415,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "SUBCLASS FEATURES",
-    "x": 404,
-    "y": 267,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "FEATS",
+    "text": "FEATURES & TRAITS",
     "x": 404,
     "y": 155,
     "size": 5,
@@ -6055,14 +5915,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -6072,7 +5924,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -6080,7 +5932,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -6088,6 +5940,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -6096,100 +5956,92 @@
    },
    {
     "text": "STRENGTH",
-    "x": 29.5,
+    "x": 33.6,
     "y": 652,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "DEXTERITY",
-    "x": 29.5,
+    "x": 33.6,
     "y": 580.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CONSTITUTION",
-    "x": 29.5,
+    "x": 33.6,
     "y": 509,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "INTELLIGENCE",
-    "x": 29.5,
+    "x": 33.6,
     "y": 437.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "WISDOM",
-    "x": 29.5,
+    "x": 33.6,
     "y": 366,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CHARISMA",
-    "x": 29.5,
+    "x": 33.6,
     "y": 294.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
-    "text": "PROF.",
-    "x": 101,
-    "y": 639.1,
+    "text": "PROFICIENCY BONUS",
+    "x": 104,
+    "y": 636,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "BONUS",
-    "x": 101,
-    "y": 633.1,
-    "size": 5.5,
-    "font": "captions",
-    "color": "text"
-   },
-   {
-    "text": "INIT.",
-    "x": 155,
-    "y": 639.1,
+    "text": "INITIATIVE",
+    "x": 104,
+    "y": 609,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "ADV.",
-    "x": 165,
-    "y": 630.5,
-    "size": 3.4,
+    "x": 154,
+    "y": 609.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SAVING THROWS",
     "x": 96,
-    "y": 519,
+    "y": 495,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6199,7 +6051,7 @@
    {
     "text": "Strength",
     "x": 131,
-    "y": 606.6,
+    "y": 582.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -6207,7 +6059,7 @@
    {
     "text": "Dexterity",
     "x": 131,
-    "y": 594.6,
+    "y": 570.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -6215,7 +6067,7 @@
    {
     "text": "Constitution",
     "x": 131,
-    "y": 582.6,
+    "y": 558.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -6223,7 +6075,7 @@
    {
     "text": "Intelligence",
     "x": 131,
-    "y": 570.6,
+    "y": 546.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -6231,7 +6083,7 @@
    {
     "text": "Wisdom",
     "x": 131,
-    "y": 558.6,
+    "y": 534.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -6239,7 +6091,7 @@
    {
     "text": "Charisma",
     "x": 131,
-    "y": 546.6,
+    "y": 522.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -6247,7 +6099,7 @@
    {
     "text": "SKILLS",
     "x": 96,
-    "y": 267,
+    "y": 240,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6257,7 +6109,7 @@
    {
     "text": "Acrobatics",
     "x": 131,
-    "y": 494.5,
+    "y": 470.5,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6265,7 +6117,7 @@
    {
     "text": "(Dex)",
     "x": 160.0744,
-    "y": 494.5,
+    "y": 470.5,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6273,7 +6125,7 @@
    {
     "text": "Animal Handling",
     "x": 131,
-    "y": 481.9,
+    "y": 457.72352941176473,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6281,7 +6133,7 @@
    {
     "text": "(Wis)",
     "x": 175.224,
-    "y": 481.9,
+    "y": 457.72352941176473,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6289,7 +6141,7 @@
    {
     "text": "Arcana",
     "x": 131,
-    "y": 469.3,
+    "y": 444.9470588235294,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6297,7 +6149,7 @@
    {
     "text": "(Int)",
     "x": 151.3744,
-    "y": 469.3,
+    "y": 444.9470588235294,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6305,7 +6157,7 @@
    {
     "text": "Athletics",
     "x": 131,
-    "y": 456.7,
+    "y": 432.17058823529413,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6313,7 +6165,7 @@
    {
     "text": "(Str)",
     "x": 154.9182,
-    "y": 456.7,
+    "y": 432.17058823529413,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6321,7 +6173,7 @@
    {
     "text": "Deception",
     "x": 131,
-    "y": 444.1,
+    "y": 419.3941176470588,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6329,7 +6181,7 @@
    {
     "text": "(Cha)",
     "x": 159.1116,
-    "y": 444.1,
+    "y": 419.3941176470588,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6337,7 +6189,7 @@
    {
     "text": "History",
     "x": 131,
-    "y": 431.5,
+    "y": 406.61764705882354,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6345,7 +6197,7 @@
    {
     "text": "(Int)",
     "x": 151.2178,
-    "y": 431.5,
+    "y": 406.61764705882354,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6353,7 +6205,7 @@
    {
     "text": "Insight",
     "x": 131,
-    "y": 418.9,
+    "y": 393.84117647058827,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6361,7 +6213,7 @@
    {
     "text": "(Wis)",
     "x": 150.0868,
-    "y": 418.9,
+    "y": 393.84117647058827,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6369,7 +6221,7 @@
    {
     "text": "Intimidation",
     "x": 131,
-    "y": 406.3,
+    "y": 381.06470588235294,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6377,7 +6229,7 @@
    {
     "text": "(Cha)",
     "x": 162.6554,
-    "y": 406.3,
+    "y": 381.06470588235294,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6385,7 +6237,7 @@
    {
     "text": "Investigation",
     "x": 131,
-    "y": 393.7,
+    "y": 368.28823529411767,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6393,7 +6245,7 @@
    {
     "text": "(Int)",
     "x": 165.3002,
-    "y": 393.7,
+    "y": 368.28823529411767,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6401,7 +6253,7 @@
    {
     "text": "Medicine",
     "x": 131,
-    "y": 381.1,
+    "y": 355.51176470588234,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6409,7 +6261,7 @@
    {
     "text": "(Wis)",
     "x": 156.2058,
-    "y": 381.1,
+    "y": 355.51176470588234,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6417,7 +6269,7 @@
    {
     "text": "Nature",
     "x": 131,
-    "y": 368.5,
+    "y": 342.7352941176471,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6425,7 +6277,7 @@
    {
     "text": "(Int)",
     "x": 150.4058,
-    "y": 368.5,
+    "y": 342.7352941176471,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6433,7 +6285,7 @@
    {
     "text": "Perception",
     "x": 131,
-    "y": 355.9,
+    "y": 329.9588235294118,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6441,7 +6293,7 @@
    {
     "text": "(Wis)",
     "x": 160.434,
-    "y": 355.9,
+    "y": 329.9588235294118,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6449,7 +6301,7 @@
    {
     "text": "Performance",
     "x": 131,
-    "y": 343.3,
+    "y": 317.1823529411765,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6457,7 +6309,7 @@
    {
     "text": "(Cha)",
     "x": 165.8802,
-    "y": 343.3,
+    "y": 317.1823529411765,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6465,7 +6317,7 @@
    {
     "text": "Persuasion",
     "x": 131,
-    "y": 330.70000000000005,
+    "y": 304.40588235294115,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6473,7 +6325,7 @@
    {
     "text": "(Cha)",
     "x": 161.7216,
-    "y": 330.70000000000005,
+    "y": 304.40588235294115,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6481,7 +6333,7 @@
    {
     "text": "Religion",
     "x": 131,
-    "y": 318.1,
+    "y": 291.6294117647059,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6489,7 +6341,7 @@
    {
     "text": "(Int)",
     "x": 153.9496,
-    "y": 318.1,
+    "y": 291.6294117647059,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6497,7 +6349,7 @@
    {
     "text": "Sleight of Hand",
     "x": 131,
-    "y": 305.5,
+    "y": 278.8529411764706,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6505,7 +6357,7 @@
    {
     "text": "(Dex)",
     "x": 172.6546,
-    "y": 305.5,
+    "y": 278.8529411764706,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6513,7 +6365,7 @@
    {
     "text": "Stealth",
     "x": 131,
-    "y": 292.9,
+    "y": 266.07647058823534,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6521,7 +6373,7 @@
    {
     "text": "(Dex)",
     "x": 151.0554,
-    "y": 292.9,
+    "y": 266.07647058823534,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6529,7 +6381,7 @@
    {
     "text": "Survival",
     "x": 131,
-    "y": 280.3,
+    "y": 253.3,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -6537,7 +6389,7 @@
    {
     "text": "(Wis)",
     "x": 153.6538,
-    "y": 280.3,
+    "y": 253.3,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -6545,23 +6397,15 @@
    {
     "text": "PASSIVE PERCEPTION",
     "x": 122,
-    "y": 245,
+    "y": 218,
     "size": 4.4,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "ACTIONS",
-    "x": 38,
-    "y": 217.5,
-    "size": 3.8,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "ARMOR CLASS",
     "x": 213,
-    "y": 585,
+    "y": 592,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6571,7 +6415,7 @@
    {
     "text": "ARMOR",
     "x": 224,
-    "y": 652,
+    "y": 653,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6579,7 +6423,7 @@
    {
     "text": "SHIELD",
     "x": 224,
-    "y": 630,
+    "y": 629,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6587,7 +6431,7 @@
    {
     "text": "STEALTH DISADV.",
     "x": 262,
-    "y": 651,
+    "y": 652,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -6595,7 +6439,7 @@
    {
     "text": "AC",
     "x": 355,
-    "y": 665,
+    "y": 662.5,
     "size": 7,
     "font": "captions",
     "color": "text",
@@ -6605,7 +6449,7 @@
    {
     "text": "CURRENT HIT POINTS",
     "x": 213,
-    "y": 526,
+    "y": 519,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6615,7 +6459,7 @@
    {
     "text": "MAXIMUM",
     "x": 225,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -6625,7 +6469,7 @@
    {
     "text": "TEMPORARY",
     "x": 337,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -6635,7 +6479,7 @@
    {
     "text": "HIT DICE",
     "x": 213,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6645,27 +6489,27 @@
    {
     "text": "MAX",
     "x": 220,
-    "y": 509,
-    "size": 4.6,
+    "y": 502,
+    "size": 4.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
-    "y": 509,
-    "size": 4.6,
+    "x": 270,
+    "y": 502,
+    "size": 4.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
     "x": 307,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6675,23 +6519,23 @@
    {
     "text": "SUCCESSES",
     "x": 315,
-    "y": 504.9,
-    "size": 6,
+    "y": 499.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "FAILURES",
     "x": 315,
-    "y": 496.9,
-    "size": 6,
+    "y": 491.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SPEED, SENSES & CONDITIONS",
     "x": 213,
-    "y": 389,
+    "y": 386,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6701,8 +6545,8 @@
    {
     "text": "SPEED",
     "x": 224,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -6711,8 +6555,8 @@
    {
     "text": "FLY",
     "x": 267,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -6721,8 +6565,8 @@
    {
     "text": "CLIMB",
     "x": 310,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -6731,8 +6575,8 @@
    {
     "text": "SWIM",
     "x": 353,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -6741,16 +6585,16 @@
    {
     "text": "VISION",
     "x": 224,
-    "y": 444,
-    "size": 5.5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "INSPIRATION",
     "x": 296,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -6759,15 +6603,15 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -6787,7 +6631,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -6795,7 +6639,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -6803,7 +6647,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -6811,7 +6655,7 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -6888,14 +6732,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -6905,7 +6741,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -6913,7 +6749,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -6921,6 +6757,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -6929,100 +6773,92 @@
    },
    {
     "text": "STRENGTH",
-    "x": 29.5,
+    "x": 33.6,
     "y": 652,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "DEXTERITY",
-    "x": 29.5,
+    "x": 33.6,
     "y": 580.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CONSTITUTION",
-    "x": 29.5,
+    "x": 33.6,
     "y": 509,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "INTELLIGENCE",
-    "x": 29.5,
+    "x": 33.6,
     "y": 437.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "WISDOM",
-    "x": 29.5,
+    "x": 33.6,
     "y": 366,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
     "text": "CHARISMA",
-    "x": 29.5,
+    "x": 33.6,
     "y": 294.5,
-    "size": 5.637614161686774,
+    "size": 4.73559589581689,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 62
+    "width": 54
    },
    {
-    "text": "PROF.",
-    "x": 101,
-    "y": 639.1,
+    "text": "PROFICIENCY BONUS",
+    "x": 104,
+    "y": 636,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "BONUS",
-    "x": 101,
-    "y": 633.1,
-    "size": 5.5,
-    "font": "captions",
-    "color": "text"
-   },
-   {
-    "text": "INIT.",
-    "x": 155,
-    "y": 639.1,
+    "text": "INITIATIVE",
+    "x": 104,
+    "y": 609,
     "size": 5.5,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "ADV.",
-    "x": 165,
-    "y": 630.5,
-    "size": 3.4,
+    "x": 154,
+    "y": 609.4,
+    "size": 4,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SAVING THROWS",
     "x": 96,
-    "y": 519,
+    "y": 495,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7032,7 +6868,7 @@
    {
     "text": "Strength",
     "x": 131,
-    "y": 606.6,
+    "y": 582.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -7040,7 +6876,7 @@
    {
     "text": "Dexterity",
     "x": 131,
-    "y": 594.6,
+    "y": 570.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -7048,7 +6884,7 @@
    {
     "text": "Constitution",
     "x": 131,
-    "y": 582.6,
+    "y": 558.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -7056,7 +6892,7 @@
    {
     "text": "Intelligence",
     "x": 131,
-    "y": 570.6,
+    "y": 546.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -7064,7 +6900,7 @@
    {
     "text": "Wisdom",
     "x": 131,
-    "y": 558.6,
+    "y": 534.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -7072,7 +6908,7 @@
    {
     "text": "Charisma",
     "x": 131,
-    "y": 546.6,
+    "y": 522.6,
     "size": 6.2,
     "font": "notes",
     "color": "text"
@@ -7080,7 +6916,7 @@
    {
     "text": "SKILLS",
     "x": 96,
-    "y": 267,
+    "y": 240,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7090,7 +6926,7 @@
    {
     "text": "Acrobatics",
     "x": 131,
-    "y": 494.5,
+    "y": 470.5,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7098,7 +6934,7 @@
    {
     "text": "(Dex)",
     "x": 160.0744,
-    "y": 494.5,
+    "y": 470.5,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7106,7 +6942,7 @@
    {
     "text": "Animal Handling",
     "x": 131,
-    "y": 481.9,
+    "y": 457.72352941176473,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7114,7 +6950,7 @@
    {
     "text": "(Wis)",
     "x": 175.224,
-    "y": 481.9,
+    "y": 457.72352941176473,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7122,7 +6958,7 @@
    {
     "text": "Arcana",
     "x": 131,
-    "y": 469.3,
+    "y": 444.9470588235294,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7130,7 +6966,7 @@
    {
     "text": "(Int)",
     "x": 151.3744,
-    "y": 469.3,
+    "y": 444.9470588235294,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7138,7 +6974,7 @@
    {
     "text": "Athletics",
     "x": 131,
-    "y": 456.7,
+    "y": 432.17058823529413,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7146,7 +6982,7 @@
    {
     "text": "(Str)",
     "x": 154.9182,
-    "y": 456.7,
+    "y": 432.17058823529413,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7154,7 +6990,7 @@
    {
     "text": "Deception",
     "x": 131,
-    "y": 444.1,
+    "y": 419.3941176470588,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7162,7 +6998,7 @@
    {
     "text": "(Cha)",
     "x": 159.1116,
-    "y": 444.1,
+    "y": 419.3941176470588,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7170,7 +7006,7 @@
    {
     "text": "History",
     "x": 131,
-    "y": 431.5,
+    "y": 406.61764705882354,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7178,7 +7014,7 @@
    {
     "text": "(Int)",
     "x": 151.2178,
-    "y": 431.5,
+    "y": 406.61764705882354,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7186,7 +7022,7 @@
    {
     "text": "Insight",
     "x": 131,
-    "y": 418.9,
+    "y": 393.84117647058827,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7194,7 +7030,7 @@
    {
     "text": "(Wis)",
     "x": 150.0868,
-    "y": 418.9,
+    "y": 393.84117647058827,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7202,7 +7038,7 @@
    {
     "text": "Intimidation",
     "x": 131,
-    "y": 406.3,
+    "y": 381.06470588235294,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7210,7 +7046,7 @@
    {
     "text": "(Cha)",
     "x": 162.6554,
-    "y": 406.3,
+    "y": 381.06470588235294,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7218,7 +7054,7 @@
    {
     "text": "Investigation",
     "x": 131,
-    "y": 393.7,
+    "y": 368.28823529411767,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7226,7 +7062,7 @@
    {
     "text": "(Int)",
     "x": 165.3002,
-    "y": 393.7,
+    "y": 368.28823529411767,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7234,7 +7070,7 @@
    {
     "text": "Medicine",
     "x": 131,
-    "y": 381.1,
+    "y": 355.51176470588234,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7242,7 +7078,7 @@
    {
     "text": "(Wis)",
     "x": 156.2058,
-    "y": 381.1,
+    "y": 355.51176470588234,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7250,7 +7086,7 @@
    {
     "text": "Nature",
     "x": 131,
-    "y": 368.5,
+    "y": 342.7352941176471,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7258,7 +7094,7 @@
    {
     "text": "(Int)",
     "x": 150.4058,
-    "y": 368.5,
+    "y": 342.7352941176471,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7266,7 +7102,7 @@
    {
     "text": "Perception",
     "x": 131,
-    "y": 355.9,
+    "y": 329.9588235294118,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7274,7 +7110,7 @@
    {
     "text": "(Wis)",
     "x": 160.434,
-    "y": 355.9,
+    "y": 329.9588235294118,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7282,7 +7118,7 @@
    {
     "text": "Performance",
     "x": 131,
-    "y": 343.3,
+    "y": 317.1823529411765,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7290,7 +7126,7 @@
    {
     "text": "(Cha)",
     "x": 165.8802,
-    "y": 343.3,
+    "y": 317.1823529411765,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7298,7 +7134,7 @@
    {
     "text": "Persuasion",
     "x": 131,
-    "y": 330.70000000000005,
+    "y": 304.40588235294115,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7306,7 +7142,7 @@
    {
     "text": "(Cha)",
     "x": 161.7216,
-    "y": 330.70000000000005,
+    "y": 304.40588235294115,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7314,7 +7150,7 @@
    {
     "text": "Religion",
     "x": 131,
-    "y": 318.1,
+    "y": 291.6294117647059,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7322,7 +7158,7 @@
    {
     "text": "(Int)",
     "x": 153.9496,
-    "y": 318.1,
+    "y": 291.6294117647059,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7330,7 +7166,7 @@
    {
     "text": "Sleight of Hand",
     "x": 131,
-    "y": 305.5,
+    "y": 278.8529411764706,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7338,7 +7174,7 @@
    {
     "text": "(Dex)",
     "x": 172.6546,
-    "y": 305.5,
+    "y": 278.8529411764706,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7346,7 +7182,7 @@
    {
     "text": "Stealth",
     "x": 131,
-    "y": 292.9,
+    "y": 266.07647058823534,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7354,7 +7190,7 @@
    {
     "text": "(Dex)",
     "x": 151.0554,
-    "y": 292.9,
+    "y": 266.07647058823534,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7362,7 +7198,7 @@
    {
     "text": "Survival",
     "x": 131,
-    "y": 280.3,
+    "y": 253.3,
     "size": 5.8,
     "font": "notes",
     "color": "text"
@@ -7370,7 +7206,7 @@
    {
     "text": "(Wis)",
     "x": 153.6538,
-    "y": 280.3,
+    "y": 253.3,
     "size": 4.6,
     "font": "notes",
     "color": "lines"
@@ -7378,23 +7214,15 @@
    {
     "text": "PASSIVE PERCEPTION",
     "x": 122,
-    "y": 245,
+    "y": 218,
     "size": 4.4,
     "font": "captions",
     "color": "text"
    },
    {
-    "text": "ACTIONS",
-    "x": 38,
-    "y": 217.5,
-    "size": 3.8,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "ARMOR CLASS",
     "x": 213,
-    "y": 585,
+    "y": 592,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7404,7 +7232,7 @@
    {
     "text": "ARMOR",
     "x": 224,
-    "y": 652,
+    "y": 653,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7412,7 +7240,7 @@
    {
     "text": "SHIELD",
     "x": 224,
-    "y": 630,
+    "y": 629,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7420,7 +7248,7 @@
    {
     "text": "STEALTH DISADV.",
     "x": 262,
-    "y": 651,
+    "y": 652,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -7428,7 +7256,7 @@
    {
     "text": "AC",
     "x": 355,
-    "y": 665,
+    "y": 662.5,
     "size": 7,
     "font": "captions",
     "color": "text",
@@ -7438,7 +7266,7 @@
    {
     "text": "CURRENT HIT POINTS",
     "x": 213,
-    "y": 526,
+    "y": 519,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7448,7 +7276,7 @@
    {
     "text": "MAXIMUM",
     "x": 225,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -7458,7 +7286,7 @@
    {
     "text": "TEMPORARY",
     "x": 337,
-    "y": 563,
+    "y": 569,
     "size": 5.2,
     "font": "captions",
     "color": "lines",
@@ -7468,7 +7296,7 @@
    {
     "text": "HIT DICE",
     "x": 213,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7478,27 +7306,27 @@
    {
     "text": "MAX",
     "x": 220,
-    "y": 509,
-    "size": 4.6,
+    "y": 502,
+    "size": 4.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
-    "y": 509,
-    "size": 4.6,
+    "x": 270,
+    "y": 502,
+    "size": 4.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
     "x": 307,
-    "y": 489,
+    "y": 482,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7508,23 +7336,23 @@
    {
     "text": "SUCCESSES",
     "x": 315,
-    "y": 504.9,
-    "size": 6,
+    "y": 499.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "FAILURES",
     "x": 315,
-    "y": 496.9,
-    "size": 6,
+    "y": 491.5,
+    "size": 4.2,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "SPEED, SENSES & CONDITIONS",
     "x": 213,
-    "y": 389,
+    "y": 386,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7534,8 +7362,8 @@
    {
     "text": "SPEED",
     "x": 224,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -7544,8 +7372,8 @@
    {
     "text": "FLY",
     "x": 267,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -7554,8 +7382,8 @@
    {
     "text": "CLIMB",
     "x": 310,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -7564,8 +7392,8 @@
    {
     "text": "SWIM",
     "x": 353,
-    "y": 468,
-    "size": 6.5,
+    "y": 461,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -7574,16 +7402,16 @@
    {
     "text": "VISION",
     "x": 224,
-    "y": 444,
-    "size": 5.5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines"
    },
    {
     "text": "INSPIRATION",
     "x": 296,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "lines",
     "align": "center",
@@ -7592,15 +7420,15 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 444,
-    "size": 5,
+    "y": 437,
+    "size": 4.8,
     "font": "captions",
     "color": "text"
    },
    {
     "text": "RACIAL TRAITS",
     "x": 213,
-    "y": 201,
+    "y": 216,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -7620,7 +7448,7 @@
    {
     "text": "NAME",
     "x": 34,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -7628,7 +7456,7 @@
    {
     "text": "RANGE",
     "x": 173,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -7636,7 +7464,7 @@
    {
     "text": "ATTACK",
     "x": 222,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -7644,33 +7472,13 @@
    {
     "text": "DAMAGE / TYPE",
     "x": 273,
-    "y": 178,
+    "y": 192,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
    },
    {
-    "text": "CLASS FEATURES",
-    "x": 404,
-    "y": 415,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "SUBCLASS FEATURES",
-    "x": 404,
-    "y": 267,
-    "size": 5,
-    "font": "captions",
-    "color": "text",
-    "align": "center",
-    "width": 182
-   },
-   {
-    "text": "FEATS",
+    "text": "FEATURES & TRAITS",
     "x": 404,
     "y": 155,
     "size": 5,
