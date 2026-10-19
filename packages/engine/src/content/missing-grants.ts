@@ -34,9 +34,15 @@ function describe(element: ParsedElement): string {
   return `${element.identity.name} (${element.identity.id})`;
 }
 
-export function missingGrantDiagnostics(library: ElementLibrary): ContentDiagnostic[] {
+/**
+ * The findings for the whole library, or for `only` when a caller checks a
+ * handful of entries (a character's own pack) without scanning every element.
+ * Inline elements are collected from the entries checked.
+ */
+export function missingGrantDiagnostics(library: ElementLibrary, only?: readonly ParsedElement[]): ContentDiagnostic[] {
+  const checked = only ?? [...library.byId.values()];
   const inline = new Set<string>();
-  for (const element of library.byId.values()) inlineIds(element, inline);
+  for (const element of checked) inlineIds(element, inline);
   const present = (id: string): boolean =>
     library.byId.has(id) || ENGINE_INTERNAL_ELEMENTS.has(id) || inline.has(id);
 
@@ -82,6 +88,6 @@ export function missingGrantDiagnostics(library: ElementLibrary): ContentDiagnos
     }
     for (const child of element.children) scan(child);
   };
-  for (const element of library.byId.values()) scan(element);
+  for (const element of checked) scan(element);
   return out;
 }

@@ -37,7 +37,7 @@ ours to define; 1:1 conformance applies to `.dnd5e` files and XML content semant
 
 Defined once as the typed `EngineMethodMap` in `packages/api/src/methods.ts`.
 Request tuples, result types, dispatcher handlers, and client method types are
-derived from that map. The runtime list contains 78 unique methods: 77 are
+derived from that map. The runtime list contains 88 unique methods: 87 are
 implemented and dispatched, and `ensureHostFile` is intentionally test-only.
 There are currently no public roadmap-unsupported methods. Groups:
 
@@ -58,8 +58,10 @@ There are currently no public roadmap-unsupported methods. Groups:
   `undoDelevel`, `setHitPointRoll`, `getProgression`
 - **Magic**: `getSpellcasting`, `setPrepared`, `getSpellBrowse`,
   `addGrantedSpell`, `removeGrantedSpell`, `addGrantedFeat`, `removeGrantedFeat`,
-  `addGrantedAbilityScore`, `removeGrantedAbilityScore`, `getDmGrants`,
-  `getCompanion`, `setCompanionName`
+  `addGrantedAbilityScore`, `removeGrantedAbilityScore`, `addGrantedElement`,
+  `removeGrantedElement`, `getDmGrants`, `getCompanion`, `setCompanionName`
+- **Custom content**: `getCustomContent`, `saveCustomDraft`,
+  `deleteCustomDraft`, `promoteCustomDraft`, `getChoiceIdentityImpact`
 - **Inventory**: `getInventory`, `getItemBaseOptions`, `addItem`, `removeItem`,
   `setItemAmount`, `extractItem`, `equipItem`, `attuneItem`, `setItemStorage`,
   `setItemPresentation`, `setItemCards`, `setCoins`
@@ -427,25 +429,137 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
 
 ### DM grants
 
-`add/removeGrantedSpell|Feat|AbilityScore` and `getDmGrants` are engine-defined
-methods with no counterpart elsewhere. Contract:
+`add/removeGrantedSpell|Feat|AbilityScore|Element` and `getDmGrants` are
+engine-defined methods with no counterpart elsewhere. Contract:
 - Requests are exact: spell add/remove `{spellId}`; feat add/remove `{featId}`;
-  ability-score add `{abilityElementIds}` and remove `{abilityElementId}`.
-  `getDmGrants` returns `{spells, feats, abilityScores}` using those element
-  identities and display metadata.
+  ability-score add `{abilityElementIds}` and remove `{abilityElementId}`;
+  element add/remove `{elementId}`.
+- `addGrantedElement` is the general form: it registers any grantable feature
+  at the top level of the elements tree, whether it comes from a book, a
+  homebrew collection or the character's own pack. Grantable types are Feat,
+  Feat Feature, Ability Score Improvement, Racial Trait, Class Feature,
+  Archetype Feature, Background Feature, Dragonmark Feature, Language Feature,
+  Custom Feature, Language, Proficiency and Vision. Anything else (a spell, a
+  class, an item) answers `not-found`. `addGrantedFeat` and
+  `addGrantedAbilityScore` are the same operation with a narrower type check.
+  Another character's own custom content answers `not-found`.
+- `getDmGrants` returns `DmGrantDto[]` (`packages/api/src/custom.ts`): `{kind,
+  id, name, source, type, isCustom, origin, section}`. `kind` is `spell`,
+  `feat`, `ability` or `feature` (every other grantable type); `origin` is
+  `book`, `character` (the character's own pack) or `homebrew`; `section` is
+  the Build section key the type belongs in (`race`, `class`, `background`,
+  `abilities`, `languages`, `proficiencies`, `feats`, or `other`) and null for
+  spells.
 - Granted spells serialize as `<magic><additional><spell name level id
   source="Additional Spell, {Name}"/></additional></magic>`. Rule-granted spells
   additionally carry the granting feature's name as `source`, e.g.
   `source="Wind Caller"`.
 - `<additional>` blocks are preserved and NOT rebuilt by prepared mutations
   (wizard XML keeps `<additional>`).
-- Granted feats/ASIs register elements via the existing registration + sum
-  machinery.
-- DM ownership is deliberately narrow: only direct top-level Feat/Ability Score
-  Improvement nodes and `<additional>` spells using the DM source convention are
-  listed or removable. Nested class/selection feats and ASIs are not DM grants.
+- Granted elements register through the existing registration + sum machinery.
+  Each is one registration in `registered-count`, like a granted feat.
+- DM ownership is deliberately narrow: only direct top-level grantable nodes
+  and `<additional>` spells using the DM source convention are listed or
+  removable. Nested class/selection feats and ASIs are not DM grants.
   Duplicate additions and multi-ASI requests are atomic: conflict or validation
   failure leaves the entire character unchanged.
+- `registeredElements` entries in the character detail carry `isCustom` and
+  `origin`, so the Build tab can badge custom content wherever it appears.
+
+### Custom content
+
+A custom element is made on a character without writing XML. The wire contract
+is `packages/api/src/custom.ts`; the compiler, the catalogue a form offers and
+the pure helpers are `@forge-cb/engine/custom` (`packages/engine/src/custom/`).
+
+**Draft.** One custom element as plain JSON (`CustomDraft`, `schemaVersion: 1`;
+a draft without a version reads as 1, a newer one is refused):
+`template` (feature, feat, racialTrait, classFeature, curse, boon), `name`,
+`showsUnder` (race, class, feats, other), `description`, `sheet` (show, title,
+action None/Action/Bonus Action/Reaction/Attack, usage, text, level tiers),
+`blocks` (modifier, grant, choice, in order), `requirements` (an ALL/ANY/NONE
+tree), `tags` (the element's `<supports>`) and `ruleset`. `id` is the element
+id: `ID_CUSTOM_` plus random characters, generated once and never derived from
+the name, so renaming, promoting and re-importing never re-id it.
+- `showsUnder` picks the element type: race `Racial Trait`, class `Class
+  Feature`, feats `Feat`, other `Custom Feature` (a type that lands in Build >
+  Other and in the sheet's Features box).
+- A **modifier** targets a catalogue entry (`CUSTOM_MODIFIER_TARGETS`: ability
+  scores and maximums, saves, skills, passive scores, armor class bonus and
+  calculation, hit points, speeds, initiative, attunement slots, attacks per
+  Attack action, melee/ranged attack and damage, spell attack and DC) with a
+  mode (`add`, `setBase`, `bestOf` with a named bucket, `raiseMax`), a number or
+  reference value (`CUSTOM_VALUE_REFERENCES`), an optional cap, gates (level,
+  equipment, requirements, a named switch) and a label. A switch-gated
+  modifier stays out of the totals until switches are built.
+- A **grant** names an element by id or by type and name, with a level, a
+  requirements tree and, for a spell, a cast ability, an always-prepared caster
+  and a free-cast usage. One feature casts all its spells with one ability.
+- A **choice** offers N picks of a type, filtered by a tree over tags, spell
+  level, school and ids, or an inline list of text items, with a level,
+  requirements and optional flag. Its name, type, level, slot and (for spells)
+  filter are the identity picks are remembered by.
+- `compileCustomElement(draft, {id?, source?})` returns the `<element>` XML and
+  `compileCustomPack(drafts, {source?})` an `<elements>` file; both throw
+  `invalid-argument` naming the exact field (`blocks[2].value`) of every problem
+  (`details.issues`). Requirements compile to the `requirements` expression and
+  are checked with `requirementsSyntaxError`; filters compile to `supports`.
+  The element source is `Custom` unless the caller names one (the engine
+  matches sources by name).
+
+**Character pack.** A character's drafts are stored in its own `.dnd5e`
+document in one builder-owned root element:
+
+```xml
+<forge-builder version="1">
+  <custom-pack schema="1"><![CDATA[[{ ...draft... }, ...]]]></custom-pack>
+</forge-builder>
+```
+
+`forge-builder` is the single element name reserved for builder-only data;
+later trackers become further children of it. The pack holds the drafts, not
+compiled XML, so the elements are derived on every load. A file without the
+block is never touched and the block is removed again when the last draft goes,
+restoring the original bytes. Entries this version cannot read (a newer
+schema) are kept through every edit and listed in `problems`. The block
+travels in the character XML, so `.dnd5e` export/import and `.dnd5e-pkg`
+carry it without any extra content file.
+
+**Library overlay.** While a character is loaded (import, snapshot restore,
+save) its compiled pack is installed in the library as an overlay keyed by
+character id (`content/character-packs.ts`), so its ids resolve for grants,
+picks and requirements. It never replaces a book element (an id the library
+already defines is skipped and reported `installed: false`), is offered only to
+the characters that carry it, survives library rebuilds and Fast Start boots,
+and is excluded from every snapshot so library digests do not move. Deleting
+the character or its last copy of an entry removes it.
+
+**Methods.**
+- `getCustomContent(id)` -> `{entries, problems}`; an entry is `{draft,
+  elementId, type, section, granted, installed}`.
+- `saveCustomDraft(id, {draft, grant?})` -> `{character, content, entry,
+  diagnostics}`. Stores the draft, compiles and installs it, and grants a new
+  draft (unless `grant: false`). Editing a granted draft takes it off and puts
+  it back on with the new definition and makes the picks again whose choice
+  identity is unchanged. `diagnostics` names grants to content that does not
+  exist (`missing-grant`, with the missing id) and id collisions (`skipped`).
+- `deleteCustomDraft(id, {draftId})` -> the same shape with `entry: null`.
+  Removes the grant, the stored copy and the installed element.
+- `promoteCustomDraft(id, {draftId, source})` -> `{id, xml, element}`. The
+  homebrew collection store belongs to the client, so the engine does not write
+  it: `element` is the entry in the homebrew editor's draft shape (`rawXml` is
+  the compiled element with `source` as its source name, `id` is the stable id
+  with `idLocked: true`, `customDraft` keeps the form data), ready to push onto a
+  collection's `elements`. The id never changes, so characters that carry the
+  entry keep resolving it once the collection is ingested.
+- `getChoiceIdentityImpact(id, {draft})` -> `{changes, hasPicks}`. Compares a
+  proposed draft with the stored draft of the same id. Each change is `{blockId,
+  name, type, change: "removed" | "changed", fields, orphanedSlots, picks}` where
+  `fields` lists what differs (name, type, level, count, supports for a spell
+  choice), `orphanedSlots` the pick slots that stop matching any choice, and
+  `picks` the picks currently made under them on every loaded character. The
+  client warns before saving when `hasPicks` is true. Raising a count orphans
+  nothing.
 
 ### Companion
 

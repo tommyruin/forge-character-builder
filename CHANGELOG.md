@@ -12,6 +12,16 @@ project uses [Semantic Versioning](https://semver.org/).
   own name, re-wrapped at full width, instead of on a reprint of the character
   page. Background, companion and equipment boxes continue the same way.
 - An "All item cards" button in Sheet options.
+- The engine supports custom features made on a character: boons, curses,
+  feats, racial traits and class features with ability, save, skill, armor
+  class, speed and attack bonuses, spells, proficiencies, languages, player
+  choices and sheet text. They are stored in the character file, travel with
+  exports and packages, and can be edited, removed or copied into a homebrew
+  collection with the same id.
+- Any feature can be granted to a character, not only feats and ability score
+  improvements, and the grants list says which entries are custom.
+- A change to a custom choice's name, level or count can be checked first: the
+  engine says which picks would be lost.
 
 ### Changed
 
@@ -44,6 +54,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Passive Perception on the sheet and in VTT exports includes features that
+  raise the passive score.
 - A multiclass caster lists each class's spells only up to that class's own
   spell level, prints the shared slots once and points the other classes to
   them. Feat spellcasting gets no slot circles, and a Druid 5 can't prepare

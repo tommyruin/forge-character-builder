@@ -154,6 +154,8 @@ import {
   type DmGrantsDto,
 } from "../extras/grants.js";
 import { buildAppearanceSuggestions, type AppearanceSuggestionsDto } from "../extras/appearance.js";
+import type { ChoiceIdentityReportDto, CustomContentDto, CustomDiagnosticDto, CustomDraftEntryDto, PromotedCustomElementDto } from "@forge-cb/api";
+import { CharacterCustomContent } from "../custom/character-content.js";
 
 export interface CharacterStore {
   get(id: string): CharacterState | undefined;
@@ -620,11 +622,24 @@ export class CharacterService {
   private readonly rng: () => number;
   private readonly onImport: ((event: CharacterImportEvent) => void) | undefined;
 
+  /** The character's own custom content (drafts in the file, elements in the library). */
+  private readonly custom: CharacterCustomContent;
+
   constructor(store?: CharacterStore, library?: ElementLibrary, options: CharacterServiceOptions = {}) {
     this.store = store ?? new InMemoryCharacterStore();
     this.library = library;
     this.rng = options.rng ?? Math.random;
     this.onImport = options.onImport;
+    this.custom = new CharacterCustomContent({
+      library,
+      snapshot: (id) => this.require(id),
+      characterIds: () => [...this.documents.keys()],
+      loadedState: (id) => this.store.get(id),
+      applyRegionEdits: (id, edits) => this.applyRegionEdits(id, edits),
+      addGrantedElement: (id, request) => this.addGrantedElement(id, request),
+      removeGrantedElement: (id, request) => this.removeGrantedElement(id, request),
+      setSelection: (id, ruleIdentifier, selectionId) => this.setSelection(id, ruleIdentifier, selectionId),
+    });
   }
 
   /** Re-maps state from an edited document, carrying per-session state over. */
@@ -849,6 +864,8 @@ export class CharacterService {
     const state = mapToState(document, id);
     this.store.set(state);
     this.documents.set(id, document);
+    // A character created over an earlier one of the same name starts without its custom content.
+    this.custom.forget(id);
     return state;
   }
 
@@ -867,6 +884,8 @@ export class CharacterService {
     }
     const parseMs = Math.max(0, performance.now() - parseStart);
     const hydrationStart = performance.now();
+    // The character's own custom content must resolve before its tree is read.
+    this.custom.syncPack(id, document);
     const state = mapToState(document, id);
     if (this.library !== undefined) {
       state.levelRegistrations = reconstructLevelRegistrations(state, document, this.library);
@@ -955,6 +974,7 @@ export class CharacterService {
     }
     this.store.set(state);
     this.documents.set(id, document);
+    this.custom.syncPack(id, document);
   }
 
   getCharacter(id: string): CharacterState {
@@ -1073,6 +1093,7 @@ export class CharacterService {
   deleteCharacter(id: string): void {
     this.store.delete(id);
     this.documents.delete(id);
+    this.custom.forget(id);
   }
 
   exportCharacterXml(id: string): string {
@@ -2209,6 +2230,41 @@ export class CharacterService {
     }
     const edits = planGrantedElementEdits(document, state, this.library, request.elementId, "remove");
     return this.applyWithRuleReconcile(id, state, document, edits);
+  }
+
+  // ---- custom content -----------------------------------------------------------
+
+  /** The ids of the characters currently loaded. */
+  characterIds(): string[] {
+    return [...this.documents.keys()];
+  }
+
+  /** The character's own pack: its drafts and what the engine knows of each. */
+  getCustomContent(id: string): CustomContentDto {
+    return this.custom.list(id);
+  }
+
+  /** Creates or updates a custom draft: stored in the file, compiled, installed and granted. */
+  saveCustomDraft(
+    id: string,
+    request: { draft: unknown; grant?: boolean },
+  ): { entry: CustomDraftEntryDto; diagnostics: CustomDiagnosticDto[] } {
+    return this.custom.save(id, request);
+  }
+
+  /** Removes a custom draft: ungrants it, drops its stored copy and its installed element. */
+  deleteCustomDraft(id: string, request: { draftId: string }): void {
+    this.custom.remove(id, request);
+  }
+
+  /** A draft in the shape the client's homebrew store keeps, for copying into a collection. */
+  promoteCustomDraft(id: string, request: { draftId: string; source: string }): PromotedCustomElementDto {
+    return this.custom.promote(id, request);
+  }
+
+  /** The choices a proposed draft would change the identity of, and the picks under them. */
+  getChoiceIdentityImpact(id: string, request: { draft: unknown }): ChoiceIdentityReportDto {
+    return this.custom.impact(id, request);
   }
 
   /** The DM grants list (granted spells, feats, ability scores and other features). */

@@ -29,6 +29,7 @@ import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type Inventory
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
 import { inventoryItemSignificance } from "../content/equipment/significance.js";
 import { descriptionToText } from "../content/description.js";
+import { CUSTOM_OTHER_TYPE } from "../custom/schema.js";
 import { escapeHtml, itemNote } from "./item-summary.js";
 import { createRegistrationContext } from "../selection/selection.js";
 import { evaluateRequirements } from "../selection/expr.js";
@@ -1504,6 +1505,8 @@ const FEATURE_BOX_TYPES: ReadonlySet<string> = new Set([
   "Archetype Feature",
   "Feat",
   "Feat Feature",
+  // A feature made in the builder that belongs to neither race, class nor feats.
+  CUSTOM_OTHER_TYPE,
 ]);
 
 /** Element types whose sheet text belongs in the racial-traits box. */

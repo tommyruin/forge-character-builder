@@ -548,6 +548,27 @@ export function createEngineMethodHandlers(
     removeGrantedElement: (id, request) =>
       objectResult(service.getCharacterDetail(service.removeGrantedElement(id, request).id)),
     getDmGrants: (id) => service.getDmGrants(id),
+    getCustomContent: (id) => service.getCustomContent(id),
+    saveCustomDraft: (id, request) => {
+      const saved = service.saveCustomDraft(id, request);
+      return {
+        character: objectResult(service.getCharacterDetail(id)),
+        content: service.getCustomContent(id),
+        entry: saved.entry,
+        diagnostics: saved.diagnostics,
+      };
+    },
+    deleteCustomDraft: (id, request) => {
+      service.deleteCustomDraft(id, request);
+      return {
+        character: objectResult(service.getCharacterDetail(id)),
+        content: service.getCustomContent(id),
+        entry: null,
+        diagnostics: [],
+      };
+    },
+    promoteCustomDraft: (id, request) => service.promoteCustomDraft(id, request),
+    getChoiceIdentityImpact: (id, request) => service.getChoiceIdentityImpact(id, request),
     getAppearanceSuggestions: (id, seed) => objectResult(service.getAppearanceSuggestions(id, seed)),
   };
 }

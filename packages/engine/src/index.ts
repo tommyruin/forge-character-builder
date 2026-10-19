@@ -10,6 +10,14 @@
 export * from "./content/library.js";
 export * from "./elements/types.js";
 
+// Custom content: drafts, the compiler and the character pack.
+export * from "./custom/index.js";
+export * from "./custom/identity.js";
+export * from "./custom/pack.js";
+export * from "./custom/placement.js";
+export * from "./custom/promote.js";
+export * from "./content/character-packs.js";
+
 // Character lifecycle: create, import, mutate, export.
 export * from "./character/state.js";
 export * from "./character/mapping.js";

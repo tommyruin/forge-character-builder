@@ -113,6 +113,26 @@ function abilitySibling(
   return null;
 }
 
+/** Every ability a feature may declare in its `spellcasting ability` setter. */
+const DECLARABLE_ABILITIES: readonly string[] = [
+  "Strength",
+  "Dexterity",
+  "Constitution",
+  "Intelligence",
+  "Wisdom",
+  "Charisma",
+];
+
+/**
+ * The ability a feature declares in its `spellcasting ability` setter: the
+ * structured form of what book content says in prose. Custom features use it,
+ * so their casting ability never depends on how a sentence is worded.
+ */
+function declaredAbility(element: ParsedElement): string | null {
+  const value = element.setters.find((setter) => setter.name === "spellcasting ability")?.value.trim().toLowerCase();
+  return DECLARABLE_ABILITIES.find((ability) => ability.toLowerCase() === value) ?? null;
+}
+
 /**
  * The ability a feature states in its own text, when the sentence that names
  * its spellcasting ability names exactly one: the 2014 Magic Initiate options
@@ -199,6 +219,7 @@ export function featureSpellCasters(
         name: nominated?.sheets.find((sheet) => sheet.alt !== undefined)?.alt ?? casterName(ownerElement, parentElement),
         ability: nominated?.identity.name
           ?? (SPELLCASTING_ABILITIES.includes(ownerElement.identity.name) ? ownerElement.identity.name : null)
+          ?? declaredAbility(ownerElement)
           ?? statedAbility(ownerElement)
           ?? fallbackAbility(state),
         usage: featureUsage(ownerElement, nominated ?? undefined),

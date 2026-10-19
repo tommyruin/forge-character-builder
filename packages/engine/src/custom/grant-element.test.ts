@@ -9,6 +9,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { computeStatistics } from "../statistics/calculator.js";
 import { buildFighter3, sharedLibrary } from "../testing/character-factory.js";
+import { createCustomDraft } from "./schema.js";
 
 const PACK = `<?xml version="1.0" encoding="utf-8"?>
 <elements>
@@ -79,5 +80,16 @@ describe("addGrantedElement", () => {
     for (const type of ["Spell", "Class", "Weapon", "Race"]) {
       expect(() => service.addGrantedElement(id, { elementId: ofType(type) })).toThrow(expect.objectContaining({ code: "not-found" }));
     }
+  });
+
+  it("keeps the feat methods working, including for a custom feat", () => {
+    const { service, id } = fighter();
+    const draft = createCustomDraft("feat", "Quiet Hands");
+    service.saveCustomDraft(id, { draft });
+    expect(service.getDmGrants(id).find((grant) => grant.id === draft.id)).toMatchObject({ kind: "feat", isCustom: true, section: "feats" });
+    service.removeGrantedFeat(id, { featId: draft.id });
+    expect(service.getDmGrants(id).some((grant) => grant.id === draft.id)).toBe(false);
+    service.addGrantedFeat(id, { featId: draft.id });
+    expect(service.getDmGrants(id).some((grant) => grant.id === draft.id)).toBe(true);
   });
 });
