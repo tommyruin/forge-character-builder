@@ -4,33 +4,22 @@
  * place a tracker is defined, so this is recomputed whenever the file is read.
  */
 
-import type { CustomEntryDraft, GrantBlock, TrackerDef } from "@forge-cb/api";
+import type { CustomEntryDraft, GrantBlock } from "@forge-cb/api";
 import { isCustomItemDraft, isCustomSpellDraft } from "../custom/schema.js";
-import { parseUsageText } from "./usage.js";
+import { spellGrantTracker, spellTrackerId } from "../custom/tracker-setters.js";
 import type { DeclaredResources, DeclaredSwitch, DeclaredTracker } from "./types.js";
 
-/** The stable id of the free-cast tracker a spell grant declares. */
-export const spellTrackerId = (draftId: string, blockId: string): string => `spell:${draftId}:${blockId}`;
+export { spellTrackerId };
 
-function spellGrantTracker(draft: { id: string; name: string }, block: GrantBlock): DeclaredTracker | null {
-  const spell = block.spell;
-  if (block.target.type !== "Spell" || spell?.usage === undefined) return null;
-  const parsed = parseUsageText(spell.usage);
-  if (parsed === null) return null;
-  const label = block.target.by === "id" ? (block.target.label ?? "") : block.target.name;
-  const def: TrackerDef = {
-    id: spellTrackerId(draft.id, block.id),
-    label: label === "" ? "Spell" : label,
-    max: { kind: "number", value: parsed.count },
-    unit: parsed.unit,
-    recharge: parsed.recharge,
-  };
+function spellGrantDeclared(draft: { id: string; name: string }, block: GrantBlock): DeclaredTracker | null {
+  const found = spellGrantTracker(draft, block);
+  if (found === null) return null;
   return {
     ownerId: draft.id,
     ownerName: draft.name,
     kind: "spell",
-    def,
-    ...(block.target.by === "id" ? { spellId: block.target.id } : {}),
+    def: found.def,
+    ...(found.spellId === undefined ? {} : { spellId: found.spellId }),
   };
 }
 
@@ -54,7 +43,7 @@ export function declareResources(drafts: readonly CustomEntryDraft[]): DeclaredR
     };
     for (const block of draft.blocks) {
       if (block.kind === "grant") {
-        const declared = spellGrantTracker(draft, block);
+        const declared = spellGrantDeclared(draft, block);
         if (declared !== null) {
           trackers.push(declared);
           trackedOwners.add(draft.id);

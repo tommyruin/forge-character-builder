@@ -53,6 +53,7 @@ import {
   type TrackerDef,
 } from "./schema.js";
 import { attributes, escapeAttribute, escapeText, paragraphs } from "./xml-text.js";
+import { trackerSetters } from "./tracker-setters.js";
 import { scaleKey, scaleRuleSpecs, trackerRuleSpecs, trackerUsageText, trackersUsageText } from "./trackers.js";
 import { customPackDraftIssues } from "./validate.js";
 import { compileBuildDraft } from "./compile-build.js";
@@ -282,6 +283,8 @@ export function compileValidated(draft: CustomDraft, options: CompileOptions): s
   const setters: string[] = [];
   if (draft.ruleset !== undefined) setters.push(`<set name="ruleset">${draft.ruleset}</set>`);
   if (castAbility !== undefined) setters.push(`<set name="spellcasting ability">${ABILITY_TITLE[castAbility]}</set>`);
+  // The element is all a library keeps, so the limited uses it declares ride in it.
+  setters.push(...trackerSetters(draft));
   if (setters.length > 0) children.push(`<setters>${setters.join("")}</setters>`);
   if (rules.length > 0) children.push(`<rules>${rules.join("")}</rules>`);
 
@@ -396,6 +399,7 @@ function compileValidatedItem(draft: CustomItemDraft, options: CompileOptions): 
   if (isGear && draft.stackable === true) setters.push(setter("stackable", "true"));
   if (castAbility !== undefined) setters.push(setter("spellcasting ability", ABILITY_TITLE[castAbility]!));
   if (draft.ruleset !== undefined) setters.push(setter("ruleset", draft.ruleset));
+  setters.push(...trackerSetters(draft));
 
   // Charges the character tracks are stated from the tracker, so the text and the count agree.
   const trackerLines = (draft.trackers ?? []).map((tracker) => {

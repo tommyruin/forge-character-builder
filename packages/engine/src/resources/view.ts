@@ -5,7 +5,8 @@
  * A tracker has four possible sources, all read here and merged into one list:
  *
  *  - a custom entry's tracker (a feature's uses, an item's charges) or the free
- *    cast of a spell that entry grants, declared by the draft;
+ *    cast of a spell that entry grants, declared by the draft in the character's
+ *    file, or carried by the compiled element of a pack the character uses;
  *  - a tracker the player added by hand;
  *  - a book feature whose sheet usage line states a count and a rest
  *    ("2/Short Rest", "{{proficiency}}/Long Rest" once its token is filled in).
@@ -20,6 +21,7 @@ import type { CharacterState } from "../character/state.js";
 import type { ElementLibrary } from "../content/library.js";
 import { rechargeLabel, REST_RECHARGES, trackerStatKey } from "../custom/trackers.js";
 import { isCustomElementId } from "../custom/schema.js";
+import { elementTrackers } from "../custom/tracker-setters.js";
 import { spellInfo } from "../magic/spelllist.js";
 import { parseUsageText } from "./usage.js";
 import type { DeclaredSwitch, DeclaredTracker } from "./types.js";
@@ -66,14 +68,52 @@ function ownerActive(state: CharacterState, declared: Pick<DeclaredTracker, "own
   return state.sum.elements.some((entry) => entry.id === declared.ownerId);
 }
 
+/**
+ * The trackers the elements a character has declare in their own setters: what
+ * a pack's feature or item carries once it is compiled, and what any other file
+ * could say the same way. An entry whose draft sits in the character's file is
+ * declared by that draft, so it is passed over here.
+ */
+function elementDeclared(state: CharacterState, library: ElementLibrary): DeclaredTracker[] {
+  const owned = new Set(state.resources.declared.trackedOwners);
+  const out: DeclaredTracker[] = [];
+  const seen = new Set<string>();
+  const collect = (id: string, kind: DeclaredTracker["kind"]): void => {
+    if (seen.has(id) || owned.has(id)) return;
+    seen.add(id);
+    const element = library.byId.get(id);
+    if (element === undefined) return;
+    for (const tracker of elementTrackers(element)) {
+      out.push({
+        ownerId: id,
+        ownerName: element.identity.name,
+        kind,
+        def: tracker.def,
+        ...(tracker.spellId === undefined ? {} : { spellId: tracker.spellId }),
+      });
+    }
+  };
+  for (const entry of state.sum.elements) collect(entry.id, "feature");
+  for (const item of state.items) {
+    collect(item.itemId, "item");
+    for (const adorner of item.adorners) collect(adorner, "item");
+  }
+  return out;
+}
+
+/** The ids of the active elements that declare trackers in their setters, so their usage line is not read a second time. */
+function elementTrackerCarriers(state: CharacterState, library: ElementLibrary): Set<string> {
+  return new Set(elementDeclared(state, library).map((declared) => declared.ownerId));
+}
+
 function declaredCandidates(state: CharacterState, library: ElementLibrary, values: Statistics): Candidate[] {
   const out: Candidate[] = [];
-  for (const declared of state.resources.declared.trackers) {
+  for (const declared of [...state.resources.declared.trackers, ...elementDeclared(state, library)]) {
     if (!ownerActive(state, declared)) continue;
     const max = resolvedMax(declared.def, values);
     if (max < 1) continue;
     let label = declared.def.label;
-    if (declared.kind === "spell" && declared.spellId !== undefined) {
+    if (declared.spellId !== undefined) {
       const spell = spellInfo(library, declared.spellId);
       const alias = state.spellAliases[declared.spellId]?.name.trim() ?? "";
       if (alias !== "") label = alias;
@@ -112,8 +152,8 @@ function manualCandidates(state: CharacterState): Candidate[] {
   }));
 }
 
-function usageCandidates(state: CharacterState, usages: readonly FeatureUsage[]): Candidate[] {
-  const owned = new Set(state.resources.declared.trackedOwners);
+function usageCandidates(state: CharacterState, library: ElementLibrary, usages: readonly FeatureUsage[]): Candidate[] {
+  const owned = new Set([...state.resources.declared.trackedOwners, ...elementTrackerCarriers(state, library)]);
   const out: Candidate[] = [];
   for (const entry of usages) {
     // A custom entry that declares its own trackers is tracked by them.
@@ -172,7 +212,7 @@ export function buildTrackers(
   values: Statistics,
   usages: readonly FeatureUsage[],
 ): TrackerDto[] {
-  const candidates = [...usageCandidates(state, usages), ...declaredCandidates(state, library, values), ...manualCandidates(state)];
+  const candidates = [...usageCandidates(state, library, usages), ...declaredCandidates(state, library, values), ...manualCandidates(state)];
   const groups = new Map<string, Candidate[]>();
   for (const candidate of candidates) {
     const key = candidate.pool === undefined ? candidate.key : poolKey(candidate.pool);
