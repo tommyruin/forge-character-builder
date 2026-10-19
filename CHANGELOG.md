@@ -99,8 +99,24 @@ project uses [Semantic Versioning](https://semver.org/).
   or armor, wondrous or worn item, gear, language, proficiency, sense or damage
   type, deity, optional rule, alignment and weapon property. Advanced covers
   changing a book element, adding to one, reflavouring one, and a custom type
-  written as XML. Species, subspecies, class, subclass, background and
-  companion are listed as coming next and start as XML.
+  written as XML.
+- A pack can hold a class, a subclass, a species, a subspecies, a background and
+  a companion, each with a form. A class has a hit die, a level table (features,
+  player picks and value columns such as a die that grows, by level), starting
+  proficiencies with a "choose N skills from these" pick, ability score
+  improvement levels, a subclass pick, a multiclass entry with requirements, and
+  spellcasting: ability, prepared, known or spellbook, Full, Half, Third, Pact or
+  a custom slot table, the prepared formula and cantrips and spells known by
+  level. A subclass joins a class of the pack or of the library and can prepare
+  spells from a class level, add spells to the class list or cast on its own. A
+  species sets size, speeds, senses, languages, ability increases, a subspecies
+  pick, names, height and weight, and traits that arrive at a level; a subspecies
+  or variant joins a species. A background lists its proficiencies, languages,
+  equipment, its own feature, personality, ideal, bond and flaw lists, and for
+  2024 an ability choice and origin feat. A companion has a full stat block with
+  traits, actions and reactions; a feature's player pick can offer it.
+- Changing a choice inside a class, species or background that characters have
+  already picked under shows which picks would be cleared.
 - A pack element is edited with the same blocks as a character's custom
   feature: ability scores, bonuses, grants (which can be tied to a switch),
   player picks, requirements, tags, sheet text, limited uses and scale values.

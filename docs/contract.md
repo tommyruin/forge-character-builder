@@ -636,8 +636,60 @@ the character or its last copy of an entry removes it.
   report for an element a homebrew pack holds, from the two versions of its
   draft (`before` null for a new element, which has no earlier identity to
   lose). It counts the picks of every loaded character that carries the
-  element; no character needs to be open. Features and catalogue entries can
-  hold choices; spells, items, additions and replacements report nothing.
+  element; no character needs to be open. Features, catalogue entries, classes,
+  subclasses, species, subspecies and backgrounds can hold choices (a class'
+  choices sit on several elements, so each change names the owning element
+  through `ownerId`, and a pick survives when any choice of the edited draft
+  still has its identity); spells, items, additions and replacements report
+  nothing.
+- **Character options in a pack** (`CustomBuildDraft`, `packages/api/src/custom.ts`;
+  a character's own pack does not hold them). Six templates, told apart by
+  `template`, each compiled by `compileCustomElement` to the element and the
+  feature elements it grants, the draft's own element first:
+  - `class` (`Class`): `hitDie`, `short`, `starting` (grants and choices of the
+    first class only, written with `requirements="!<multiclass id>"`), `asiLevels`
+    (the engine's `Improvement Option (<Class> <level>)` selects on a generated
+    `<id>_ASI` Class Feature), `subclass` (`{level, label?}`: a generated
+    `<id>_SUBCLASS` feature whose select of type Archetype answers to the tag
+    `label`, else `<name> Subclass`), `spellcasting`, `multiclass` (`requirements`,
+    `summary`, `blocks`: the `<multiclass id="<id>_MULTICLASS">` block) and the
+    progression table.
+  - `subclass` (`Archetype`): `parent` (`{id, name, tag}`; `tag` may join
+    alternatives with `||`, for a class whose pick accepts the tag of either
+    ruleset), `spells` (always-prepared spells by class level on the named
+    caster, and spells appended to the class list) or its own `spellcasting`,
+    and the table. Its features are `Archetype Feature` elements.
+  - `species` (`Race`): `size`, `speed`, `speeds`, `vision`, `languages`,
+    `abilityBonuses` and `abilityChoice` (written with
+    `requirements="!ID_INTERNAL_GRANTS_BACKGROUND_ASI"`, and not at all for a
+    species whose `ruleset` is `2024`), `subspecies` (the Sub Race or Race
+    Variant pick it offers, answering to its `tag` or its name), `appearance`
+    (the `names`, `names-format`, `height` and `weight` setters) and the table;
+    `subspecies` (`Sub Race` / `Race Variant`) has the same fields, a `speedBonus`
+    and a `parent`.
+  - `background` (`Background`): `starting` grants and choices, `equipment` lines
+    (printed in the description, as the bundled backgrounds do), its own
+    `feature` (a `Background Feature` granted by id), `lists` (`List` selects
+    named Personality Trait, Ideal, Bond or Flaw, the names the sheet reads),
+    `abilityChoice` (three abilities; also grants `ID_INTERNAL_GRANTS_BACKGROUND_ASI`)
+    and `originFeat`.
+  - `companion` (`Companion`): the stat block as setters (`size`, `type`,
+    `alignment`, `challenge`, `ac`, `hp`, `speed`, the six abilities, `senses`,
+    `languages`, `skills`, `saves`, resistances, immunities, vulnerabilities and
+    condition immunities), `companion:*` statistics, `stats` that follow the
+    owner, and `traits`, `actions` and `reactions` as `Companion Trait`,
+    `Companion Action` and `Companion Reaction` elements named by id in the
+    matching setter. A feature picks it with a choice of type `Companion`.
+  The progression table (`ProgressionFields`) is `features` (`{level, draft}`:
+  each a full feature draft, granted at that level), `choices` (picks with their
+  own `level`), `scales` (value columns: level-gated statistics a feature's
+  modifiers and sheet text read) and `blocks`. `spellcasting` (`CustomSpellcasting`)
+  writes the `<spellcasting name ability prepare allowReplace>` block with its
+  list (`listTag`, `listFilter`), the `<caster>:spellcasting:slots:N` statistics of
+  a Full, Half, Third or Pact progression or a custom table, the
+  `<caster>:spellcasting:prepare` formula, the cantrip and spell selects, and the
+  multiclass slot marker grant the statistics read. Validation names the field,
+  including inside a table (`features[2].draft.blocks[0].target`).
 - `getElementSource(id)` -> `{id, name, type, source, xml, reason?}` or `null`:
   a loaded element as `<element>` XML, to start a house rule or a reflavour
   from. `xml` is null, with a `reason`, for an element a copy would lose
