@@ -7,6 +7,7 @@ import { isSpellcastingExtension } from "../content/parser.js";
 import { multiclassSlotProgression } from "../statistics/calculator.js";
 import { spellInfo, canonicalSourceRank, alwaysPreparedSets, casterSpellLevelCap } from "./spelllist.js";
 import { applySpellRiders, damageWithBonus, ATTACK_ROLL_RIDER_IDS } from "./spell-riders.js";
+import { ordinal, structuredSpellMechanics } from "./structured-spell.js";
 import { featureSpellCasters } from "./feature-casters.js";
 import { casterModifier } from "./caster-modifiers.js";
 import { classCasterSpellIds, grantedCasterIdentifier, partitionAdditionalGrants, GRANTED_CASTER_NAME } from "./dto.js";
@@ -372,12 +373,6 @@ const DAMAGE_UPCAST = /\bincreases by (\d+d\d+) for (?:each|every) (?:spell )?sl
 /** Any dice-plus-type damage clause, for spotting secondary damage sentences. */
 const DAMAGE_CLAUSE = /\b\d+d\d+(?: ?\+ ?\d+d\d+)?(?: (?:[\w-]+ )?[\w-]+)? damage\b/gi;
 
-const ordinal = (value: number): string => {
-  const tens = value % 100;
-  const suffix = tens >= 11 && tens <= 13 ? "th" : ["th", "st", "nd", "rd"][value % 10] ?? "th";
-  return `${value}${suffix}`;
-};
-
 interface PrimaryDamage {
   dice: string;
   type: string;
@@ -718,13 +713,20 @@ export function buildMagicAttackOptions(
     for (const id of block.spellIds) {
       const element = library.byId.get(id);
       if (element === undefined || element.identity.type !== "Spell") continue;
-      // An attack roll wins over a save the same spell also forces (Ice Knife).
-      const attack = parseSpellAttack(element.descriptionXml, state.level);
-      const save = attack === null ? parseSpellSave(element.descriptionXml, state.level, element.supports) : null;
-      const parsed = attack ?? save;
-      if (parsed === null) continue;
       const info = spellInfo(library, id);
       if (info === null) continue;
+      // A spell that declares its roll in setters is read from them; every
+      // other spell keeps its prose reading. An attack roll wins over a save
+      // the same spell also forces (Ice Knife).
+      const structured = structuredSpellMechanics(element, state.level, info.level);
+      const attack = structured !== null
+        ? structured.attack
+        : parseSpellAttack(element.descriptionXml, state.level);
+      const save = structured !== null
+        ? structured.save
+        : attack === null ? parseSpellSave(element.descriptionXml, state.level, element.supports) : null;
+      const parsed = attack ?? save;
+      if (parsed === null) continue;
       const beamCount = attack?.beamCount ?? 1;
       const damage = parsed.addsSpellcastingModifier
         ? damageWithBonus(parsed.damage, abilityModifier(block.ability))
