@@ -49,12 +49,8 @@ describe('MagicTab compact layout', () => {
   it('separates spell choices from each caster prepared or known panel', () => {
     const chooseStart = source.indexOf("{activeTab === 'choose' && (");
     const casterStart = source.indexOf('{activeCaster && (', chooseStart);
-    const companionStart = source.indexOf(
-      "{activeTab === 'companion' && (",
-      casterStart,
-    );
     const chooseView = source.slice(chooseStart, casterStart);
-    const casterView = source.slice(casterStart, companionStart);
+    const casterView = source.slice(casterStart);
 
     expect(navigationSource).toContain("key: 'choose'");
     expect(navigationSource).toContain("label: 'Choose spells'");
@@ -343,7 +339,7 @@ describe('MagicTab compact layout', () => {
   });
 
   // The two below guard defects that only appear with content a default SRD
-  // character does not have --- three view tabs needs a prepared companion,
+  // character does not have --- several view tabs need multiple casters,
   // and a second filter select needs a second spell source --- so the browser
   // sweep in scripts/verify-combined-browser.mjs cannot reach them. They are
   // layout contracts either way, so they are asserted against the source.
@@ -351,7 +347,7 @@ describe('MagicTab compact layout', () => {
   it('never lets a view tab label paint outside its own segment', () => {
     // Segments split the row evenly, so a long label gets a fixed slice
     // however many tabs there are. `.fcb-tab` is `overflow: visible`, which
-    // let "Familiar & Companion" run past the window instead of stopping at
+    // let a long caster label run past the window instead of stopping at
     // the segment edge. The compact labels are the fix; the clip is the floor.
     expect(navigationSource).toContain('compactLabel');
     expect(source).toMatch(

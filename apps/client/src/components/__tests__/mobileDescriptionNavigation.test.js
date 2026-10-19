@@ -72,9 +72,9 @@ describe('mobile description navigation', () => {
     expect(
       occurrences(optionalRules, 'onInspect={inspectItem}'),
     ).toBeGreaterThanOrEqual(2);
-    expect(magic).toContain(
-      '<CompanionSection rules={companionRules} onInspect={inspectSpell} />',
-    );
+    expect(build).toContain('onInspect={inspectItem}');
+    expect(build).toMatch(/<CompanionSection[^>]*onInspect=\{inspectItem\}/s);
+    expect(magic).not.toContain('CompanionSection');
   });
 
   it('keeps the details destination and return action explicitly labelled', () => {

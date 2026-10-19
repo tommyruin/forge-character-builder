@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, MAGIC_RULE_TYPES, COMPANION_RULE_TYPES } from '../../api';
+import { api, MAGIC_RULE_TYPES } from '../../api';
 import { useWorkspace } from '../WorkspaceContext';
 import DescriptionPanel from '../DescriptionPanel';
 import Modal from '../Modal';
@@ -13,7 +13,6 @@ import {
 } from '../InspectableItemControls';
 import SpellBrowser from './magic/SpellBrowser';
 import SpellDetails from './magic/SpellDetails';
-import CompanionSection from './magic/CompanionSection';
 import AddSpellModal from './magic/AddSpellModal';
 import { spellLevelLabel } from './magic/spellLevels';
 import { castingTimeBadge } from './magic/castingTime';
@@ -382,12 +381,6 @@ export default function MagicTab() {
   const spellRules = detail.selectionRules.filter((r) =>
     MAGIC_RULE_TYPES.includes(r.type),
   );
-  const companionRules = detail.selectionRules.filter((r) =>
-    COMPANION_RULE_TYPES.includes(r.type),
-  );
-  const hasCompanion =
-    companionRules.length > 0 ||
-    detail.registeredElements.some((e) => e.type === 'Companion');
   const spellPointCasters = (casters ?? []).filter(
     (caster) => caster.resource?.canUseSpellPoints,
   );
@@ -420,7 +413,6 @@ export default function MagicTab() {
   const tabs = buildMagicTabs({
     spellRules,
     casters: liveCasters,
-    hasCompanion,
   });
 
   // Active sub-tab / open browser are derived: the user's pick when still valid,
@@ -432,9 +424,6 @@ export default function MagicTab() {
     casters: liveCasters,
   });
 
-  useEffect(() => {
-    if (activeTab === 'companion') setInspectedSpell(null);
-  }, [activeTab]);
   const defaultRule =
     spellRules.find(
       (r) => r.selectedElementIds.filter(Boolean).length < r.selectionCount,
@@ -485,8 +474,7 @@ export default function MagicTab() {
   if (!casters && !error)
     return <p className="fcb-empty-copy">Loading spellcasting…</p>;
 
-  const hasAnything =
-    (casters?.length ?? 0) > 0 || spellRules.length > 0 || hasCompanion;
+  const hasAnything = (casters?.length ?? 0) > 0 || spellRules.length > 0;
   const activeCaster = casters?.find((c) => c.identifier === activeTab);
 
   // Only some feature grants promise a free cast: a tiefling's Infernal
@@ -957,10 +945,6 @@ export default function MagicTab() {
                 </div>
               </section>
             </>
-          )}
-
-          {activeTab === 'companion' && (
-            <CompanionSection rules={companionRules} onInspect={inspectSpell} />
           )}
         </div>
 

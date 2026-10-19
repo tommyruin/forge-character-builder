@@ -29,4 +29,26 @@ describe('BuildTab panel header actions', () => {
     expect(source).not.toContain('isAbilityScoreImprovementChoice');
     expect(source).not.toContain('ASI selected — go to Ability Scores');
   });
+
+  it('offers Familiar & Companion only for characters with companion rules or a Companion', () => {
+    expect(source).toContain("key: 'companion'");
+    expect(source).toContain("label: 'Familiar & Companion'");
+    expect(source).toMatch(
+      /groups\.companion\.length > 0 \|\|\s*detail\.registeredElements\.some\(\(e\) => e\.type === 'Companion'\)/,
+    );
+    expect(source).toContain(
+      '<CompanionSection\n                  rules={active.rules}',
+    );
+  });
+});
+
+describe('Magic tab no longer owns the companion', () => {
+  const magic = readFileSync(new URL('../tabs/MagicTab.jsx', import.meta.url), 'utf8');
+
+  it('does not count a companion as spellcasting content', () => {
+    expect(magic).not.toMatch(/ompanion/);
+    expect(magic).toContain(
+      'const hasAnything = (casters?.length ?? 0) > 0 || spellRules.length > 0;',
+    );
+  });
 });

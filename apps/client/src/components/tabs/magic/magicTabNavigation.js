@@ -9,13 +9,9 @@ export function hasIncompleteRequiredSpellChoices(spellRules) {
   );
 }
 
-export function buildMagicTabs({
-  spellRules = [],
-  casters = [],
-  hasCompanion = false,
-}) {
+export function buildMagicTabs({ spellRules = [], casters = [] }) {
   // `compactLabel` is the phone-width label, swapped in by the segmented strip
-  // the same way the global tabs do it (see appNavigation.js). Three full
+  // the same way the global tabs do it (see appNavigation.js). Several full
   // labels cannot share a 390px row without one of them painting outside its
   // own button, so each tab carries a short form that fits.
   const tabs = [];
@@ -38,15 +34,6 @@ export function buildMagicTabs({
       ariaLabel: caster.requiresPreparation
         ? `Prepare ${caster.name} spells`
         : `Review ${caster.name} known spells`,
-    });
-  }
-
-  if (hasCompanion) {
-    tabs.push({
-      key: 'companion',
-      label: 'Familiar & Companion',
-      compactLabel: 'Familiar',
-      ariaLabel: 'Familiar and companion',
     });
   }
 

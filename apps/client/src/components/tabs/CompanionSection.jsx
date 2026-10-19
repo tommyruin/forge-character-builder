@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../../../api';
-import { useWorkspace } from '../../WorkspaceContext';
+import { api } from '../../api';
+import { useWorkspace } from '../WorkspaceContext';
 import {
   InformationButton,
   InspectableItemButton,
-} from '../../InspectableItemControls';
-import SelectionRuleCard from '../../SelectionRuleCard';
-import PortraitControls from '../../PortraitControls';
-import Icon from '../../Icon';
+} from '../InspectableItemControls';
+import SelectionRuleCard from '../SelectionRuleCard';
+import PortraitControls from '../PortraitControls';
+import Icon from '../Icon';
 
 function signed(value) {
   return value >= 0 ? `+${value}` : `${value}`;
@@ -22,7 +22,7 @@ function speedLine(companion) {
   return parts.join(', ');
 }
 
-// Familiar & Companion UI: the pick itself is a normal engine selection rule
+// Familiar & Companion section of the Build tab: the pick itself is a normal engine selection rule
 // (type="Companion", e.g. Ranger's Companion / Pact of the Chain familiar); once
 // registered, the engine's live companion model supplies the stat block below,
 // including class overrides like the Beast Master's proficiency-based AC/HP.
@@ -100,25 +100,18 @@ export default function CompanionSection({ rules, onInspect }) {
       {error && <p className="fcb-alert">{error}</p>}
 
       {rules.length > 0 && (
-        <section className="fcb-panel">
-          <header className="fcb-panel-header">
-            <div>
-              <h2 className="fcb-panel-title">Companion choices</h2>
-            </div>
-          </header>
-          <div className="fcb-panel-body fcb-rule-list">
-            {rules.map((rule) => (
-              <SelectionRuleCard
-                key={`${rule.identifier}:${libraryRevision}`}
-                characterId={id}
-                rule={rule}
-                disabled={busy}
-                onInspect={onInspect}
-                onSelect={(elementId) => pick(rule, elementId)}
-              />
-            ))}
-          </div>
-        </section>
+        <div className="fcb-rule-list">
+          {rules.map((rule) => (
+            <SelectionRuleCard
+              key={`${rule.identifier}:${libraryRevision}`}
+              characterId={id}
+              rule={rule}
+              disabled={busy}
+              onInspect={onInspect}
+              onSelect={(elementId) => pick(rule, elementId)}
+            />
+          ))}
+        </div>
       )}
 
       {loaded && !companion && (

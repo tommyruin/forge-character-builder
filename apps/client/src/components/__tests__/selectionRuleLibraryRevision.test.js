@@ -18,7 +18,7 @@ const manageTabSource = fs.readFileSync(
   'utf8',
 );
 const companionSource = fs.readFileSync(
-  new URL('../tabs/magic/CompanionSection.jsx', import.meta.url),
+  new URL('../tabs/CompanionSection.jsx', import.meta.url),
   'utf8',
 );
 

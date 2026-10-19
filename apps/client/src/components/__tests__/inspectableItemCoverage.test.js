@@ -9,7 +9,7 @@ const magic = read('../tabs/MagicTab.jsx');
 const spellBrowser = read('../tabs/magic/SpellBrowser.jsx');
 const optionalRules = read('../tabs/manage/OptionalRulesPanel.jsx');
 const equipment = read('../tabs/EquipmentTab.jsx');
-const companion = read('../tabs/magic/CompanionSection.jsx');
+const companion = read('../tabs/CompanionSection.jsx');
 const contentManager = read('../ContentManager.jsx');
 
 describe('inspectable item coverage', () => {
