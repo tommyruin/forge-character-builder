@@ -8,9 +8,15 @@
  */
 
 import {
+  CUSTOM_APPEND_TEMPLATE,
   CUSTOM_DRAFT_SCHEMA_VERSION,
+  CUSTOM_OVERRIDE_TEMPLATE,
   CUSTOM_SPELL_TEMPLATE,
+  type CustomAppendDraft,
+  type CustomCatalogDraft,
+  type CustomCatalogTemplate,
   type CustomDraft,
+  type CustomOverrideDraft,
   type CustomItemDraft,
   type CustomItemTemplate,
   type CustomSpellDraft,
@@ -29,6 +35,14 @@ export {
   CUSTOM_RULESETS,
   CUSTOM_ITEM_TEMPLATES,
   CUSTOM_SPELL_TEMPLATE,
+  CUSTOM_CATALOG_TEMPLATES,
+  CUSTOM_APPEND_TEMPLATE,
+  CUSTOM_OVERRIDE_TEMPLATE,
+  WEAPON_CATEGORIES,
+  ARMOR_GROUPS,
+  isCustomCatalogDraft,
+  isCustomAppendDraft,
+  isCustomOverrideDraft,
   SPELL_SCHOOLS,
   SPELL_ROLLS,
   ITEM_RARITIES,
@@ -87,6 +101,18 @@ export type {
   SpellMechanics,
   SpellComponents,
   CustomEntryDraft,
+  CustomPackDraft,
+  CustomCatalogTemplate,
+  CustomCatalogDraft,
+  CatalogWeapon,
+  CatalogArmor,
+  WeaponCategory,
+  ArmorGroup,
+  CustomAppendDraft,
+  CustomOverrideDraft,
+  PackFindingDto,
+  PackCheckRequest,
+  ElementSourceDto,
   BuildSectionKey,
   ContentOrigin,
   DmGrantDto,
@@ -162,6 +188,56 @@ export function createCustomSpellDraft(name = ""): CustomSpellDraft {
     duration: "Instantaneous",
     components: { verbal: true, somatic: true },
     mechanics: { roll: "none" },
+  };
+}
+
+/** A blank catalogue entry (a language, a weapon ...) for a template. */
+export function createCustomCatalogDraft(template: CustomCatalogTemplate, name = ""): CustomCatalogDraft {
+  return {
+    schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION,
+    id: newCustomElementId(),
+    template,
+    name,
+    description: "",
+    blocks: [],
+    ...(template === "weapon"
+      ? { weapon: { category: "simpleMelee" as const, damage: { dice: "1d6", type: "slashing" as const }, hands: "onehand" as const } }
+      : {}),
+    ...(template === "armor" ? { armor: { group: "light" as const, ac: 11 } } : {}),
+  };
+}
+
+/** A blank addition to an element another file defines. */
+export function createCustomAppendDraft(targetId: string, targetName = "", name = ""): CustomAppendDraft {
+  return {
+    schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION,
+    id: newCustomElementId(),
+    template: CUSTOM_APPEND_TEMPLATE,
+    name,
+    description: "",
+    targetId,
+    ...(targetName === "" ? {} : { targetName }),
+    blocks: [],
+  };
+}
+
+/** A replacement for a loaded element, made from a copy of its XML. */
+export function createCustomOverrideDraft(options: {
+  targetId: string;
+  targetType: string;
+  baseXml: string;
+  name?: string;
+  reflavour?: boolean;
+}): CustomOverrideDraft {
+  return {
+    schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION,
+    id: options.targetId,
+    template: CUSTOM_OVERRIDE_TEMPLATE,
+    name: options.name ?? "",
+    description: "",
+    targetType: options.targetType,
+    baseXml: options.baseXml,
+    ...(options.reflavour === true ? { reflavour: true } : {}),
   };
 }
 

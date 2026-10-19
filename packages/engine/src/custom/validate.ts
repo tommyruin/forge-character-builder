@@ -5,6 +5,7 @@
  * Compilation only ever sees a draft that passed.
  */
 
+import { parseElementsFile } from "../content/parser.js";
 import { engineError } from "../errors.js";
 import {
   CUSTOM_GRANT_TYPES,
@@ -13,11 +14,19 @@ import {
   modifierTarget,
   valueReference,
 } from "./catalogue.js";
+import { catalogTemplateOption } from "./catalogue.js";
+import { serializeElement } from "./element-xml.js";
+import { MASTERY_PROPERTY_IDS } from "./base-items.js";
 import { filterIssues, requirementIssues, type ConditionIssue } from "./conditions.js";
 import { scaleIssues, scalesById, trackerIssues } from "./trackers.js";
 import {
+  ARMOR_GROUPS,
   CUSTOM_ABILITIES,
+  CUSTOM_APPEND_TEMPLATE,
+  CUSTOM_CATALOG_TEMPLATES,
   CUSTOM_DRAFT_SCHEMA_VERSION,
+  CUSTOM_OVERRIDE_TEMPLATE,
+  WEAPON_CATEGORIES,
   CUSTOM_ITEM_TEMPLATES,
   CUSTOM_OTHER_TYPE,
   CUSTOM_RULESETS,
@@ -33,8 +42,12 @@ import {
   WORN_SLOTS,
   type CustomAbility,
   type CustomDraft,
+  type CustomAppendDraft,
+  type CustomCatalogDraft,
   type CustomEntryDraft,
   type CustomItemDraft,
+  type CustomOverrideDraft,
+  type CustomPackDraft,
   type CustomSpellDraft,
   type ScaleValue,
 } from "./schema.js";
@@ -792,3 +805,221 @@ export function readCustomItemDraft(raw: unknown): CustomItemDraft {
   }
   return candidate as CustomItemDraft;
 }
+
+
+// ---- pack-only kinds ---------------------------------------------------------
+
+const ANY_ELEMENT_ID = /^ID_[A-Za-z0-9_-]+$/;
+const TAG_TEXT = /[,<>&"]/;
+/** The named setters each catalogue template reads. */
+const CATALOG_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  language: ["Speakers", "Script"],
+  deity: ["setting", "alignment", "domains", "symbol"],
+  alignment: ["Abbreviation"],
+};
+
+function headIssues(draft: Record<string, unknown>, idPattern: RegExp, nameRequired: boolean): CustomDraftIssue[] {
+  const issues: CustomDraftIssue[] = [];
+  if (draft.schemaVersion !== undefined && draft.schemaVersion !== CUSTOM_DRAFT_SCHEMA_VERSION) {
+    issues.push({
+      path: "schemaVersion",
+      message: `this draft was written by a newer version of the builder (schema ${String(draft.schemaVersion)})`,
+    });
+  }
+  if (typeof draft.id !== "string" || !idPattern.test(draft.id)) {
+    issues.push({ path: "id", message: "the draft needs the stable element id it was created with" });
+  }
+  if (nameRequired ? !isName(draft.name, 120) : !isText(draft.name, 120)) {
+    issues.push({ path: "name", message: nameRequired ? "give it a name (at most 120 characters)" : "the name is text of at most 120 characters" });
+  }
+  if (typeof draft.description !== "string" || draft.description.length > 20000) {
+    issues.push({ path: "description", message: "the description is text of at most 20000 characters" });
+  }
+  if (draft.cameFrom !== undefined && !isText(draft.cameFrom, 120)) {
+    issues.push({ path: "cameFrom", message: "where it came from is text of at most 120 characters" });
+  }
+  if (draft.ruleset !== undefined && !CUSTOM_RULESETS.includes(draft.ruleset as never)) {
+    issues.push({ path: "ruleset", message: "pick both rulesets, 2014 or 2024" });
+  }
+  return issues;
+}
+
+function tagIssues(tags: unknown): CustomDraftIssue[] {
+  if (tags === undefined) return [];
+  if (!Array.isArray(tags) || tags.length > 20 || tags.some((tag) => !isName(tag, 60) || TAG_TEXT.test(tag as string))) {
+    return [{ path: "tags", message: "tags are short names without commas, at most 20" }];
+  }
+  return [];
+}
+
+function baseItemPriceIssues(value: Record<string, unknown>, path: string): CustomDraftIssue[] {
+  const issues: CustomDraftIssue[] = [];
+  if (value.weight !== undefined && !(typeof value.weight === "number" && Number.isFinite(value.weight) && value.weight >= 0 && value.weight <= 10000)) {
+    issues.push({ path: `${path}.weight`, message: "weight is a number of pounds, 0 or more" });
+  }
+  if (value.cost !== undefined) {
+    const cost = value.cost;
+    if (!isRecord(cost) || !(typeof cost.amount === "number" && Number.isFinite(cost.amount) && cost.amount >= 0 && cost.amount <= 1_000_000_000)) {
+      issues.push({ path: `${path}.cost.amount`, message: "cost is a number, 0 or more" });
+    } else if (typeof cost.currency !== "string" || !CURRENCIES.includes(cost.currency)) {
+      issues.push({ path: `${path}.cost.currency`, message: "pick copper, silver or gold" });
+    }
+  }
+  return issues;
+}
+
+function catalogWeaponIssues(weapon: unknown): CustomDraftIssue[] {
+  if (!isRecord(weapon)) return [{ path: "weapon", message: "a weapon needs its category and damage" }];
+  const issues: CustomDraftIssue[] = [];
+  if (!WEAPON_CATEGORIES.includes(weapon.category as never)) {
+    issues.push({ path: "weapon.category", message: "pick simple or martial, melee or ranged" });
+  }
+  issues.push(...damageIssues(weapon.damage, "weapon.damage"));
+  if (weapon.versatile !== undefined) issues.push(...diceIssues(weapon.versatile, "weapon.versatile"));
+  if (weapon.range !== undefined && !(typeof weapon.range === "string" && RANGE.test(weapon.range))) {
+    issues.push({ path: "weapon.range", message: "write a range like 20/60 or 5 ft" });
+  }
+  if (weapon.hands !== "onehand" && weapon.hands !== "twohand") {
+    issues.push({ path: "weapon.hands", message: "pick one-handed or two-handed" });
+  }
+  if (weapon.properties !== undefined) {
+    const list = weapon.properties;
+    if (!Array.isArray(list) || list.length > 20 || list.some((id) => typeof id !== "string" || !/^ID_[A-Z0-9_]+$/.test(id)) || new Set(list).size !== list.length) {
+      issues.push({ path: "weapon.properties", message: "pick each weapon property at most once" });
+    }
+  }
+  if (weapon.mastery !== undefined && !(typeof weapon.mastery === "string" && /^ID_[A-Z0-9_]+$/.test(weapon.mastery))) {
+    issues.push({ path: "weapon.mastery", message: `pick a mastery property (${MASTERY_PROPERTY_IDS.length} ship with the 2024 rules)` });
+  }
+  issues.push(...baseItemPriceIssues(weapon, "weapon"));
+  return issues;
+}
+
+function catalogArmorIssues(armor: unknown): CustomDraftIssue[] {
+  if (!isRecord(armor)) return [{ path: "armor", message: "an armor needs its group and armor class" }];
+  const issues: CustomDraftIssue[] = [];
+  if (!ARMOR_GROUPS.includes(armor.group as never)) issues.push({ path: "armor.group", message: "pick light, medium, heavy or shield" });
+  if (!(isWholeNumber(armor.ac) && armor.ac >= 0 && armor.ac <= 30)) {
+    issues.push({ path: "armor.ac", message: "armor class is a whole number from 0 to 30" });
+  }
+  if (armor.strength !== undefined) {
+    if (!(isWholeNumber(armor.strength) && armor.strength >= 1 && armor.strength <= 30)) {
+      issues.push({ path: "armor.strength", message: "minimum Strength is a whole number from 1 to 30" });
+    } else if (armor.group === "shield") {
+      issues.push({ path: "armor.strength", message: "a shield has no Strength requirement" });
+    }
+  }
+  if (armor.stealthDisadvantage !== undefined && typeof armor.stealthDisadvantage !== "boolean") {
+    issues.push({ path: "armor.stealthDisadvantage", message: "stealth disadvantage is on or off" });
+  }
+  issues.push(...baseItemPriceIssues(armor, "armor"));
+  return issues;
+}
+
+/** Every problem in a catalogue entry, each naming its field. An empty list means the draft compiles. */
+export function customCatalogDraftIssues(draft: unknown): CustomDraftIssue[] {
+  if (!isRecord(draft)) return [{ path: "", message: "a draft must be an object" }];
+  const issues = headIssues(draft, ELEMENT_ID, true);
+  const template = CUSTOM_CATALOG_TEMPLATES.includes(draft.template as never) ? (draft.template as CustomCatalogDraft["template"]) : undefined;
+  if (template === undefined) issues.push({ path: "template", message: "pick what kind of entry this is" });
+  issues.push(...tagIssues(draft.tags));
+  if (draft.fields !== undefined) {
+    const allowed = template === undefined ? [] : (CATALOG_FIELDS[template] ?? []);
+    if (!isRecord(draft.fields)) {
+      issues.push({ path: "fields", message: "fields must be an object" });
+    } else {
+      for (const [key, value] of Object.entries(draft.fields)) {
+        if (!allowed.includes(key)) issues.push({ path: `fields.${key}`, message: `${template === undefined ? "this" : catalogTemplateOption(template).label} has no '${key}' field` });
+        else if (!isText(value, 200)) issues.push({ path: `fields.${key}`, message: "a field is text of at most 200 characters" });
+      }
+    }
+  }
+  if (template === "weapon") issues.push(...catalogWeaponIssues(draft.weapon));
+  else if (draft.weapon !== undefined) issues.push({ path: "weapon", message: "weapon settings only apply to a weapon" });
+  if (template === "armor") issues.push(...catalogArmorIssues(draft.armor));
+  else if (draft.armor !== undefined) issues.push({ path: "armor", message: "armor settings only apply to an armor or shield" });
+  issues.push(...blocksIssues(draft.blocks, new Map()));
+  return issues;
+}
+
+/** Every problem in an addition to another file's element, each naming its field. */
+export function customAppendDraftIssues(draft: unknown): CustomDraftIssue[] {
+  if (!isRecord(draft)) return [{ path: "", message: "a draft must be an object" }];
+  const issues = headIssues(draft, ELEMENT_ID, true);
+  if (draft.template !== CUSTOM_APPEND_TEMPLATE) issues.push({ path: "template", message: "an addition has the template 'append'" });
+  if (typeof draft.targetId !== "string" || !ANY_ELEMENT_ID.test(draft.targetId)) {
+    issues.push({ path: "targetId", message: "pick the element this adds to" });
+  }
+  if (draft.targetName !== undefined && !isText(draft.targetName, 120)) {
+    issues.push({ path: "targetName", message: "the target's name is text of at most 120 characters" });
+  }
+  issues.push(...tagIssues(draft.tags));
+  issues.push(...blocksIssues(draft.blocks, new Map()));
+  const hasTags = Array.isArray(draft.tags) && draft.tags.length > 0;
+  if (Array.isArray(draft.blocks) && draft.blocks.length === 0 && !hasTags) {
+    issues.push({ path: "blocks", message: "add a tag or an effect; an addition that adds nothing does nothing" });
+  }
+  return issues;
+}
+
+const MAX_BASE_XML = 200_000;
+
+/** Every problem in a replacement for a loaded element, each naming its field. */
+export function customOverrideDraftIssues(draft: unknown): CustomDraftIssue[] {
+  if (!isRecord(draft)) return [{ path: "", message: "a draft must be an object" }];
+  const issues = headIssues(draft, ANY_ELEMENT_ID, false);
+  if (draft.template !== CUSTOM_OVERRIDE_TEMPLATE) issues.push({ path: "template", message: "a replacement has the template 'override'" });
+  if (!isName(draft.targetType, 80)) issues.push({ path: "targetType", message: "name the kind of element this replaces" });
+  if (draft.reflavour !== undefined && typeof draft.reflavour !== "boolean") {
+    issues.push({ path: "reflavour", message: "reflavour is on or off" });
+  }
+  if (typeof draft.baseXml !== "string" || draft.baseXml.trim() === "" || draft.baseXml.length > MAX_BASE_XML) {
+    issues.push({ path: "baseXml", message: "the element's XML is missing or too long" });
+  } else {
+    try {
+      const parsed = parseElementsFile(`<elements>${draft.baseXml}</elements>`, "override.xml");
+      if (parsed.length !== 1) {
+        issues.push({ path: "baseXml", message: "the XML must be exactly one <element>" });
+      } else if (parsed[0]!.identity.id !== draft.id) {
+        issues.push({ path: "baseXml", message: `the XML defines ${parsed[0]!.identity.id || "no id"}, not ${String(draft.id)}` });
+      } else if (parsed[0]!.identity.type !== draft.targetType) {
+        issues.push({ path: "baseXml", message: `the XML is a ${parsed[0]!.identity.type}, not a ${String(draft.targetType)}` });
+      } else {
+        const copy = serializeElement(parsed[0]!);
+        if (copy.xml === null) issues.push({ path: "baseXml", message: `this element cannot be replaced in a pack because ${copy.reason ?? "a copy would lose parts of it"}` });
+      }
+    } catch (cause) {
+      issues.push({ path: "baseXml", message: `the XML cannot be read: ${cause instanceof Error ? cause.message : String(cause)}` });
+    }
+  }
+  return issues;
+}
+
+/** Every problem in whatever a homebrew pack stores. */
+export function customPackDraftIssues(draft: unknown): CustomDraftIssue[] {
+  if (isRecord(draft) && CUSTOM_CATALOG_TEMPLATES.includes(draft.template as never)) return customCatalogDraftIssues(draft);
+  if (isRecord(draft) && draft.template === CUSTOM_APPEND_TEMPLATE) return customAppendDraftIssues(draft);
+  if (isRecord(draft) && draft.template === CUSTOM_OVERRIDE_TEMPLATE) return customOverrideDraftIssues(draft);
+  return customEntryIssues(draft);
+}
+
+/**
+ * Reads a pack's stored draft: any kind, by its template. A draft without a
+ * `schemaVersion` predates versioning and reads as version 1.
+ */
+export function readCustomPackDraft(raw: unknown): CustomPackDraft {
+  if (!isRecord(raw) || (raw.template !== undefined && typeof raw.template !== "string")) {
+    throw engineError("invalid-argument", "invalid custom draft: a draft must be an object");
+  }
+  const packOnly =
+    CUSTOM_CATALOG_TEMPLATES.includes(raw.template as never) || raw.template === CUSTOM_APPEND_TEMPLATE || raw.template === CUSTOM_OVERRIDE_TEMPLATE;
+  if (!packOnly) return readCustomEntry(raw);
+  const candidate = raw.schemaVersion === undefined ? { ...raw, schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION } : raw;
+  const issues = customPackDraftIssues(candidate);
+  if (issues.length > 0) {
+    throw engineError("invalid-argument", `invalid custom draft: ${issues[0]!.path === "" ? "" : `${issues[0]!.path}: `}${issues[0]!.message}`, { issues });
+  }
+  return candidate as unknown as CustomPackDraft;
+}
+
+export type { CustomAppendDraft, CustomOverrideDraft };

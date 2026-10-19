@@ -15,7 +15,7 @@ import type { WireObject } from "./methods.js";
 /** The draft shape version. A draft without one predates versioning and reads as 1. */
 export const CUSTOM_DRAFT_SCHEMA_VERSION = 1 as const;
 
-export const CUSTOM_TEMPLATES = ["feature", "feat", "racialTrait", "classFeature", "curse", "boon"] as const;
+export const CUSTOM_TEMPLATES = ["feature", "feat", "racialTrait", "classFeature", "curse", "boon", "transformation"] as const;
 export type CustomTemplate = (typeof CUSTOM_TEMPLATES)[number];
 
 export const SHOWS_UNDER = ["race", "class", "feats", "other"] as const;
@@ -433,6 +433,163 @@ export interface CustomSpellDraft {
 
 /** Anything the character pack stores. */
 export type CustomEntryDraft = CustomDraft | CustomItemDraft | CustomSpellDraft;
+
+// ---- catalogue entries -------------------------------------------------------
+
+/**
+ * Templates for the plain reference elements a pack can add to a pickers' list:
+ * a language, a proficiency, a vision type, a damage-type or condition entry, a
+ * deity, an optional rule, an alignment, a weapon property, and a new base
+ * weapon or armor (a magic item sits on one of those). They compile to the
+ * element types of the same name; the character's own pack does not hold them,
+ * since a character has nothing to attach them to.
+ */
+export const CUSTOM_CATALOG_TEMPLATES = [
+  "language",
+  "proficiency",
+  "vision",
+  "condition",
+  "deity",
+  "option",
+  "alignment",
+  "weaponProperty",
+  "weapon",
+  "armor",
+] as const;
+export type CustomCatalogTemplate = (typeof CUSTOM_CATALOG_TEMPLATES)[number];
+
+export const WEAPON_CATEGORIES = ["simpleMelee", "simpleRanged", "martialMelee", "martialRanged"] as const;
+export type WeaponCategory = (typeof WEAPON_CATEGORIES)[number];
+
+export const ARMOR_GROUPS = ["light", "medium", "heavy", "shield"] as const;
+export type ArmorGroup = (typeof ARMOR_GROUPS)[number];
+
+/** A new base weapon: what the Weapon template asks for. */
+export interface CatalogWeapon {
+  category: WeaponCategory;
+  damage: ItemDamage;
+  /** Two-handed damage die of a versatile weapon ("1d10"). */
+  versatile?: string;
+  /** "20/60". */
+  range?: string;
+  hands: "onehand" | "twohand";
+  /** Property element ids: the engine's own, or a property the pack or a book defines. */
+  properties?: string[];
+  /** A 2024 mastery property element id. */
+  mastery?: string;
+  weight?: number;
+  cost?: CustomItemCost;
+}
+
+/** A new base armor or shield: what the Armor template asks for. */
+export interface CatalogArmor {
+  group: ArmorGroup;
+  /** Base armor class; for a shield, the bonus it adds. */
+  ac: number;
+  /** Minimum Strength; speed drops 10 below it. */
+  strength?: number;
+  stealthDisadvantage?: boolean;
+  weight?: number;
+  cost?: CustomItemCost;
+}
+
+/**
+ * A catalogue entry. `tags` are the `supports` the element answers to in pickers
+ * (a language's `Standard`, a condition's `Resistance`); `fields` are the named
+ * setters the template reads (a deity's `domains`, an alignment's
+ * `Abbreviation`). Rules ride in `blocks` like any other draft.
+ */
+export interface CustomCatalogDraft {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  /** The element id the draft compiles to. */
+  id: string;
+  template: CustomCatalogTemplate;
+  name: string;
+  /** Plain text; blank lines separate paragraphs. */
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  tags?: string[];
+  fields?: Record<string, string>;
+  weapon?: CatalogWeapon;
+  armor?: CatalogArmor;
+  /** What the entry does when a character has it. */
+  blocks: CustomBlock[];
+}
+
+/** True for a draft of the catalogue kind. */
+export function isCustomCatalogDraft(draft: { template?: unknown }): draft is CustomCatalogDraft {
+  return (CUSTOM_CATALOG_TEMPLATES as readonly unknown[]).includes(draft.template);
+}
+
+// ---- appends and overrides ---------------------------------------------------
+
+/** The template of a draft that adds rules or tags to an element another file defines. */
+export const CUSTOM_APPEND_TEMPLATE = "append" as const;
+
+/**
+ * Adds to an element a book (or another pack) defines, without redefining it: its
+ * rules and tags join the target's. It compiles to a top-level `<append id>`; put a
+ * homebrew spell on a class list by adding the class's name as a tag.
+ */
+export interface CustomAppendDraft {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  /** This entry's own id in the pack; the element it adds to is `targetId`. */
+  id: string;
+  template: typeof CUSTOM_APPEND_TEMPLATE;
+  /** What the pack calls this addition ("Frost Lance on the Druid list"). */
+  name: string;
+  description: string;
+  cameFrom?: string;
+  targetId: string;
+  /** The target's name, for lists and summaries. */
+  targetName?: string;
+  tags?: string[];
+  blocks: CustomBlock[];
+}
+
+export function isCustomAppendDraft(draft: { template?: unknown }): draft is CustomAppendDraft {
+  return draft.template === CUSTOM_APPEND_TEMPLATE;
+}
+
+/** The template of a draft that redefines an element another file defines. */
+export const CUSTOM_OVERRIDE_TEMPLATE = "override" as const;
+
+/**
+ * Redefines a book element under its own id: a house rule (the author edits the
+ * element's XML) or a reflavour (a new name and text over the same rules). The
+ * element is carried as a copy of the original's XML, so what it does is exactly
+ * what the book's did until the author changes it.
+ */
+export interface CustomOverrideDraft {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  /** The id of the element it replaces; the element keeps it. */
+  id: string;
+  template: typeof CUSTOM_OVERRIDE_TEMPLATE;
+  /** The name it takes; the original's when omitted. */
+  name: string;
+  /** New text (plain, blank lines between paragraphs); the original's when empty. */
+  description: string;
+  cameFrom?: string;
+  /** True for a reflavour: the rules are the original's and the form hides them. */
+  reflavour?: boolean;
+  /** The element type being replaced. */
+  targetType: string;
+  /** The `<element>` XML the replacement is made from. */
+  baseXml: string;
+  ruleset?: CustomRuleset;
+}
+
+export function isCustomOverrideDraft(draft: { template?: unknown }): draft is CustomOverrideDraft {
+  return draft.template === CUSTOM_OVERRIDE_TEMPLATE;
+}
+
+/**
+ * Anything a homebrew pack stores. A character's own pack holds the first three
+ * kinds (`CustomEntryDraft`): a character has nothing to attach a language or a
+ * book override to.
+ */
+export type CustomPackDraft = CustomEntryDraft | CustomCatalogDraft | CustomAppendDraft | CustomOverrideDraft;
 
 /** True for a draft of the spell kind. */
 export function isCustomSpellDraft(draft: { template?: unknown }): draft is CustomSpellDraft {

@@ -11,6 +11,7 @@ import {
   CUSTOM_ABILITIES,
   CUSTOM_OTHER_TYPE,
   type CustomAbility,
+  type CustomCatalogTemplate,
   type CustomTemplate,
   type ModifierMode,
   type SheetAction,
@@ -174,6 +175,7 @@ export const CUSTOM_TEMPLATE_OPTIONS: readonly TemplateOption[] = [
   { id: "feat", label: "Feat", showsUnder: ["feats"] },
   { id: "racialTrait", label: "Racial trait", showsUnder: ["race"] },
   { id: "classFeature", label: "Class feature", showsUnder: ["class"] },
+  { id: "transformation", label: "Transformation", showsUnder: ["race", "class", "feats", "other"] },
 ];
 
 export const SHEET_ACTION_OPTIONS: ReadonlyArray<{ id: SheetAction; label: string; text: string }> = [
@@ -206,3 +208,86 @@ export const CUSTOM_GRANT_TYPES: readonly string[] = [
   "Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature", "Language", "Proficiency",
   "Vision", "Condition", "Spell", "Ability Score Improvement", "Option",
 ];
+
+// ---- catalogue entries (packs) -------------------------------------------------
+
+export interface CatalogTemplateOption {
+  id: CustomCatalogTemplate;
+  label: string;
+  /** The element type the entry compiles to. */
+  elementType: string;
+  /** One line for the template picker. */
+  summary: string;
+  /** What the entry's tags are called, and which ones the pickers already use. */
+  tagLabel?: string;
+  tagSuggestions?: readonly string[];
+  /** Tags used when the author names none. */
+  defaultTags?: readonly string[];
+  /** The named setters the template reads. */
+  fields?: ReadonlyArray<{ key: string; label: string; placeholder?: string }>;
+}
+
+export const CUSTOM_CATALOG_OPTIONS: readonly CatalogTemplateOption[] = [
+  {
+    id: "language",
+    label: "Language",
+    elementType: "Language",
+    summary: "Standard, exotic or secret; script",
+    tagLabel: "Language category",
+    tagSuggestions: ["Standard", "Exotic", "Monster"],
+    defaultTags: ["Standard"],
+    fields: [
+      { key: "Speakers", label: "Typical speakers", placeholder: "Selkies" },
+      { key: "Script", label: "Script", placeholder: "Runes" },
+    ],
+  },
+  {
+    id: "proficiency",
+    label: "Proficiency",
+    elementType: "Proficiency",
+    summary: "New skill, tool, vehicle or weapon group",
+    tagLabel: "Kind",
+    tagSuggestions: ["Tool", "Skill", "Vehicle", "Instrument", "Gaming Set"],
+  },
+  { id: "vision", label: "Sense", elementType: "Vision", summary: "A vision type such as Tremorsense 30 ft." },
+  {
+    id: "condition",
+    label: "Damage type or condition",
+    elementType: "Condition",
+    summary: "Resistances, immunities and vulnerabilities to new damage types",
+    tagLabel: "Kind",
+    tagSuggestions: ["Resistance", "Immunity", "Vulnerability"],
+  },
+  {
+    id: "deity",
+    label: "Deity",
+    elementType: "Deity",
+    summary: "Domains and symbol for the deity picker",
+    fields: [
+      { key: "setting", label: "Pantheon or setting" },
+      { key: "alignment", label: "Alignment", placeholder: "NG" },
+      { key: "domains", label: "Domains", placeholder: "Life, Light" },
+      { key: "symbol", label: "Symbol" },
+    ],
+  },
+  { id: "option", label: "Optional rule", elementType: "Option", summary: "A switch on Manage › Optional rules that other content can check" },
+  {
+    id: "alignment",
+    label: "Alignment",
+    elementType: "Alignment",
+    summary: "Extra alignments for the alignment picker",
+    fields: [{ key: "Abbreviation", label: "Abbreviation", placeholder: "LW" }],
+  },
+  { id: "weaponProperty", label: "Weapon property", elementType: "Weapon Property", summary: "New properties, such as firearms reload or misfire" },
+  { id: "weapon", label: "Weapon", elementType: "Weapon", summary: "Category, properties, damage, mastery" },
+  { id: "armor", label: "Armor or shield", elementType: "Armor", summary: "Group, armor class, stealth, strength" },
+];
+
+export function catalogTemplateOption(id: CustomCatalogTemplate): CatalogTemplateOption {
+  return CUSTOM_CATALOG_OPTIONS.find((option) => option.id === id)!;
+}
+
+/** The element type a catalogue template compiles to. */
+export function catalogElementType(template: CustomCatalogTemplate): string {
+  return catalogTemplateOption(template).elementType;
+}

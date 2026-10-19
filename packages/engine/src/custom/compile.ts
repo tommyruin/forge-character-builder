@@ -3,6 +3,10 @@
  * `<element>` the parser, library, statistics, selection engine and sheet
  * already understand. Nothing downstream knows custom content exists.
  *
+ * Pack-only kinds: a catalogue entry compiles to the element type of the same
+ * name, an addition to a top-level `<append id>`, and a replacement to the
+ * original element's XML with the author's name, text and rules version.
+ *
  * Block to rule mapping (design section 4):
  *   modifier -> `<stat name value bonus maximum level equipped requirements condition alt>`
  *   grant    -> `<grant type id|name level requirements spellcasting prepared condition>`
@@ -11,18 +15,33 @@
  *   tags     -> `<supports>`; requirements tree -> `<requirements>` and `<prerequisite>`
  */
 
+import { parseElementsFile } from "../content/parser.js";
 import { engineError } from "../errors.js";
-import { SHEET_ACTION_OPTIONS, elementTypeFor, modifierTarget } from "./catalogue.js";
+import {
+  ARMOR_GROUP_DETAILS,
+  DAMAGE_TYPE_SUPPORT_IDS,
+  VERSATILE_PROPERTY,
+  WEAPON_CATEGORY_IDS,
+  WEAPON_CATEGORY_PROFICIENCY,
+} from "./base-items.js";
+import { serializeElement } from "./element-xml.js";
+import { SHEET_ACTION_OPTIONS, catalogElementType, catalogTemplateOption, elementTypeFor, modifierTarget } from "./catalogue.js";
 import { compileFilter, compileRequirements, describeRequirements } from "./conditions.js";
 import {
   CUSTOM_SOURCE_NAME,
+  isCustomAppendDraft,
+  isCustomCatalogDraft,
   isCustomItemDraft,
+  isCustomOverrideDraft,
   isCustomSpellDraft,
   type ChoiceBlock,
+  type CustomAppendDraft,
   type CustomBlock,
+  type CustomCatalogDraft,
   type CustomDraft,
-  type CustomEntryDraft,
   type CustomItemDraft,
+  type CustomOverrideDraft,
+  type CustomPackDraft,
   type CustomSpellDraft,
   type CustomValue,
   type GrantBlock,
@@ -31,8 +50,9 @@ import {
   type ScaleValue,
   type TrackerDef,
 } from "./schema.js";
+import { attributes, escapeAttribute, escapeText, paragraphs } from "./xml-text.js";
 import { scaleKey, scaleRuleSpecs, trackerRuleSpecs, trackerUsageText, trackersUsageText } from "./trackers.js";
-import { customEntryIssues } from "./validate.js";
+import { customPackDraftIssues } from "./validate.js";
 
 export interface CompileOptions {
   /**
@@ -56,30 +76,7 @@ const ABILITY_TITLE: Record<string, string> = {
   charisma: "Charisma",
 };
 
-export function escapeText(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-
-export function escapeAttribute(text: string): string {
-  return escapeText(text).replaceAll('"', "&quot;").replaceAll("'", "&apos;");
-}
-
-/** Plain text as `<p>` paragraphs; blank lines separate them. */
-function paragraphs(text: string): string {
-  const value = text.trim();
-  if (value === "") return "";
-  return value
-    .split(/\n{2,}/)
-    .map((paragraph) => `<p>${escapeText(paragraph.replace(/\s*\n\s*/g, " ").trim())}</p>`)
-    .join("");
-}
-
-function attributes(pairs: ReadonlyArray<readonly [string, string | number | undefined]>): string {
-  return pairs
-    .filter(([, value]) => value !== undefined && value !== "")
-    .map(([name, value]) => ` ${name}="${escapeAttribute(String(value))}"`)
-    .join("");
-}
+export { escapeText, escapeAttribute };
 
 function valueText(value: CustomValue, scales: readonly ScaleValue[]): string {
   switch (value.kind) {
@@ -207,8 +204,8 @@ function sheetBlock(draft: CustomDraft, usageFromSpells: string | undefined): st
  * first problem (all of them are in `details.issues`) when the draft is
  * invalid.
  */
-export function compileCustomElement(draft: CustomEntryDraft, options: CompileOptions = {}): string {
-  const issues = customEntryIssues(draft);
+export function compileCustomElement(draft: CustomPackDraft, options: CompileOptions = {}): string {
+  const issues = customPackDraftIssues(draft);
   if (issues.length > 0) {
     throw engineError(
       "invalid-argument",
@@ -218,6 +215,9 @@ export function compileCustomElement(draft: CustomEntryDraft, options: CompileOp
   }
   try {
     if (isCustomSpellDraft(draft)) return compileValidatedSpell(draft, options);
+    if (isCustomCatalogDraft(draft)) return compileValidatedCatalog(draft, options);
+    if (isCustomAppendDraft(draft)) return compileValidatedAppend(draft);
+    if (isCustomOverrideDraft(draft)) return compileValidatedOverride(draft, options);
     return isCustomItemDraft(draft) ? compileValidatedItem(draft, options) : compileValidated(draft, options);
   } catch (cause) {
     // A draft that passed validation but still cannot be written (an expression
@@ -487,7 +487,7 @@ function compileValidatedSpell(draft: CustomSpellDraft, options: CompileOptions)
 }
 
 /** One content file holding every draft; the engine ingests it like any pack. */
-export function compileCustomPack(drafts: readonly CustomEntryDraft[], options: Pick<CompileOptions, "source"> = {}): string {
+export function compileCustomPack(drafts: readonly CustomPackDraft[], options: Pick<CompileOptions, "source"> = {}): string {
   const elements = drafts.map((draft) =>
     compileCustomElement(draft, options.source === undefined ? {} : { source: options.source }),
   );
@@ -498,4 +498,118 @@ export function compileCustomPack(drafts: readonly CustomEntryDraft[], options: 
     "</elements>",
     "",
   ].join("\n");
+}
+
+
+/** The `<set>` lines of a plain money and weight pair, shared by base weapons and armor. */
+function priceSetters(item: { weight?: number; cost?: { amount: number; currency: string } }): string[] {
+  const out: string[] = [];
+  if (item.cost !== undefined) out.push(setter("cost", plainNumber(item.cost.amount), [["currency", item.cost.currency]]));
+  if (item.weight !== undefined) {
+    const pounds = plainNumber(item.weight);
+    out.push(setter("weight", `${pounds} lb.`, [["lb", pounds]]));
+  }
+  return out;
+}
+
+/**
+ * A catalogue entry: an element of the template's type with its tags as
+ * `supports`, its named fields as setters and, for a weapon or armor, the setters
+ * and rules the attack rows and armor class read. The derived parts (the category
+ * proficiency, the armor group's equip slot and dexterity cap, the strength
+ * penalty) are written here so the author never types an id.
+ */
+function compileValidatedCatalog(draft: CustomCatalogDraft, options: CompileOptions): string {
+  const id = options.id ?? draft.id;
+  const source = options.source ?? CUSTOM_SOURCE_NAME;
+  const template = catalogTemplateOption(draft.template);
+  const { rules, castAbility } = blockRules(draft.blocks);
+  const supports = [...(draft.tags ?? []).map((tag) => tag.trim())];
+  if (supports.length === 0 && template.defaultTags !== undefined) supports.push(...template.defaultTags);
+  const setters: string[] = [];
+  if (draft.ruleset !== undefined) setters.push(setter("ruleset", draft.ruleset));
+  for (const field of template.fields ?? []) {
+    const value = draft.fields?.[field.key]?.trim();
+    if (value) setters.push(setter(field.key, value));
+  }
+
+  if (draft.template === "weapon") {
+    const weapon = draft.weapon!;
+    supports.unshift(WEAPON_CATEGORY_IDS[weapon.category]);
+    const damageSupport = DAMAGE_TYPE_SUPPORT_IDS[weapon.damage.type];
+    const extra = [...(damageSupport === undefined ? [] : [damageSupport]), ...(weapon.properties ?? [])];
+    if (weapon.versatile !== undefined && !extra.includes(VERSATILE_PROPERTY)) extra.push(VERSATILE_PROPERTY);
+    if (weapon.mastery !== undefined) extra.push(weapon.mastery);
+    supports.splice(1, 0, ...extra);
+    setters.push(setter("category", "Weapons"), ...priceSetters(weapon), setter("slot", weapon.hands));
+    setters.push(setter("damage", weapon.damage.dice, [["type", weapon.damage.type]]));
+    if (weapon.versatile !== undefined) setters.push(setter("versatile", weapon.versatile));
+    if (weapon.range !== undefined) setters.push(setter("range", weapon.range));
+    setters.push(setter("proficiency", WEAPON_CATEGORY_PROFICIENCY[weapon.category]));
+  } else if (draft.template === "armor") {
+    const armor = draft.armor!;
+    const group = ARMOR_GROUP_DETAILS[armor.group];
+    supports.unshift(group.id);
+    setters.push(setter("category", "Armor"), ...priceSetters(armor));
+    if (armor.strength !== undefined) setters.push(setter("strength", armor.strength));
+    if (armor.stealthDisadvantage === true) setters.push(setter("stealth", "Disadvantage"));
+    setters.push(setter("slot", group.slot));
+    if (group.type !== undefined) setters.push(setter("type", group.type));
+    setters.push(setter("armor", group.armor), setter("armorClass", group.display(armor.ac)), setter("proficiency", group.proficiency));
+    const own: string[] = [];
+    if (armor.stealthDisadvantage === true) own.push('<grant type="Grants" id="ID_INTERNAL_GRANTS_STEALTH_DISADVANTAGE" />');
+    own.push(
+      armor.group === "shield"
+        ? statLine("ac:shield", String(armor.ac), [["bonus", "shield"]])
+        : statLine("ac:armored:armor", String(armor.ac), []),
+    );
+    if (armor.strength !== undefined && armor.group !== "shield") {
+      own.push(
+        statLine("speed", "-10", [
+          ["bonus", "armor"],
+          ["requirements", `!([str:${armor.strength}]||ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT)`],
+        ]),
+      );
+    }
+    rules.unshift(...own);
+  }
+  if (castAbility !== undefined) setters.push(setter("spellcasting ability", ABILITY_TITLE[castAbility]!));
+
+  const children: string[] = [];
+  if (supports.length > 0) children.push(`<supports>${escapeText(supports.join(", "))}</supports>`);
+  children.push(`<description>${paragraphs(draft.description)}</description>`);
+  if (setters.length > 0) children.push(`<setters>${setters.join("")}</setters>`);
+  if (rules.length > 0) children.push(`<rules>${rules.join("")}</rules>`);
+  const open = `<element${attributes([
+    ["name", draft.name.trim()],
+    ["type", catalogElementType(draft.template)],
+    ["source", source],
+    ["id", id],
+  ])}>`;
+  return [open, ...children.map((line) => `  ${line}`), "</element>"].join("\n");
+}
+
+/** An addition: a top-level `<append>` whose rules and tags join the target when the library loads. */
+function compileValidatedAppend(draft: CustomAppendDraft): string {
+  const { rules } = blockRules(draft.blocks);
+  const tags = (draft.tags ?? []).map((tag) => tag.trim());
+  const children: string[] = [];
+  if (tags.length > 0) children.push(`<supports>${escapeText(tags.join(", "))}</supports>`);
+  if (rules.length > 0) children.push(`<rules>${rules.join("")}</rules>`);
+  return [`<append${attributes([["id", draft.targetId]])}>`, ...children.map((line) => `  ${line}`), "</append>"].join("\n");
+}
+
+/** A replacement: the original's XML under the pack's source, with the author's name, text and rules version. */
+function compileValidatedOverride(draft: CustomOverrideDraft, options: CompileOptions): string {
+  const [element] = parseElementsFile(`<elements>${draft.baseXml}</elements>`, "override.xml");
+  const text = draft.description.trim();
+  const copy = serializeElement(element!, {
+    id: options.id ?? draft.id,
+    ...(draft.name.trim() === "" ? {} : { name: draft.name.trim() }),
+    source: options.source ?? CUSTOM_SOURCE_NAME,
+    ...(text === "" ? {} : { descriptionXml: text.includes("<") ? text : paragraphs(text) }),
+    ...(draft.ruleset === undefined ? {} : { ruleset: draft.ruleset }),
+  });
+  if (copy.xml === null) throw new Error(`${element!.identity.name} cannot be carried as a replacement because ${copy.reason ?? "it has parts a copy would lose"}`);
+  return copy.xml;
 }

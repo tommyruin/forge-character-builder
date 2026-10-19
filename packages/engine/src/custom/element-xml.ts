@@ -10,7 +10,7 @@
  */
 
 import type { ParsedElement, ParsedSheetEntry, Setter } from "../content/parser.js";
-import { escapeAttribute, escapeText } from "./compile.js";
+import { escapeAttribute, escapeText } from "./xml-text.js";
 
 export interface SerializeOptions {
   /** The id to write; defaults to the element's own, which a same-id override keeps. */
@@ -19,6 +19,8 @@ export interface SerializeOptions {
   source?: string;
   /** Replacement description, as inner XML (`<p>…</p>`). */
   descriptionXml?: string;
+  /** Replaces the element's rules version. */
+  ruleset?: string;
 }
 
 export interface SerializedElement {
@@ -77,7 +79,11 @@ export function serializeElement(element: ParsedElement, options: SerializeOptio
   if (element.compendiumHidden) children.push('<compendium display="false" />');
   children.push(`<description>${options.descriptionXml ?? element.descriptionXml ?? ""}</description>`);
   for (const sheet of element.sheets) children.push(sheetXml(sheet));
-  if (element.setters.length > 0) children.push(`<setters>${element.setters.map(setterXml).join("")}</setters>`);
+  const setters =
+    options.ruleset === undefined
+      ? element.setters
+      : [...element.setters.filter((setter) => setter.name !== "ruleset"), { name: "ruleset", value: options.ruleset }];
+  if (setters.length > 0) children.push(`<setters>${setters.map(setterXml).join("")}</setters>`);
   if (element.rulesXml !== undefined && element.rulesXml.trim() !== "") children.push(`<rules>${element.rulesXml}</rules>`);
   const open = `<element${attrs([
     ["name", options.name ?? element.identity.name],
