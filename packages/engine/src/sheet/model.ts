@@ -1400,12 +1400,14 @@ function collectFeatures(
   const ids = featureOrderIds(state, library);
   const classLevels = featureClassLevels(state);
   let requirementCtx: ReturnType<typeof elementRequirementContext> | undefined;
+  const homebrewSources = homebrewSourceNames(library);
   for (const id of ids) {
     if (seen.has(id)) continue;
     seen.add(id);
     const element = library.byId.get(id);
     if (element === undefined) continue;
-    const cls = classOfElement(element);
+    const plainText = printsWithoutSheet(element, homebrewSources);
+    const cls = classOfElement(element, plainText);
     if (cls === "hidden" || cls === "proficiency" || cls === "language") continue;
     // A feature whose own requirements fail has been replaced (typically by a
     // subclass or optional-class-feature marker such as
@@ -1418,6 +1420,16 @@ function collectFeatures(
     }
     const sheet = element.sheets[0];
     if (sheet === undefined) {
+      if (plainText) {
+        out.push({
+          type: element.identity.type,
+          class: cls,
+          title: element.identity.name,
+          parenthetical: null,
+          description: descriptionToText(element.descriptionXml).replace(/\s+/g, " ").trim(),
+        });
+        continue;
+      }
       // Reference renders sheet-less class features name-only ("Fighting Style.")
       // but hides the internal ASI-feat stubs ("Feat (4)").
       if (element.identity.type !== "Class Feature" || element.identity.id.startsWith("ID_INTERNAL_")) continue;
@@ -1495,8 +1507,39 @@ const RACIAL_BOX_TYPES: ReadonlySet<string> = new Set([
   "Dragonmark",
 ]);
 
-function classOfElement(element: ParsedElement): "senses" | "features" | "racial" | "proficiency" | "language" | "hidden" {
-  if (element.sheets.length === 0 && element.identity.type !== "Class Feature") return "hidden";
+/** The names of the sources the in-app homebrew editor (or any author) marked `homebrew`. */
+function homebrewSourceNames(library: ElementLibrary): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const source of library.sources.values()) {
+    if (source.setters.some((setter) => setter.name === "homebrew" && setter.value.trim().toLowerCase() === "true")) {
+      names.add(source.identity.name);
+    }
+  }
+  return names;
+}
+
+/** Feature types that, written by hand without a `<sheet>` block, still print their text. */
+const PLAIN_TEXT_FEATURE_TYPES: ReadonlySet<string> = new Set(["Racial Trait", "Feat", "Archetype Feature"]);
+
+/**
+ * Whether a trait with no `<sheet>` block prints its name and description.
+ * Book content without a sheet block is deliberately unprinted (option stubs,
+ * ability-score helpers), so this is limited to homebrew sources, where an
+ * author who wrote no sheet text still expects the feature on the sheet.
+ * Internal helper elements stay off.
+ */
+function printsWithoutSheet(element: ParsedElement, homebrewSources: ReadonlySet<string>): boolean {
+  if (element.sheets.length > 0) return false;
+  if (!PLAIN_TEXT_FEATURE_TYPES.has(element.identity.type)) return false;
+  if (element.identity.id.startsWith("ID_INTERNAL_") || element.identity.source === "Internal") return false;
+  return homebrewSources.has(element.identity.source);
+}
+
+function classOfElement(
+  element: ParsedElement,
+  plainText = false,
+): "senses" | "features" | "racial" | "proficiency" | "language" | "hidden" {
+  if (element.sheets.length === 0 && element.identity.type !== "Class Feature" && !plainText) return "hidden";
   if (element.sheets.some((sheet) => sheet.display === false)) return "hidden";
   const { type, name } = element.identity;
   // "+1 to one score" entries render through the abilities panel, never as
