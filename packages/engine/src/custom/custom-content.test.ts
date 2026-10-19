@@ -290,12 +290,33 @@ describe("the pack block", () => {
     service.saveCustomDraft(id, { draft: boon(), grant: false });
     const xml = service.exportCharacterXml(id);
     const future = { id: "ID_CUSTOM_FUTURE", schemaVersion: 9, name: "From a newer builder" };
-    const patched = xml.replace("]]></custom-pack>", `]]></custom-pack>`).replace(/\[(\{)/, `[${JSON.stringify(future)},$1`);
+    const patched = xml.replace(/(<custom-pack[^>]*><!\[CDATA\[)\[/, `$1[${JSON.stringify(future)},`);
+    expect(patched).not.toBe(xml);
     const other = new CharacterService(undefined, library);
     other.importCharacterXml("Mixed", patched);
     expect(other.getCustomContent("Mixed").problems).toHaveLength(1);
     other.saveCustomDraft("Mixed", { draft: { ...boon(), name: "Another" }, grant: false });
     expect(other.exportCharacterXml("Mixed")).toContain("From a newer builder");
+  });
+
+  it("refuses to overwrite a block it cannot read at all", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, { draft: boon(), grant: false });
+    const broken = service.exportCharacterXml(id).replace(/(<custom-pack[^>]*>)<!\[CDATA\[.*?\]\]>/s, "$1<![CDATA[not json]]>");
+    const other = new CharacterService(undefined, library);
+    other.importCharacterXml("Broken", broken);
+    expect(other.getCustomContent("Broken").problems).toEqual([expect.objectContaining({ index: -1 })]);
+    expect(() => other.saveCustomDraft("Broken", { draft: boon(), grant: false })).toThrow(expect.objectContaining({ code: "conflict" }));
+    expect(other.exportCharacterXml("Broken")).toBe(broken);
+  });
+
+  it("grants an existing draft that was saved ungranted when asked to", () => {
+    const { service, id } = fighter();
+    const draft = boon();
+    service.saveCustomDraft(id, { draft, grant: false });
+    expect(service.getCustomContent(id).entries[0]!.granted).toBe(false);
+    service.saveCustomDraft(id, { draft, grant: true });
+    expect(service.getCustomContent(id).entries[0]!.granted).toBe(true);
   });
 
   it("works on any class: a wizard takes the same boon", () => {

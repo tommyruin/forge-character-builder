@@ -232,7 +232,11 @@ export interface CustomDraftEntryDto extends WireObject {
 /** `getCustomContent`: the character's pack. */
 export interface CustomContentDto extends WireObject {
   entries: CustomDraftEntryDto[];
-  /** Stored entries that could not be read, by position; they are kept in the file untouched. */
+  /**
+   * Stored entries that could not be read, by position; they are kept in the
+   * file untouched. Index -1 means the whole block is unreadable, and saving
+   * is refused until it is repaired.
+   */
   problems: Array<{ index: number; message: string }>;
 }
 

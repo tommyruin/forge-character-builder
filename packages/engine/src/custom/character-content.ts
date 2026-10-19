@@ -139,13 +139,23 @@ export class CharacterCustomContent {
     };
   }
 
+  /**
+   * Edits rebuild the block from what it holds; a block that cannot be read at
+   * all (not JSON, not a list) is refused rather than overwritten, since
+   * rewriting it would destroy whatever it still says.
+   */
+  private requireReadableBlock(read: ReturnType<typeof readCustomPack>): void {
+    const broken = read.problems.find((problem) => problem.index < 0);
+    if (broken !== undefined) throw engineError("conflict", `${broken.message}; it was not changed`);
+  }
+
   list(id: string): CustomContentDto {
     this.requireLibrary();
     const { state, document } = this.host.snapshot(id);
     const read = readCustomPack(document);
     return {
       entries: read.drafts.map((draft) => this.entryFor(id, state, draft)),
-      problems: read.problems.filter((problem) => problem.index >= 0),
+      problems: read.problems,
     };
   }
 
@@ -179,6 +189,7 @@ export class CharacterCustomContent {
     compileCustomElement(draft);
     const first = this.host.snapshot(id);
     const read = readCustomPack(first.document);
+    this.requireReadableBlock(read);
     const existing = read.drafts.find((candidate) => candidate.id === draft.id);
     const wasGranted = isTopLevelGranted(first.state, draft.id);
     const picks = new Map<string, string>();
@@ -194,7 +205,7 @@ export class CharacterCustomContent {
     const current = this.host.snapshot(id);
     this.host.applyRegionEdits(id, planCustomPackEdits(current.document, entriesWithDraft(read, draft)));
     const { report } = this.syncPack(id, this.host.snapshot(id).document);
-    const grantNow = existing === undefined ? request.grant !== false : wasGranted;
+    const grantNow = wasGranted || request.grant === true || (existing === undefined && request.grant !== false);
     if (grantNow) {
       this.host.addGrantedElement(id, { elementId: draft.id });
       if (picks.size > 0) this.restorePicks(id, draft.id, picks);
@@ -230,6 +241,7 @@ export class CharacterCustomContent {
     this.requireLibrary();
     const { state, document } = this.host.snapshot(id);
     const read = readCustomPack(document);
+    this.requireReadableBlock(read);
     if (!read.entries.some((entry) => (entry as { id?: unknown } | null)?.id === request.draftId)) {
       throw engineError("not-found", `custom content '${request.draftId}' not found`);
     }
