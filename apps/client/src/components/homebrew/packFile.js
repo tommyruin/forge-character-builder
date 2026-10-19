@@ -1,7 +1,7 @@
 // The one-file pack share format.
 //
 // A shared pack is the same `<elements>` file the pack loads from (a Source element and the
-// pack's elements), so a reader that knows only Aurora-style content files loads it as it is. One
+// pack's elements), so a reader that knows only the shared content file format loads it as it is. One
 // more child rides at the end of `<elements>`, in the builder's own namespace, holding the pack
 // as the builder keeps it (drafts, details, ids). Other readers ignore a child they do not know;
 // the builder reads it to open the pack editable on another device.

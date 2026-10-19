@@ -3,7 +3,7 @@
  *
  * A library keeps elements, not drafts. A character that has a pack's element
  * has no draft for it, so the tracker definitions ride in the element as
- * `<set name="tracker">` lines. An Aurora-style reader ignores setters it does
+ * `<set name="tracker">` lines. A reader of the shared content format ignores setters it does
  * not know, and the builder reads them back into the same definitions a draft
  * declares, so the Resources page lists the same trackers wherever the element
  * came from.

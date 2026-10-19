@@ -8,6 +8,32 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A pack's features and items are tracked on the Resources page: each limited
+  use keeps its own name, unit, shared pool and switch link, and an item's
+  charges count while it is carried, the same as an entry made on the
+  character.
+- You can edit an entry made on the open character from the Homebrew page, in
+  the same form as on Build, Equipment or Magic. The character's page picks up
+  the change.
+- An entry from a character, or an element from a pack, can be added to any
+  pack or to a new world pack (a name and an author). It keeps its id, and the
+  elements it refers to (an item's granted feature, a subclass's class) are
+  listed to bring along or leave out.
+- Share pack saves a pack as one XML file. Other tools load its elements as
+  they are; the builder also finds the pack inside it, so Homebrew > Import
+  pack, or Content > Manage files, opens it as an editable pack with the same
+  ids. Adding a newer copy of a pack you already have updates it in place after
+  a confirm that names what is added and removed, and characters that use it
+  reload.
+- A `.dnd5e-pkg` carries the packs the character uses, drafts included, and
+  opening it on another device restores them as editable packs. Packages from
+  earlier versions still open.
+- Pack health has Find a source for a grant or addition whose target is not in
+  the library: it opens Content > Manage files and names the id to import.
+- The XML tools sit together under Homebrew > Advanced: import a pack file,
+  start an element as XML, download the pack's XML and open Manage files. Any
+  element, including a change to a book element, can still be edited as XML.
+
 - Text a box can't hold continues on a plain "(continued)" page under the box's
   own name, re-wrapped at full width, instead of on a reprint of the character
   page. Background, companion and equipment boxes continue the same way.

@@ -77,6 +77,9 @@ Only the Character Builder library is eligible:
   each element made with a form keeps its `customDraft`. A record without a version is
   read as version 1 and is rewritten at the current version when it is opened; nothing
   else in it changes, so older and newer devices keep syncing the same records.
+  A pack may also carry `version` (when its content last changed, which a shared pack file
+  uses to tell a newer copy from an older one) and `world` (made to share with a table);
+  both pass through sync as part of the record.
 
 The following remain device-local:
 
