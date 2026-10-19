@@ -192,14 +192,15 @@ describe("sheet render worker", () => {
       const split = await request({ id: 2, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { split: true } }) as { bytes: ArrayBuffer };
       const defaulted = await request({ id: 3, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { top: false, split: null, readable: false } }) as { bytes: ArrayBuffer };
       expect(requests.filter((url) => url.endsWith("/sheets/2014/details~split.pdf"))).toHaveLength(1);
-      expect(await pageText(split.bytes)).toContain("SUBCLASS FEATURES");
-      expect(await pageText(plain.bytes)).not.toContain("SUBCLASS FEATURES");
+      // The 2014 split page keeps its one FEATURES & TRAITS box, so the split
+      // file is fetched on its own while the page itself reads the same.
+      expect(await pageText(split.bytes)).toContain("FEATURES & TRAITS");
+      expect(await pageText(split.bytes)).not.toContain("SUBCLASS FEATURES");
       expect(new Uint8Array(defaulted.bytes)).toEqual(new Uint8Array(plain.bytes));
-      expect(new Uint8Array(split.bytes)).not.toEqual(new Uint8Array(plain.bytes));
       const top = await request({ id: 4, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { top: true, split: true } }) as { bytes: ArrayBuffer };
       expect(requests.filter((url) => url.endsWith("/sheets/2014/details~top.split.pdf"))).toHaveLength(1);
       expect(await pageText(top.bytes)).toContain("SPENT");
-      expect(await pageText(top.bytes)).toContain("SUBCLASS FEATURES");
+      expect(await pageText(top.bytes)).toContain("FEATURES & TRAITS");
       expect(await pageText(plain.bytes)).not.toContain("SPENT");
       const readable = await request({ id: 5, model: modelFor("Ada"), templateBase: SHEET_BASE, layout: { readable: true } }) as { bytes: ArrayBuffer };
       expect(requests.filter((url) => url.endsWith("/sheets/2014/details~readable.pdf"))).toHaveLength(1);

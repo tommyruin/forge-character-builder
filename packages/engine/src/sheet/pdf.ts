@@ -1813,8 +1813,8 @@ async function addSpellListPage(
 }
 
 /**
- * A template with more attack rows than the form values fill (the readable
- * 2014 page has six) takes the next attacks from the details page's own list,
+ * A template with more attack rows than the form values fill (the 2014 pages
+ * have five) takes the next attacks from the details page's own list,
  * and its free-text note lists only the attacks that still have no row ahead
  * of the user's notes. A model without the list, or a template with the usual
  * rows, keeps the form values as they are.

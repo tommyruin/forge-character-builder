@@ -170,39 +170,30 @@ describe("sheet attack rows", () => {
     expect(details.attackNotes).toBe("Aim for the knees.");
   });
 
-  it("prints attacks past the fourth row in the notes on a four-row sheet", async () => {
+  it("prints five attack rows on every 2014 sheet, and only the sixth and seventh in the notes", async () => {
     const { model } = await sevenAttacks();
-    const page = await renderDetails(model, {});
-    expect(page.rows).toBe(4);
-    expect(page.inField("details_attack4_weapon")).toBe("Blade 4");
-    expect(page.inField("details_attack_description")).toBe(
-      "More attacks: Blade 5: 5 ft, +4, 1d8 slashing; Blade 6: 5 ft, +4, 1d9 slashing; Blade 7: 5 ft, +4, 1d10 slashing. Aim for the knees.",
-    );
-    // Renders the corpus-built character on the full page.
-  }, 30_000);
-
-  it("prints six attack rows on the readable 2014 sheet, and only the seventh in the notes", async () => {
-    const { model } = await sevenAttacks();
-    for (const layout of [{ readable: true }, { readable: true, top: true }]) {
+    for (const layout of [{}, { top: true }, { readable: true }, { readable: true, top: true }, { split: true }]) {
       const page = await renderDetails(model, layout);
-      expect(page.rows, JSON.stringify(layout)).toBe(6);
-      for (let row = 1; row <= 6; row += 1) {
+      expect(page.rows, JSON.stringify(layout)).toBe(5);
+      for (let row = 1; row <= 5; row += 1) {
         expect(page.inField(`details_attack${row}_weapon`), `row ${row}`).toBe(`Blade ${row}`);
         expect(page.inField(`details_attack${row}_damage`), `row ${row}`).toBe(`1d${row + 3} slashing`);
       }
       expect(page.inField("details_attack5_range")).toBe("5 ft");
-      expect(page.inField("details_attack6_attack")).toBe("+4");
-      expect(page.inField("details_attack_description")).toBe("More attacks: Blade 7: 5 ft, +4, 1d10 slashing. Aim for the knees.");
+      expect(page.inField("details_attack5_attack")).toBe("+4");
+      expect(page.inField("details_attack_description")).toBe(
+        "More attacks: Blade 6: 5 ft, +4, 1d9 slashing; Blade 7: 5 ft, +4, 1d10 slashing. Aim for the knees.",
+      );
     }
-    // Two full renders of a corpus-built character.
-  }, 30_000);
+    // Five full renders of a corpus-built character.
+  }, 60_000);
 
-  it("leaves the readable rows' notes to the user when every attack has a row", async () => {
+  it("leaves the notes to the user when every attack has a row", async () => {
     const { model } = await sevenAttacks();
     const details = model.pages.find((page) => page.templateKind === "details")!;
-    const six = { ...model, pages: model.pages.map((page) => (page === details ? { ...page, attacks: details.attacks!.slice(0, 6) } : page)) };
-    const page = await renderDetails(six, { readable: true });
-    expect(page.inField("details_attack6_weapon")).toBe("Blade 6");
+    const five = { ...model, pages: model.pages.map((page) => (page === details ? { ...page, attacks: details.attacks!.slice(0, 5) } : page)) };
+    const page = await renderDetails(five, { readable: true });
+    expect(page.inField("details_attack5_weapon")).toBe("Blade 5");
     expect(page.inField("details_attack_description")).toBe("Aim for the knees.");
   }, 30_000);
 

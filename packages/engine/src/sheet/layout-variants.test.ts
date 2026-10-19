@@ -251,12 +251,22 @@ describe("writing a layout variant", () => {
     return { inside, hasField: (name: string) => rect(name) !== undefined, text, pages: doc.numPages };
   }
 
-  it.each(["2014", "2024"] as const)("prints class features, subclass features and feats in their own boxes on %s split", async (set) => {
-    const split = await placements(set, { split: true });
+  it("prints class features, subclass features and feats in their own boxes on 2024 split", async () => {
+    const split = await placements("2024", { split: true });
     expect(split.inside("Spellcasting.", "details_features")).toBe(true);
     expect(split.inside("Wild Shape.", "details_subclass_features")).toBe(true);
     expect(split.inside("Alert.", "details_feats")).toBe(true);
     for (const title of ["CLASS FEATURES", "SUBCLASS FEATURES", "FEATS"]) expect(split.text).toContain(title);
+    expect(split.pages).toBe(1);
+  });
+
+  it("prints every feature in the one FEATURES & TRAITS box on 2014 split", async () => {
+    const split = await placements("2014", { split: true });
+    expect(split.hasField("details_subclass_features")).toBe(false);
+    expect(split.hasField("details_feats")).toBe(false);
+    for (const text of ["Spellcasting.", "Wild Shape.", "Alert."]) expect(split.inside(text, "details_features")).toBe(true);
+    expect(split.text).toContain("FEATURES & TRAITS");
+    expect(split.text).not.toContain("SUBCLASS FEATURES");
     expect(split.pages).toBe(1);
   });
 

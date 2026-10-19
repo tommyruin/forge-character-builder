@@ -213,15 +213,17 @@ describe("sheet template geometry", () => {
   });
 
   it.each(DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("~top")))(
-    "puts initiative beside the proficiency bonus and splits the hit dice on %s/%s",
+    "stacks initiative under the proficiency bonus and splits the hit dice on %s/%s",
     async (set, file) => {
       const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, file)))).getForm();
       const rect = (name: string) => form.getFields().find((field) => field.getName() === name)!.acroField.getWidgets()[0]!.getRectangle();
       const bonus = rect("details_proficiency_bonus");
       const initiative = rect("details_initiative");
-      // Side by side on one line.
-      expect(Math.abs((initiative.y + initiative.height / 2) - (bonus.y + bonus.height / 2))).toBeLessThan(2);
-      expect(Math.abs(initiative.x - (bonus.x + bonus.width))).toBeLessThan(40);
+      // One above the other, over the same column, with no Actions box to share.
+      expect(Math.abs(initiative.x - bonus.x)).toBeLessThan(2);
+      expect(bonus.y - initiative.y).toBeGreaterThan(24);
+      expect(bonus.y - initiative.y).toBeLessThan(40);
+      expect(form.getFields().some((field) => field.getName() === "details_encounter_box")).toBe(false);
       expect(form.getField("details_initiative_advantage")).toBeInstanceOf(PDFCheckBox);
       const advantage = rect("details_initiative_advantage");
       expect(Math.abs(advantage.y - initiative.y)).toBeLessThan(20);
@@ -316,11 +318,10 @@ describe("sheet template geometry", () => {
 
   // The 2014 page prints the same text on a wide line of its own, which fits;
   // it must not pick up the 2024 page's wrapping cell.
-  // The readable page has six rows, each with its own notes line.
-  it.each([
-    [SHEET_TEMPLATE_CONTRACT.files.details, 4],
-    ...DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("readable")).map(([, file]) => [file, 6] as const),
-  ] as const)("leaves the 2014 attack notes on their own single line on %s, %i rows", async (file, rows) => {
+  // Every 2014 page has five rows, each with its own notes line.
+  it.each(
+    DETAILS_PAGES.filter(([set]) => set === "2014").map(([, file]) => [file, 5] as const),
+  )("leaves the 2014 attack notes on their own single line on %s, %i rows", async (file, rows) => {
     const form = (await PDFDocument.load(readFileSync(join(SHEETS, "2014", file)))).getForm();
     const rectOf = (name: string) => form.getTextField(name).acroField.getWidgets()[0]!.getRectangle();
     const names = form.getFields().map((field) => field.getName());
@@ -448,16 +449,52 @@ describe("the readable body", () => {
     }
   });
 
-  it.each(READABLE_2014)("raises the small captions on %s/%s", async (set, file) => {
+  // The shields keep their classic size, the death save and speed headings stay
+  // within a point of theirs, and only the numbers inside the shields grow.
+  it.each(READABLE_2014)("keeps the shield, death save and speed captions near their classic size on %s/%s", async (set, file) => {
     const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
     const sizeOf = (page: string, text: string) => labels[page]!.labels.filter((label) => label.text === text).map((label) => label.size);
-    for (const caption of ["STRENGTH", "DEXTERITY", "CONSTITUTION", "INTELLIGENCE", "WISDOM", "CHARISMA", "AC", "SPEED", "FLY", "CLIMB", "SWIM", "SUCCESSES", "FAILURES"]) {
+    for (const caption of ["STRENGTH", "DEXTERITY", "CONSTITUTION", "INTELLIGENCE", "WISDOM", "CHARISMA", "SPEED", "FLY", "CLIMB", "SWIM", "SUCCESSES", "FAILURES"]) {
       const sizes = sizeOf(file, caption);
       expect(sizes, caption).toHaveLength(1);
-      expect(sizes[0], caption).toBeGreaterThanOrEqual(5.5);
-      expect(sizes[0], caption).toBeLessThanOrEqual(7);
-      expect(sizes[0], caption).toBeGreaterThan(sizeOf(plainOf(set, file), caption)[0]!);
+      expect(sizes[0], caption).toBeGreaterThanOrEqual(sizeOf(plainOf(set, file), caption)[0]!);
+      expect(sizes[0], caption).toBeLessThanOrEqual(sizeOf(plainOf(set, file), caption)[0]! + 1.05);
     }
+    expect(sizeOf(file, "AC")[0]).toBeGreaterThanOrEqual(5.5);
+  });
+
+  it.each(READABLE_2014)("raises only the numbers in the ability shields, by about 2pt, on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const plain = await fieldsOf(set, plainOf(set, file));
+    for (const key of ["str", "dex", "con", "int", "wis", "cha"]) {
+      expect(page.rect(`details_${key}_score`), key).toEqual(plain.rect(`details_${key}_score`));
+      expect(page.size(`details_${key}_score`)! - plain.size(`details_${key}_score`)!, key).toBeCloseTo(2, 0);
+      expect(page.size(`details_${key}_modifier`)! - plain.size(`details_${key}_modifier`)!, key).toBeCloseTo(2, 0);
+    }
+  });
+
+  it.each(READABLE_2014)("trims the armor class box and gives the hit point lines room for handwriting on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const plain = await fieldsOf(set, plainOf(set, file));
+    const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
+    const titleY = (name: string, text: string) => labels[name]!.labels.find((label) => label.text === text)!.y;
+    // The title sits inside the box's foot, so a higher title is a shorter box.
+    expect(titleY(file, "ARMOR CLASS")).toBeGreaterThan(titleY(plainOf(set, file), "ARMOR CLASS"));
+    // Armor and shield sit further apart than on the plain page.
+    expect(page.rect("details_equipped_armor").y - page.rect("details_equipped_shield").y)
+      .toBeGreaterThan(plain.rect("details_equipped_armor").y - plain.rect("details_equipped_shield").y);
+    for (const name of ["details_hp_max", "details_hp_temp"]) {
+      expect(page.rect(name).height, name).toBeGreaterThanOrEqual(15);
+      expect(page.rect(name).height, name).toBeGreaterThan(plain.rect(name).height);
+    }
+  });
+
+  it.each(DETAILS_PAGES.filter(([set]) => set === "2014"))("has no actions box on %s/%s", async (set, file) => {
+    const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
+    expect((await fieldsOf(set, file)).has("details_encounter_box")).toBe(false);
+    expect(labels[file]!.labels.map((label) => label.text)).not.toContain("ACTIONS");
+    // Initiative keeps a field of its own on every page.
+    expect((await fieldsOf(set, file)).has("details_initiative")).toBe(true);
   });
 
   it.each(READABLE_2014)("spreads the skills over the room the saving throws gave up on %s/%s", async (set, file) => {
@@ -534,22 +571,22 @@ const loadLabels = (set: SheetTemplateSet) =>
   JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
 
 describe("the small captions on the optional pages", () => {
-  // The compact 2014 column pairs the proficiency bonus and initiative in two
-  // 51 x 24 pills, each ending in a roundel (radius 9) centred on its value's
-  // 24pt-wide field. A caption sits between the pill's rounded left end and
-  // the roundel.
+  // The compact 2014 column stacks the proficiency bonus and initiative in two
+  // 105 x 24 pills, each ending in a roundel (radius 10.5) centred on its
+  // value's 26pt-wide field. A caption sits between the pill's rounded left
+  // end and the roundel.
   const TOP_2014 = DETAILS_PAGES.filter(([set, file]) => set === "2014" && file.includes("~top"));
-  it.each(TOP_2014)("prints the proficiency bonus and initiative captions at 5pt or more inside their pills on %s/%s", async (set, file) => {
+  it.each(TOP_2014)("prints the proficiency bonus and initiative captions in full at 5pt or more inside their pills on %s/%s", async (set, file) => {
     const page = await fieldsOf(set, file);
     const labels = loadLabels(set)[file]!.labels;
-    for (const name of ["details_proficiency_bonus", "details_initiative"]) {
+    for (const [name, text] of [["details_proficiency_bonus", "PROFICIENCY BONUS"], ["details_initiative", "INITIATIVE"]] as const) {
       const value = page.rect(name);
-      const roundelLeft = value.x + 12 - 9;
-      const pill = { x: value.x + 24 - 51, y: value.y - 5, width: 51, height: 24 };
+      const roundelLeft = value.x + 13 - 10.5;
+      const pill = { x: value.x - 75, y: value.y - 5, width: 105, height: 24 };
       // The pill's own captions: every caption in it but the advantage mark's.
       const captions = labels.filter((label) => label.font === "captions" && label.text !== "ADV." &&
         label.x >= pill.x && label.x < pill.x + pill.width && label.y >= pill.y && label.y < pill.y + pill.height);
-      expect(captions.length, name).toBeGreaterThan(0);
+      expect(captions.map((caption) => caption.text), name).toEqual([text]);
       for (const caption of captions) {
         await expectReadableCaption(set, file, caption, { x: pill.x + 4.5, y: pill.y + 3, width: roundelLeft - 1 - (pill.x + 4.5), height: pill.height - 6 });
       }
