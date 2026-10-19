@@ -110,6 +110,35 @@ function abilitySibling(
   return null;
 }
 
+/**
+ * The ability a feature states in its own text. The 2014 Magic Initiate class
+ * sub-features carry no ability element; each says "Spellcasting ability:
+ * Intelligence." on its sheet (and in its description), naming exactly one.
+ */
+function statedAbility(element: ParsedElement): string | null {
+  const texts = [...element.sheets.flatMap((sheet) => sheet.descriptions.map((entry) => entry.text)), element.descriptionXml ?? ""];
+  for (const raw of texts) {
+    const text = raw.replace(/<[^>]*>/g, " ");
+    const match = /spellcasting ability(?: for (?:these|this) spells?)?(?: is|:)\s*(intelligence|wisdom|charisma)\b/i.exec(text);
+    if (match !== null) return match[1]!.charAt(0).toUpperCase() + match[1]!.slice(1).toLowerCase();
+  }
+  return null;
+}
+
+/**
+ * The banner a feature caster prints under. A feat's chosen sub-feature is
+ * named for its option alone ("Wizard"), which on a sheet reads as the class;
+ * it is qualified by its feat ("Magic Initiate (Wizard)"), the way the 2024
+ * sub-features name themselves.
+ */
+function casterName(ownerElement: ParsedElement, parentElement: ParsedElement | undefined): string {
+  const name = ownerElement.identity.name;
+  if (ownerElement.identity.type !== "Feat Feature" || parentElement?.identity.type !== "Feat") return name;
+  // An option named for its ability ("Charisma") says nothing on a banner.
+  if (SPELLCASTING_ABILITIES.includes(name)) return parentElement.identity.name;
+  return name.includes(parentElement.identity.name) ? name : `${parentElement.identity.name} (${name})`;
+}
+
 /** The first class caster's ability, used when the feature nominates none. */
 function fallbackAbility(state: CharacterState): string {
   const ability = state.magic?.casters[0]?.ability ?? "";
@@ -145,7 +174,11 @@ export function featureSpellCasters(
   const byElement = new Map<string, FeatureSpellCaster>();
   const order: string[] = [];
 
-  const casterFor = (owner: RegisteredElement, ownerElement: ParsedElement): FeatureSpellCaster => {
+  const casterFor = (
+    owner: RegisteredElement,
+    ownerElement: ParsedElement,
+    parentElement: ParsedElement | undefined,
+  ): FeatureSpellCaster => {
     const ownerId = ownerElement.identity.id;
     let caster = byElement.get(ownerId);
     if (caster === undefined) {
@@ -153,8 +186,11 @@ export function featureSpellCasters(
       caster = {
         key: `feature:${ownerId}`,
         elementId: ownerId,
-        name: nominated?.sheets.find((sheet) => sheet.alt !== undefined)?.alt ?? ownerElement.identity.name,
-        ability: nominated?.identity.name ?? fallbackAbility(state),
+        name: nominated?.sheets.find((sheet) => sheet.alt !== undefined)?.alt ?? casterName(ownerElement, parentElement),
+        ability: nominated?.identity.name
+          ?? (SPELLCASTING_ABILITIES.includes(ownerElement.identity.name) ? ownerElement.identity.name : null)
+          ?? statedAbility(ownerElement)
+          ?? fallbackAbility(state),
         usage: featureUsage(ownerElement, nominated ?? undefined),
         cantripIds: [],
         spellIds: [],
@@ -174,12 +210,14 @@ export function featureSpellCasters(
     nodes: readonly RegisteredElement[],
     underSpellcasting: boolean,
     owner: RegisteredElement | null,
+    ownerParent: RegisteredElement | null,
   ): void => {
     for (const node of nodes) {
       const elementId = nodeElementId(node);
       const element = elementId === "" ? undefined : library.byId.get(elementId);
       const nextUnderSpellcasting = underSpellcasting || element?.spellcasting !== undefined;
       const ownerElement = owner === null ? undefined : library.byId.get(nodeElementId(owner));
+      const parentElement = ownerParent === null ? undefined : library.byId.get(nodeElementId(ownerParent));
       if (!nextUnderSpellcasting && node.type === "Spell" && owner !== null && ownerElement !== undefined) {
         // A wrapper carries its selection in `registered` and has an empty id;
         // a granted spell is an element node with the spell's own id.
@@ -187,18 +225,18 @@ export function featureSpellCasters(
         const selected = node.registered ?? "";
         if (isWrapper && selected !== "") {
           const spell = library.byId.get(selected);
-          if (spell !== undefined) collect(casterFor(owner, ownerElement), spell);
+          if (spell !== undefined) collect(casterFor(owner, ownerElement, parentElement), spell);
         } else if (!isWrapper && element !== undefined && isCasterLessGrant(ownerElement, elementId)) {
-          collect(casterFor(owner, ownerElement), element);
+          collect(casterFor(owner, ownerElement, parentElement), element);
         }
       }
       // Spell nodes never own a group, so the nearest feature above a spell is
       // the one that granted it.
-      const nextOwner = element !== undefined && node.type !== "Spell" ? node : owner;
-      walk(node.children, nextUnderSpellcasting, nextOwner);
+      const ownsGroup = element !== undefined && node.type !== "Spell";
+      walk(node.children, nextUnderSpellcasting, ownsGroup ? node : owner, ownsGroup ? owner : ownerParent);
     }
   };
-  walk(state.elements, false, null);
+  walk(state.elements, false, null, null);
 
   return order.map((id) => byElement.get(id)!);
 }

@@ -161,16 +161,18 @@ describe.each(EDITIONS)("Druid 5 / Sorcerer 3 with Magic Initiate (Wizard), $rul
     expect(levelsOf("Druid")).toEqual([0, 1, 2, 3, 4]);
     expect(slotsOf("Druid")).toEqual([0, 4, 3, 3, 2]);
     expect(layouts.find((layout) => layout.name.startsWith("Druid"))!.sections.at(-1)!.spells).toEqual([]);
-    // The sorcerer prints its own levels without circles. Magic Initiate's
-    // spells print (in their own list, or folded into a class list whose
-    // casting statistics match) and never bring circles of their own.
+    // The sorcerer prints its own levels without circles.
     expect(levelsOf("Sorcerer")).toEqual([0, 1, 2]);
     expect(slotsOf("Sorcerer").every((slots) => slots === 0)).toBe(true);
-    const others = layouts.filter((layout) => !layout.name.startsWith("Druid"));
-    expect(others.flatMap((layout) => layout.sections).every((section) => section.slots === 0)).toBe(true);
-    const missile = layouts.flatMap((layout) => layout.sections)
-      .filter((section) => section.spells.some((spell) => spell.name === "Magic Missile"));
-    expect(missile.map((section) => section.level)).toEqual([1]);
+    // Magic Initiate (Wizard) casts with Intelligence in both editions, so it
+    // keeps its own list rather than joining the Wisdom druid's, and prints
+    // no circles.
+    const feat = casters.find((caster) => caster.kind === "feature")!;
+    expect([feat.name, feat.ability]).toEqual(["Magic Initiate (Wizard)", "Intelligence"]);
+    const initiate = layouts.find((layout) => layout.name === "Magic Initiate (Wizard)")!;
+    expect(initiate.ability).toBe("Intelligence");
+    expect(initiate.sections.map((section) => section.level)).toEqual([0, 1]);
+    expect(initiate.sections.every((section) => section.slots === 0)).toBe(true);
 
     const circles = vi.spyOn(PDFPage.prototype, "drawCircle");
     const model = buildCharacterSheetModel(service.getCharacter(id), library, {
