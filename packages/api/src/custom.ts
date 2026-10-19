@@ -50,7 +50,9 @@ export type RequirementNode =
 export type CustomValue =
   | { kind: "number"; value: number }
   | { kind: "reference"; ref: string; negate?: boolean }
-  | { kind: "classLevel"; className: string; negate?: boolean };
+  | { kind: "classLevel"; className: string; negate?: boolean }
+  /** A scale value of the same draft (B9), by its id: the value the table gives at the owning level. */
+  | { kind: "scale"; scale: string; negate?: boolean };
 
 export interface EquippedGate {
   slot: "armor" | "shield" | "primary" | "secondary";
@@ -142,6 +144,59 @@ export interface ChoiceBlock {
 
 export type CustomBlock = ModifierBlock | GrantBlock | ChoiceBlock;
 
+// ---- trackers and scale values (B7, B9) --------------------------------------
+
+export const TRACKER_UNITS = ["uses", "charges", "minutes", "points"] as const;
+export type TrackerUnit = (typeof TRACKER_UNITS)[number];
+
+/**
+ * When a tracker is full again. A rest, dawn or a new day refills it by itself;
+ * `never` leaves it to the player, and `diceRoll` regains what the dice say
+ * (`TrackerDef.regain`), which the player adds back by hand.
+ */
+export const TRACKER_RECHARGES = ["shortRest", "longRest", "dawn", "day", "never", "diceRoll"] as const;
+export type TrackerRecharge = (typeof TRACKER_RECHARGES)[number];
+
+/** How many a tracker holds: a number, or a value that follows the character. */
+export type TrackerMax =
+  | { kind: "number"; value: number }
+  /** A reference from the value menu (proficiency bonus, an ability modifier, level ...); `min` floors it. */
+  | { kind: "reference"; ref: string; min?: number }
+  | { kind: "classLevel"; className: string }
+  /** A scale value of the same draft, by its id. */
+  | { kind: "scale"; scale: string }
+  /** Any statistic the engine computes (its key comes from the engine, never from typing). */
+  | { kind: "stat"; key: string };
+
+/** A limited-use resource: a feature's uses, an item's charges, a pool of points. */
+export interface TrackerDef {
+  /** Stable for the life of the tracker; the spent count is stored under it. */
+  id: string;
+  label: string;
+  max: TrackerMax;
+  unit: TrackerUnit;
+  recharge: TrackerRecharge;
+  /** `diceRoll` only: what rolling regains ("1d6+1"). */
+  regain?: string;
+  /** Trackers naming the same pool spend from one count. */
+  pool?: string;
+  /** Turning this switch on spends one use. */
+  spendOnSwitch?: string;
+}
+
+export const SCALE_KINDS = ["number", "dice"] as const;
+export type ScaleKind = (typeof SCALE_KINDS)[number];
+
+/** A named per-level table: 1d6 at level 1, 2d6 at level 5; or 2 uses at level 1, 3 at level 6. */
+export interface ScaleValue {
+  id: string;
+  /** What the sheet text calls it (`{{scale:name}}`); unique inside the draft. */
+  name: string;
+  kind: ScaleKind;
+  /** From this level on the value applies; the first step is the base. A number step holds a number, a dice step dice text. */
+  steps: Array<{ level: number; value: number | string }>;
+}
+
 /** B6: how the feature prints on the character sheet. */
 export interface CustomSheet {
   /** False hides the feature from the sheet. Default true. */
@@ -174,6 +229,10 @@ export interface CustomDraft {
   /** B5: tags the element answers to in pickers (`Origin`, `Epic Boon`, ...). */
   tags?: string[];
   ruleset?: CustomRuleset;
+  /** B7: limited uses the character tracks; the sheet usage line is written from them. */
+  trackers?: TrackerDef[];
+  /** B9: named per-level tables the draft's modifiers, trackers and sheet text use. */
+  scales?: ScaleValue[];
 }
 
 // ---- items -------------------------------------------------------------------
@@ -266,8 +325,10 @@ export interface CustomItemDraft {
   attunement?: boolean;
   /** `worn`: where it is worn. */
   slot?: WornSlot;
-  /** Sheet text about limited uses or charges ("7 charges; regains 1d6+1 at dawn"). Not tracked. */
+  /** Text about limited uses or charges ("7 charges; regains 1d6+1 at dawn"), for an item with no tracker. */
   uses?: string;
+  /** B7: charges and limited uses the character tracks; the item's text states them. */
+  trackers?: TrackerDef[];
   /** Pounds. */
   weight?: number;
   cost?: CustomItemCost;
@@ -545,4 +606,57 @@ export interface MissingGrantDto extends WireObject {
   /** The type the rule wants (`Spell`); null when it does not say. */
   missingType: string | null;
   message: string;
+}
+
+// ---- resources (trackers, switches) --------------------------------------------
+
+/** Where a tracker comes from, for the label on its card. */
+export interface TrackerSourceDto extends WireObject {
+  name: string;
+  kind: "book" | "custom" | "manual";
+  /** The feature or item element, when the tracker belongs to one. */
+  elementId?: string;
+}
+
+/** One resource of the character, with its current count. */
+export interface TrackerDto extends WireObject {
+  /** What a spend is stored under: the tracker's id, or `pool:<name>` for a shared pool. */
+  id: string;
+  label: string;
+  /** Every feature or item that spends it (more than one for a shared pool). */
+  sources: TrackerSourceDto[];
+  /** Made in the builder (a custom entry or a manual tracker). */
+  isCustom: boolean;
+  /** Added by hand on the Resources page; it can be edited and removed there. */
+  manual: boolean;
+  max: number;
+  used: number;
+  remaining: number;
+  unit: TrackerUnit;
+  recharge: TrackerRecharge;
+  /** "per Long Rest", "regains 1d6+1 at dawn" ... */
+  rechargeLabel: string;
+  regain?: string;
+  /** The pool's name, for a shared pool. */
+  pool?: string;
+  /** The switch whose turning on spends one use of it. */
+  spendOnSwitch?: string;
+  /** A manual tracker's own definition, for editing. */
+  def?: TrackerDef;
+}
+
+/** A named on/off switch and what turning it on does. */
+export interface SwitchDto extends WireObject {
+  name: string;
+  on: boolean;
+  /** The features that apply only while it is on. */
+  sources: string[];
+  /** The label of the tracker one use of which turning it on spends. */
+  spends?: string;
+}
+
+/** `getResources` and the results of every resource mutation. */
+export interface ResourcesDto extends WireObject {
+  trackers: TrackerDto[];
+  switches: SwitchDto[];
 }

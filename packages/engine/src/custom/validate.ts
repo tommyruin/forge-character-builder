@@ -14,6 +14,7 @@ import {
   valueReference,
 } from "./catalogue.js";
 import { filterIssues, requirementIssues, type ConditionIssue } from "./conditions.js";
+import { scaleIssues, scalesById, trackerIssues } from "./trackers.js";
 import {
   CUSTOM_ABILITIES,
   CUSTOM_DRAFT_SCHEMA_VERSION,
@@ -35,6 +36,7 @@ import {
   type CustomEntryDraft,
   type CustomItemDraft,
   type CustomSpellDraft,
+  type ScaleValue,
 } from "./schema.js";
 
 export interface CustomDraftIssue {
@@ -68,7 +70,10 @@ function withPrefix(prefix: string, issues: readonly ConditionIssue[]): CustomDr
   }));
 }
 
-function valueIssues(value: unknown, path: string, numberOnly = false): CustomDraftIssue[] {
+/** The scale values a block's value may name: the draft's own, by id. */
+type Scales = ReadonlyMap<string, ScaleValue>;
+
+function valueIssues(value: unknown, path: string, scales: Scales, numberOnly = false): CustomDraftIssue[] {
   if (!isRecord(value)) return [{ path, message: "give a number or pick a value to use" }];
   if (value.kind === "number") {
     return isWholeNumber(value.value) && value.value >= -1000 && value.value <= 1000
@@ -86,10 +91,16 @@ function valueIssues(value: unknown, path: string, numberOnly = false): CustomDr
       ? []
       : [{ path: `${path}.className`, message: "name the class whose level is used" }];
   }
+  if (value.kind === "scale") {
+    const scale = typeof value.scale === "string" ? scales.get(value.scale) : undefined;
+    return scale !== undefined && scale.kind === "number"
+      ? []
+      : [{ path: `${path}.scale`, message: "pick one of this entry's scale values that is a count" }];
+  }
   return [{ path, message: "give a number or pick a value to use" }];
 }
 
-function modifierIssues(block: Record<string, unknown>, path: string): CustomDraftIssue[] {
+function modifierIssues(block: Record<string, unknown>, path: string, scales: Scales): CustomDraftIssue[] {
   const issues: CustomDraftIssue[] = [];
   const target = typeof block.target === "string" ? modifierTarget(block.target) : undefined;
   if (target === undefined) {
@@ -112,10 +123,10 @@ function modifierIssues(block: Record<string, unknown>, path: string): CustomDra
     issues.push({ path: `${path}.bucket`, message: "a bonus group only applies to Best of" });
   }
   const calculation = target?.id === "ac:calculation";
-  issues.push(...valueIssues(block.value, `${path}.value`, calculation));
+  issues.push(...valueIssues(block.value, `${path}.value`, scales, calculation));
   if (block.cap !== undefined) {
     if (calculation) issues.push({ path: `${path}.cap`, message: "an armor class calculation has no maximum" });
-    else issues.push(...valueIssues(block.cap, `${path}.cap`));
+    else issues.push(...valueIssues(block.cap, `${path}.cap`, scales));
   }
   if (block.addAbilities !== undefined) {
     const list = block.addAbilities;
@@ -340,7 +351,9 @@ export function customDraftIssues(draft: unknown): CustomDraftIssue[] {
   if (draft.requirements !== undefined) issues.push(...withPrefix("requirements", requirementIssues(draft.requirements)));
   if (draft.sheet !== undefined) issues.push(...sheetIssues(draft.sheet));
 
-  issues.push(...blocksIssues(draft.blocks));
+  issues.push(...scaleIssues(draft.scales));
+  issues.push(...trackerIssues(draft.trackers, scalesById(draft)));
+  issues.push(...blocksIssues(draft.blocks, scalesById(draft)));
   return issues;
 }
 
@@ -349,7 +362,7 @@ export function customDraftIssues(draft: unknown): CustomDraftIssue[] {
  * feature drafts and item drafts: a list of at most `MAX_BLOCKS` blocks with
  * unique ids, and spells that agree on one cast ability and one allowance.
  */
-function blocksIssues(blocks: unknown): CustomDraftIssue[] {
+function blocksIssues(blocks: unknown, scales: Scales): CustomDraftIssue[] {
   const issues: CustomDraftIssue[] = [];
   if (!Array.isArray(blocks)) {
     return [{ path: "blocks", message: "blocks must be a list" }];
@@ -371,7 +384,7 @@ function blocksIssues(blocks: unknown): CustomDraftIssue[] {
     } else {
       ids.add(raw.id);
     }
-    if (raw.kind === "modifier") issues.push(...modifierIssues(raw, path));
+    if (raw.kind === "modifier") issues.push(...modifierIssues(raw, path, scales));
     else if (raw.kind === "grant") {
       issues.push(...grantIssues(raw, path));
       const spell = raw.spell;
@@ -548,7 +561,9 @@ export function customItemDraftIssues(draft: unknown): CustomDraftIssue[] {
   if (draft.stackable !== undefined && !(template === "gear" && typeof draft.stackable === "boolean")) {
     issues.push({ path: "stackable", message: template === "gear" ? "stackable is on or off" : "only plain gear stacks" });
   }
-  issues.push(...blocksIssues(draft.blocks));
+  // An item's charges are fixed numbers: its text, which no statistic fills in, states them.
+  issues.push(...trackerIssues(draft.trackers, new Map(), { literalOnly: true }));
+  issues.push(...blocksIssues(draft.blocks, new Map()));
   if (Array.isArray(draft.blocks)) {
     draft.blocks.forEach((block: unknown, index: number) => {
       if (isRecord(block) && block.kind === "choice") {

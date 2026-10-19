@@ -10,6 +10,7 @@
 export * from "./schema.js";
 export * from "./catalogue.js";
 export * from "./conditions.js";
+export * from "./trackers.js";
 export * from "./validate.js";
 export * from "./compile.js";
 export * from "./promote.js";

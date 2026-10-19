@@ -28,7 +28,10 @@ import {
   type GrantBlock,
   type ModifierBlock,
   type ModifierGates,
+  type ScaleValue,
+  type TrackerDef,
 } from "./schema.js";
+import { scaleKey, scaleRuleSpecs, trackerRuleSpecs, trackerUsageText, trackersUsageText } from "./trackers.js";
 import { customEntryIssues } from "./validate.js";
 
 export interface CompileOptions {
@@ -78,7 +81,7 @@ function attributes(pairs: ReadonlyArray<readonly [string, string | number | und
     .join("");
 }
 
-function valueText(value: CustomValue): string {
+function valueText(value: CustomValue, scales: readonly ScaleValue[]): string {
   switch (value.kind) {
     case "number":
       return String(value.value);
@@ -86,6 +89,12 @@ function valueText(value: CustomValue): string {
       return `${value.negate === true ? "-" : ""}${value.ref}`;
     case "classLevel":
       return `${value.negate === true ? "-" : ""}level:${value.className.toLowerCase()}`;
+    case "scale": {
+      // Validation guarantees the scale exists; the key is its name, so the
+      // statistic reads the same wherever the table is used.
+      const scale = scales.find((entry) => entry.id === value.scale)!;
+      return `${value.negate === true ? "-" : ""}${scaleKey(scale)}`;
+    }
   }
 }
 
@@ -114,7 +123,7 @@ function statLine(
   return `<stat${attributes([["name", name], ["value", value], ...extra])} />`;
 }
 
-function modifierRules(block: ModifierBlock): string[] {
+function modifierRules(block: ModifierBlock, scales: readonly ScaleValue[]): string[] {
   const target = modifierTarget(block.target)!;
   const gates = gateAttributes(block.gates);
   const alt: Array<readonly [string, string | undefined]> = [["alt", block.label?.trim()]];
@@ -125,7 +134,7 @@ function modifierRules(block: ModifierBlock): string[] {
     // formula, and the `calculation` bucket keeps the best candidate against
     // the armor and unarmored chains. The helper key is private to this block.
     const key = `ac:custom ${block.id.toLowerCase().replaceAll(/[^a-z0-9]/g, "")}`;
-    const lines = [statLine(key, valueText(block.value), gates)];
+    const lines = [statLine(key, valueText(block.value, scales), gates)];
     for (const ability of block.addAbilities ?? []) lines.push(statLine(key, `${ability}:modifier`, gates));
     lines.push(statLine("ac:calculation", key, [["bonus", "calculation"], ...gates, ...alt]));
     return lines;
@@ -139,8 +148,8 @@ function modifierRules(block: ModifierBlock): string[] {
     if (target.group === "Ability scores") name = `${block.target}:score:set`;
   }
   return [
-    statLine(name, valueText(block.value), [
-      ["maximum", block.cap === undefined ? undefined : valueText(block.cap)],
+    statLine(name, valueText(block.value, scales), [
+      ["maximum", block.cap === undefined ? undefined : valueText(block.cap, scales)],
       ["bonus", bonus],
       ...gates,
       ...alt,
@@ -219,11 +228,14 @@ export function compileCustomElement(draft: CustomEntryDraft, options: CompileOp
 function compileValidated(draft: CustomDraft, options: CompileOptions): string {
   const id = options.id ?? draft.id;
   const source = options.source ?? CUSTOM_SOURCE_NAME;
-  const rules: string[] = [];
+  const scales = draft.scales ?? [];
+  // Scale values and tracker maximums come first: a modifier that reads one
+  // resolves against statistics the earlier rules already settled.
+  const rules: string[] = [...scaleRules(scales), ...trackerRules(draft.trackers ?? [], scales)];
   let castAbility: string | undefined;
   let spellUsage: string | undefined;
   for (const block of draft.blocks) {
-    if (block.kind === "modifier") rules.push(...modifierRules(block));
+    if (block.kind === "modifier") rules.push(...modifierRules(block, scales));
     else if (block.kind === "grant") {
       rules.push(grantRule(block));
       castAbility ??= block.spell?.castAbility;
@@ -243,7 +255,7 @@ function compileValidated(draft: CustomDraft, options: CompileOptions): string {
     children.push(`<requirements>${escapeText(requirements)}</requirements>`);
   }
   children.push(`<description>${paragraphs(draft.description)}</description>`);
-  children.push(sheetBlock(draft, spellUsage));
+  children.push(sheetBlock(draft, trackersUsageText(draft.trackers) ?? spellUsage));
 
   const setters: string[] = [];
   if (draft.ruleset !== undefined) setters.push(`<set name="ruleset">${draft.ruleset}</set>`);
@@ -260,12 +272,29 @@ function compileValidated(draft: CustomDraft, options: CompileOptions): string {
   return [open, ...children.map((line) => `  ${line}`), "</element>"].join("\n");
 }
 
+/** B9: a count adds the step's difference at its level; a die is inline text from its level. */
+function scaleRules(scales: readonly ScaleValue[]): string[] {
+  return scales.flatMap((scale) =>
+    scaleRuleSpecs(scale).map((spec) =>
+      statLine(spec.name, spec.value, [["level", spec.level], ["inline", spec.inline ? "true" : undefined]]),
+    ),
+  );
+}
+
+/** B7: the statistic a tracker's maximum is read from, when it is not a literal. */
+function trackerRules(trackers: readonly TrackerDef[], scales: readonly ScaleValue[]): string[] {
+  return trackers.flatMap((tracker) =>
+    trackerRuleSpecs(tracker, scales).map((spec) => statLine(spec.name, spec.value, [["bonus", spec.bonus]])),
+  );
+}
+
 /** The rules a list of blocks compiles to, and the casting ability its spells share. */
 function blockRules(blocks: readonly CustomBlock[]): { rules: string[]; castAbility: string | undefined } {
   const rules: string[] = [];
   let castAbility: string | undefined;
   for (const block of blocks) {
-    if (block.kind === "modifier") rules.push(...modifierRules(block));
+    // An item has no scale values: its blocks cannot name one (validation refuses it).
+    if (block.kind === "modifier") rules.push(...modifierRules(block, []));
     else if (block.kind === "grant") {
       rules.push(grantRule(block));
       castAbility ??= block.spell?.castAbility;
@@ -346,8 +375,14 @@ function compileValidatedItem(draft: CustomItemDraft, options: CompileOptions): 
   if (castAbility !== undefined) setters.push(setter("spellcasting ability", ABILITY_TITLE[castAbility]!));
   if (draft.ruleset !== undefined) setters.push(setter("ruleset", draft.ruleset));
 
+  // Charges the character tracks are stated from the tracker, so the text and the count agree.
+  const trackerLines = (draft.trackers ?? []).map((tracker) => {
+    const text = trackerUsageText(tracker);
+    return (draft.trackers ?? []).length === 1 ? `Uses: ${text}` : `${tracker.label}: ${text}`;
+  });
   const uses = draft.uses?.trim();
-  const description = `${paragraphs(draft.description)}${uses ? `<p>Uses: ${escapeText(uses)}</p>` : ""}`;
+  const useLines = trackerLines.length > 0 ? trackerLines : uses ? [`Uses: ${uses}`] : [];
+  const description = `${paragraphs(draft.description)}${useLines.map((line) => `<p>${escapeText(line)}</p>`).join("")}`;
   const children = [`<description>${description}</description>`, `<setters>${setters.join("")}</setters>`];
   if (rules.length > 0) children.push(`<rules>${rules.join("")}</rules>`);
   const open = `<element${attributes([
