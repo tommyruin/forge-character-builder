@@ -11,6 +11,7 @@ import {
   DEFAULT_SHEET_FONTS,
   DEFAULT_SHEET_TEMPLATE_SET,
   SHEET_FONT_FACES,
+  SHEET_LAYOUT_DEFAULTS,
   SHEET_TEMPLATE_CONTRACT,
   isSheetTemplateSet,
   resolveSheetLayout,
@@ -90,7 +91,8 @@ export async function fetchCharacterSheetTemplateBundle(
     }
   };
   const baseDetailsFile = SHEET_TEMPLATE_CONTRACT.files.details;
-  const variantFile = sheetDetailsFile(templateSet, resolveSheetLayout(templateSet, layout));
+  const resolvedLayout = resolveSheetLayout(templateSet, layout);
+  const variantFile = sheetDetailsFile(templateSet, resolvedLayout);
   const fetchTemplate = async (key: string, name: string): Promise<SheetAssetResult> => {
     if (key !== "details" || variantFile === baseDetailsFile) return fetchAsset(name);
     const variant = await fetchAsset(variantFile);
@@ -153,6 +155,9 @@ export async function fetchCharacterSheetTemplateBundle(
     spellcastingSectionTops: spellcastingSectionTops.map((asset) => asset.bytes),
     labels,
     faces: sheetFaces(fonts, (file) => fontBytes.get(file)!),
+    // The set's own page prints its defaults, whatever was asked for, when
+    // the variant could not be used.
+    layout: detailsFile === baseDetailsFile ? { ...SHEET_LAYOUT_DEFAULTS[templateSet] } : resolvedLayout,
     ...(detailsFile === baseDetailsFile ? {} : { detailsFile }),
   } as unknown as CharacterSheetTemplateBundle;
 }

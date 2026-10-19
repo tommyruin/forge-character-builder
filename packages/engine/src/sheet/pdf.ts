@@ -1,7 +1,7 @@
 import type { SpellResourceDto } from "@forge-cb/api";
 import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection, SheetSpellListSection } from "./model.js";
-import type { LayoutRun } from "./card-layout.js";
-import { measuredTextWidth, winAnsiText } from "./text.js";
+import { CONTINUATION_PAGE_TEXT, type LayoutRun } from "./card-layout.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, measuredTextWidth, winAnsiText } from "./text.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote } from "./attack-notes.js";
 import { decodeBase64 } from "../platform.js";
 import {
@@ -10,11 +10,13 @@ import {
   SHEET_PALETTE,
   SHEET_TEMPLATE_CONTRACT,
   type SheetColours,
+  type SheetLayout,
   type SheetTemplateLabels,
 } from "./template-contract.js";
 import {
   PDFCheckBox,
   PDFDocument,
+  StandardFontEmbedder,
   type PDFEmbeddedPage,
   type PDFForm,
   PDFName,
@@ -365,6 +367,12 @@ export interface CharacterSheetTemplateBundle {
    * set's own page.
    */
   detailsFile?: string;
+  /**
+   * The layout `details` prints. Absent, the writer reads the layout from the
+   * page's own boxes: separate subclass and feat boxes are split, one features
+   * box is not.
+   */
+  layout?: SheetLayout;
   /** The set's titles, captions and ribbons, keyed by template file. */
   labels: SheetTemplateLabels;
   /** The typefaces to draw them and the values in. */
@@ -463,7 +471,7 @@ function drawTemplateText(
   for (const label of text.labels) {
     const font = label.font === "titles" ? fonts.titles : label.font === "captions" ? fonts.captions : fonts.regular;
     const value = winAnsiText(label.text);
-    const width = font.widthOfTextAtSize(value, label.size);
+    const width = drawnWidth(font, value, label.size);
     const box = label.width ?? 0;
     const x = label.align === "center" ? label.x + (box - width) / 2 : label.align === "right" ? label.x + box - width : label.x;
     const color = colours[label.color];
@@ -471,7 +479,7 @@ function drawTemplateText(
   }
   for (const ribbon of text.ribbons) {
     const value = winAnsiText(ribbon.text);
-    const width = fonts.titles.widthOfTextAtSize(value, ribbon.size) + ribbon.pad * 2;
+    const width = drawnWidth(fonts.titles, value, ribbon.size) + ribbon.pad * 2;
     const h = ribbon.height;
     const left = ribbon.cx - width / 2 + dx;
     const top = ribbon.cy + h / 2 + dy;
@@ -505,7 +513,7 @@ function bundleIsComplete(bundle: CharacterSheetTemplateBundle | null): bundle i
     typeof bundle.labels === "object" && bundle.labels !== null &&
     typeof bundle.faces === "object" && bundle.faces !== null &&
     Object.entries(bundle).every(([key, value]) =>
-      key === "labels" || key === "faces" || key === "detailsFile" ||
+      key === "labels" || key === "faces" || key === "detailsFile" || key === "layout" ||
       (Array.isArray(value)
         ? value.every((bytes) => bytes.byteLength > 0)
         : (value as Uint8Array).byteLength > 0)
@@ -565,7 +573,7 @@ function drawnNumberSize(value: string, rect: FieldRect, base: number, font: PDF
   if (value === "") return base;
   const byHeight = (rect.height - 2) / capHeightRatio(font);
   const size = fitSingleLineFontSize(value, rect.width, Math.min(base, byHeight), font);
-  return font.widthOfTextAtSize(value, size) <= rect.width - 4 ? size : 0;
+  return drawnWidth(font, value, size) <= rect.width - 4 ? size : 0;
 }
 
 /** Used only when a template field carries no size of its own. */
@@ -585,30 +593,48 @@ function fieldFontSize(name: string): number {
 }
 
 /**
- * Largest size (from `base` down to a 4.5pt floor in 0.25 steps) at which the
- * value's wrapped lines fit the widget rectangle. Long multiline content
+ * The smallest size a value drawn into a template box shrinks to. Below it
+ * print stops being readable, so a value that still does not fit wraps, is
+ * marked as cut, or continues on another page instead of shrinking further.
+ */
+const READABLE_MIN_FONT_SIZE = 5.5;
+
+/**
+ * A single-line value shrinks, down to the readable floor (or its own size
+ * when that is smaller), so the whole value stays inside its widget instead
+ * of being clipped at the right edge.
+ */
+export function fitSingleLineFontSize(value: string, width: number, base: number, font: PDFFont): number {
+  const available = Math.max(1, width - 4);
+  const needed = drawnWidth(font, value, base);
+  if (needed <= available) return base;
+  return Math.max(Math.min(READABLE_MIN_FONT_SIZE, base), Math.floor((base * available) / needed * 10) / 10);
+}
+
+/**
+ * Largest size (from `base` down to the readable floor in 0.25 steps) at which
+ * the value's wrapped lines fit the widget rectangle. Long multiline content
  * (backstories, notes) shrinks to fit instead of clipping at the widget edge
  * with no visual indication.
  */
 /**
- * A single-line value shrinks, down to a floor, so the whole value stays
- * inside its widget instead of being clipped at the right edge.
+ * How many lines of a form box's wrapped value fit its height at `size`: the
+ * first line's cap height the shared inset under the top edge, as in every
+ * flowed box, lines 1.2 sizes apart, the last baseline a point above the floor.
  */
-export function fitSingleLineFontSize(value: string, width: number, base: number, font: PDFFont): number {
-  const available = Math.max(1, width - 4);
-  const needed = font.widthOfTextAtSize(value, base);
-  if (needed <= available) return base;
-  return Math.max(SINGLE_LINE_MIN_FONT_SIZE, Math.floor((base * available) / needed * 10) / 10);
+function boxedLineRoom(height: number, size: number, capHeight: number): number {
+  const below = height - BOX_TEXT_TOP_INSET - capHeight * size - 1;
+  return below < 0 ? 0 : Math.floor(below / (size * 1.2) + 1e-9) + 1;
 }
-const SINGLE_LINE_MIN_FONT_SIZE = 4.5;
 
 export function fitMultilineFontSize(
   value: string,
   width: number,
   height: number,
   base: number,
-  floor = 4.5,
+  floor = READABLE_MIN_FONT_SIZE,
   measure: (text: string, fontSize: number) => number = measuredTextWidth,
+  capHeight = LAYOUT_CAP_HEIGHT,
 ): number {
   if (value === "" || width <= 0 || height <= 0) return base;
   const usable = width - 4;
@@ -640,7 +666,7 @@ export function fitMultilineFontSize(
         }
       }
     }
-    return lines * size * 1.2 <= height - 4;
+    return lines <= boxedLineRoom(height, size, capHeight);
   };
   for (let size = base; size >= floor; size -= 0.25) {
     if (fits(size)) return size;
@@ -655,8 +681,22 @@ interface FieldRect {
   height: number;
 }
 
+/** Text a template box could not hold even at its smallest size. */
+interface BoxOverflow {
+  field: string;
+  /** The words not drawn, from the first one on, paragraphs kept apart by newlines. */
+  text: string;
+  /**
+   * The box printed the value cut short, ending in an ellipsis, as this; `text`
+   * is then the whole value.
+   */
+  shown?: string;
+}
+
 interface FilledTemplatePage {
   page: PDFPage;
+  /** What each box that would have clipped could not hold, for a continuation page. */
+  overflow: BoxOverflow[];
   /** Widget rectangles by field name, captured before the form was flattened
    *  so hand-drawn rich text can bound itself to the template's own boxes.
    *  Shared with every page drawn from the same template, so it is read-only. */
@@ -798,6 +838,7 @@ async function addFilledTemplatePage(
   const page = output.addPage([art.width, art.height]);
   page.drawPage(embedded, { x: 0, y: 0, width: art.width, height: art.height });
   const textColour = SHEET_PALETTE[colours.text].rgb;
+  const overflow: BoxOverflow[] = [];
   for (const [name, field] of art.fields) {
     // Values render through WinAnsi, so an unencodable glyph in third-party
     // content degrades rather than aborting the whole build. A multiline
@@ -836,16 +877,32 @@ async function addFilledTemplatePage(
         );
         continue;
       }
+      // Too long for one line even at the readable floor. A box with room for
+      // two lines at the floor wraps it (below); a one-line box shows what fits,
+      // marked with an ellipsis, and the whole value prints on a continuation
+      // page, so nothing is cut away unseen.
+      const floor = Math.min(READABLE_MIN_FONT_SIZE, field.base, (field.rect.height - 2) / capHeightRatio(font));
+      if (boxedLineRoom(field.rect.height, floor, capHeightRatio(font)) < 2) {
+        const shown = ellipsized(value, font, floor, field.rect.width - 4);
+        drawFieldValue(page, { rect: field.rect, value: shown, size: floor, align: field.align, numbers: isNumbersField(name) }, font, textColour);
+        overflow.push({ field: name, text: value, shown });
+        continue;
+      }
     }
-    drawBoxedValue(page, field.rect, value, font, field.base, textColour);
+    const rest = drawBoxedValue(page, field.rect, value, font, field.base, textColour);
+    if (rest !== undefined) overflow.push({ field: name, text: rest });
   }
-  return { page, fieldRects: art.rects };
+  return { page, overflow, fieldRects: art.rects };
 }
 
 /**
  * Draws a value that will not sit on one line in its box: wrapped, shrunk to
  * fit, and clipped to the widget rectangle the way the form's own appearance
  * clipped it. Only a prose box reaches this — every other value is one line.
+ *
+ * A value too long even at the floor size keeps the box's own size, draws
+ * the lines that fit, and returns the rest for a continuation page rather
+ * than losing it below the box's edge.
  */
 function drawBoxedValue(
   page: PDFPage,
@@ -854,23 +911,39 @@ function drawBoxedValue(
   font: PDFFont,
   base: number,
   colour: PdfColor,
-): void {
-  const size = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) =>
-    font.widthOfTextAtSize(winAnsiText(text), fontSize));
+): string | undefined {
+  const capHeight = capHeightRatio(font);
+  const fitted = fitMultilineFontSize(value, rect.width, rect.height, base, undefined, (text, fontSize) =>
+    drawnWidth(font, winAnsiText(text), fontSize), capHeight);
   const usable = rect.width - 4;
-  const lines: string[] = [];
-  for (const paragraph of value.split(/\r?\n/)) {
-    let line = "";
-    for (const word of paragraph.split(/[ \t]+/).filter((part) => part !== "")) {
-      const candidate = line === "" ? word : `${line} ${word}`;
-      if (line !== "" && font.widthOfTextAtSize(candidate, size) > usable) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = candidate;
-      }
-    }
-    lines.push(line);
+  const paragraphs = value.split(/\r?\n/).map((paragraph) => paragraph.split(/[ \t]+/).filter((part) => part !== ""));
+  const wrapAt = (size: number): Array<{ text: string; paragraph: number; start: number }> => {
+    const lines: Array<{ text: string; paragraph: number; start: number }> = [];
+    paragraphs.forEach((words, paragraph) => {
+      let line = "";
+      let start = 0;
+      words.forEach((word, index) => {
+        const candidate = line === "" ? word : `${line} ${word}`;
+        if (line !== "" && drawnWidth(font, candidate, size) > usable) {
+          lines.push({ text: line, paragraph, start });
+          line = word;
+          start = index;
+        } else {
+          line = candidate;
+        }
+      });
+      lines.push({ text: line, paragraph, start });
+    });
+    return lines;
+  };
+  const room = (size: number): number => boxedLineRoom(rect.height, size, capHeight);
+  let size = fitted;
+  let lines = wrapAt(size);
+  let cut = lines.length;
+  if (lines.length > room(size)) {
+    size = base;
+    lines = wrapAt(size);
+    cut = Math.min(lines.length, room(size));
   }
   page.pushOperators(
     pushGraphicsState(),
@@ -882,14 +955,31 @@ function drawBoxedValue(
     clip(),
     endPath(),
   );
-  let y = rect.y + rect.height - 2 - size;
-  for (const line of lines) {
-    if (line !== "") {
-      page.drawText(line, { x: rect.x + 2, y, size, font, color: rgb(colour[0], colour[1], colour[2]) });
+  let y = rect.y + rect.height - BOX_TEXT_TOP_INSET - capHeight * size;
+  for (const line of lines.slice(0, cut)) {
+    if (line.text !== "") {
+      page.drawText(line.text, { x: rect.x + 2, y, size, font, color: rgb(colour[0], colour[1], colour[2]) });
     }
     y -= size * 1.2;
   }
   page.pushOperators(popGraphicsState());
+  const first = lines[cut];
+  if (first === undefined) return undefined;
+  return [
+    paragraphs[first.paragraph]!.slice(first.start).join(" "),
+    ...paragraphs.slice(first.paragraph + 1).map((words) => words.join(" ")),
+  ].join("\n");
+}
+
+/** As much of `text` as fits `width` at `size`, ending in an ellipsis. */
+function ellipsized(text: string, font: PDFFont, size: number, width: number): string {
+  const room = width - drawnWidth(font, "\u2026", size);
+  let kept = "";
+  for (const character of text) {
+    if (drawnWidth(font, kept + character, size) > room) break;
+    kept += character;
+  }
+  return `${kept.trimEnd()}\u2026`;
 }
 
 interface DrawnValue {
@@ -903,7 +993,7 @@ interface DrawnValue {
 
 /** Draws a value centred on its box's middle by cap height, not by ascender. */
 function drawFieldValue(page: PDFPage, item: DrawnValue, font: PDFFont, colour: PdfColor): void {
-  const width = font.widthOfTextAtSize(item.value, item.size);
+  const width = drawnWidth(font, item.value, item.size);
   const x = item.align === TextAlignment.Center
     ? item.rect.x + (item.rect.width - width) / 2
     : item.align === TextAlignment.Right
@@ -928,8 +1018,39 @@ function runFont(fonts: SheetFonts, style: LayoutRun["style"]): PDFFont {
 /** Measures text the way it will be drawn: in the chosen body face, per style. */
 export type TextMeasure = (text: string, fontSize: number, style?: LayoutRun["style"]) => number;
 
+// Advances of a standard face's strings at 1pt, per font, so wrapping and
+// shrink-to-fit searches measure each word once.
+const standardAdvances = new WeakMap<PDFFont, Map<string, number>>();
+
+/**
+ * How wide `text` is once drawn. pdf-lib's widthOfTextAtSize subtracts a
+ * standard face's kerning pairs, but drawText shows the string with a plain
+ * show-text operator, which a viewer lays out on advance widths alone, so the
+ * kerned width runs short by up to a tenth on capitals and a line measured
+ * with it prints past its box. An embedded face is measured on the glyphs
+ * fontkit lays out, which are the ones drawText encodes, so it already agrees.
+ * Everything the writer measures to place or fit drawn text goes through here.
+ */
+function drawnWidth(font: PDFFont, text: string, size: number): number {
+  if (!((font as unknown as { embedder?: unknown }).embedder instanceof StandardFontEmbedder)) {
+    return font.widthOfTextAtSize(text, size);
+  }
+  let advances = standardAdvances.get(font);
+  if (advances === undefined) {
+    advances = new Map();
+    standardAdvances.set(font, advances);
+  }
+  let units = advances.get(text);
+  if (units === undefined) {
+    units = 0;
+    for (const character of text) units += font.widthOfTextAtSize(character, 1);
+    advances.set(text, units);
+  }
+  return units * size;
+}
+
 function fontMeasure(fonts: SheetFonts): TextMeasure {
-  return (text, fontSize, style) => runFont(fonts, style).widthOfTextAtSize(winAnsiText(text), fontSize);
+  return (text, fontSize, style) => drawnWidth(runFont(fonts, style), winAnsiText(text), fontSize);
 }
 
 function drawPositionedRuns(page: PDFPage, runs: readonly LayoutRun[], fonts: SheetFonts): void {
@@ -1020,25 +1141,43 @@ function featureWords(line: string): StyledWord[][] {
 }
 
 /** The break that follows a flowed line: none, a paragraph break inside one
- * feature, or the end of a whole feature. */
-type FeatureFlowGap = "paragraph" | "feature" | null;
+ * feature, the end of a whole feature, the rule under a group heading, or the
+ * end of a group before the next group's heading. */
+type FeatureFlowGap = "paragraph" | "feature" | "heading" | "group" | null;
+
+/**
+ * One unwrapped paragraph of a feature box. A `heading` names a group of
+ * features (a split layout's class features, subclass features and feats in
+ * one box) and is ruled underneath; a `part` names the box a continuation
+ * page carries on. Neither is left as the last line of a box.
+ */
+interface FeatureParagraph {
+  words: readonly StyledWord[];
+  indent: number;
+  gapAfter: FeatureFlowGap;
+  kind?: "heading" | "part";
+}
 
 interface FeatureFlowLine {
   words: readonly StyledWord[];
   indent: number;
   gapAfter: FeatureFlowGap;
+  kind?: FeatureParagraph["kind"];
+  /** The paragraph the line was wrapped from, and its first word there. */
+  paragraph: number;
+  start: number;
 }
 
+/**
+ * The part of a box that did not fit: its paragraphs from the first word not
+ * drawn, unwrapped, so a continuation page can wrap them at its own width.
+ */
 interface FeatureContinuation {
-  lines: readonly FeatureFlowLine[];
-  x: number;
-  top: number;
-  width: number;
-  bottom: number;
-  fontSize: number;
-  lineHeight: number;
-  /** The feature box a split layout continues, as its printed heading. */
-  heading?: string;
+  paragraphs: readonly FeatureParagraph[];
+  /** The box this continues, as its printed name. */
+  heading: string;
+  /** The part prints in full a value its box cut short; `heading` is what the box shows. */
+  whole?: boolean;
 }
 
 const DEFAULT_FEATURE_FONT_SIZE = 8;
@@ -1052,49 +1191,97 @@ const FEATURE_PARAGRAPH_GAP = 1.2;
 // space that fit just bought.
 const FEATURE_GAP_RATIO = 0.45;
 
+// A group heading's rule sits this far below its baseline, clear of
+// descenders, and the first feature under it starts a feature gap below that.
+const FEATURE_RULE_DROP_RATIO = 0.3;
+// Above a heading, the last group ends with a full line's breath, so the
+// heading reads as the start of something new rather than another feature.
+const FEATURE_GROUP_GAP_RATIO = 0.9;
+// Between the parts of a continuation page.
+const CONTINUATION_PART_GAP = 6;
+
 function featureGapFor(gap: FeatureFlowGap, fontSize: number): number {
-  if (gap === "feature") return fontSize * FEATURE_GAP_RATIO;
+  if (gap === "feature" || gap === "heading") return fontSize * FEATURE_GAP_RATIO;
+  if (gap === "group") return fontSize * FEATURE_GROUP_GAP_RATIO;
   if (gap === "paragraph") return FEATURE_PARAGRAPH_GAP;
   return 0;
 }
 
-function featureFlowLines(
-  section: SheetSection,
-  width: number,
-  fontSize: number,
-  measure: TextMeasure,
-  featureGap = true,
-): FeatureFlowLine[] {
-  const output: FeatureFlowLine[] = [];
-  const rows = (section.renderRows ?? section.rows)
-    .flatMap((row) => row.kind === "tokens" ? [row.tokens.join(" ")] : [...row.lines]);
-  for (const row of rows) {
+function featureParagraphs(rows: readonly SheetRow[], featureGap = true): FeatureParagraph[] {
+  const output: FeatureParagraph[] = [];
+  const lines = rows.flatMap((row) => row.kind === "tokens" ? [row.tokens.join(" ")] : [...row.lines]);
+  for (const row of lines) {
     const paragraphs = featureWords(row);
     for (const [paragraphIndex, words] of paragraphs.entries()) {
-      const indent = paragraphIndex > 0 ? 8 : 0;
       // One row is one feature (model.ts collectFeatures), so its last
       // paragraph is where a feature ends.
       const endsFeature = featureGap && paragraphIndex === paragraphs.length - 1;
-      const availableWidth = width - indent;
-      const spaceWidth = measure(" ", fontSize);
-      let line: StyledWord[] = [];
-      let lineWidth = 0;
-      const wrapped: FeatureFlowLine[] = [];
-      for (const word of words) {
-        const wordWidth = measure(word.text, fontSize, word.style ?? "regular");
-        const candidateWidth = line.length === 0 ? wordWidth : lineWidth + spaceWidth + wordWidth;
-        if (line.length > 0 && candidateWidth > availableWidth) {
-          wrapped.push({ words: line, indent, gapAfter: null });
-          line = [];
-          lineWidth = 0;
-        }
-        line.push(word);
-        lineWidth = line.length === 1 ? wordWidth : lineWidth + spaceWidth + wordWidth;
-      }
-      if (line.length > 0) wrapped.push({ words: line, indent, gapAfter: null });
-      if (wrapped.length > 0) wrapped[wrapped.length - 1]!.gapAfter = endsFeature ? "feature" : "paragraph";
-      output.push(...wrapped);
+      output.push({ words, indent: paragraphIndex > 0 ? 8 : 0, gapAfter: endsFeature ? "feature" : "paragraph" });
     }
+  }
+  return output;
+}
+
+function sectionParagraphs(section: SheetSection, featureGap = true): FeatureParagraph[] {
+  return featureParagraphs(section.renderRows ?? section.rows, featureGap);
+}
+
+/** A heading or part line, in the body's bold face; a heading is ruled beneath. */
+function headingParagraph(text: string, kind: "heading" | "part"): FeatureParagraph {
+  return {
+    words: text.split(" ").map((word) => ({ text: word, style: "bold" as const })),
+    indent: 0,
+    gapAfter: kind === "heading" ? "heading" : "feature",
+    kind,
+  };
+}
+
+/**
+ * The split layout's single features box: each non-empty group under its own
+ * ruled heading, the groups set apart by a wider gap.
+ */
+function groupedFeatureParagraphs(groups: ReadonlyArray<readonly [string, readonly SheetRow[]]>): FeatureParagraph[] {
+  const output: FeatureParagraph[] = [];
+  for (const [heading, rows] of groups) {
+    if (rows.length === 0) continue;
+    if (output.length > 0) output[output.length - 1] = { ...output[output.length - 1]!, gapAfter: "group" };
+    output.push(headingParagraph(heading, "heading"), ...featureParagraphs(rows));
+  }
+  return output;
+}
+
+function featureFlowLines(
+  paragraphs: readonly FeatureParagraph[],
+  width: number,
+  fontSize: number,
+  measure: TextMeasure,
+): FeatureFlowLine[] {
+  const output: FeatureFlowLine[] = [];
+  const spaceWidth = measure(" ", fontSize);
+  for (const [paragraphIndex, { words, indent, gapAfter, kind }] of paragraphs.entries()) {
+    const availableWidth = width - indent;
+    let line: StyledWord[] = [];
+    let start = 0;
+    let lineWidth = 0;
+    const wrapped: FeatureFlowLine[] = [];
+    const push = (): void => {
+      wrapped.push({ words: line, indent, gapAfter: null, paragraph: paragraphIndex, start, ...(kind === undefined ? {} : { kind }) });
+    };
+    for (const [wordIndex, word] of words.entries()) {
+      const wordWidth = measure(word.text, fontSize, word.style ?? "regular");
+      const candidateWidth = line.length === 0 ? wordWidth : lineWidth + spaceWidth + wordWidth;
+      if (line.length > 0 && candidateWidth > availableWidth) {
+        push();
+        line = [];
+        start = wordIndex;
+        lineWidth = 0;
+      }
+      line.push(word);
+      lineWidth = line.length === 1 ? wordWidth : lineWidth + spaceWidth + wordWidth;
+    }
+    if (line.length > 0) push();
+    if (wrapped.length > 0) wrapped[wrapped.length - 1]!.gapAfter = gapAfter;
+    output.push(...wrapped);
   }
   return output;
 }
@@ -1114,8 +1301,18 @@ function featureFlowFits(
   return true;
 }
 
+interface FeatureFlowResult {
+  /** The paragraphs left over from the first line not drawn, if any. */
+  rest?: FeatureParagraph[];
+  /** The baseline the next line would have taken. */
+  y: number;
+}
+
+const FEATURE_RULE_COLOUR: PdfColor = [0.45, 0.45, 0.45];
+
 function drawFeatureFlow(
   page: PDFPage,
+  paragraphs: readonly FeatureParagraph[],
   lines: readonly FeatureFlowLine[],
   fonts: SheetFonts,
   x: number,
@@ -1124,16 +1321,20 @@ function drawFeatureFlow(
   bottom: number,
   fontSize: number,
   lineHeight: number,
-): FeatureContinuation | undefined {
+  ruleColour: PdfColor = FEATURE_RULE_COLOUR,
+): FeatureFlowResult {
   let y = top;
   let lineIndex = 0;
   // The space between words is the body face's at this size whatever face the
   // word itself is in, so it is measured once rather than per word.
-  const spaceWidth = fonts.regular.widthOfTextAtSize(" ", fontSize);
+  const spaceWidth = drawnWidth(fonts.regular, " ", fontSize);
   const ink = rgb(0.05, 0.05, 0.05);
   for (; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex]!;
     if (y < bottom) break;
+    // A heading goes with the line under it, to the next page if need be.
+    const next = y - lineHeight - featureGapFor(line.gapAfter, fontSize);
+    if (line.kind !== undefined && lineIndex + 1 < lines.length && next < bottom) break;
     let cursor = x + line.indent;
     // Consecutive words in the body face are drawn as one string. pdf-lib sums
     // glyph advances without kerning, and the space that joins them is the body
@@ -1157,53 +1358,61 @@ function drawFeatureFlow(
           page.drawText(value, { x: cursor, y, size: fontSize, font, color: ink });
         }
       }
-      cursor += font.widthOfTextAtSize(value, fontSize) + spaceWidth;
+      cursor += drawnWidth(font, value, fontSize) + spaceWidth;
     }
     flush();
+    if (line.kind === "heading") {
+      const ruleY = y - fontSize * FEATURE_RULE_DROP_RATIO;
+      page.drawLine({ start: { x, y: ruleY }, end: { x: x + width, y: ruleY }, thickness: 0.5, color: rgb(...ruleColour) });
+    }
     y -= lineHeight + featureGapFor(line.gapAfter, fontSize);
   }
-  if (lineIndex >= lines.length) return undefined;
-  return { lines: lines.slice(lineIndex), x, top, width, bottom, fontSize, lineHeight };
+  if (lineIndex >= lines.length) return { y };
+  const first = lines[lineIndex]!;
+  const cut = paragraphs[first.paragraph]!;
+  return {
+    rest: [{ ...cut, words: cut.words.slice(first.start) }, ...paragraphs.slice(first.paragraph + 1)],
+    y,
+  };
 }
 
 function drawRichFeatureSection(
   page: PDFPage,
-  section: SheetSection | undefined,
+  paragraphs: readonly FeatureParagraph[],
   fonts: SheetFonts,
   x: number,
-  top: number,
+  /** The box's top edge; the first baseline follows from the size drawn. */
+  boxTop: number,
   width: number,
   bottom: number,
   fontSize = DEFAULT_FEATURE_FONT_SIZE,
   lineHeight = fontSize,
-  options: { featureGap?: boolean } = {},
-): FeatureContinuation | undefined {
-  if (section === undefined) return undefined;
-  // A list box — proficiencies and languages — is one run of like items, not a
-  // sequence of features, so it keeps the plain paragraph rhythm.
-  const featureGap = options.featureGap ?? true;
+  ruleColour?: PdfColor,
+): FeatureParagraph[] | undefined {
   const lineHeightAt = (size: number): number => lineHeight * size / fontSize;
+  const capHeight = capHeightRatio(fonts.regular);
+  const topAt = (size: number): number => boxTop - BOX_TEXT_TOP_INSET - capHeight * size;
   const measure = fontMeasure(fonts);
-  const normalLines = featureFlowLines(section, width, fontSize, measure, featureGap);
+  const normalLines = featureFlowLines(paragraphs, width, fontSize, measure);
   let chosenFontSize = fontSize;
   let chosenLines = normalLines;
   let chosenLineHeight = lineHeightAt(chosenFontSize);
-  if (!featureFlowFits(normalLines, top, bottom, chosenLineHeight, chosenFontSize)) {
-    const floorLines = featureFlowLines(section, width, MIN_FEATURE_FONT_SIZE, measure, featureGap);
+  if (!featureFlowFits(normalLines, topAt(chosenFontSize), bottom, chosenLineHeight, chosenFontSize)) {
+    const floorLines = featureFlowLines(paragraphs, width, MIN_FEATURE_FONT_SIZE, measure);
     const floorLineHeight = lineHeightAt(MIN_FEATURE_FONT_SIZE);
-    if (featureFlowFits(floorLines, top, bottom, floorLineHeight, MIN_FEATURE_FONT_SIZE)) {
+    if (featureFlowFits(floorLines, topAt(MIN_FEATURE_FONT_SIZE), bottom, floorLineHeight, MIN_FEATURE_FONT_SIZE)) {
       // Take the largest size that still fits, so the text shrinks only as far
       // as the page demands.
       let low = MIN_FEATURE_FONT_SIZE;
       let high = fontSize;
       for (let pass = 0; pass < 10; pass += 1) {
         const candidate = (low + high) / 2;
-        const candidateLines = featureFlowLines(section, width, candidate, measure, featureGap);
-        if (featureFlowFits(candidateLines, top, bottom, lineHeightAt(candidate), candidate)) low = candidate;
+        const candidateLines = featureFlowLines(paragraphs, width, candidate, measure);
+        if (featureFlowFits(candidateLines, topAt(candidate), bottom, lineHeightAt(candidate), candidate)) low = candidate;
         else high = candidate;
       }
       chosenFontSize = low;
-      chosenLines = featureFlowLines(section, width, chosenFontSize, measure, featureGap);
+      chosenLines = featureFlowLines(paragraphs, width, chosenFontSize, measure);
       chosenLineHeight = lineHeightAt(chosenFontSize);
     } else {
       // Prose that cannot fit even at the smallest legible size is continued
@@ -1214,64 +1423,157 @@ function drawRichFeatureSection(
       chosenLineHeight = lineHeightAt(chosenFontSize);
     }
   }
-  return drawFeatureFlow(page, chosenLines, fonts, x, top, width, bottom, chosenFontSize, chosenLineHeight);
+  return drawFeatureFlow(page, paragraphs, chosenLines, fonts, x, topAt(chosenFontSize), width, bottom, chosenFontSize, chosenLineHeight, ruleColour).rest;
 }
 
 interface RichTextBox {
   x: number;
+  /** The box's top edge, not a baseline. */
   top: number;
   width: number;
   bottom: number;
 }
 
+
+
 /**
  * The drawable box for a hand-drawn rich-text section: the template field's
- * widget rectangle inset 3pt horizontally, with the first baseline one line
- * below the top edge and the last baseline held 1pt above the bottom edge.
+ * widget rectangle inset 3pt horizontally, its top edge (where the first
+ * line's cap height is held BOX_TEXT_TOP_INSET below, at whatever size the
+ * text is drawn) and the last baseline held 1pt above the bottom edge.
  * Falls back to the given box when the template lacks the field.
  */
 function richTextBox(
   fieldRects: ReadonlyMap<string, FieldRect>,
   fieldName: string,
-  lineHeight: number,
   fallback: RichTextBox,
 ): RichTextBox {
   const rect = fieldRects.get(fieldName);
   if (rect === undefined) return fallback;
   return {
     x: rect.x + 3,
-    top: rect.y + rect.height - lineHeight,
+    top: rect.y + rect.height,
     width: rect.width - 6,
     bottom: rect.y + 1,
   };
 }
 
+const CONTINUATION_TEXT_X = CONTINUATION_PAGE_TEXT.x;
+const CONTINUATION_TEXT_WIDTH = CONTINUATION_PAGE_TEXT.width;
+const CONTINUATION_TEXT_TOP = CONTINUATION_PAGE_TEXT.top;
+const CONTINUATION_TEXT_BOTTOM = CONTINUATION_PAGE_TEXT.bottom;
+
+/** A plain page in the attack-note style: a titled band and the footer. */
+function addContinuationPage(
+  output: PDFDocument, title: string, fonts: SheetFonts, colours: SheetLabelColours, footerText: string,
+): PDFPage {
+  const page = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  page.drawRectangle({ x: 32, y: 738, width: 548, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
+  page.drawText(title, { x: 44, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
+  drawSheetFooter(page, fonts, footerText);
+  return page;
+}
+
 /**
- * A split layout's feature boxes are small, so their overflow continues on
- * plain pages in the attack-note style, each part under its box's
- * "(continued)" heading, rather than in the same small boxes on copies of the
- * character page. Overflow always keeps the normal size, so the parts share
- * one font size and wrapping width.
+ * Whatever a page's boxes could not hold continues on plain pages in the
+ * attack-note style, each box's part under a bold "<box> (continued)" line,
+ * rewrapped at the page's full width rather than repeating the page to fill
+ * the same small boxes again. Every part is set at the features' normal size,
+ * so the page reads as one run of text whichever boxes it came from.
  */
 function addFeatureContinuationPages(
   output: PDFDocument, parts: readonly FeatureContinuation[], fonts: SheetFonts,
-  colours: SheetLabelColours, footerText: string,
+  colours: SheetLabelColours, footerText: string, title: string,
 ): void {
-  if (parts.length === 0) return;
-  let rest: FeatureContinuation | undefined = {
-    ...parts[0]!,
-    lines: parts.flatMap((part): FeatureFlowLine[] => [
-      { words: `${part.heading} (continued)`.split(" ").map((text) => ({ text, style: "bold" as const })), indent: 0, gapAfter: "feature" },
-      ...part.lines,
-    ]),
-  };
-  while (rest !== undefined) {
-    const page = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    page.drawRectangle({ x: 32, y: 738, width: 548, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
-    page.drawText("FEATURES (CONTINUED)", { x: 44, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
-    drawSheetFooter(page, fonts, footerText);
-    rest = drawFeatureFlow(page, rest.lines, fonts, 44, 716, rest.width, 48, rest.fontSize, rest.lineHeight);
+  const measure = fontMeasure(fonts);
+  const fontSize = DEFAULT_FEATURE_FONT_SIZE;
+  let page: PDFPage | undefined;
+  let y = 0;
+  for (const part of parts) {
+    // A part that opens on a group heading is named for that group already, so
+    // its part line stands in for the heading.
+    const [first, ...others] = part.paragraphs;
+    let rest: FeatureParagraph[] | undefined = [
+      headingParagraph(`${part.heading} (${part.whole === true ? "in full" : "continued"})`, "part"),
+      ...(first?.kind === "heading" ? others : part.paragraphs),
+    ];
+    if (page !== undefined) y -= CONTINUATION_PART_GAP;
+    while (rest !== undefined) {
+      if (page === undefined || y < CONTINUATION_TEXT_BOTTOM) {
+        page = addContinuationPage(output, title, fonts, colours, footerText);
+        y = CONTINUATION_TEXT_TOP;
+      }
+      const lines = featureFlowLines(rest, CONTINUATION_TEXT_WIDTH, fontSize, measure);
+      const drawn: FeatureFlowResult = drawFeatureFlow(page, rest, lines, fonts, CONTINUATION_TEXT_X, y, CONTINUATION_TEXT_WIDTH,
+        CONTINUATION_TEXT_BOTTOM, fontSize, fontSize, colours.lines);
+      y = drawn.y;
+      rest = drawn.rest;
+      if (rest !== undefined) page = undefined;
+    }
   }
+}
+
+// A box's title sits just above or just below it (2024 heads its boxes, 2014
+// captions them underneath), centred over a span that covers the box.
+const BOX_TITLE_REACH = 30;
+const BOX_TITLE_SLACK = 6;
+const BOX_TITLE_MAX_SPAN = 2.2;
+
+function printedName(text: string): string {
+  return text.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, space: string, letter: string) => space + letter.toUpperCase());
+}
+
+/**
+ * The name a continuation gives a box: the title the page itself prints for
+ * it, found by geometry in the page's labels so a renamed or moved box keeps
+ * its name, else `fallback`.
+ */
+function boxTitle(labels: SheetTemplateLabels[string] | undefined, rect: FieldRect | undefined, fallback: string): string {
+  if (rect === undefined) return fallback;
+  let best: { text: string; distance: number } | undefined;
+  for (const label of labels?.labels ?? []) {
+    const width = label.width ?? 0;
+    if (label.align !== "center" || !/\p{Lu}{2}/u.test(label.text) || label.text !== label.text.toUpperCase()) continue;
+    if (label.x > rect.x + BOX_TITLE_SLACK || label.x + width < rect.x + rect.width - BOX_TITLE_SLACK) continue;
+    if (width > rect.width * BOX_TITLE_MAX_SPAN) continue;
+    const top = rect.y + rect.height;
+    const distance = label.y >= top ? label.y - top : label.y <= rect.y ? rect.y - label.y : 0;
+    if (distance <= BOX_TITLE_REACH && (best === undefined || distance < best.distance)) best = { text: label.text, distance };
+  }
+  return best === undefined ? fallback : printedName(best.text);
+}
+
+/** A form box's name when its page prints no title for it: the field's own. */
+function fieldFallbackName(field: string): string {
+  return printedName(field.replace(/^(details|background|companion|equipment_page)_/, "").replace(/_/g, " "));
+}
+
+/** Text a form box could not hold, as plain paragraphs for a continuation. */
+function fieldContinuations(
+  overflow: readonly BoxOverflow[], fieldRects: ReadonlyMap<string, FieldRect>, labels: SheetTemplateLabels[string] | undefined,
+): FeatureContinuation[] {
+  // A value cut short is named by what its box shows, which is how a reader
+  // finds it here; a box's remaining text, by the box's printed title.
+  return overflow.map(({ field, text, shown }) => ({
+    heading: shown ?? boxTitle(labels, fieldRects.get(field), fieldFallbackName(field)),
+    ...(shown === undefined ? {} : { whole: true }),
+    paragraphs: text.split("\n").flatMap((paragraph): FeatureParagraph[] => {
+      const words = paragraph.split(/\s+/).filter(Boolean);
+      return words.length === 0 ? [] : [{ words: words.map((word) => ({ text: word, style: "regular" as const })), indent: 0, gapAfter: "paragraph" }];
+    }),
+  }));
+}
+
+/**
+ * How the details page lays out its feature rows: `split` puts class
+ * features, subclass features and feats apart, in their own boxes when the
+ * template has them and under ruled headings in one box when it does not.
+ */
+interface DetailsFeatureLayout {
+  split: boolean;
+  /** The page's printed titles, which name the boxes a continuation carries on. */
+  labels?: SheetTemplateLabels[string];
+  ruleColour?: PdfColor;
 }
 
 function drawDetailsRichText(
@@ -1279,79 +1581,84 @@ function drawDetailsRichText(
   modelPage: SheetPage,
   fonts: SheetFonts,
   fieldRects: ReadonlyMap<string, FieldRect>,
+  layout: DetailsFeatureLayout,
 ): FeatureContinuation[] {
   const find = (title: string): SheetSection | undefined =>
     modelPage.sections.find((section) => section.title === title);
   const continuations: FeatureContinuation[] = [];
-  const racialBox = richTextBox(fieldRects, "details_additional_notes", DEFAULT_FEATURE_FONT_SIZE,
-    { x: 222, top: 372, width: 169, bottom: 125 });
-  const racialContinuation = drawRichFeatureSection(
-    page, find("racial-traits"), fonts, racialBox.x, racialBox.top, racialBox.width, racialBox.bottom);
-  if (racialContinuation !== undefined) continuations.push(racialContinuation);
+  const draw = (
+    field: string, paragraphs: readonly FeatureParagraph[], heading: string, fallback: RichTextBox,
+    fontSize = DEFAULT_FEATURE_FONT_SIZE, lineHeight = fontSize,
+  ): void => {
+    const box = richTextBox(fieldRects, field, fallback);
+    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight, layout.ruleColour);
+    if (rest === undefined) return;
+    // Cut inside a headed group, the part continues that group, by its name.
+    const group = paragraphs.slice(0, paragraphs.length - rest.length + 1).reverse().find((paragraph) => paragraph.kind === "heading");
+    continuations.push({
+      paragraphs: rest,
+      heading: group === undefined ? boxTitle(layout.labels, fieldRects.get(field), heading) : group.words.map((word) => word.text).join(" "),
+    });
+  };
+  const racial = find("racial-traits");
+  if (racial !== undefined) {
+    draw("details_additional_notes", sectionParagraphs(racial), "Traits", { x: 222, top: 380, width: 169, bottom: 125 });
+  }
   // A layout with its own subclass and feat boxes (2024 Hybrid, and the split
-  // layout of the others) splits the feature rows by origin; the others keep
+  // layout of the others) splits the feature rows by origin; a split layout
+  // with one features box heads each origin's rows inside it; the others keep
   // one combined box. A model without the groups prints the combined rows in
   // the class box rather than leaving the three boxes empty.
   const groups = modelPage.featureGroups;
-  const featureFields: ReadonlyArray<readonly [string, SheetSection | undefined, string?]> = !fieldRects.has("details_subclass_features")
-    ? [["details_features", find("features")]]
-    : groups === undefined
-      ? [["details_features", find("features"), "Features"]]
-      : [
-        ["details_features", { title: "class-features", rows: groups["class-features"] ?? [] }, "Class Features"],
-        ["details_subclass_features", { title: "subclass-features", rows: groups["subclass-features"] ?? [] }, "Subclass Features"],
-        ["details_feats", { title: "feats", rows: groups.feats ?? [] }, "Feats"],
-      ];
-  for (const [field, section, heading] of featureFields) {
-    const featureBox = richTextBox(fieldRects, field, DEFAULT_FEATURE_FONT_SIZE,
-      { x: 409, top: 653, width: 169, bottom: 132 });
-    const featureContinuation = drawRichFeatureSection(
-      page, section, fonts, featureBox.x, featureBox.top, featureBox.width, featureBox.bottom);
-    if (featureContinuation !== undefined) continuations.push(heading === undefined ? featureContinuation : { ...featureContinuation, heading });
+  const featureBox = { x: 409, top: 661, width: 169, bottom: 132 };
+  const features = find("features");
+  const grouped: ReadonlyArray<readonly [string, string, readonly SheetRow[]]> = groups === undefined ? [] : [
+    ["details_features", "Class Features", groups["class-features"] ?? []],
+    ["details_subclass_features", "Subclass Features", groups["subclass-features"] ?? []],
+    ["details_feats", "Feats", groups.feats ?? []],
+  ];
+  if (fieldRects.has("details_subclass_features") && groups !== undefined) {
+    for (const [field, heading, rows] of grouped) draw(field, featureParagraphs(rows), heading, featureBox);
+  } else if (layout.split && groups !== undefined) {
+    draw("details_features", groupedFeatureParagraphs(grouped.map(([, heading, rows]) => [heading, rows] as const)), "Features", featureBox);
+  } else if (features !== undefined) {
+    draw("details_features", sectionParagraphs(features), "Features", featureBox);
   }
 
   const proficiencyRows = [
     ...(find("proficiencies")?.rows ?? []),
     ...(find("languages")?.rows ?? []),
   ];
-  const proficiencyBox = richTextBox(fieldRects, "details_proficiencies_languages", 9.2,
-    { x: 409, top: 119, width: 169, bottom: 33 });
-  const proficiencyContinuation = drawRichFeatureSection(
-    page,
-    { title: "proficiencies-languages", rows: proficiencyRows },
-    fonts,
-    proficiencyBox.x,
-    proficiencyBox.top,
-    proficiencyBox.width,
-    proficiencyBox.bottom,
-    7.4,
-    9.2,
-    { featureGap: false },
-  );
-  if (proficiencyContinuation !== undefined) continuations.push(proficiencyContinuation);
+  // A list box — proficiencies and languages — is one run of like items, not a
+  // sequence of features, so it keeps the plain paragraph rhythm.
+  draw("details_proficiencies_languages", featureParagraphs(proficiencyRows, false), "Proficiencies & Languages",
+    { x: 409, top: 128, width: 169, bottom: 33 }, 7.4, 9.2);
   return continuations;
 }
 
 /**
  * The companion page's flowed text. The template sizes its own
  * `companion_features` box, so the geometry comes from that field's widget
- * rectangle rather than pinned coordinates.
+ * rectangle rather than pinned coordinates. Returns what the box could not
+ * hold, named by the page's title for it.
  */
 function drawCompanionRichText(
   page: PDFPage,
   modelPage: SheetPage,
   fonts: SheetFonts,
   fieldRects: ReadonlyMap<string, FieldRect>,
-): void {
+  labels: SheetTemplateLabels[string] | undefined,
+): FeatureContinuation[] {
   const section = modelPage.sections.find((candidate) => candidate.title === "companion-features");
-  if (section === undefined || section.rows.length === 0) return;
-  const box = richTextBox(fieldRects, "companion_features", DEFAULT_FEATURE_FONT_SIZE, {
+  if (section === undefined || section.rows.length === 0) return [];
+  const box = richTextBox(fieldRects, "companion_features", {
     x: 36,
-    top: 360,
+    top: 368,
     width: 250,
     bottom: 40,
   });
-  drawRichFeatureSection(page, section, fonts, box.x, box.top, box.width, box.bottom);
+  const rest = drawRichFeatureSection(page, sectionParagraphs(section), fonts, box.x, box.top, box.width, box.bottom);
+  return rest === undefined ? [] : [{ paragraphs: rest, heading: boxTitle(labels, fieldRects.get("companion_features"), "Features") }];
 }
 
 function equipmentSidebarRuns(modelPage: SheetPage): LayoutRun[] {
@@ -1381,10 +1688,10 @@ function attackNoteLines(text: string, font: PDFFont, size: number, width: numbe
   let line = "";
   for (const word of text.split(/\s+/).filter(Boolean)) {
     const candidate = line ? `${line} ${word}` : word;
-    if (font.widthOfTextAtSize(candidate, size) <= width) { line = candidate; continue; }
+    if (drawnWidth(font, candidate, size) <= width) { line = candidate; continue; }
     if (line) { lines.push(line); line = ""; }
     for (const char of word) {
-      if (line && font.widthOfTextAtSize(line + char, size) > width) { lines.push(line); line = ""; }
+      if (line && drawnWidth(font, line + char, size) > width) { lines.push(line); line = ""; }
       line += char;
     }
   }
@@ -1400,12 +1707,8 @@ function addAttackNotePages(
   let page: PDFPage | undefined;
   let top = 0;
   const newPage = (): PDFPage => {
-    const next = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    next.drawRectangle({ x, y: 738, width, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
-    next.drawText("ATTACK NOTES", { x: x + padding, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
-    drawSheetFooter(next, fonts, footerText);
     top = 724;
-    return next;
+    return addContinuationPage(output, "ATTACK NOTES", fonts, colours, footerText);
   };
   for (const card of cards) {
     const lines = attackNoteLines(card.text, fonts.regular, 8, width - padding * 2);
@@ -1497,7 +1800,7 @@ function drawCentered(
 ): void {
   const value = winAnsiText(textValue);
   page.drawText(value, {
-    x: center - font.widthOfTextAtSize(value, size) / 2,
+    x: center - drawnWidth(font, value, size) / 2,
     y,
     size,
     font,
@@ -1890,11 +2193,11 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   for (const [name, field] of detailsArt.fields) {
     if (!/^details_attack(?:\d+)?_description$/.test(name) || !values[name]) continue;
     const value = values[name]!.split(/\r?\n/).map(winAnsiText).join("\n");
-    const measure = (text: string, size: number): number => fonts.regular.widthOfTextAtSize(text, size);
+    const measure = (text: string, size: number): number => drawnWidth(fonts.regular, text, size);
     // Match the writer's single-line path before considering multiline overflow.
     if (!field.multiline && drawnNumberSize(value, field.rect, field.base, fonts.regular) > 0) continue;
-    const size = fitMultilineFontSize(value, field.rect.width, field.rect.height, field.base, 0.25, measure);
-    if (size >= 4.5 && value.split(/\s+/).every((word) => measure(word, size) <= field.rect.width - 4)) continue;
+    const size = fitMultilineFontSize(value, field.rect.width, field.rect.height, field.base, 0.25, measure, capHeightRatio(fonts.regular));
+    if (size >= READABLE_MIN_FONT_SIZE && value.split(/\s+/).every((word) => measure(word, size) <= field.rect.width - 4)) continue;
     const row = name.match(/attack(\d+)_/)?.[1];
     const title = row ? `Attack ${row}: ${values[`details_attack${row}_weapon`] || "Notes"}` : "General attack notes";
     if (options.includeAttackNotes !== false) {
@@ -1908,7 +2211,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   for (const modelPage of model.pages) {
     await yieldToEventLoop();
     if (modelPage.templateKind === "details") {
-      const { page, fieldRects } = await fill("details", bundle.details, {
+      const { page, fieldRects, overflow: boxOverflow } = await fill("details", bundle.details, {
         ...values,
         details_features: "",
         details_subclass_features: "",
@@ -1918,76 +2221,72 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       drawTemplateText(page, detailsLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       drawSheetFooter(page, fonts, footerText);
-      // Every box that overflowed continues in its own place on one further
-      // copy of the page, rather than each box taking a page of its own.
-      const overflow = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects));
-      let continuations = overflow.filter((continuation) => continuation.heading === undefined);
-      while (continuations.length > 0) {
-        const { page: continuationPage, fieldRects: continuationRects } = await fill("details-continuation", bundle.details, {
-          ...values,
-          details_features: "",
-          details_subclass_features: "",
-          details_feats: "",
-          details_proficiencies_languages: "",
-        });
-        drawTemplateText(continuationPage, detailsLabels, fonts, labelInk);
-        await timed("brandImage", () => drawBrandImage(output, continuationPage, continuationRects, brandImage, colours));
-        drawSheetFooter(continuationPage, fonts, footerText);
-        continuations = timed("richText:details", () => continuations.flatMap((continuation) => drawFeatureFlow(
-          continuationPage,
-          continuation.lines,
-          fonts,
-          continuation.x,
-          continuation.top,
-          continuation.width,
-          continuation.bottom,
-          continuation.fontSize,
-          continuation.lineHeight,
-        ) ?? []));
-      }
-      addFeatureContinuationPages(output, overflow.filter((continuation) => continuation.heading !== undefined), fonts, labelInk, footerText);
+      const overflow = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects, {
+        split: bundle.layout?.split ?? fieldRects.has("details_subclass_features"),
+        labels: detailsLabels,
+        ruleColour: labelInk.lines,
+      }));
+      // A page that carries feature text is titled for it; one carrying only
+      // other boxes' values is the character page continued.
+      addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, detailsLabels)],
+        fonts, labelInk, footerText, overflow.length > 0 ? "FEATURES & TRAITS (CONTINUED)" : "CHARACTER (CONTINUED)");
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
       continue;
     }
     if (modelPage.templateKind === "background") {
-      const { page, fieldRects } = await fill("background", bundle.background, values);
+      const { page, fieldRects, overflow } = await fill("background", bundle.background, values);
       drawTemplateText(page, bundle.labels[files.background], fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       await timed("portrait", () => drawFieldImage(output, page, fieldRects, "background_portrait_image", images["background_portrait_image"] ?? ""));
       drawSheetFooter(page, fonts, footerText);
+      addFeatureContinuationPages(output, fieldContinuations(overflow, fieldRects, bundle.labels[files.background]),
+        fonts, labelInk, footerText, "BACKGROUND (CONTINUED)");
       continue;
     }
     if (modelPage.templateKind === "companion") {
-      const { page, fieldRects } = await fill("companion", bundle.companion, {
+      const { page, fieldRects, overflow } = await fill("companion", bundle.companion, {
         ...values,
         companion_features: "",
       });
-      drawTemplateText(page, bundle.labels[files.companion], fonts, labelInk);
+      const companionLabels = bundle.labels[files.companion];
+      drawTemplateText(page, companionLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       await timed("portrait", () => drawFieldImage(output, page, fieldRects, "companion_portrait_image", images["companion_portrait_image"] ?? ""));
-      timed("richText:companion", () => drawCompanionRichText(page, modelPage, fonts, fieldRects));
+      const rest = timed("richText:companion", () => drawCompanionRichText(page, modelPage, fonts, fieldRects, companionLabels));
       drawSheetFooter(page, fonts, footerText);
+      addFeatureContinuationPages(output, [...rest, ...fieldContinuations(overflow, fieldRects, companionLabels)],
+        fonts, labelInk, footerText, "COMPANION (CONTINUED)");
       continue;
     }
     if (modelPage.templateKind === "equipment") {
       const sidebarRuns = equipmentSidebarRuns(modelPage);
       const lastPage = sidebarRuns.reduce((highest, run) => Math.max(highest, run.page ?? 0), 0);
-      for (let equipmentPage = 0; equipmentPage <= lastPage; equipmentPage += 1) {
+      await yieldToEventLoop();
+      const { page, fieldRects, overflow } = await fill("equipment", bundle.equipment, {
+        ...values,
+        equipment_page_magic_items: "",
+      });
+      const equipmentLabels = bundle.labels[files.equipment];
+      drawTemplateText(page, equipmentLabels, fonts, labelInk);
+      timed("richText:equipment", () => drawEquipmentRichText(page, modelPage, fonts, 0));
+      drawSheetFooter(page, fonts, footerText);
+      // The notes column's overflow is laid out at the continuation page's own
+      // width (card-layout.ts), on plain pages rather than further copies of
+      // the inventory page.
+      for (let equipmentPage = 1; equipmentPage <= lastPage; equipmentPage += 1) {
         await yieldToEventLoop();
-        // A continuation carries only the overflowing notes column: repeating
-        // the gear, treasure and quest tables would print the same inventory
-        // twice.
-        const { page } = await fill("equipment", bundle.equipment, {
-          ...(equipmentPage === 0
-            ? values
-            : Object.fromEntries(Object.entries(values).map(([key, value]) =>
-              [key, key.startsWith("equipment_page_") ? "" : value]))),
-          equipment_page_magic_items: "",
-        });
-        drawTemplateText(page, bundle.labels[files.equipment], fonts, labelInk);
-        timed("richText:equipment", () => drawEquipmentRichText(page, modelPage, fonts, equipmentPage));
-        drawSheetFooter(page, fonts, footerText);
+        const continuation = addContinuationPage(output, "EQUIPMENT (CONTINUED)", fonts, labelInk, footerText);
+        if (equipmentPage === 1) {
+          const notes = boxTitle(equipmentLabels, fieldRects.get("equipment_page_magic_items"), "Notes");
+          const part = [headingParagraph(`${notes} (continued)`, "part")];
+          drawFeatureFlow(continuation, part, featureFlowLines(part, CONTINUATION_TEXT_WIDTH, DEFAULT_FEATURE_FONT_SIZE, fontMeasure(fonts)),
+            fonts, CONTINUATION_TEXT_X, CONTINUATION_TEXT_TOP, CONTINUATION_TEXT_WIDTH, CONTINUATION_TEXT_BOTTOM,
+            DEFAULT_FEATURE_FONT_SIZE, DEFAULT_FEATURE_FONT_SIZE);
+        }
+        timed("richText:equipment", () => drawEquipmentRichText(continuation, modelPage, fonts, equipmentPage));
       }
+      addFeatureContinuationPages(output, fieldContinuations(overflow, fieldRects, equipmentLabels),
+        fonts, labelInk, footerText, "EQUIPMENT (CONTINUED)");
       continue;
     }
     if (modelPage.templateKind === "spell-list") {

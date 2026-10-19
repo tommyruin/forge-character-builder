@@ -96,7 +96,7 @@ describe("2024 Hybrid features", () => {
       pages.push((await (await doc.getPage(index)).getTextContent()).items.map((item) => "str" in item ? item.str : "").join(" "));
     }
     expect(pages).toHaveLength(2);
-    expect(pages[1]).toContain("FEATURES (CONTINUED)");
+    expect(pages[1]).toContain("FEATURES & TRAITS (CONTINUED)");
     expect(pages[1]).toContain("Subclass Features (continued)");
     const words = pages.join(" ").match(/word\d+/g) ?? [];
     expect(new Set(words).size).toBe(400);

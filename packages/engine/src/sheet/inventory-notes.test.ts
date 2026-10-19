@@ -185,23 +185,25 @@ describe("the item notes switch on the sheet model", () => {
 
 describe("with the item notes switch off", () => {
   // Digests of the equipment page and its notes field, recorded from the
-  // builder before the switch existed. Off, absent or false must reproduce them.
+  // builder before the switch existed (re-recorded when the notes column's
+  // first line took the shared top inset). Off, absent or false must
+  // reproduce them.
   const BEFORE: Record<string, { plain: string; canonical: string }> = {
     "barbarian-8.dnd5e": {
-      plain: "d1e0f29503228dd9ea3405e484555b46c59e719c2e41f0eb954f16d687912ec6",
-      canonical: "955c1d96c23776032d64cf15d2c5de93c6f844994ebe53cde924c74162ca6af4",
+      plain: "202ff9c1b726b5ca9c62da61cd0acba4df27475745711c4686fd2399384b3781",
+      canonical: "c3144f73c468f6fbb13986190a5944e84d0bf349d4a8a1fbeba3a412f9967cee",
     },
     "paladin-7.dnd5e": {
-      plain: "b7d760ca729971a659fc8d910aac252a9616f0791f52f87f4ffcd68cb7301e82",
-      canonical: "130aecc7fa55cc3e6a5dbf474fdb8e44b37015388ae59d8e4e2f66c2a6fcbd23",
+      plain: "bed4618cf4fbee8a14595d83b4359779df7a72dbc631aa8e6e8386cf2750e244",
+      canonical: "44ba7f16d78fcb106cc99e5ff9d6a9d0087c9af569e1d59ac1d9ca702e6d1171",
     },
     "cleric-7.dnd5e": {
-      plain: "7912b413730836c9b1811f9c75a0cea095cf0adb0e728ae02dec4e8ec5c5bed9",
-      canonical: "d421a8cbfc406600d57cfe4c6dcd1bfcb3e0a6192ff9e123cf231178f6844d6a",
+      plain: "66133882de6624e610c7dd132cbceebfc8aba21dc905d41c33e5247f759db04e",
+      canonical: "6d4cd8b57b805c7bba880877e9841d323ac5e95862af757adfd4b05bf12b0d1b",
     },
     "ranger-rogue-8.dnd5e": {
-      plain: "f65a6f5510eda1dd299b9810b1cef19b946653541d10cdbd99e0919821c1fcc6",
-      canonical: "9878f614297717af19d3e8279f22c10d830e2ee988944c2a6f8ede8e753860e3",
+      plain: "ee05c11e9e31adab3f675524d5c4e7d3910b4dd7d34cc4a11b428ae89e8fce56",
+      canonical: "067df79d61a508ffad6383c2619c96a6a01384a75da005d83ad4cfaaa53a8eb7",
     },
   };
 

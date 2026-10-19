@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument, StandardFonts, type PDFFont } from "pdf-lib";
 import {
+  CONTINUATION_PAGE_TEXT,
   descriptionCardRuns,
   inventoryRuns,
   layoutHtmlRuns,
@@ -9,7 +10,7 @@ import {
   type DescriptionCard,
   type LayoutRun,
 } from "./card-layout.js";
-import { winAnsiText } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, winAnsiText } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 const spell = (title: string, body: string): DescriptionCard => ({
@@ -196,12 +197,12 @@ describe("positioned card layout", () => {
     expect(sidebar[0]).toMatchObject({
       text: "Hand",
       x: SHEET_TEMPLATE_CONTRACT.equipmentNotes.x + 3,
-      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - 10,
+      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 7,
       fontSize: 7,
       style: "bold-italic",
     });
     expect(sidebar.find((run) => run.text === "This")).toMatchObject({
-      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - 10,
+      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 7,
       style: "regular",
     });
   });
@@ -332,8 +333,20 @@ describe("drawn text stays inside its box", () => {
     const pages = new Set(runs.map((run) => run.page ?? 0));
 
     expect(pages.size).toBeGreaterThan(1);
-    // No page spills past the column, and none of the prose is dropped.
-    expect(Math.min(...runs.map((run) => run.y))).toBeGreaterThan(NOTES_FLOOR);
+    // The column keeps its own box; the rest is wrapped afresh at the
+    // continuation page's width, below its "(continued)" line, and none of the
+    // prose is dropped.
+    const column = runs.filter((run) => (run.page ?? 0) === 0);
+    const continued = runs.filter((run) => (run.page ?? 0) > 0);
+    expect(Math.min(...column.map((run) => run.y))).toBeGreaterThan(NOTES_FLOOR);
+    expect(Math.min(...column.map((run) => run.x))).toBeGreaterThanOrEqual(SHEET_TEMPLATE_CONTRACT.equipmentNotes.x);
+    const area = CONTINUATION_PAGE_TEXT;
+    for (const run of continued) {
+      expect(run.x).toBeGreaterThanOrEqual(area.x);
+      expect(run.y).toBeGreaterThanOrEqual(area.bottom);
+      expect(run.y).toBeLessThanOrEqual(run.page === 1 ? area.top - area.partLine : area.top);
+    }
+    expect(Math.max(...continued.map((run) => run.x + run.width))).toBeGreaterThan(area.x + SHEET_TEMPLATE_CONTRACT.equipmentNotes.width);
     expect(runs.filter((run) => run.text === "Winged")).toHaveLength(overwhelming.length);
     expect((await drawnBounds(runs)).filter((word) => word.overflow > 0.001)).toEqual([]);
   });
