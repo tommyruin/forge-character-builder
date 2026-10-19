@@ -37,7 +37,7 @@ ours to define; 1:1 conformance applies to `.dnd5e` files and XML content semant
 
 Defined once as the typed `EngineMethodMap` in `packages/api/src/methods.ts`.
 Request tuples, result types, dispatcher handlers, and client method types are
-derived from that map. The runtime list contains 88 unique methods: 87 are
+derived from that map. The runtime list contains 93 unique methods: 92 are
 implemented and dispatched, and `ensureHostFile` is intentionally test-only.
 There are currently no public roadmap-unsupported methods. Groups:
 
@@ -57,12 +57,13 @@ There are currently no public roadmap-unsupported methods. Groups:
 - **Progression**: `levelUp`, `levelUpTo`, `levelDown`, `delevel`,
   `undoDelevel`, `setHitPointRoll`, `getProgression`
 - **Magic**: `getSpellcasting`, `setPrepared`, `getSpellBrowse`,
-  `addGrantedSpell`, `removeGrantedSpell`, `addGrantedFeat`, `removeGrantedFeat`,
-  `addGrantedAbilityScore`, `removeGrantedAbilityScore`, `addGrantedElement`,
-  `removeGrantedElement`, `getDmGrants`, `getCompanion`, `setCompanionName`
-- **Custom content**: `getCustomContent`, `saveCustomDraft`,
+  `setSpellAlias`, `addGrantedSpell`, `removeGrantedSpell`, `addGrantedFeat`,
+  `removeGrantedFeat`, `addGrantedAbilityScore`, `removeGrantedAbilityScore`,
+  `addGrantedElement`, `removeGrantedElement`, `getDmGrants`, `getCompanion`,
+  `setCompanionName`
+- **Custom content**: `getCustomContent`, `getMissingGrants`, `saveCustomDraft`,
   `deleteCustomDraft`, `promoteCustomDraft`, `getChoiceIdentityImpact`,
-  `previewCustomItem`
+  `previewCustomItem`, `previewCustomSpell`
 - **Inventory**: `getInventory`, `getItemBaseOptions`, `addItem`, `removeItem`,
   `setItemAmount`, `extractItem`, `equipItem`, `attuneItem`, `setItemStorage`,
   `setItemPresentation`, `setItemCards`, `setItemDetails`, `setCoins`
@@ -437,7 +438,7 @@ absent are distinguished; timings/boot metadata follow the boot result shape.
 
 `add/removeGrantedSpell|Feat|AbilityScore|Element` and `getDmGrants` are
 engine-defined methods with no counterpart elsewhere. Contract:
-- Requests are exact: spell add/remove `{spellId}`; feat add/remove `{featId}`;
+- Requests are exact: spell add `{spellId, caster?}` and remove `{spellId}`; feat add/remove `{featId}`;
   ability-score add `{abilityElementIds}` and remove `{abilityElementId}`;
   element add/remove `{elementId}`.
 - `addGrantedElement` is the general form: it registers any grantable feature
@@ -460,6 +461,16 @@ engine-defined methods with no counterpart elsewhere. Contract:
   source="Additional Spell, {Name}"/></additional></magic>`. Rule-granted spells
   additionally carry the granting feature's name as `source`, e.g.
   `source="Wind Caller"`.
+- `addGrantedSpell` may name the class caster that casts the spell (`caster`, a
+  spellcasting name the character has; anything else answers
+  `invalid-argument`). The entry's source then reads `Additional Spell, {Name}
+  ({Caster})`: still a DM grant by its prefix and removable, with the caster in
+  a closing parenthesis that only counts when it is one of the character's
+  casters. The spell then joins that caster's `knownSpells`, always prepared and
+  outside the list and level limits it was granted past, and its attack row uses
+  that caster's attack bonus and save DC. Without a caster it gathers in the
+  "Additional Spells" block, as before. Removing the last grant removes the
+  `<additional>` block it created.
 - `<additional>` blocks are preserved and NOT rebuilt by prepared mutations
   (wizard XML keeps `<additional>`).
 - Granted elements register through the existing registration + sum machinery.
@@ -479,6 +490,16 @@ is `packages/api/src/custom.ts`; the compiler, the catalogue a form offers and
 the pure helpers are `@forge-cb/engine/custom` (`packages/engine/src/custom/`).
 
 **Items.** A character pack also holds custom items (`CustomItemDraft`, same `schemaVersion`, told apart from a feature by `template`: `weapon`, `armor`, `worn`, `gear`). `base` (`{id, name, shield?}`) is the library weapon or armor a `weapon` or `armor` item sits on; `bonus` is the enhancement bonus (weapon) or the armor class bonus (armor); `weapon` holds `extraDamage` (dice and a damage type, up to four), `attackAbility`, `damage`, `versatile`, `range` and `properties`; a `worn` item has a `slot`; `rarity`, `attunement`, `uses` (sheet text about charges, not tracked), `weight` and `cost` (worn items and gear), `stackable` (gear) and `blocks` (modifiers and grants that apply while the item conveys its benefits: wielded or worn, and attuned when `attunement` is set; choices are refused, an item grants a custom feature that holds them). `weapon` and `armor` compile to a Magic Item whose `weapon`/`armor` setter names the base by element id, `worn` to a Magic Item, `gear` to an Item. Adding one to the inventory is the ordinary `addItem` with the base as `baseElementId`.
+
+**Spells.** A character pack also holds custom spells (`CustomSpellDraft`, same `schemaVersion`, `template: "spell"`): `level` (0 is a cantrip), `school`, `castingTime`, `range`, `duration`, `components` (`verbal`, `somatic`, `material`, `materialText`), `concentration`, `ritual`, `description`, `higherLevels` (text for casting in a higher slot), `classes` (class list names) and `mechanics`. A spell compiles to an ordinary `Spell` element: the setters every book spell carries (`level`, `school`, `time`, `duration`, `range`, `hasVerbalComponent`, `hasSomaticComponent`, `hasMaterialComponent`, `materialComponent`, `isConcentration`, `isRitual`), each class in `classes` as a `<supports>` tag (so a class's list and spell pickers offer it, as they offer a book spell), and the shape tags a book spell carries (`Spell Attack` with `Ranged` or `Melee`, `Spell Saving Throw`, `Healing Spell`). `mechanics` compiles to the structured spell setters, which the attack rows read instead of the spell's text:
+- `spell roll`: `ranged attack`, `melee attack`, `saving throw` or `none`. Its presence marks the spell as structured; `none` is a spell with no attack row whatever its text says. A spell without it is read from its text exactly as a book spell is.
+- `spell save` (an ability name) and `spell save success` (`half`) for a saving throw; a save that deals no damage has no row, as in the text reading.
+- `spell damage` (repeatable, `type` attribute): one damage term (`1d10`, `type="cold"`). The row prints the terms joined by ` + `.
+- `spell cantrip scaling` (repeatable, `level` attribute): from that character level the first damage term's dice are the value. `spell slot scaling`: dice each slot level above the spell's own adds; the row carries the same "Higher-level slots add 1d6 per slot level above 2nd." warning the text reading gives.
+- `spell modifier` (`true`): the spellcasting modifier joins the damage. `spell healing`: dice the spell restores; carried on the element for its text, never an attack row.
+Validation names the field: a save needs its ability, a save field on another roll is refused, a cantrip scales by tier and a levelled spell by slot, tier levels are 2-20 and distinct, and dice are written `2d8`. The draft's `id` is the element id, so a spell made under the id a pack's grant names resolves that grant.
+
+**Spell aliases.** `setSpellAlias(id, spellId, {name?, note?})` gives any spell the library has (book or custom) a display name (at most 80 characters) and a note (500) on one character, and returns `SpellcasterDto[]`. An omitted field is left alone; an empty name goes back to the spell's own; clearing both removes the entry. Aliases live in a second child of the builder block, `<spell-aliases schema="1"><![CDATA[{"ID_SPELL":{"name":"…","note":"…"}}]]></spell-aliases>`, so a file that uses none has no trace of them and keeps its bytes; a block that is not valid JSON answers `conflict` and is left alone. `KnownSpellDto.alias` (`{name, note}`) is present only on an aliased spell and `name` stays the real name. The Magic tab leads with the alias; the sheet's spell list prints the alias alone, the spell cards print `Alias (Real name)` and close with the note, and the spell's attack option and attack row read `Alias (Real name)`, the stored row text included. The character state carries `spellAliases`, so a character snapshot written before it fails the shape check and the character loads from its file.
 
 **Draft.** One custom element as plain JSON (`CustomDraft`, `schemaVersion: 1`;
 a draft without a version reads as 1, a newer one is refused):
@@ -547,9 +568,11 @@ the character or its last copy of an entry removes it.
 
 **Methods.**
 - `getCustomContent(id)` -> `{entries, problems}`; an entry is `{kind:
-  "feature" | "item", draft, elementId, type, section, granted, installed}`
-  (`granted` is "in the inventory" for an item).
-- `saveCustomDraft(id, {draft, grant?, amount?, notes?})` -> `{character,
+  "feature" | "item" | "spell", draft, elementId, type, section, granted,
+  installed}` (`granted` is "in the inventory" for an item, and "known" for a
+  spell: granted to a caster or picked from a list, not merely on a projected
+  class list).
+- `saveCustomDraft(id, {draft, grant?, amount?, notes?, caster?})` -> `{character,
   content, entry, diagnostics}`. Stores the draft, compiles and installs it, and
   grants a new feature (unless `grant: false`) or adds a new item to the
   inventory with `amount` copies and `notes` on its record. Editing a granted
@@ -558,7 +581,13 @@ the character or its last copy of an entry removes it.
   its records up to date in place (registrations, names, attack row) and keeps
   equipped and attuned state; moving it onto another base answers `conflict`.
   `diagnostics` names grants to content that does not exist (`missing-grant`,
-  with the missing id) and id collisions (`skipped`).
+  with the missing id and `missingType`) and id collisions (`skipped`). A new
+  spell is granted to `caster` (a class spellcasting name the character has,
+  refused before anything is stored otherwise) or gathers under Additional
+  Spells; `grant: false` keeps it for a class list alone. Editing a spell
+  replaces its element, brings the name and level stored beside the character's
+  spells up to date and keeps whoever knows it knowing it; deleting it takes
+  back the grant and any pick made from a class list.
 - `deleteCustomDraft(id, {draftId})` -> the same shape with `entry: null`.
   Removes the grant (or every inventory record of an item), the stored copy and
   the installed element.
@@ -574,6 +603,16 @@ the character or its last copy of an entry removes it.
   (`{name, range, bonus, damage, description}`, as `getAttacks` prints it); null
   for anything that is not a weapon. Nothing is saved and the scratch copy is
   discarded.
+- `previewCustomSpell(id, {draft, caster?})` -> `{attack}`. Saves the spell to a
+  scratch copy of the character, granted to `caster`, and returns its attack or
+  save row (`{casterName, bonus, damage, range, warning}`, as the attack options
+  print it); null when the spell is no attack. Nothing is saved.
+- `getMissingGrants(id)` -> `MissingGrantDto[]`: `{elementId, elementName,
+  missingId, missingType, message}` for each grant or choice default of the
+  character's custom and homebrew elements that resolves to no element, and each
+  DM-granted spell the library lacks. Book elements are never reported. Creating
+  a spell under `missingId` resolves it. Content warnings carry the same
+  `missingType` on a `missing-grant` finding.
 - `getChoiceIdentityImpact(id, {draft})` -> `{changes, hasPicks}`. Compares a
   proposed draft with the stored draft of the same id. Each change is `{blockId,
   name, type, change: "removed" | "changed", fields, orphanedSlots, picks}` where

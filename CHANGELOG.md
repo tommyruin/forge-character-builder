@@ -46,6 +46,26 @@ project uses [Semantic Versioning](https://semver.org/).
   Notes buttons.
 - A spell a feature or item gave you is listed under that feature in the Magic
   tab's Source column, with a Custom badge when you made it.
+- You can make your own spells. Magic's Add a spell says "X isn't in your
+  library. Create it?" when a search finds nothing, and opens a form for the
+  spell's level, school, casting time, range, duration, components, text, class
+  lists, and what it rolls: a ranged or melee spell attack or a saving throw
+  (with half damage on a success), damage dice and types, healing, and growth by
+  character level or by slot. The spell's attack bonus, save DC and damage come
+  from those fields, so they never depend on how its text is worded, and the
+  form shows the attack row for the caster you pick. A custom spell is stored in
+  the character file, is known to the caster you chose (or appears among its
+  class lists' pickers when you tick a class), can be edited and deleted from
+  Magic, and can be copied into a homebrew collection with the same id.
+- Any spell can be given your own name and a note on one character. The Magic
+  tab leads with the name and keeps the real one beside it; the sheet's spell
+  list prints the name, the spell cards print it with the real name in
+  parentheses and close with the note, and the spell's attack row says "Moonlit
+  Ward (Barkskin)". The spell keeps its rules.
+- A spell that a homebrew pack grants but never defines is listed on the Magic
+  tab, and on Content warnings, with Create spell. Making the spell under the
+  missing id resolves the grant; from Content warnings it is written into the
+  pack that granted it.
 
 ### Changed
 
@@ -78,6 +98,12 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Add a spell now adds the spell to the caster you pick. Before, every spell
+  landed in Additional Spells whatever the dialog said; it now appears among
+  that caster's spells, ready without preparing, and casts with that caster's
+  attack bonus and save DC. The dialog offers your class casters.
+- A spell name with an ampersand or a quote no longer breaks the saved character
+  file, and prints as written on the spell cards.
 - Fields in the custom feature form no longer show what you type in the bold
   capitals of their captions.
 - The library search in the custom feature form shows results only after you
