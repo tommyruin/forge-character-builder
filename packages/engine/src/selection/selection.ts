@@ -622,6 +622,17 @@ function spellSlotLevelAtClassLevel(
 }
 
 /**
+ * The highest spell level the named caster's own class progression reaches at
+ * the character's current level in that class: a multiclass character's
+ * combined slot table can hold higher slots than any one class may learn or
+ * prepare spells of. 0 when the progression cannot be derived.
+ */
+export function casterOwnSpellLevel(state: CharacterState, library: ElementLibrary, casterName: string): number {
+  const classLevel = casterClassLevel(state, library, casterName);
+  return classLevel > 0 ? spellSlotLevelAtClassLevel(library, casterName, classLevel) : 0;
+}
+
+/**
  * The class level a select's `$(spellcasting:slots)` ceiling is read at.
  * Spells known are the caster's current repertoire: every one of those choices
  * may hold a spell of any level the caster has slots for now, so the ceiling

@@ -15,8 +15,9 @@ function originLabel(featureName: string, usage: string | null | undefined): str
  * caster (Magic Initiate, Fey Touched) whose ability, attack bonus and save DC
  * match a class caster joins that class's list, each of its spells labelled
  * with the feature and any free casts. A feature caster with different
- * statistics, or with a spell at a level the class has no slots for, keeps its
- * own list so its spells still print. Class casters are never merged with each
+ * statistics, or with a spell above the class's highest spell level, keeps its
+ * own list so its spells still print (the class list prints every level up to
+ * that one, Pact Magic's lower levels included). Class casters are never merged with each
  * other: their slot pools differ (Pact Magic, multiclass tables).
  */
 export function mergeSheetSpellcasters(casters: readonly SpellcasterDto[]): SpellcasterDto[] {
@@ -26,7 +27,7 @@ export function mergeSheetSpellcasters(casters: readonly SpellcasterDto[]): Spel
     if (caster.kind !== "feature") continue;
     const host = copies.find((candidate) => candidate.kind === "class"
       && sameStatistics(candidate, caster)
-      && caster.knownSpells.every((spell) => spell.level === 0 || (candidate.slotsPerLevel[spell.level - 1] ?? 0) > 0));
+      && caster.knownSpells.every((spell) => spell.level <= candidate.maxSpellLevel));
     if (host === undefined) continue;
     for (const spell of caster.knownSpells) {
       const label = originLabel(caster.name, spell.usage);

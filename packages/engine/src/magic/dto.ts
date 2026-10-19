@@ -23,6 +23,7 @@ import {
   alwaysPreparedSets,
   alwaysPreparedUsages,
   canonicalSourceRank,
+  casterSpellLevelCap,
   compareSpellInfo,
   fullCasterList,
   ownKnownSpells,
@@ -291,7 +292,7 @@ export function buildSpellcastingDto(
     const rawSlots = slotsArray(block);
     const resource = spellResource(state, block, rawSlots);
     const slots = resource.mode === "spellPoints" ? Array(9).fill(0) : rawSlots;
-    const maxLevel = maxSlotLevel(rawSlots);
+    const maxLevel = casterSpellLevelCap(state, library, block);
 
     const fullList = isFullListCaster(library, block);
     const alwaysSet = new Set(always.get(block.name) ?? []);

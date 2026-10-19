@@ -9,7 +9,7 @@ import type { SpellcasterDto } from "../magic/dto.js";
 
 const caster = (name: string, kind: "class" | "feature", ability = "Wisdom", attackModifier = 5, usage?: string): SpellcasterDto => ({
   name, kind, ability, attackModifier, saveDc: 13, identifier: name, prepareCount: 4,
-  requiresPreparation: kind === "class", slotsPerLevel: kind === "class" ? [4, 2] : [],
+  requiresPreparation: kind === "class", slotsPerLevel: kind === "class" ? [4, 2] : [], maxSpellLevel: kind === "class" ? 2 : 0,
   resource: { mode: "slots" },
   knownSpells: [
     { id: `${name}-cantrip`, name: `${name} Cantrip`, level: 0, isPrepared: false, isAlwaysPrepared: false, source: "PHB" },
@@ -26,7 +26,7 @@ describe("printed spell lists", () => {
     expect(lists[0]!.knownSpells.find((spell) => spell.id === "aid")?.usage).toBe("[Magic Initiate (Druid) - 1/Long Rest]");
   });
 
-  it("keeps a separate list for a different casting ability, attack bonus or slotless level, and never merges two classes", () => {
+  it("keeps a separate list for a different casting ability, attack bonus or a level above the class's highest, and never merges two classes", () => {
     const lists = mergeSheetSpellcasters([
       caster("Sorcerer", "class", "Charisma", 6),
       caster("Fighter", "class", "Intelligence", 4),
@@ -35,7 +35,7 @@ describe("printed spell lists", () => {
       caster("Staff", "feature", "Charisma", 7),
     ]);
     expect(lists.map((list) => list.name)).toEqual(["Sorcerer", "Fighter", "Wizard", "Staff"]);
-    const unslotted = mergeSheetSpellcasters([{ ...caster("Ranger", "class"), slotsPerLevel: [2] }, caster("Fey Touched", "feature")]);
+    const unslotted = mergeSheetSpellcasters([{ ...caster("Ranger", "class"), slotsPerLevel: [2], maxSpellLevel: 1 }, caster("Fey Touched", "feature")]);
     expect(unslotted.map((list) => list.name)).toEqual(["Ranger", "Fey Touched"]);
   });
 

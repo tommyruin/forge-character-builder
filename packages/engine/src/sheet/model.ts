@@ -398,11 +398,15 @@ function sheetAttackNote(attack: AttackDto, library: ElementLibrary): string {
     (attack.source?.beamCount ?? 0) > 1 ? `${attack.source!.beamCount} beams` : ""].filter(Boolean).join("; ");
 }
 
-/** A spell as the spell page layout draws it. */
-function layoutSpell(spell: KnownSpellDto): SheetSpellListSection["spells"][number] {
+/**
+ * A spell as the spell page layout draws it. A caster that does not prepare
+ * (Warlock, Sorcerer, a 2024 Bard) has every levelled spell it knows ready,
+ * so those print marked like prepared spells.
+ */
+function layoutSpell(spell: KnownSpellDto, requiresPreparation: boolean): SheetSpellListSection["spells"][number] {
   return {
     name: spell.name,
-    prepared: spell.isPrepared,
+    prepared: spell.isPrepared || (!requiresPreparation && spell.level > 0),
     alwaysPrepared: spell.isAlwaysPrepared,
     ...(spell.usage === undefined || spell.usage === null || spell.usage === "" ? {} : { usage: spell.usage }),
   };
@@ -2319,12 +2323,30 @@ const MULTICLASS_SLOTS: readonly (readonly number[])[] = [
   [4, 3, 3, 3, 3, 2, 2, 1, 1],
 ];
 
-function sheetSlots(state: CharacterState, caster: SpellcasterDto): readonly number[] {
-  if (state.magic?.multiclass !== true) return caster.slotsPerLevel;
-  const block = state.magic.casters.find((entry) => entry.name === caster.name);
-  if (block?.source.includes("PACT_MAGIC") === true) return caster.slotsPerLevel;
-  const level = Number.parseInt(state.magic.level ?? "0", 10);
-  return MULTICLASS_SLOTS[Math.min(Math.max(level, 0), 20)] ?? [];
+/**
+ * The slot circles each printed caster carries. A feature caster has no slots
+ * of its own. A combined multiclass character has one shared pool, so it
+ * prints once, on the class caster whose own spells reach highest (the first
+ * such in order on a tie); the other combined class casters print their bands
+ * without circles. Pact Magic keeps its own table.
+ */
+function sheetSlots(state: CharacterState, casters: readonly SpellcasterDto[]): Map<SpellcasterDto, readonly number[]> {
+  const slots = new Map<SpellcasterDto, readonly number[]>();
+  const isPact = (caster: SpellcasterDto): boolean =>
+    state.magic?.casters.find((entry) => entry.name === caster.name)?.source.includes("PACT_MAGIC") === true;
+  const combined = state.magic?.multiclass === true
+    ? casters.filter((caster) => caster.kind === "class" && caster.resource.mode === "slots" && !isPact(caster))
+    : [];
+  const holder = combined.reduce<SpellcasterDto | undefined>(
+    (best, caster) => (best === undefined || caster.maxSpellLevel > best.maxSpellLevel ? caster : best), undefined);
+  const level = Number.parseInt(state.magic?.level ?? "0", 10);
+  for (const caster of casters) {
+    if (caster.kind === "feature") slots.set(caster, []);
+    else if (caster === holder) slots.set(caster, MULTICLASS_SLOTS[Math.min(Math.max(level, 0), 20)] ?? []);
+    else if (combined.includes(caster)) slots.set(caster, []);
+    else slots.set(caster, caster.slotsPerLevel);
+  }
+  return slots;
 }
 
 interface SpellGridGeometry {
@@ -2437,10 +2459,11 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     }
     return tokens;
   };
+  const slotPlan = sheetSlots(state, casters);
   for (const caster of casters) {
     const name = casterDisplayName(state, library, caster);
     const spells = uniqueSpellNames(caster.knownSpells);
-    const slotsPerLevel = casters.length === 1 ? caster.slotsPerLevel : sheetSlots(state, caster);
+    const slotsPerLevel = slotPlan.get(caster) ?? [];
     const cantrips = spells.filter((spell) => spell.level === 0);
     const levels: Array<{
       level: number;
@@ -2453,9 +2476,13 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       const knownAtLevel = spells.filter((spell) => spell.level === level);
       // A feature caster has no slots of its own (its level-1 spell is cast
       // free once per long rest, or from another caster's slots), so its
-      // levels are admitted on known spells alone.
+      // levels are admitted on known spells alone. A class caster's level
+      // without circles of its own (Pact Magic's lower levels, a multiclass
+      // caster whose shared slots print on another class) still prints the
+      // spells it knows up to its own highest spell level.
       const slotless = caster.resource.mode === "spellPoints" || caster.kind === "feature";
-      if (slots <= 0 && !(slotless && knownAtLevel.length > 0)) continue;
+      const castable = slotless || level <= caster.maxSpellLevel;
+      if (slots <= 0 && !(castable && knownAtLevel.length > 0)) continue;
       const prepared = spells.filter(
         (spell) => spell.level === level && (spell.isPrepared || spell.isAlwaysPrepared),
       );
@@ -2525,13 +2552,13 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     }): SheetSpellListSection => ({
       level: level.level,
       slots: level.slots,
-      spells: [...level.prepared, ...level.full].map(layoutSpell),
+      spells: [...level.prepared, ...level.full].map((spell) => layoutSpell(spell, caster.requiresPreparation)),
     });
     let layoutSections = emitCasterHeader();
     layoutSections.push({
       level: 0,
       slots: 0,
-      spells: cantrips.map(layoutSpell),
+      spells: cantrips.map((spell) => layoutSpell(spell, caster.requiresPreparation)),
     });
     if (absorbFirstLevel) {
       const first = levels.shift()!;
