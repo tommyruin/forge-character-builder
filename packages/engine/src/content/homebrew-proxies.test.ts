@@ -7,7 +7,6 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { replaceLibraryFiles, type ElementLibrary } from "./library.js";
-import { CharacterService } from "../character/service.js";
 import { buildFighter3, sharedLibrary } from "../testing/character-factory.js";
 
 const LANGUAGE = "ID_HB_PROXY_LANGUAGE_TIDECANT";
