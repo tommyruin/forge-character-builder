@@ -17,7 +17,7 @@ import { CharacterService } from "../character/service.js";
 import { buildFighter3, seededRng, sharedLibrary } from "../testing/character-factory.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import { sheetCanonical } from "./canonical.js";
-import { buildCharacterSheetModel, inventoryColumnEntries, itemNoteSummary, type CharacterSheetModel } from "./model.js";
+import { buildCharacterSheetModel, inventoryColumnEntries, type CharacterSheetModel } from "./model.js";
 import { writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
 
 const FIXTURE_ROOT = fileURLToPath(new URL("../../../../fixtures/coverage/characters/", import.meta.url));
@@ -30,8 +30,12 @@ const CLOAK = "ID_WOTC_DMG_MAGIC_ITEM_CLOAK_OF_PROTECTION";
 const POTION = "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HEALING";
 
 const ROPE_SENTENCE = "Rope, whether made of hemp or silk, has 2 hit points and can be burst with a DC 17 Strength check.";
-const TOOLS_SENTENCE =
-  "Perhaps the most common tools used by adventurers, thieves’ tools are designed for picking locks and foiling traps.";
+const TOOLS_NOTE = [
+  "Perhaps the most common tools used by adventurers, thieves’ tools are designed for picking locks and foiling traps.",
+  "Set a Trap.",
+  "The total of your check becomes the DC for someone else’s attempt to discover or disable the trap.",
+  "The trap deals damage appropriate to the materials used in crafting it (such as poison or a weapon) or damage equal to half the total of your check, whichever the DM deems appropriate.",
+].join(" ");
 const RING_LATER_TEXT = "The spell cast from the ring is no longer stored in it, freeing up space.";
 
 let library: ElementLibrary;
@@ -83,8 +87,8 @@ describe("inventoryColumnEntries", () => {
     ]);
     expect(entries[1]!.text).toContain(RING_LATER_TEXT);
     expect(entries[3]!.text).toBe(ROPE_SENTENCE);
-    expect(entries[4]!.text).toBe(TOOLS_SENTENCE);
-    expect(entries[4]!.html).toBe(`<p>${TOOLS_SENTENCE}</p>`);
+    expect(entries[4]!.text).toBe(TOOLS_NOTE);
+    expect(entries[4]!.html).toContain("<p><strong><em>Set a Trap.</em></strong> The total of your check");
   });
 
   it("keeps a sheet-notes item where it always printed, in full", () => {
@@ -106,27 +110,13 @@ describe("inventoryColumnEntries", () => {
   });
 });
 
-describe("itemNoteSummary", () => {
-  it("keeps the first sentence", () => {
-    expect(itemNoteSummary("Short one. Second sentence here.")).toBe("Short one.");
-    expect(itemNoteSummary("No full stop at all")).toBe("No full stop at all");
-  });
-
-  it("caps a long sentence near 200 characters at a word boundary", () => {
-    const long = `${"word ".repeat(60).trim()}.`;
-    const summary = itemNoteSummary(long);
-    expect(summary.endsWith("…")).toBe(true);
-    expect(summary.length).toBeLessThanOrEqual(201);
-    expect(summary.slice(0, -1)).toMatch(/word$/);
-  });
-});
-
 describe("the item notes switch on the sheet model", () => {
   it("prints the extra notes in the column and the notes field", () => {
     const { service, id } = packedFighter("Model");
     const state = service.getCharacter(id);
     const model = buildCharacterSheetModel(state, library, { mode: "full", inventoryNotes: true });
     expect(sidebarText(model)).toContain("Thieves’ Tools.");
+    expect(sidebarText(model)).toContain("Set a Trap.");
     expect(model.formValues?.["equipment_page_magic_items"]).toContain(`Rope, Hempen (50 feet). ${ROPE_SENTENCE}`);
     expect(model.formValues?.["equipment_page_magic_items"]).not.toContain("Rations");
 
@@ -181,6 +171,95 @@ describe("the item notes switch on the sheet model", () => {
     expect(text).toContain("Ring of Spell Storing");
     expect(text).toContain("freeing up space");
   });
+});
+
+describe("what the equipment tables cannot hold", () => {
+  const isGear = (element: ElementLibrary["byId"] extends Map<string, infer E> ? E : never): boolean =>
+    element.identity.id.startsWith("ID_WOTC_PHB_ITEM_") && isPhysicalEquipment(element);
+
+  /** A fighter carrying `gear` distinct mundane items and `magic` distinct magic items. */
+  function loaded(gear: number, magic: number, name: string) {
+    const { service, id } = buildFighter3(library, name);
+    const gearIds = (library.byType.get("Item") ?? []).filter(isGear).map((element) => element.identity.id);
+    const magicIds = (library.byType.get("Magic Item") ?? [])
+      .filter((element) => element.identity.id.startsWith("ID_WOTC_DMG_MAGIC_ITEM_") && isPhysicalEquipment(element))
+      .map((element) => element.identity.id);
+    for (const itemId of [...gearIds.slice(0, gear), ...magicIds.slice(0, magic)]) {
+      service.addItem(id, { itemId, amount: 1, baseElementId: null });
+    }
+    return structuredClone(service.getCharacter(id));
+  }
+
+  const tableNames = (model: CharacterSheetModel, prefix: string): string[] =>
+    Object.entries(model.formValues ?? {})
+      .filter(([key, value]) => key.startsWith(`${prefix}_name.`) && value !== "")
+      .map(([, value]) => String(value));
+  const overflowItems = (model: CharacterSheetModel, title: RegExp): number =>
+    String(model.formValues?.["equipment_page_magic_items"] ?? "")
+      .split("\n\n")
+      .filter((entry) => title.test(entry))
+      .reduce((sum, entry) => sum + entry.split("; ").length, 0);
+
+  it("prints nothing extra for an inventory the tables hold", () => {
+    const state = loaded(10, 3, "Fits");
+    expect(inventoryColumnEntries(state, library, { notes: false })).toEqual([]);
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    expect(model.formValues?.["equipment_page_magic_items"]).toBe("");
+  });
+
+  it("lists gear past the table's 40 rows in the notes column, with or without the notes switch", () => {
+    const state = loaded(46, 0, "Gear");
+    for (const inventoryNotes of [false, true]) {
+      const model = buildCharacterSheetModel(state, library, { mode: "full", inventoryNotes });
+      expect(tableNames(model, "equipment_page_gear")).toHaveLength(40);
+      expect(overflowItems(model, /^Adventuring gear \(continued\)\./)).toBe(6);
+      expect(sidebarText(model)).toContain("Adventuring gear (continued).");
+    }
+  });
+
+  it("lists magic items and valuables that neither their table nor a full gear table can hold", () => {
+    const state = loaded(46, 24, "Magic");
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    expect(tableNames(model, "equipment_page_magic_gear")).toHaveLength(20);
+    expect(overflowItems(model, /^Magic items \(continued\)\./)).toBe(4);
+    // Every item sits in a table row or in an overflow list, once.
+    const placed = tableNames(model, "equipment_page_gear").length + 20
+      + overflowItems(model, /^(?:Adventuring gear|Magic items|Valuables) \(continued\)\./);
+    expect(placed).toBe(46 + 24);
+  });
+
+  it("continues magic items in the gear table while it has room, and lists only what is left", () => {
+    const state = loaded(30, 24, "Spill");
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    const gear = tableNames(model, "equipment_page_gear");
+    expect(gear).toHaveLength(35);
+    expect(gear).toContain("MAGIC ITEMS — CONTINUED");
+    expect(overflowItems(model, /^Magic items \(continued\)\./)).toBe(0);
+  });
+
+  it("lists a third container, and a container's items past its ten rows", () => {
+    const state = loaded(30, 0, "Cargo");
+    state.storages = ["Saddlebags", "#2", "Cart"];
+    state.items.slice(0, 14).forEach((record) => { record.storage = "Saddlebags"; });
+    state.items.slice(14, 17).forEach((record) => { record.storage = "Cart"; });
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    expect(tableNames(model, "equipment_page_vehicle_1_cargo")).toHaveLength(10);
+    expect(overflowItems(model, /^Saddlebags, stowed \(continued\)\./)).toBe(4);
+    expect(overflowItems(model, /^Cart, stowed\./)).toBe(3);
+  });
+
+  it("prints the overflow in the column of the rendered sheet", async () => {
+    const model = buildCharacterSheetModel(loaded(46, 0, "Render"), library, {
+      mode: "full",
+      include: { background: false },
+    });
+    expect(sidebarText(model)).toContain("Adventuring gear (continued).");
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle("2014"));
+    const document = await getDocument({ data: new Uint8Array(pdf) }).promise;
+    const content = await (await document.getPage(equipmentPage(model).page)).getTextContent();
+    const text = content.items.map((item) => ("str" in item ? item.str : "")).join(" ").replace(/\s+/g, " ");
+    expect(text).toContain("Adventuring gear (continued).");
+  }, 60_000);
 });
 
 describe("with the item notes switch off", () => {

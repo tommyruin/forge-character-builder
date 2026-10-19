@@ -118,15 +118,30 @@ describe("adding magic armor and weapons from the catalogue", () => {
     expect(ac).toBe(acBefore! + 2);
   }, 120_000);
 
-  it("still offers Sentinel Shield and Flame Tongue their bases", () => {
+  it("offers each edition's Shield as its own base for a Sentinel Shield, told apart by source", () => {
     const service = new CharacterService(undefined, library);
     const id = service.createCharacter("Magic Options").id;
     const sentinel = service.getItemBaseOptions(id, SENTINEL_SHIELD);
     expect(sentinel.slot).toBe("armor");
-    expect(sentinel.options.map((option) => option.name)).toEqual(["Shield"]);
+    expect(sentinel.options.map((option) => [option.name, option.id, option.source])).toEqual([
+      ["Shield", SHIELD_2014, "Player’s Handbook"],
+      ["Shield", SHIELD_2024, "Player’s Handbook (2024)"],
+    ]);
+  }, 120_000);
+
+  it("offers each edition's Longsword as its own base for a Flame Tongue", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Magic Options").id;
     const flame = service.getItemBaseOptions(id, FLAME_TONGUE);
     expect(flame.slot).toBe("weapon");
-    expect(flame.options.map((option) => option.name)).toContain("Longsword");
+    const ids = flame.options.filter((option) => option.name === "Longsword").map((option) => option.id);
+    expect(ids).toEqual([LONGSWORD_2014, LONGSWORD_2024]);
+  }, 120_000);
+
+  it("lays a Sentinel Shield over the chosen 2014 Shield base, not the 2024 one", () => {
+    const { record } = added(SENTINEL_SHIELD, SHIELD_2014);
+    expect(record.itemId).toBe(SHIELD_2014);
+    expect(record.adorners).toEqual([SENTINEL_SHIELD]);
   }, 120_000);
 
   it("lays a Flame Tongue over a chosen 2024 Longsword base", () => {

@@ -5,6 +5,7 @@
 // does not re-derive them and disagree with the engine's homebrew-inclusive maths.
 import { buildItems } from './items.js';
 import { ABILITIES, SKILLS } from '../rules5e.js';
+import { textToHtml, textToInlineHtml } from '../collect.js';
 
 // Skill base name -> dnd5e skill key.
 const SKILL_KEY = {
@@ -56,9 +57,9 @@ export function buildFoundryActor(model) {
   }
 
   const biographyHtml = [
-    model.biography.backstory,
-    model.biography.allies ? `<p><strong>Allies &amp; Organizations.</strong> ${model.biography.allies}</p>` : '',
-    model.biography.notes ? `<p>${model.biography.notes}</p>` : '',
+    textToHtml(model.biography.backstory),
+    model.biography.allies ? `<p><strong>Allies &amp; Organizations.</strong> ${textToInlineHtml(model.biography.allies)}</p>` : '',
+    textToHtml(model.biography.notes),
   ].filter(Boolean).join('\n');
 
   return {

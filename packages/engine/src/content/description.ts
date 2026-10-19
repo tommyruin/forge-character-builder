@@ -40,3 +40,33 @@ export function expandDescriptionReferences(
     return `<h5>${name.toUpperCase()}</h5>${inner}`;
   });
 }
+
+/**
+ * A description as plain text that keeps its shape: a blank line between
+ * paragraphs, one line per list item ("• item") and per table row (cells
+ * joined by " | "), with markup dropped and common entities decoded. For
+ * text fields that take line breaks; `plainDescriptionText` is the flat form
+ * for classification and one-line summaries.
+ */
+export function descriptionToText(xml: string | undefined): string {
+  return (xml ?? "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<\s*(?:ul|ol|table)\b[^>]*>/gi, "\n")
+    .replace(/<\s*li\b[^>]*>/gi, "• ")
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*t[dh]\s*>\s*(?=<\s*t[dh]\b)/gi, " | ")
+    .replace(/<\/\s*(?:li|tr)\s*>/gi, "\n")
+    .replace(/<\/\s*(?:p|div|h[1-6]|ul|ol|table)\s*>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(?:nbsp|#160);/gi, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveMagicBaseAction } from '../magicBaseAction';
+import { baseOptionLabel, resolveMagicBaseAction } from '../magicBaseAction';
 
 describe('resolveMagicBaseAction', () => {
   it('adds directly when the item takes no base', () => {
@@ -37,5 +37,22 @@ describe('resolveMagicBaseAction', () => {
       baseElementId: null,
       baseName: null,
     });
+  });
+});
+
+describe('baseOptionLabel', () => {
+  const shields = [
+    { id: 'ID_SHIELD_2014', name: 'Shield', source: 'Player’s Handbook' },
+    { id: 'ID_SHIELD_2024', name: 'Shield', source: 'Player’s Handbook (2024)' },
+    { id: 'ID_RAPIER', name: 'Rapier', source: 'Player’s Handbook' },
+  ];
+
+  it('tells same-named bases apart by source', () => {
+    expect(baseOptionLabel(shields[0], shields)).toBe('Shield (Player’s Handbook)');
+    expect(baseOptionLabel(shields[1], shields)).toBe('Shield (Player’s Handbook (2024))');
+  });
+
+  it('leaves a name only one base carries alone', () => {
+    expect(baseOptionLabel(shields[2], shields)).toBe('Rapier');
   });
 });

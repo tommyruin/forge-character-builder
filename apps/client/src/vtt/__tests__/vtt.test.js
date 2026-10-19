@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { collectExportModel } from "../collect.js";
+import { collectExportModel, stripHtml, textToHtml } from "../collect.js";
 import { buildFoundryActor } from "../foundry/buildActor.js";
 import { buildItems, parseDamage } from "../foundry/items.js";
 import { buildVttes } from "../roll20/buildVttes.js";
@@ -266,5 +266,39 @@ describe("foundry weapon items for unarmed strikes", () => {
     const [weapon] = itemsFor("1+2 bludgeoning");
     expect(weapon.system.damage.parts).toEqual([["3", "bludgeoning"]]);
     expect(weapon.system.damage.base).toBeUndefined();
+  });
+});
+
+describe("text and markup keep their paragraph and list breaks", () => {
+  it("stripHtml puts paragraphs, list items and table rows on their own lines", () => {
+    const html =
+      "<p>First paragraph.</p><p>Second &amp; last.</p><ul><li>One</li><li>Two</li></ul>" +
+      "<table><tr><td>Plot a course</td><td>10</td></tr><tr><td>Find north</td><td>15</td></tr></table>";
+    expect(stripHtml(html)).toBe(
+      "First paragraph.\n\nSecond & last.\n\n• One\n• Two\n\nPlot a course | 10\nFind north | 15",
+    );
+  });
+
+  it("stripHtml is empty for nothing", () => {
+    expect(stripHtml("")).toBe("");
+    expect(stripHtml(undefined)).toBe("");
+  });
+
+  it("textToHtml makes paragraphs of blank-line runs and breaks of single newlines, escaping the text", () => {
+    expect(textToHtml("Raised <here>.\nSecond line.\n\nNext & last.")).toBe(
+      "<p>Raised &lt;here&gt;.<br>Second line.</p><p>Next &amp; last.</p>",
+    );
+    expect(textToHtml("")).toBe("");
+  });
+
+  it("the Roll20 biography and the Foundry biography keep the backstory's lines", async () => {
+    const m = await model();
+    m.biography.backstory = "Raised in a temple.\nLeft at nineteen.\n\nNever went back.";
+    const roll20 = buildVttes(m);
+    expect(JSON.stringify(roll20)).toContain("Raised in a temple.<br>Left at nineteen.<br><br>Never went back.");
+    const foundry = buildFoundryActor(m);
+    expect(foundry.system.details.biography.value).toContain(
+      "<p>Raised in a temple.<br>Left at nineteen.</p><p>Never went back.</p>",
+    );
   });
 });
