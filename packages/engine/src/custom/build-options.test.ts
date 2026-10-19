@@ -676,6 +676,19 @@ describe("a homebrew subclass of a book class", () => {
   it("adds its spells to the class list for every wizard", () => {
     expect(library.byId.get("ID_PHB_SPELL_ENTANGLE")!.supports).toContain("Wizard");
   });
+
+  it("is offered by the 2024 wizard's subclass pick too when it answers to both rulesets' tags", () => {
+    const both = {
+      ...createCustomSubclassDraft({ id: "ID_WOTC_PHB24_CLASS_WIZARD", name: "Wizard", tag: "Arcane Tradition||Wizard Subclass" }, "Tidecaller"),
+      features: [feature("subclass", 3, "Pull of the Tide", "The sea lends you a die.")],
+    };
+    const dual = libraryWith([both]);
+    const { service, id } = buildCharacter(dual, { id: "Tide24", classId: "ID_WOTC_PHB24_CLASS_WIZARD", levels: 3 });
+    const rule = pending(service, id, "Wizard Subclass")[0]!;
+    expect(selectionOptions(service.getCharacter(id), dual, rule).map((option) => option.id)).toContain(both.id);
+    service.setSelection(id, rule.identifier, both.id);
+    expect(service.getCharacter(id).sum.elements.map((entry) => entry.id)).toContain(both.features[0]!.draft.id);
+  });
 });
 
 describe("a homebrew species builds a character", () => {
