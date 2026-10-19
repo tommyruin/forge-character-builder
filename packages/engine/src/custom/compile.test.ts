@@ -221,6 +221,12 @@ describe("grant blocks (B2)", () => {
     ]);
   });
 
+  it("keeps a display label on a grant by id without changing the rule", () => {
+    expect(grants({ kind: "grant", id: "g1", target: { by: "id", type: "Language", id: "ID_TEST_LANGUAGE", label: "Sylvan" } })).toEqual([
+      expect.objectContaining({ type: "Language", id: "ID_TEST_LANGUAGE" }),
+    ]);
+  });
+
   it("grants by type and name, at a level, when requirements are met", () => {
     expect(
       grants({
@@ -320,6 +326,12 @@ describe("invalid drafts", () => {
     expect(
       issuePaths(draftWith([{ kind: "modifier", id: "m1", target: "strength", mode: "add", value: { kind: "number", value: 5000 } }])),
     ).toEqual(["blocks[0].value.value"]);
+  });
+
+  it("accepts a short note on where an entry came from and refuses a long one", () => {
+    expect(issuePaths({ ...draftWith([]), cameFrom: "Moonwell Campaign" })).toEqual([]);
+    expect(issuePaths({ ...draftWith([]), cameFrom: "x".repeat(200) })).toEqual(["cameFrom"]);
+    expect(issuePaths({ ...draftWith([]), cameFrom: 4 })).toEqual(["cameFrom"]);
   });
 
   it("refuses a template that cannot show where asked", () => {

@@ -478,7 +478,10 @@ a draft without a version reads as 1, a newer one is refused):
 `showsUnder` (race, class, feats, other), `description`, `sheet` (show, title,
 action None/Action/Bonus Action/Reaction/Attack, usage, text, level tiers),
 `blocks` (modifier, grant, choice, in order), `requirements` (an ALL/ANY/NONE
-tree), `tags` (the element's `<supports>`) and `ruleset`. `id` is the element
+tree), `tags` (the element's `<supports>`), `ruleset` and `cameFrom` (free text
+on where the entry came from, for lists; the compiler ignores it). A grant
+target by id and a filter leaf by id may carry a `label` with the element's name
+for summaries; the engine reads only the id. `id` is the element
 id: `ID_CUSTOM_` plus random characters, generated once and never derived from
 the name, so renaming, promoting and re-importing never re-id it.
 - `showsUnder` picks the element type: race `Racial Trait`, class `Class

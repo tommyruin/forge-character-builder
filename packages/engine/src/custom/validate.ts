@@ -314,6 +314,9 @@ export function customDraftIssues(draft: unknown): CustomDraftIssue[] {
   if (typeof draft.description !== "string" || draft.description.length > 20000) {
     issues.push({ path: "description", message: "the description is text of at most 20000 characters" });
   }
+  if (draft.cameFrom !== undefined && !isText(draft.cameFrom, 120)) {
+    issues.push({ path: "cameFrom", message: "where it came from is text of at most 120 characters" });
+  }
   if (draft.ruleset !== undefined && !CUSTOM_RULESETS.includes(draft.ruleset as never)) {
     issues.push({ path: "ruleset", message: "pick both rulesets, 2014 or 2024" });
   }

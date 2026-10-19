@@ -87,7 +87,8 @@ export interface ModifierBlock {
 }
 
 export type GrantTarget =
-  | { by: "id"; type: string; id: string }
+  /** `label` is display text for summaries; the engine reads only the id. */
+  | { by: "id"; type: string; id: string; label?: string }
   | { by: "name"; type: string; name: string };
 
 export interface SpellGrantOptions {
@@ -116,7 +117,8 @@ export type FilterNode =
   | { kind: "tag"; value: string }
   | { kind: "level"; value: number }
   | { kind: "school"; value: string }
-  | { kind: "id"; value: string };
+  /** `label` is display text; the engine reads only the id. */
+  | { kind: "id"; value: string; label?: string };
 
 export interface ChoiceBlock {
   kind: "choice";
@@ -163,6 +165,8 @@ export interface CustomDraft {
   showsUnder: ShowsUnder;
   /** Plain text; blank lines separate paragraphs. */
   description: string;
+  /** Free text on where the entry came from (a campaign, a DM); shown beside it in lists. */
+  cameFrom?: string;
   sheet?: CustomSheet;
   blocks: CustomBlock[];
   /** B4: prerequisites that gate the element. */
