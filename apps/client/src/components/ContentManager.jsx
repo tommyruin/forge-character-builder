@@ -57,15 +57,19 @@ export function ContentSourceOption({ source }) {
 // Engine-side XML validation results ({kind, message, file, detail}) returned by
 // upload/remove. Without this list "Accepted" can lie: a file that reached the store but
 // failed to parse still reports accepted=true — the parse failure only shows up here.
-function UploadDiagnostics({ diagnostics }) {
+const MAX_DIAGNOSTIC_ROWS = 100;
+
+export function UploadDiagnostics({ diagnostics }) {
   if (!diagnostics?.length) return null;
+  const shown = diagnostics.slice(0, MAX_DIAGNOSTIC_ROWS);
+  const hidden = diagnostics.length - shown.length;
   return (
     <div className="mt-3" data-testid="cm-upload-diagnostics">
       <p className="fcb-warning-note mb-1 text-xs uppercase tracking-wider">
         Content warnings
       </p>
       <ul className="fcb-upload-list">
-        {diagnostics.map((diag, index) => (
+        {shown.map((diag, index) => (
           <li key={index} className="is-rejected">
             [{diag.kind}] {diag.file ? `${diag.file}: ` : ''}
             {diag.message}
@@ -78,6 +82,9 @@ function UploadDiagnostics({ diagnostics }) {
           </li>
         ))}
       </ul>
+      {hidden > 0 && (
+        <p className="fcb-import-help mt-2">{hidden} more warnings are not listed.</p>
+      )}
     </div>
   );
 }

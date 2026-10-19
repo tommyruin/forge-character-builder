@@ -1,6 +1,7 @@
 import { engineError } from "../errors.js";
 import { decodeBase64 } from "../platform.js";
 import { replaceLibraryFiles, type ContentDiagnostic, type ElementLibrary } from "./library.js";
+import { missingGrantDiagnostics } from "./missing-grants.js";
 
 export interface ContentInputFile {
   path: string;
@@ -97,6 +98,11 @@ function requireRawFiles(library: ElementLibrary): Map<string, string> {
   return library.fileContents ?? new Map();
 }
 
+/** Adds the rule-reference findings to those the rebuild already recorded. */
+function recordReferenceFindings(library: ElementLibrary): void {
+  library.diagnostics = [...(library.diagnostics ?? []), ...missingGrantDiagnostics(library)];
+}
+
 /** Install uploaded content in one atomic rebuild; duplicate paths replace. */
 export async function ingestContentFiles(library: ElementLibrary, files: readonly ContentInputFile[]): Promise<ReturnType<typeof contentStatus> & { diagnostics: ContentDiagnostic[] }> {
   const next = new Map(requireRawFiles(library));
@@ -117,6 +123,7 @@ export async function ingestContentFiles(library: ElementLibrary, files: readonl
   } catch (cause) {
     throw engineError("content-invalid", `content ingestion failed: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
+  recordReferenceFindings(library);
   // Only findings about the files in THIS ingest surface to the caller —
   // longstanding corpus findings would otherwise repeat on every upload.
   const diagnostics = (library.diagnostics ?? []).filter((diagnostic) => ingestedPaths.has(diagnostic.file));
@@ -144,6 +151,7 @@ export async function replaceContentSet(library: ElementLibrary, files: readonly
   } catch (cause) {
     throw engineError("content-invalid", `content ingestion failed: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
+  recordReferenceFindings(library);
   const diagnostics = (library.diagnostics ?? []).filter((diagnostic) => ingestedPaths.has(diagnostic.file));
   return { ...contentStatus(library), diagnostics };
 }
@@ -152,6 +160,7 @@ export function removeContentFiles(library: ElementLibrary, paths: readonly stri
   const next = new Map(requireRawFiles(library));
   for (const path of paths) next.delete(normalizePath(path));
   replaceLibraryFiles(library, next);
+  recordReferenceFindings(library);
   return contentStatus(library);
 }
 

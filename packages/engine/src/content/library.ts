@@ -155,11 +155,28 @@ export interface ElementLibrary {
 }
 
 export interface ContentDiagnostic {
-  kind: "duplicate-id" | "empty-file" | "append-target";
+  kind: "duplicate-id" | "empty-file" | "append-target" | "missing-grant";
   /** Normalized path of the file the finding is about. */
   file: string;
   message: string;
   detail?: string;
+  /** missing-grant: the element whose rule names something that is not there. */
+  elementId?: string;
+  elementName?: string;
+  /** missing-grant: the id (or `Type "Name"`) that resolves to no element. */
+  missingId?: string;
+}
+
+/**
+ * The file an appended rule was written in. An `<append>` block's rules join
+ * the target element, whose own file is somewhere else; findings about such a
+ * rule belong to the file that wrote it.
+ */
+const appendedRuleFiles = new WeakMap<object, string>();
+
+/** The file that wrote an appended rule, or undefined for a rule written on its element. */
+export function appendedRuleFile(rule: object): string | undefined {
+  return appendedRuleFiles.get(rule);
 }
 
 const IMPROVEMENT_OPTION = /^Improvement Option \((.+) (\d+)\)$/;
@@ -551,6 +568,7 @@ export function replaceLibraryFiles(
   for (const { append, file } of appends) {
     const target = byId.get(append.id);
     if (target) {
+      for (const rule of append.rules) appendedRuleFiles.set(rule, file);
       target.rules.push(...append.rules);
       target.supports.push(...append.supports);
     } else {
