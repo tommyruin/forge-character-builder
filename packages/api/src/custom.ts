@@ -417,6 +417,8 @@ export interface CustomDiagnosticDto extends WireObject {
   message: string;
   elementId?: string;
   missingId?: string;
+  /** The element type the rule wants (`Spell`), when it says. */
+  missingType?: string;
 }
 
 /** One custom draft on a character, with what the engine knows about it. */
@@ -528,4 +530,19 @@ export interface CustomSpellAttackPreviewDto extends WireObject {
 export interface CustomSpellPreviewDto extends WireObject {
   /** The spell's attack or save row; null when the spell is no attack. */
   attack: CustomSpellAttackPreviewDto | null;
+}
+
+/**
+ * A grant, a choice default or a DM-granted spell the character holds that
+ * resolves to no element: content the library lacks, so the grant does nothing.
+ */
+export interface MissingGrantDto extends WireObject {
+  /** The element whose rule names the missing one; empty for a spell granted straight to the character. */
+  elementId: string;
+  elementName: string;
+  /** The id (or `Type "Name"`) nothing defines. */
+  missingId: string;
+  /** The type the rule wants (`Spell`); null when it does not say. */
+  missingType: string | null;
+  message: string;
 }

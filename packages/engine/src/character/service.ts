@@ -142,6 +142,9 @@ import {
 } from "../magic/dto.js";
 import { additionalSpellPool, dmGrantSource, isGeneratedSpellProxyId } from "../magic/granted-spells.js";
 import { spellInfo } from "../magic/spelllist.js";
+import { missingGrantDiagnostics } from "../content/missing-grants.js";
+import { contentOrigin } from "../custom/placement.js";
+import type { ParsedElement } from "../content/parser.js";
 import { MAX_ALIAS_NAME, MAX_ALIAS_NOTE, planSpellAliasEdits, readSpellAliasBlock } from "../magic/spell-aliases.js";
 import {
   planSetPrepared,
@@ -173,6 +176,7 @@ import type {
   CustomDraftEntryDto,
   CustomItemPreviewDto,
   CustomSpellPreviewDto,
+  MissingGrantDto,
   PromotedCustomElementDto,
 } from "@forge-cb/api";
 import { CharacterCustomContent } from "../custom/character-content.js";
@@ -2431,6 +2435,46 @@ export class CharacterService {
   /** Removes a custom draft: ungrants it, drops its stored copy and its installed element. */
   deleteCustomDraft(id: string, request: { draftId: string }): void {
     this.custom.remove(id, request);
+  }
+
+  /**
+   * What the character holds that resolves to nothing: rules of its custom and
+   * homebrew elements that name content no loaded pack defines, and DM-granted
+   * spells the library lacks. Book elements are not checked; a bundled subset may
+   * leave out content its books mention, and that is not the player's to fix.
+   */
+  getMissingGrants(id: string): MissingGrantDto[] {
+    const { state } = this.require(id);
+    const library = this.library;
+    if (library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for custom content");
+    }
+    const held: ParsedElement[] = [];
+    const seen = new Set<string>();
+    for (const entry of state.sum.elements) {
+      if (seen.has(entry.id)) continue;
+      seen.add(entry.id);
+      const element = library.byId.get(entry.id);
+      if (element !== undefined && contentOrigin(library, entry.id) !== "book") held.push(element);
+    }
+    const out: MissingGrantDto[] = missingGrantDiagnostics(library, held).map((finding) => ({
+      elementId: finding.elementId ?? "",
+      elementName: finding.elementName ?? "",
+      missingId: finding.missingId ?? "",
+      missingType: finding.missingType ?? null,
+      message: finding.message,
+    }));
+    for (const spell of state.magic?.additional ?? []) {
+      if (spellInfo(library, spell.id) !== null || library.byId.has(spell.id)) continue;
+      out.push({
+        elementId: "",
+        elementName: spell.name,
+        missingId: spell.id,
+        missingType: "Spell",
+        message: `${spell.name} (${spell.id}) was granted to the character, but no loaded content defines it`,
+      });
+    }
+    return out;
   }
 
   /** A draft in the shape the client's homebrew store keeps, for copying into a collection. */

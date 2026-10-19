@@ -166,6 +166,8 @@ export interface ContentDiagnostic {
   elementName?: string;
   /** missing-grant: the id (or `Type "Name"`) that resolves to no element. */
   missingId?: string;
+  /** missing-grant: the element type the rule wants (`Spell`), when it says. */
+  missingType?: string;
 }
 
 /**

@@ -5,6 +5,7 @@ import type {
   CustomDraftMutationDto,
   CustomItemPreviewDto,
   CustomSpellPreviewDto,
+  MissingGrantDto,
   DmGrantDto,
   PromotedCustomElementDto,
 } from "./custom.js";
@@ -407,6 +408,12 @@ export interface EngineMethodMap {
   /** The character's own pack: its custom drafts and what the engine knows of each. */
   getCustomContent: MethodContract<[id: string], CustomContentDto>;
   /**
+   * Grants the character holds from custom or homebrew content that resolve to
+   * no element (a pack that grants a spell it never defines), and DM-granted
+   * spells the library no longer has. Book content is never reported.
+   */
+  getMissingGrants: MethodContract<[id: string], MissingGrantDto[]>;
+  /**
    * Creates or updates a custom draft: stores it in the character file,
    * compiles and installs it, and (for a new draft, unless `grant` is false)
    * grants it. Editing a granted draft re-registers it and keeps the picks
@@ -610,6 +617,7 @@ export const ENGINE_METHOD_NAMES = [
   "removeGrantedElement",
   "getDmGrants",
   "getCustomContent",
+  "getMissingGrants",
   "saveCustomDraft",
   "deleteCustomDraft",
   "promoteCustomDraft",
@@ -725,6 +733,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   removeGrantedElement: implemented,
   getDmGrants: implemented,
   getCustomContent: implemented,
+  getMissingGrants: implemented,
   saveCustomDraft: implemented,
   deleteCustomDraft: implemented,
   promoteCustomDraft: implemented,
@@ -820,6 +829,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   removeGrantedElement: "character-write",
   getDmGrants: "read-only",
   getCustomContent: "read-only",
+  getMissingGrants: "read-only",
   saveCustomDraft: "character-write",
   deleteCustomDraft: "character-write",
   promoteCustomDraft: "read-only",

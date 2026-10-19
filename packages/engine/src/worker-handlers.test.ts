@@ -625,7 +625,8 @@ describe("engine worker handlers", () => {
     // 89: added setItemDetails (a record's own name and notes).
     // 90: added previewCustomItem (an item draft's attack row on a scratch copy).
     // 92: added previewCustomSpell (a spell draft's attack row) and setSpellAlias (a spell's display name).
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 92, engineVersion: ENGINE_VERSION } }]);
+    // 93: added getMissingGrants (grants a character holds that resolve to nothing).
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 93, engineVersion: ENGINE_VERSION } }]);
   });
 });
 

@@ -48,7 +48,13 @@ export function missingGrantDiagnostics(library: ElementLibrary, only?: readonly
 
   const out: ContentDiagnostic[] = [];
   const reported = new Set<string>();
-  const report = (element: ParsedElement, rule: Rule | undefined, role: string, missingId: string): void => {
+  const report = (
+    element: ParsedElement,
+    rule: Rule | undefined,
+    role: string,
+    missingId: string,
+    missingType?: string,
+  ): void => {
     const file = (rule === undefined ? undefined : appendedRuleFile(rule)) ?? authoredFile(element);
     if (file === undefined) return;
     const key = `${file}\u0000${element.identity.id}\u0000${role}\u0000${missingId}`;
@@ -62,6 +68,7 @@ export function missingGrantDiagnostics(library: ElementLibrary, only?: readonly
       elementId: element.identity.id,
       elementName: element.identity.name,
       missingId,
+      ...(missingType === undefined || missingType === "" ? {} : { missingType }),
     });
   };
 
@@ -70,18 +77,18 @@ export function missingGrantDiagnostics(library: ElementLibrary, only?: readonly
       if (rule.kind === "grant") {
         const id = rule.id?.trim() ?? "";
         if (id !== "") {
-          if (!present(id)) report(element, rule, "grants", id);
+          if (!present(id)) report(element, rule, "grants", id, rule.type);
         } else if (rule.type !== undefined && rule.name !== undefined) {
           const found = (library.byType.get(rule.type) ?? []).some((candidate) => candidate.identity.name === rule.name);
-          if (!found) report(element, rule, "grants", `${rule.type} "${rule.name}"`);
+          if (!found) report(element, rule, "grants", `${rule.type} "${rule.name}"`, rule.type);
         }
       } else if (rule.kind === "select") {
         const fallback = rule.default?.trim() ?? "";
-        if (fallback !== "" && !present(fallback)) report(element, rule, "defaults a choice to", fallback);
+        if (fallback !== "" && !present(fallback)) report(element, rule, "defaults a choice to", fallback, rule.type);
         for (const item of rule.items ?? []) {
           // Items with text are an inline list of options; only a bare id is a reference.
           if (item.text.trim() === "" && item.id.startsWith("ID_") && !present(item.id)) {
-            report(element, rule, "offers", item.id);
+            report(element, rule, "offers", item.id, rule.type);
           }
         }
       }

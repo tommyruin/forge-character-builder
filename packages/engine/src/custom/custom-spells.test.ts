@@ -9,6 +9,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
+import { ingestContentFiles, removeContentFiles } from "../content/ingestion.js";
+import { encodeBase64 } from "../platform.js";
 import { buildCharacterSheetModel } from "../sheet/model.js";
 import { pendingSelectionRules, selectionOptions } from "../selection/selection.js";
 import type { MagicAttackSpellOptionDto } from "../magic/reconcile.js";
@@ -298,5 +300,67 @@ describe("previewing a spell", () => {
   it("has no row for a spell that is no attack", () => {
     const { service, id } = wizard();
     expect(service.previewCustomSpell(id, { draft: frostLance({ mechanics: { roll: "none" } }), caster: "Wizard" }).attack).toBeNull();
+  });
+});
+
+describe("a spell a pack grants that nothing defines", () => {
+  const PACT = "ID_HB_TEST_FEAT_MOONWELL_PACT";
+  const LANCE = "ID_HB_TEST_SPELL_FROST_LANCE";
+  const pack = `<elements>
+    <element name="Moonwell Test" type="Source" source="Moonwell Test" id="ID_HB_TEST_SOURCE">
+      <description><p>Test pack.</p></description>
+      <setters><set name="abbreviation">MT</set><set name="url">https://local.homebrew</set><set name="homebrew">true</set></setters>
+    </element>
+    <element name="Moonwell Pact" type="Feat" source="Moonwell Test" id="${PACT}">
+      <description><p>A pact.</p></description>
+      <rules><grant type="Spell" id="${LANCE}" /><grant type="Spell" id="ID_PHB_SPELL_BARKSKIN" /></rules>
+    </element></elements>`;
+
+  async function withPack() {
+    const built = wizard();
+    await ingestContentFiles(library, [{ path: "imports/moonwell.xml", base64: encodeBase64(new TextEncoder().encode(pack)) }]);
+    built.service.addGrantedElement(built.id, { elementId: PACT });
+    return built;
+  }
+
+  it("is listed for the character, naming the pack's element and the kind of thing missing", async () => {
+    const { service, id } = await withPack();
+    try {
+      expect(service.getMissingGrants(id)).toEqual([
+        expect.objectContaining({ elementId: PACT, elementName: "Moonwell Pact", missingId: LANCE, missingType: "Spell" }),
+      ]);
+    } finally {
+      await removeContentFiles(library, ["imports/moonwell.xml"]);
+    }
+  });
+
+  it("is resolved by creating the spell under the missing id", async () => {
+    const { service, id } = await withPack();
+    try {
+      const saved = service.saveCustomDraft(id, { draft: frostLance({ id: LANCE, name: "Frost Lance" }), caster: "Wizard" });
+      expect(saved.entry.elementId).toBe(LANCE);
+      expect(service.getMissingGrants(id)).toEqual([]);
+      expect(allKnown(service, id).some((entry) => entry.spell.id === LANCE)).toBe(true);
+    } finally {
+      await removeContentFiles(library, ["imports/moonwell.xml"]);
+    }
+  });
+
+  it("lists a granted spell the library no longer has", () => {
+    const { service, id } = wizard();
+    const saved = service.saveCustomDraft(id, { draft: frostLance(), caster: "Wizard" });
+    const xml = service.exportCharacterXml(id).replace(/<custom-pack[^>]*>.*?<\/custom-pack>/s, "");
+    // The original character leaves the library; its spell is no longer defined anywhere.
+    service.deleteCharacter(id);
+    const other = new CharacterService(undefined, library, { rng: seededRng(5) });
+    other.importCharacterXml("Orphan", xml);
+    expect(other.getMissingGrants("Orphan")).toEqual([
+      expect.objectContaining({ missingId: saved.entry.elementId, missingType: "Spell" }),
+    ]);
+  });
+
+  it("is quiet for a character whose book content is whole", () => {
+    const { service, id } = wizard();
+    expect(service.getMissingGrants(id)).toEqual([]);
   });
 });

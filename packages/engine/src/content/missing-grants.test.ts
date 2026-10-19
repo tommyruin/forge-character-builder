@@ -67,6 +67,16 @@ describe("missing-grant diagnostics", () => {
     ].sort());
   });
 
+  it("names the kind of element a grant wants, so a missing spell can be offered a fix", async () => {
+    const lib = await library();
+    const result = await ingestContentFiles(lib, [{ path: "imports/granting.xml", base64: pack(GRANTING) }]);
+    const type = (missingId: string) => result.diagnostics.find((finding) => finding.missingId === missingId)?.missingType;
+    expect(type("ID_TEST_SPELL_FROST_LANCE")).toBe("Spell");
+    expect(type('Racial Trait "Nonexistent Trait"')).toBe("Racial Trait");
+    // A select default's kind is the select's.
+    expect(type("ID_TEST_PROF_MISSING")).toBe("Proficiency");
+  });
+
   it("blames an appended rule on the file that wrote it, not the target's file", async () => {
     const lib = await library();
     const result = await ingestContentFiles(lib, [{ path: "imports/granting.xml", base64: pack(GRANTING) }]);

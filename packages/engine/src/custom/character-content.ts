@@ -228,6 +228,7 @@ export class CharacterCustomContent {
         message: finding.message,
         ...(finding.elementId === undefined ? {} : { elementId: finding.elementId }),
         ...(finding.missingId === undefined ? {} : { missingId: finding.missingId }),
+        ...(finding.missingType === undefined ? {} : { missingType: finding.missingType }),
       });
     }
     return out;
