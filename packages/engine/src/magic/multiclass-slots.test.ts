@@ -11,7 +11,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { type ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
-import { pendingSelectionRules } from "../selection/selection.js";
+import { pendingSelectionRules, selectionOptions } from "../selection/selection.js";
+import type { MagicAttackOptionsMerged } from "../attacks/attacks.js";
 import { computeStatistics } from "../statistics/calculator.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
 
@@ -126,5 +127,24 @@ describe("multiclass spell slots", () => {
     const wizard = magic.casters.find((caster) => caster.name.toLowerCase().includes("wizard"))!;
     expect(wizard.slots.s1).toBe("3");
     expect(values["multiclass:spellcasting:level"]).toBe(2);
+  });
+
+  it("offers a class's granted spells only up to its own spell level", () => {
+    // Wizard 5 / Light Cleric 1: the shared table reaches 3rd-level slots,
+    // but a 1st-level cleric casts 1st-level spells, so its domain's
+    // Scorching Ray and Fireball are no cleric attack yet.
+    const service = build(ID_WIZARD, 5);
+    service.startMulticlass("MC", ID_MC_CLERIC);
+    const LIGHT = "ID_WOTC_PHB_ARCHETYPE_CLERIC_LIGHT_DOMAIN";
+    const domain = pendingSelectionRules(service.getCharacter("MC")).find((rule) => rule.type === "Archetype"
+      && selectionOptions(service.getCharacter("MC"), library, rule).some((option) => option.id === LIGHT))!;
+    service.setSelection("MC", domain.identifier, LIGHT);
+    expect(service.getCharacter("MC").magic?.multiclass).toBe(true);
+
+    const options = service.getAttackOptions("MC") as unknown as MagicAttackOptionsMerged;
+    const cleric = options.spells.filter((spell) => spell.casterName === "Cleric").map((spell) => spell.spellId);
+    expect(cleric).toContain("ID_PHB_SPELL_BURNING_HANDS");
+    expect(cleric).not.toContain("ID_PHB_SPELL_SCORCHING_RAY");
+    expect(cleric).not.toContain("ID_PHB_SPELL_FIREBALL");
   });
 });

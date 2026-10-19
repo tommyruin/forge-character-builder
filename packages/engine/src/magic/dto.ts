@@ -181,13 +181,6 @@ function slotsArray(block: MagicCasterBlock): number[] {
   return slots;
 }
 
-function maxSlotLevel(slots: number[]): number {
-  for (let level = 9; level >= 1; level--) {
-    if (slots[level - 1]! > 0) return level;
-  }
-  return 0;
-}
-
 function knownFlags(
   block: MagicCasterBlock,
   alwaysPrepared: Set<string>,
@@ -719,7 +712,7 @@ export function buildSpellBrowseDto(
     : Math.max(0, ...(groupRules.length > 0 ? groupRules : [rule]).map((slotRule) => spellSlotCeilingFor(state, library, slotRule, caster.name)));
   const maxLevel = isCantripRule
     ? 0
-    : progressionLevel > 0 ? progressionLevel : maxSlotLevel(slotsArray(caster));
+    : progressionLevel > 0 ? progressionLevel : casterSpellLevelCap(state, library, caster);
 
   // The caster's browsable universe is its base list expression (the
   // spellcasting feature's <list>, defaulting to the caster name) OR-ed with
