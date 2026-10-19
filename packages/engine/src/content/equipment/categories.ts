@@ -99,15 +99,22 @@ const ADJUSTMENT_GRANT_TYPES = new Set([
 ]);
 
 /**
- * An empty Item category is the content convention for non-physical adjustment
- * records. Grant rules provide a second semantic guard for proxies that carry
- * a category through an imported or generated payload.
+ * An empty Item category with no equip slot is the content convention for
+ * non-physical adjustment records. A categorised record is a proxy only when
+ * it is one of the generated "Additional X" records (by name or internal id)
+ * that also grants one of the adjustment types: an Item the author gave a
+ * category or a slot is gear, and may grant a feat, a language, a proficiency,
+ * a spell or an ability score improvement like any ring.
  */
 function isAdjustmentProxy(element: ParsedElement, category: string): boolean {
   if (element.identity.type !== "Item") return false;
-  if (category === "") return true;
-  return element.rules.some((rule) =>
-    rule.kind === "grant" && rule.type !== undefined && ADJUSTMENT_GRANT_TYPES.has(rule.type.trim().toLocaleLowerCase()),
+  if (category === "") return (setterValue(element, "slot") ?? "").trim() === "";
+  const named =
+    element.identity.name.trim().toLocaleLowerCase().startsWith("additional ") ||
+    element.identity.id.includes("_INTERNAL_ITEM_");
+  if (!named) return false;
+  return element.rules.some(
+    (rule) => rule.kind === "grant" && rule.type !== undefined && ADJUSTMENT_GRANT_TYPES.has(rule.type.trim().toLocaleLowerCase()),
   );
 }
 
