@@ -26,3 +26,13 @@ describe('Content warnings', () => {
     expect(markup).toContain('30 more warnings');
   });
 });
+
+describe('Content warnings: fixing a missing spell', () => {
+  it('hands the drawer a Create spell action that opens the spell form for the pack that wrote the grant', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../ContentManager.jsx', import.meta.url), 'utf8');
+    expect(source).toContain('onCreateSpell={startSpellFix}');
+    expect(source).toContain('collectionStoragePath(record) === diag.file');
+    expect(source).toContain('<CustomSpellModal');
+  });
+});

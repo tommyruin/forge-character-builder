@@ -15,6 +15,10 @@ import {
 import { driveSyncService } from '../cloud/driveSyncService';
 import { findDuplicateContentGroups } from '../transport/contentDuplicates';
 import { localStore } from '../transport/localStore';
+import CustomSpellModal from './custom/CustomSpellModal';
+import { makePackSpellServices } from './custom/customServices';
+import { spellDraftFromMissing } from './custom/draftModel';
+import { collectionStoragePath } from './homebrew/xmlBuilder';
 import ContentImportControls from './ContentImportControls';
 import DescriptionPanel from './DescriptionPanel';
 import FilterSelect from './FilterSelect';
@@ -59,7 +63,7 @@ export function ContentSourceOption({ source }) {
 // failed to parse still reports accepted=true — the parse failure only shows up here.
 const MAX_DIAGNOSTIC_ROWS = 100;
 
-export function UploadDiagnostics({ diagnostics }) {
+export function UploadDiagnostics({ diagnostics, onCreateSpell }) {
   if (!diagnostics?.length) return null;
   const shown = diagnostics.slice(0, MAX_DIAGNOSTIC_ROWS);
   const hidden = diagnostics.length - shown.length;
@@ -79,6 +83,18 @@ export function UploadDiagnostics({ diagnostics }) {
                 — {diag.detail}
               </span>
             )}
+            {/* A grant to a spell nothing defines can be fixed by making the spell. */}
+            {onCreateSpell &&
+              diag.kind === 'missing-grant' &&
+              diag.missingType === 'Spell' && (
+                <button
+                  type="button"
+                  className="fcb-button ml-2"
+                  onClick={() => onCreateSpell(diag)}
+                >
+                  Create spell
+                </button>
+              )}
           </li>
         ))}
       </ul>
@@ -206,6 +222,7 @@ function ContentFilesDrawer({
   resolvingDuplicateFingerprint,
   keepDuplicateSource,
   keepAllDuplicates,
+  onCreateSpell,
 }) {
   const drawerRef = useRef(null);
   const closeButtonRef = useRef(null);
@@ -370,7 +387,10 @@ function ContentFilesDrawer({
                     <p className="fcb-danger-note mb-2">{importJob.error}</p>
                   )}
                   <UploadFileResults files={importJob.files} />
-                  <UploadDiagnostics diagnostics={importJob.diagnostics} />
+                  <UploadDiagnostics
+                    diagnostics={importJob.diagnostics}
+                    onCreateSpell={onCreateSpell}
+                  />
                 </div>
               )}
 
@@ -390,7 +410,10 @@ function ContentFilesDrawer({
                     elements.
                   </p>
                   <UploadFileResults files={uploadResult.files} />
-                  <UploadDiagnostics diagnostics={uploadResult.diagnostics} />
+                  <UploadDiagnostics
+                    diagnostics={uploadResult.diagnostics}
+                    onCreateSpell={onCreateSpell}
+                  />
                 </div>
               )}
             </section>
@@ -523,6 +546,9 @@ export default function ContentManager({
   const [fileFilter, setFileFilter] = useState('');
   const [duplicateGroups, setDuplicateGroups] = useState([]);
   const [pendingDuplicate, setPendingDuplicate] = useState(null);
+  // A spell being made for a pack that granted it without defining it: the warning it answers,
+  // and the collection of the builder that wrote it (null when the file is not one of those).
+  const [spellFix, setSpellFix] = useState(null);
   const [resolvingDuplicateFingerprint, setResolvingDuplicateFingerprint] =
     useState(null);
   const fileInput = useRef(null);
@@ -550,6 +576,28 @@ export default function ContentManager({
     setFileManagerOpen(false);
     onDuplicateReviewHandled?.();
   }, [onDuplicateReviewHandled]);
+
+  const startSpellFix = useCallback(async (diag) => {
+    const records = await localStore.listHomebrew();
+    const collection = records.find((record) => collectionStoragePath(record) === diag.file) ?? null;
+    setSpellFix({ diag, collection, pack: collection?.name ?? 'My homebrew' });
+  }, []);
+
+  // The pack was saved again with the spell in it, so the warning it answered is done with and the
+  // library holds one more element.
+  const finishSpellFix = useCallback(
+    (saved) => {
+      if (!saved) return;
+      const { diag } = spellFix;
+      const resolved = (entry) => entry.file === diag.file && entry.missingId === diag.missingId;
+      const clean = (diagnostics) => (diagnostics ?? []).filter((entry) => !resolved(entry));
+      setImportJob((job) => (job ? { ...job, diagnostics: clean(job.diagnostics) } : job));
+      setUploadResult((result) => (result ? { ...result, diagnostics: clean(result.diagnostics) } : result));
+      api.content.clearCache?.();
+      void onLibraryChanged?.({ source: 'homebrew', result: saved.result });
+    },
+    [onLibraryChanged, spellFix],
+  );
 
   const refresh = useCallback(() => {
     api.content
@@ -1309,7 +1357,25 @@ export default function ContentManager({
         resolvingDuplicateFingerprint={resolvingDuplicateFingerprint}
         keepDuplicateSource={keepDuplicateSource}
         keepAllDuplicates={keepAllDuplicates}
+        onCreateSpell={startSpellFix}
       />
+
+      {spellFix && (
+        <CustomSpellModal
+          key={spellFix.diag.missingId}
+          services={makePackSpellServices({
+            api,
+            store: localStore,
+            collection: spellFix.collection,
+            beforeSave: beforeLibraryMutation,
+          })}
+          characterName={spellFix.pack}
+          pack={{ name: spellFix.pack }}
+          initialDraft={spellDraftFromMissing(spellFix.diag)}
+          onClose={() => setSpellFix(null)}
+          onSaved={finishSpellFix}
+        />
+      )}
     </div>
   );
 }

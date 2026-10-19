@@ -12,6 +12,8 @@ import {
   WEAPON_PROPERTY_IDS,
   WORN_SLOTS,
   createCustomItemDraft,
+  createCustomSpellDraft,
+  SPELL_SCHOOLS,
   CUSTOM_SHOWS_UNDER,
   CUSTOM_VALUE_REFERENCES,
   SHEET_ACTION_OPTIONS,
@@ -428,4 +430,160 @@ export const isShieldOption = (option) => /^shield$/i.test(option?.equipmentKind
 export function baseLabel(option, options) {
   const shared = options.filter((other) => other.name === option.name).length > 1;
   return shared && option.source ? `${option.name} (${option.source})` : option.name;
+}
+
+// ---- spells ------------------------------------------------------------------
+
+export const ROLL_OPTIONS = [
+  { id: 'none', label: 'No attack or save' },
+  { id: 'attackRanged', label: 'Ranged spell attack' },
+  { id: 'attackMelee', label: 'Melee spell attack' },
+  { id: 'save', label: 'Saving throw' },
+];
+
+export const SPELL_SCHOOL_OPTIONS = SPELL_SCHOOLS.map((school) => ({ id: school, label: school }));
+export const SPELL_LEVEL_OPTIONS = Array.from({ length: 10 }, (_, level) => ({
+  id: String(level),
+  label: level === 0 ? 'Cantrip' : `Level ${level}`,
+}));
+
+// The words a casting time, range and duration usually take; the fields stay free text, since
+// "1 reaction, which you take when ..." and "Up to 10 minutes" are as real as these.
+export const CASTING_TIME_PRESETS = ['1 action', '1 bonus action', '1 reaction', '1 minute', '10 minutes', '1 hour'];
+export const RANGE_PRESETS = ['Self', 'Touch', '30 feet', '60 feet', '120 feet', '150 feet', '300 feet', 'Sight'];
+export const DURATION_PRESETS = [
+  'Instantaneous',
+  '1 round',
+  '1 minute',
+  '10 minutes',
+  '1 hour',
+  '8 hours',
+  '24 hours',
+  'Until dispelled',
+];
+
+export const ordinal = (value) => {
+  const tens = value % 100;
+  const suffix = tens >= 11 && tens <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][value % 10] ?? 'th';
+  return `${value}${suffix}`;
+};
+
+// A blank spell draft. It states "no attack or save" outright: a draft that says nothing is read
+// from its text like a book spell, and a form should never leave that to chance.
+export function makeSpellDraft(name = '') {
+  return createCustomSpellDraft(name);
+}
+
+// "Frost Lance" from `ID_HB_MC_SPELL_FROST_LANCE`: the words after the type word, capitalised.
+export function spellNameFromId(id) {
+  const after = id.includes('_SPELL_') ? id.slice(id.indexOf('_SPELL_') + '_SPELL_'.length) : id.replace(/^ID_/, '');
+  return after
+    .toLowerCase()
+    .split('_')
+    .filter((word) => word !== '')
+    .map(titleCase)
+    .join(' ');
+}
+
+// A draft for a spell a pack grants that nothing defines. A grant by id keeps that id, so the
+// spell made here is the one the grant was waiting for; a grant by name only supplies the name.
+export function spellDraftFromMissing(missing) {
+  const named = /^Spell "(.+)"$/.exec(missing?.missingId ?? '');
+  if (named) return makeSpellDraft(named[1]);
+  const id = missing?.missingId ?? '';
+  if (/^ID_[A-Z0-9_]+$/.test(id)) return { ...makeSpellDraft(spellNameFromId(id)), id };
+  return makeSpellDraft('');
+}
+
+const COMPONENT_LETTERS = [
+  ['verbal', 'V'],
+  ['somatic', 'S'],
+  ['material', 'M'],
+];
+
+// Drops what a form leaves empty or what the chosen roll does not use, so a draft that was only
+// opened compares equal to what the engine stores and switching the roll never leaves stale data.
+export function tidySpell(draft) {
+  const next = JSON.parse(JSON.stringify(draft));
+  for (const key of ['higherLevels', 'cameFrom']) {
+    if (typeof next[key] === 'string' && next[key].trim() === '') delete next[key];
+  }
+  if (!next.concentration) delete next.concentration;
+  if (!next.ritual) delete next.ritual;
+  if (!next.classes?.length) delete next.classes;
+  const components = {};
+  for (const [key] of COMPONENT_LETTERS) if (next.components?.[key]) components[key] = true;
+  const material = next.components?.materialText?.trim();
+  if (components.material && material) components.materialText = material;
+  next.components = components;
+  const mechanics = next.mechanics;
+  if (mechanics) {
+    const kept = { roll: mechanics.roll };
+    if (mechanics.roll === 'save') {
+      if (mechanics.saveAbility) kept.saveAbility = mechanics.saveAbility;
+      if (mechanics.halfOnSave) kept.halfOnSave = true;
+    }
+    const damage = (mechanics.damage ?? []).filter((term) => term.dice !== '' || term.type !== '');
+    if (damage.length > 0) kept.damage = damage;
+    if (mechanics.healing?.trim()) kept.healing = mechanics.healing.trim();
+    if (mechanics.addsModifier) kept.addsModifier = true;
+    const scaling = mechanics.scaling;
+    if (scaling?.kind === 'cantrip' && scaling.tiers?.length > 0) kept.scaling = scaling;
+    else if (scaling?.kind === 'slot' && scaling.dice?.trim()) kept.scaling = { kind: 'slot', dice: scaling.dice.trim() };
+    next.mechanics = kept;
+  }
+  return next;
+}
+
+const joinNames = (names) =>
+  names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+const termsText = (terms) => terms.map((term) => `${term.dice} ${term.type}`.trim()).join(' + ');
+
+// The lines of a spell's "in plain words" panel: the spell block's own line, its components, what
+// it rolls, how it grows and which class lists carry it.
+export function summarizeSpell(draft) {
+  const lines = [];
+  const school = draft.school ?? 'Evocation';
+  const kind = draft.level === 0 ? `${school} cantrip` : `${ordinal(draft.level)}-level ${school.toLowerCase()}`;
+  const header = [kind, draft.castingTime, draft.range];
+  if (draft.concentration) header.push('concentration');
+  if (draft.ritual) header.push('ritual');
+  lines.push(header.filter(Boolean).join(', '));
+
+  const components = draft.components ?? {};
+  const letters = COMPONENT_LETTERS.filter(([key]) => components[key]).map(([, letter]) => letter);
+  if (letters.length > 0) {
+    const material = components.material && components.materialText?.trim() ? ` (${components.materialText.trim()})` : '';
+    lines.push(`Components: ${letters.join(', ')}${material}`);
+  }
+
+  const mechanics = draft.mechanics;
+  if (mechanics) {
+    const damage = (mechanics.damage ?? []).filter((term) => term.dice !== '');
+    const dealt = damage.length > 0 ? `${termsText(damage)}${mechanics.addsModifier ? ' plus the spellcasting modifier' : ''}` : '';
+    if (mechanics.roll === 'attackRanged' || mechanics.roll === 'attackMelee') {
+      const word = mechanics.roll === 'attackRanged' ? 'Ranged' : 'Melee';
+      lines.push(`${word} spell attack${dealt ? `: ${dealt}` : ''}`);
+    } else if (mechanics.roll === 'save') {
+      const ability = mechanics.saveAbility ? ABILITY_LABELS[mechanics.saveAbility] : 'A';
+      const half = dealt && mechanics.halfOnSave ? ', half on a success' : '';
+      lines.push(`${ability} saving throw${dealt ? `: ${dealt}` : ''}${half}`);
+    } else if (dealt) {
+      lines.push(`Damage: ${dealt}`);
+    }
+    if (mechanics.healing?.trim()) {
+      lines.push(`Heals ${mechanics.healing.trim()}${mechanics.addsModifier ? ' plus the spellcasting modifier' : ''}`);
+    }
+    const scaling = mechanics.scaling;
+    if (scaling?.kind === 'slot' && scaling.dice?.trim()) {
+      lines.push(`+${scaling.dice.trim()} for each slot level above ${ordinal(draft.level)}`);
+    } else if (scaling?.kind === 'cantrip' && scaling.tiers?.length > 0) {
+      lines.push([...scaling.tiers].sort((a, b) => a.level - b.level).map((tier) => `${tier.dice} at level ${tier.level}`).join(', '));
+    }
+  }
+  if (draft.classes?.length > 0) {
+    lines.push(`On the ${joinNames(draft.classes)} spell ${draft.classes.length === 1 ? 'list' : 'lists'}`);
+  }
+  return lines;
 }

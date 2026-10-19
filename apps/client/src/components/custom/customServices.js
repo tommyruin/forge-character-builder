@@ -3,6 +3,8 @@
 // library search for the pickers, the character's own pack, the choice-identity check, and
 // "also save to a homebrew pack".
 
+import { promoteCustomDraft } from '@forge-cb/engine/custom';
+import { saveCollection } from '../homebrew/homebrewStorage.js';
 import { createCollection } from '../homebrew/xmlBuilder.js';
 
 // The collection a promoted entry lands in until packs exist; one per device, found by name.
@@ -26,6 +28,49 @@ export async function writePromotedElement(store, promoted, collectionName = MY_
         );
   await store.putHomebrew({ ...collection, elements: next });
   return collection.id;
+}
+
+// Writes a spell into a homebrew collection and saves the collection again, so a grant that named
+// the spell by id resolves. The spell keeps the draft's id; saving it a second time replaces it.
+// `collection` null means the pack that wrote the grant is not one of the builder's collections
+// (an uploaded file): the spell goes to "My homebrew" instead, which a grant resolves through just
+// as well, since ids are global to the library.
+export async function addSpellToCollection({ api, store, collection, draft }) {
+  const records = await store.listHomebrew();
+  const target =
+    collection ?? records.find((record) => record.name === MY_HOMEBREW_NAME) ?? createCollection(MY_HOMEBREW_NAME);
+  const promoted = promoteCustomDraft(draft, target.name);
+  const elements = target.elements ?? [];
+  const at = elements.findIndex((element) => element.id === promoted.element.id);
+  const next =
+    at === -1
+      ? [...elements, promoted.element]
+      : elements.map((element, index) =>
+          index === at ? { ...promoted.element, localId: element.localId ?? promoted.element.localId } : element,
+        );
+  const updated = { ...target, elements: next };
+  await store.putHomebrew(updated);
+  const saved = await saveCollection(api, updated);
+  api.content.clearCache?.();
+  return { collection: updated, saved };
+}
+
+// What the spell form needs when it makes a spell for a pack rather than for a character: there is
+// no caster to cast it, no preview and no second place to copy it to.
+export function makePackSpellServices({ api, store, collection, beforeSave }) {
+  return {
+    characterId: null,
+    casters: async () => [],
+    save: async (draft) => {
+      await beforeSave?.();
+      const { saved } = await addSpellToCollection({ api, store, collection, draft });
+      if (saved.diagnostics.length > 0 || saved.rejected.length > 0) {
+        const first = saved.diagnostics[0] ?? null;
+        throw new Error(first ? first.message : `${saved.rejected[0].fileName}: ${saved.rejected[0].error ?? 'rejected'}`);
+      }
+      return { entry: { kind: 'spell', draft, elementId: draft.id, result: saved.result }, saved };
+    },
+  };
 }
 
 export function makeCustomServices({ api, store, id, run, ruleset }) {
@@ -80,6 +125,8 @@ export function makeCustomServices({ api, store, id, run, ruleset }) {
     },
     // The weapon's attack row as the engine would print it, for the live preview.
     previewItem: (draft) => characters.previewCustomItem(id, draft),
+    // The spell's attack or save row for a caster, as the engine would print it, for the live preview.
+    previewSpell: (draft, caster) => characters.previewCustomSpell(id, draft, caster),
     setItemDetails: (identifier, details) => run(() => characters.setItemDetails(id, identifier, details)),
     remove: (draftId) => run(() => characters.deleteCustomDraft(id, draftId)),
     promote: async (draft) => {
