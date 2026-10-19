@@ -7,8 +7,9 @@ import { CustomEntryList, useCustomContent } from '../CustomEntries';
 import { MY_HOMEBREW_NAME, makeCustomServices, writePromotedElement } from '../customServices';
 import {
   $,
+  allByLabel,
   buttonByText,
-  buttonStartingWith,
+  option,
   byLabel,
   choose,
   click,
@@ -25,7 +26,7 @@ const MOONBEAM = { id: 'ID_TEST_SPELL_MOONBEAM', name: 'Moonbeam', source: 'Test
 
 // An in-memory stand-in for the engine's custom-content methods: what a save stores is what the
 // next list returns, as it is for the real character pack.
-function fakeApi({ impact } = {}) {
+function fakeApi({ impact, casters } = {}) {
   const stored = new Map();
   const entryFor = (draft) => ({
     draft,
@@ -36,7 +37,9 @@ function fakeApi({ impact } = {}) {
     installed: true,
   });
   const characters = {
-    spellcasting: vi.fn(async () => [{ kind: 'class', name: 'Druid' }, { kind: 'feature', name: 'Magic Initiate' }]),
+    spellcasting: vi.fn(async () =>
+      casters ?? [{ kind: 'class', name: 'Druid', ability: 'Wisdom' }, { kind: 'feature', name: 'Magic Initiate', ability: 'Charisma' }],
+    ),
     customContent: vi.fn(async () => ({ entries: [...stored.values()].map(entryFor), problems: [] })),
     saveCustomDraft: vi.fn(async (_id, draft) => {
       stored.set(draft.id, structuredClone(draft));
@@ -144,7 +147,9 @@ describe('the custom feature dialog: creating', () => {
     await fillBlessing();
     await click(buttonByText('+ Spell'));
     await settle();
-    await click(buttonStartingWith('Moonbeam'));
+    await type($('input[placeholder="Type to search"]'), 'moon');
+    await settle();
+    await click(option('Moonbeam'));
     await choose(byLabel('Casting ability'), 'wisdom');
 
     // The plain-language summary and the sheet preview follow the form.
@@ -191,6 +196,53 @@ describe('the custom feature dialog: creating', () => {
     expect(byLabel('Remove Blessing of the Moonwell')).not.toBeNull();
     // A new entry has no stored copy, so there are no picks to check.
     expect(api.characters.choiceIdentityImpact).not.toHaveBeenCalled();
+  });
+
+  it('casts a new spell with the character\'s spellcasting ability without being asked', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Moon Gift');
+    await click(buttonByText('+ Spell'));
+    await settle();
+    expect(byLabel('Casting ability').value).toBe('wisdom');
+    // The ability is always one of the six; there is no "not set" to leave it on.
+    expect([...byLabel('Casting ability').options].map((entry) => entry.textContent)).not.toContain('Not set');
+    await type($('input[placeholder="Type to search"]'), 'moon');
+    await settle();
+    await click(option('Moonbeam'));
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    expect(savedDraft(api).blocks[0].spell).toEqual({ usage: '1/Long Rest', castAbility: 'wisdom' });
+  });
+
+  it('asks for the ability when the character has no spellcasting of its own', async () => {
+    const api = fakeApi({ casters: [{ kind: 'feature', name: 'Magic Initiate', ability: 'Charisma' }] });
+    await open(api);
+    await type(byLabel('Name'), 'Moon Gift');
+    await click(buttonByText('+ Spell'));
+    await settle();
+    expect(byLabel('Casting ability').value).toBe('');
+    await type($('input[placeholder="Type to search"]'), 'moon');
+    await settle();
+    await click(option('Moonbeam'));
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
+    expect($('[role="alert"]').textContent).toContain('Pick the ability this spell is cast with.');
+    await choose(byLabel('Casting ability'), 'charisma');
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    expect(savedDraft(api).blocks[0].spell.castAbility).toBe('charisma');
+  });
+
+  it('keeps every spell of one feature on the ability already chosen', async () => {
+    const api = fakeApi({ casters: [] });
+    await open(api);
+    await click(buttonByText('+ Spell'));
+    await choose(byLabel('Casting ability'), 'intelligence');
+    await click(buttonByText('+ Spell'));
+    await settle();
+    expect(allByLabel('Casting ability').map((select) => select.value)).toEqual(['intelligence', 'intelligence']);
   });
 
   it('refuses an incomplete form and names the field', async () => {

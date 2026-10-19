@@ -37,6 +37,9 @@ export const buttonByText = (text, scope = document) =>
   [...scope.querySelectorAll('button')].find((button) => button.textContent.trim() === text);
 export const buttonStartingWith = (text, scope = document) =>
   [...scope.querySelectorAll('button')].find((button) => button.textContent.trim().startsWith(text));
+// A row of an open library search (the pickers list them as `option`s).
+export const option = (text, scope = document) =>
+  [...scope.querySelectorAll('[role="option"]')].find((row) => row.textContent.trim().startsWith(text));
 export const radio = (label, scope = document) =>
   [...scope.querySelectorAll('[role="radio"]')].find((button) => button.textContent.trim() === label);
 
@@ -44,6 +47,13 @@ export async function click(element) {
   if (!element) throw new Error('click target not found');
   await act(async () => {
     element.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  });
+}
+
+export async function press(element, key) {
+  if (!element) throw new Error('press target not found');
+  await act(async () => {
+    element.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
   });
 }
 

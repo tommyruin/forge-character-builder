@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(new URL('../../tabs/BuildTab.jsx', import.meta.url), 'utf8');
+const stylesheet = readFileSync(new URL('../../../index.css', import.meta.url), 'utf8');
 
 describe('Build tab custom features', () => {
   it('offers [+] Custom in the section header of every section but the companion', () => {
@@ -27,5 +28,12 @@ describe('Build tab custom features', () => {
 
   it('shows the section an entry landed in after it is saved', () => {
     expect(source).toMatch(/onSaved=\{\(saved\) => \{[\s\S]{0,200}setSection\(saved\.section\)/);
+  });
+
+  it('groups the header buttons so they sit together at the right edge', () => {
+    // Feat / ASI / Custom share one actions group; loose siblings of the title would be spread
+    // across the header by its space-between layout.
+    expect(source).toMatch(/<div className="fcb-panel-actions">[\s\S]*setAddFeatOpen\(true\)[\s\S]*setCustomDialog\(\{[\s\S]*<\/div>\s*<\/header>/);
+    expect(stylesheet).toMatch(/\.fcb-panel-actions \{[^}]*margin-left: auto;/);
   });
 });

@@ -26,7 +26,9 @@ import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from
 import {
   ABILITY_TARGET_GROUPS,
   RECHARGES,
+  castAbilityIssues,
   compactGates,
+  defaultCastAbility,
   makeChoice,
   makeGrant,
   makeModifier,
@@ -90,6 +92,8 @@ export default function CustomFeatureModal({
     return { ...fresh, showsUnder: initialShowsUnder };
   });
   const [casters, setCasters] = useState([]);
+  // The character's own spellcasting ability, offered for a new spell effect; null when it has none.
+  const [characterAbility, setCharacterAbility] = useState(null);
   const [promote, setPromote] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,7 +117,20 @@ export default function CustomFeatureModal({
     };
   }, [services]);
 
-  const issues = useMemo(() => customDraftIssues(draft), [draft]);
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve(services.defaultCastAbility?.())
+      .then((ability) => {
+        if (alive) setCharacterAbility(ability ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [services]);
+
+  const issues = useMemo(() => [...customDraftIssues(draft), ...castAbilityIssues(draft)], [draft]);
+  const castDefault = defaultCastAbility(draft, characterAbility);
   const blockIssues = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`blocks[${index}]`)) : []);
   const topIssues = attempted ? issues.filter((issue) => !issue.path.startsWith('blocks[')) : [];
   const usage = draft.sheet?.usage ?? '';
@@ -141,7 +158,11 @@ export default function CustomFeatureModal({
 
   const chips = [
     { id: 'ability', label: 'Ability score', add: () => addBlock(makeModifier()) },
-    { id: 'spell', label: 'Spell', add: () => addBlock(makeGrant('Spell', { spell: { usage: '1/Long Rest' } })) },
+    {
+      id: 'spell',
+      label: 'Spell',
+      add: () => addBlock(makeGrant('Spell', { spell: { usage: '1/Long Rest', ...(castDefault ? { castAbility: castDefault } : {}) } })),
+    },
     { id: 'proficiency', label: 'Proficiency', add: () => addBlock(makeGrant('Proficiency')) },
     { id: 'language', label: 'Language', add: () => addBlock(makeGrant('Language')) },
     { id: 'choice', label: 'Player picks', add: () => addBlock(makeChoice()) },
@@ -298,8 +319,10 @@ export default function CustomFeatureModal({
                   />
                 );
               }
-              if (block.kind === 'grant') return <GrantBlock key={block.id} {...shared} casters={casters} />;
-              return <ChoiceBlock key={block.id} {...shared} casters={casters} />;
+              if (block.kind === 'grant') {
+                return <GrantBlock key={block.id} {...shared} casters={casters} defaultCastAbility={castDefault} />;
+              }
+              return <ChoiceBlock key={block.id} {...shared} casters={casters} defaultCastAbility={castDefault} />;
             })}
 
             {usesOn && (

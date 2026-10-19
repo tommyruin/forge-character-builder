@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { customDraftIssues, createCustomDraft } from '@forge-cb/engine/custom';
 import ChoiceBlock from '../ChoiceBlock';
 import GrantBlock from '../GrantBlock';
+import LibraryPicker from '../LibraryPicker';
 import ModifierBlock from '../ModifierBlock';
 import RequirementsBuilder from '../RequirementsBuilder';
 import SheetPresentation from '../SheetPresentation';
@@ -13,7 +14,8 @@ import {
   Controlled,
   allByLabel,
   buttonByText,
-  buttonStartingWith,
+  option,
+  press,
   byLabel,
   choose,
   click,
@@ -178,7 +180,7 @@ describe('GrantBlock', () => {
     await settle();
     await type(byLabel('Search language entries') ?? $('input[placeholder="Type to search"]'), 'syl');
     await settle();
-    await click(buttonStartingWith('Sylvan'));
+    await click(option('Sylvan'));
     expect(lookup.search).toHaveBeenCalledWith(expect.objectContaining({ type: 'Language', search: 'syl' }));
     expect(emitted.at(-1)).toEqual({
       kind: 'grant',
@@ -258,6 +260,57 @@ describe('GrantBlock', () => {
     );
     await type(byLabel('Grant from level'), '3');
     expect(emitted.at(-1).level).toBe(3);
+  });
+});
+
+describe('LibraryPicker', () => {
+  const picker = (onPick) => (
+    <LibraryPicker lookup={lookup} type="Language" value="" label="Search language entries" onPick={onPick} />
+  );
+
+  it('lists nothing and searches nothing until the author types', async () => {
+    lookup.search.mockClear();
+    await mount(picker(() => {}));
+    await settle();
+    expect(lookup.search).not.toHaveBeenCalled();
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(0);
+    expect(document.querySelector('[role="listbox"]').hidden).toBe(true);
+  });
+
+  it('shows results as option rows with the source in muted text', async () => {
+    await mount(picker(() => {}));
+    await type(byLabel('Search language entries') ?? $('input[role="combobox"]'), 'l');
+    await settle();
+    const rows = [...document.querySelectorAll('[role="option"]')];
+    expect(rows.map((row) => row.querySelector('.fcb-option-title').textContent)).toEqual(['Sylvan', 'Elvish']);
+    expect(rows[0].classList.contains('fcb-option-row')).toBe(true);
+    expect(rows[0].querySelector('.fcb-option-subtitle').textContent).toBe('Test Book');
+    // No result is a bordered button pill any more.
+    expect(document.querySelector('[role="listbox"] button')).toBeNull();
+  });
+
+  it('moves through the rows with the arrow keys and picks with Enter', async () => {
+    const picked = [];
+    await mount(picker((item) => picked.push(item.id)));
+    const input = $('input[role="combobox"]');
+    await type(input, 'l');
+    await settle();
+    expect(input.getAttribute('aria-activedescendant')).toBe(option('Sylvan').id);
+    await press(input, 'ArrowDown');
+    expect(input.getAttribute('aria-activedescendant')).toBe(option('Elvish').id);
+    expect(option('Elvish').getAttribute('aria-selected')).toBe('true');
+    await press(input, 'ArrowDown');
+    expect(input.getAttribute('aria-activedescendant')).toBe(option('Sylvan').id);
+    await press(input, 'ArrowUp');
+    await press(input, 'Enter');
+    expect(picked).toEqual(['ID_TEST_LANG_ELVISH']);
+  });
+
+  it('says so when nothing matches', async () => {
+    await mount(picker(() => {}));
+    await type($('input[role="combobox"]'), 'zzz');
+    await settle();
+    expect(document.querySelector('[role="listbox"]').textContent).toContain('Nothing matches.');
   });
 });
 
@@ -400,7 +453,9 @@ describe('RequirementsBuilder', () => {
       </Controlled>,
     );
     await settle();
-    await click(buttonStartingWith('Elvish'));
+    await type($('input[placeholder="Type to search"]'), 'elv');
+    await settle();
+    await click(option('Elvish'));
     expect(emitted.at(-1).items[0]).toEqual({ kind: 'element', id: 'ID_TEST_LANG_ELVISH', label: 'Elvish' });
     await choose(byLabel('Has or lacks'), 'lacks');
     expect(emitted.at(-1).items[0]).toMatchObject({ negate: true });

@@ -207,6 +207,7 @@ export default function ChoiceBlock({
   issues,
   ariaLabel = 'Player picks',
   typeOptions = CHOICE_TYPE_OPTIONS,
+  defaultCastAbility,
 }) {
   const emit = (patch) => onChange(compact({ ...block, ...patch }));
   const isList = block.type === 'List';
@@ -217,7 +218,7 @@ export default function ChoiceBlock({
       type,
       supports: type === 'List' ? undefined : block.supports,
       items: type === 'List' ? (block.items?.length ? block.items : ['']) : undefined,
-      castAbility: type === 'Spell' ? block.castAbility : undefined,
+      castAbility: type === 'Spell' ? (block.castAbility ?? defaultCastAbility) : undefined,
       caster: type === 'Spell' ? block.caster : undefined,
     });
 
@@ -264,9 +265,9 @@ export default function ChoiceBlock({
             <SelectInput
               label="Casting ability"
               value={block.castAbility ?? ''}
-              placeholder="Not set"
+              placeholder={block.castAbility ? undefined : 'Choose an ability'}
               options={abilityOptions}
-              onChange={(castAbility) => emit({ castAbility: castAbility === '' ? undefined : castAbility })}
+              onChange={(castAbility) => castAbility !== '' && emit({ castAbility })}
             />
           </Field>
           {casters.length > 0 && (

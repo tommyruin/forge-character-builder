@@ -50,6 +50,13 @@ export function makeCustomServices({ api, store, id, run, ruleset }) {
       const casters = await characters.spellcasting(id);
       return (casters ?? []).filter((caster) => caster.kind === 'class').map((caster) => caster.name);
     },
+    // The ability a new spell effect is cast with unless the author says otherwise: the first
+    // spellcasting class's. Null for a character with no class spellcasting.
+    defaultCastAbility: async () => {
+      const casters = await characters.spellcasting(id);
+      const first = (casters ?? []).find((caster) => caster.kind === 'class' && caster.ability);
+      return first ? String(first.ability).toLowerCase() : null;
+    },
     list: () => characters.customContent(id),
     impact: (draft) => characters.choiceIdentityImpact(id, draft),
     save: (draft) => run(() => characters.saveCustomDraft(id, draft)),

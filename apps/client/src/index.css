@@ -1451,6 +1451,16 @@ button:disabled {
   padding: 15px 16px;
 }
 
+/* A panel's header actions sit together at its right edge, however many there are. */
+.fcb-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .fcb-card-header {
   border-bottom: 0;
   padding: 0 0 14px;
@@ -2692,6 +2702,17 @@ button:disabled {
 
 .fcb-field-label > :is(input, select, textarea) {
   margin-top: 6px;
+}
+
+/* A control inside a label is typed in its own voice. Weight, case and tracking are
+   inherited text properties, and a control restyled with `font: inherit` would otherwise print
+   what the author types in the caption's bold capitals. The zero-weight wrapper keeps this at
+   element-selector strength, so a control that sets its own size or weight still wins. */
+:where(.fcb-field-label) :is(input, select, textarea, option) {
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .fcb-alert {
@@ -8507,7 +8528,22 @@ html.fcb-busy-cursor * {
   max-height: 11rem;
   margin-top: 6px;
   overflow-y: auto;
-  gap: 2px;
+  gap: 4px;
+}
+
+.fcb-custom-results[hidden] {
+  display: none;
+}
+
+/* A search result is the client's option row: the name over the source in muted text. */
+.fcb-custom-option {
+  cursor: pointer;
+  justify-items: stretch;
+}
+
+.fcb-custom-option .fcb-option-main {
+  display: grid;
+  gap: 1px;
 }
 
 .fcb-custom-issues {

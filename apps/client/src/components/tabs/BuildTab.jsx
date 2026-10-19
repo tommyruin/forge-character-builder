@@ -225,44 +225,46 @@ export default function BuildTab() {
             <div>
               <h2 className="fcb-panel-title">{active.label}</h2>
             </div>
-            {active.key === 'abilities' && canGrant && (
-              <button
-                type="button"
-                className="fcb-button"
-                onClick={() => setAddAsiOpen(true)}
-                title="Grant an ability score improvement (DM / homebrew) — outside the level-up ASIs"
-              >
-                <Icon name="add" />
-                ASI
-              </button>
-            )}
-            {active.key === 'feats' && canGrant && (
-              <button
-                type="button"
-                className="fcb-button"
-                onClick={() => setAddFeatOpen(true)}
-                title="Grant a feat (DM / homebrew) — outside the normal ASI/feat choice"
-              >
-                <Icon name="add" />
-                Feat
-              </button>
-            )}
-            {active.key !== 'companion' && canCustom && (
-              <button
-                type="button"
-                className="fcb-button"
-                onClick={() =>
-                  setCustomDialog({
-                    entry: null,
-                    showsUnder: showsUnderFor(active.key),
-                  })
-                }
-                title="Make a feature of your own (a boon, a trait, a gift) without writing XML"
-              >
-                <Icon name="add" />
-                Custom
-              </button>
-            )}
+            <div className="fcb-panel-actions">
+              {active.key === 'abilities' && canGrant && (
+                <button
+                  type="button"
+                  className="fcb-button"
+                  onClick={() => setAddAsiOpen(true)}
+                  title="Grant an ability score improvement (DM / homebrew) — outside the level-up ASIs"
+                >
+                  <Icon name="add" />
+                  ASI
+                </button>
+              )}
+              {active.key === 'feats' && canGrant && (
+                <button
+                  type="button"
+                  className="fcb-button"
+                  onClick={() => setAddFeatOpen(true)}
+                  title="Grant a feat (DM / homebrew) — outside the normal ASI/feat choice"
+                >
+                  <Icon name="add" />
+                  Feat
+                </button>
+              )}
+              {active.key !== 'companion' && canCustom && (
+                <button
+                  type="button"
+                  className="fcb-button"
+                  onClick={() =>
+                    setCustomDialog({
+                      entry: null,
+                      showsUnder: showsUnderFor(active.key),
+                    })
+                  }
+                  title="Make a feature of your own (a boon, a trait, a gift) without writing XML"
+                >
+                  <Icon name="add" />
+                  Custom
+                </button>
+              )}
+            </div>
           </header>
           <div
             className="fcb-panel-body fcb-editor-primary"

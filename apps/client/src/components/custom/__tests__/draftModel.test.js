@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createCustomDraft } from '@forge-cb/engine/custom';
 import {
+  castAbilityIssues,
   defaultBucket,
+  defaultCastAbility,
   describeBlock,
   makeChoice,
   makeGrant,
@@ -115,5 +117,22 @@ describe('best-of group names', () => {
     expect(defaultBucket({ defaultBucket: 'extra attack', label: 'Attacks per Attack action' })).toBe('extra attack');
     expect(defaultBucket({ label: 'Armor class bonus' })).toBe('armor class bonus');
     expect(defaultBucket({ label: 'Base' })).toBe('custom bonus');
+  });
+});
+
+describe('casting ability', () => {
+  const spell = (castAbility) =>
+    makeGrant('Spell', { target: { by: 'id', type: 'Spell', id: 'ID_X', label: 'X' }, spell: castAbility ? { castAbility } : {} });
+
+  it('is the one the draft already uses, else the character\'s own', () => {
+    const draft = { ...createCustomDraft('boon', 'T'), blocks: [spell('charisma')] };
+    expect(defaultCastAbility(draft, 'wisdom')).toBe('charisma');
+    expect(defaultCastAbility({ ...draft, blocks: [] }, 'wisdom')).toBe('wisdom');
+    expect(defaultCastAbility({ ...draft, blocks: [] }, null)).toBeUndefined();
+  });
+
+  it('is required of every spell effect', () => {
+    const draft = { ...createCustomDraft('boon', 'T'), blocks: [spell(undefined), spell('wisdom'), makeChoice({ type: 'Spell' })] };
+    expect(castAbilityIssues(draft).map((issue) => issue.path)).toEqual(['blocks[0].spell.castAbility', 'blocks[2].castAbility']);
   });
 });

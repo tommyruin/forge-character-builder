@@ -317,3 +317,29 @@ export function defaultBucket(target) {
     .trim();
   return words === 'base' || words === '' ? 'custom bonus' : words.slice(0, 40);
 }
+
+// The ability a new spell effect is cast with. A feature casts every spell it grants with one
+// ability, so a draft that already names one keeps it; otherwise the character's own spellcasting
+// ability is offered, and a character who has none is asked (undefined here).
+export function defaultCastAbility(draft, characterAbility) {
+  for (const block of draft.blocks) {
+    const ability = block.kind === 'grant' ? block.spell?.castAbility : block.kind === 'choice' ? block.castAbility : undefined;
+    if (ability) return ability;
+  }
+  return characterAbility ?? undefined;
+}
+
+// Spell effects that still lack the ability they are cast with. The engine would quietly fall
+// back to Intelligence; the form asks instead, since a wrong guess changes every spell attack.
+export function castAbilityIssues(draft) {
+  const issues = [];
+  draft.blocks.forEach((block, index) => {
+    if (block.kind === 'grant' && block.target.type === 'Spell' && !block.spell?.castAbility) {
+      issues.push({ path: `blocks[${index}].spell.castAbility`, message: 'Pick the ability this spell is cast with.' });
+    }
+    if (block.kind === 'choice' && block.type === 'Spell' && !block.castAbility) {
+      issues.push({ path: `blocks[${index}].castAbility`, message: 'Pick the ability these spells are cast with.' });
+    }
+  });
+  return issues;
+}

@@ -55,6 +55,7 @@ export default function GrantBlock({
   issues,
   ariaLabel = 'Grant',
   typeOptions = GRANT_TYPE_OPTIONS,
+  defaultCastAbility,
 }) {
   const type = block.target.type;
   const isSpell = type === 'Spell';
@@ -70,7 +71,10 @@ export default function GrantBlock({
   const modes = SPELL_MODES.filter((option) => option.id !== 'prepared' || casters.length > 0);
 
   const changeType = (next) =>
-    emit({ target: { by: 'id', type: next, id: '' }, spell: next === 'Spell' ? spell : undefined });
+    emit({
+      target: { by: 'id', type: next, id: '' },
+      spell: next === 'Spell' ? (spell ?? (defaultCastAbility ? { castAbility: defaultCastAbility } : undefined)) : undefined,
+    });
 
   return (
     <div className="fcb-custom-block" role="group" aria-label={ariaLabel}>
@@ -152,9 +156,9 @@ export default function GrantBlock({
             <SelectInput
               label="Casting ability"
               value={spell?.castAbility ?? ''}
-              placeholder="Not set"
+              placeholder={spell?.castAbility ? undefined : 'Choose an ability'}
               options={abilityOptions}
-              onChange={(castAbility) => setSpell(compact({ ...spell, castAbility: castAbility === '' ? undefined : castAbility }))}
+              onChange={(castAbility) => castAbility !== '' && setSpell(compact({ ...spell, castAbility }))}
             />
           </Field>
         </div>
