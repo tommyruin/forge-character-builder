@@ -49,7 +49,7 @@ function fakeClient() {
     "addGrantedAbilityScore", "removeGrantedAbilityScore", "getCompanion", "setCompanionName",
     "setCompanionPortrait", "removeCompanionPortrait",
     "getDmGrants", "getCustomContent", "saveCustomDraft", "deleteCustomDraft", "promoteCustomDraft",
-    "getChoiceIdentityImpact", "previewCustomItem", "setItemDetails",
+    "getChoiceIdentityImpact", "previewCustomItem", "previewCustomSpell", "getMissingGrants", "setSpellAlias", "setItemDetails",
     "getInventory", "getItemBaseOptions", "addItem", "removeItem", "setItemAmount", "extractItem", "equipItem",
     "setItemStorage", "attuneItem", "setItemPresentation", "setItemCards", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
     "setAttackVisibility", "moveAttack", "deleteAttack", "generateSheet",
@@ -528,6 +528,42 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["extractItem", "Ada", "pack-1", {}, { cardPolicy: "significant" }]);
     // Each is one ordinary character edit: undoable like any other.
     expect(api.characters.canUndo("Ada")).toBe(true);
+  });
+
+  it("sends the caster a spell is granted to, and keeps a spell's name and note as an undoable edit", async () => {
+    const { client, calls } = fakeClient();
+    const store = fakeStore();
+    const api = createEngineApi({ client, store });
+    await api.characters.create("Ada");
+
+    await api.characters.addSpell("Ada", "ID_SPELL_ONE");
+    await api.characters.addSpell("Ada", "ID_SPELL_TWO", "Wizard");
+    await api.characters.removeSpell("Ada", "ID_SPELL_TWO");
+    // Without a caster the request is exactly the one the builder always sent.
+    expect(calls).toContainEqual(["addGrantedSpell", "Ada", { spellId: "ID_SPELL_ONE" }]);
+    expect(calls).toContainEqual(["addGrantedSpell", "Ada", { spellId: "ID_SPELL_TWO", caster: "Wizard" }]);
+
+    await api.characters.setSpellAlias("Ada", "ID_SPELL_ONE", { name: "Moonlit Ward", note: "Silver." });
+    expect(calls).toContainEqual(["setSpellAlias", "Ada", "ID_SPELL_ONE", { name: "Moonlit Ward", note: "Silver." }]);
+    await api.characters.missingGrants("Ada");
+    expect(calls).toContainEqual(["getMissingGrants", "Ada"]);
+    expect(api.characters.canUndo("Ada")).toBe(true);
+  });
+
+  it("saves a custom spell to a caster and previews it without saving", async () => {
+    const { client, calls } = fakeClient();
+    const store = fakeStore();
+    const api = createEngineApi({ client, store });
+    await api.characters.create("Ada");
+    const draft = { schemaVersion: 1, id: "ID_CUSTOM_SPELL000001", template: "spell", name: "Frost Lance" };
+    await api.characters.saveCustomDraft("Ada", draft, { caster: "Wizard" });
+    await api.characters.saveCustomDraft("Ada", draft, { grant: false });
+    await api.characters.previewCustomSpell("Ada", draft, "Wizard");
+    await api.characters.previewCustomSpell("Ada", draft);
+    expect(calls).toContainEqual(["saveCustomDraft", "Ada", { draft, caster: "Wizard" }]);
+    expect(calls).toContainEqual(["saveCustomDraft", "Ada", { draft, grant: false }]);
+    expect(calls).toContainEqual(["previewCustomSpell", "Ada", { draft, caster: "Wizard" }]);
+    expect(calls).toContainEqual(["previewCustomSpell", "Ada", { draft }]);
   });
 
   it("saves, deletes and checks custom drafts as undoable character edits that reach storage", async () => {

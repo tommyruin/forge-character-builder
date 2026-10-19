@@ -1381,7 +1381,13 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     spellcasting: (id: string) => invoke(getClient(), "getSpellcasting", id),
     setPrepared: async (id: string, casterId: string, spellId: string, prepared: boolean) => { await ensureLoaded(id); const result = await invoke(getClient(), "setPrepared", id, casterId, { spellId, prepared }); schedulePersist(id); return result; },
     spellBrowse: (id: string, ruleId: string) => invoke(getClient(), "getSpellBrowse", id, ruleId),
-    addSpell: (id: string, spellId: string) => mutateDetail(id, "addGrantedSpell", [id, { spellId }]),
+    // The caster that casts the spell travels with it; without one the request is the plain grant.
+    addSpell: (id: string, spellId: string, caster?: string | null) =>
+      mutateDetail(id, "addGrantedSpell", [id, { spellId, ...(caster ? { caster } : {}) }]),
+    // A spell's own name and note on this character; an ordinary undoable edit that reaches storage.
+    setSpellAlias: (id: string, spellId: string, alias: { name?: string; note?: string }) =>
+      mutateDetail(id, "setSpellAlias", [id, spellId, alias]),
+    missingGrants: (id: string) => invoke(getClient(), "getMissingGrants", id),
     removeSpell: (id: string, spellId: string) => mutateDetail(id, "removeGrantedSpell", [id, { spellId }]),
     addFeat: (id: string, featId: string) => mutateDetail(id, "addGrantedFeat", [id, { featId }]),
     removeFeat: (id: string, featId: string) => mutateDetail(id, "removeGrantedFeat", [id, { featId }]),
@@ -1391,7 +1397,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     // The character's own pack. A save stores the draft in the character file,
     // so it goes through the same dirty-mark and persist path as any edit.
     customContent: (id: string) => invoke(getClient(), "getCustomContent", id),
-    saveCustomDraft: (id: string, draft: AnyRecord, options: { grant?: boolean; amount?: number; notes?: string } = {}) =>
+    saveCustomDraft: (id: string, draft: AnyRecord, options: { grant?: boolean; amount?: number; notes?: string; caster?: string } = {}) =>
       mutateDetail(id, "saveCustomDraft", [
         id,
         {
@@ -1399,6 +1405,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
           ...(options.grant === false ? { grant: false } : {}),
           ...(typeof options.amount === "number" ? { amount: options.amount } : {}),
           ...(typeof options.notes === "string" && options.notes !== "" ? { notes: options.notes } : {}),
+          ...(typeof options.caster === "string" && options.caster !== "" ? { caster: options.caster } : {}),
         },
       ]),
     deleteCustomDraft: (id: string, draftId: string) => mutateDetail(id, "deleteCustomDraft", [id, { draftId }]),
@@ -1406,6 +1413,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       invoke(getClient(), "promoteCustomDraft", id, { draftId, source }),
     choiceIdentityImpact: (id: string, draft: AnyRecord) => invoke(getClient(), "getChoiceIdentityImpact", id, { draft }),
     previewCustomItem: (id: string, draft: AnyRecord) => invoke(getClient(), "previewCustomItem", id, { draft }),
+    previewCustomSpell: (id: string, draft: AnyRecord, caster?: string) =>
+      invoke(getClient(), "previewCustomSpell", id, { draft, ...(caster ? { caster } : {}) }),
     companion: (id: string) => invoke(getClient(), "getCompanion", id),
     setCompanionName: (id: string, name: string) => mutateDetailAndPersist(id, "setCompanionName", [id, { name }]),
     setCompanionPortrait: (id: string, base64: string) =>
