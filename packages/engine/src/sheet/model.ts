@@ -31,6 +31,7 @@ import { inventoryItemSignificance } from "../content/equipment/significance.js"
 import { descriptionToText } from "../content/description.js";
 import { CUSTOM_OTHER_TYPE } from "../custom/schema.js";
 import { escapeHtml, itemNote } from "./item-summary.js";
+import { customNameOf, recordDisplayName, ruleName } from "../inventory/names.js";
 import { createRegistrationContext } from "../selection/selection.js";
 import { evaluateRequirements } from "../selection/expr.js";
 import {
@@ -632,9 +633,14 @@ function buildFormValues(
   set("EP", state.coins.electrum);
   set("GP", state.coins.gold);
   set("PP", state.coins.platinum);
+  // A renamed record keeps its rules' name beside the player's: "Grandfather's Blade (Scimitar)".
   const equipment = inventory.items
-    .filter((item, index) => !isHiddenInventoryItem(state.items[index], library))
-    .map((item) => `${item.name}${item.amount > 1 ? ` x${item.amount}` : ""}`)
+    .map((item, index) => ({ item, record: state.items[index]! }))
+    .filter(({ record }) => !isHiddenInventoryItem(record, library))
+    .map(({ item, record }) => {
+      const renamed = customNameOf(record) !== "";
+      return `${item.name}${renamed ? ` (${ruleName(library, record)})` : ""}${item.amount > 1 ? ` x${item.amount}` : ""}`;
+    })
     .join("\n");
   set("Equipment", [state.equipmentNote, equipment].filter((text) => text.trim() !== "").join("\n"));
   const equippedArmor = state.items.find((item) => item.equipped && (item.location ?? "").toLowerCase() === "armor");
@@ -647,9 +653,10 @@ function buildFormValues(
   // or the class alt like "Unarmored Defense (Barbarian)") instead of a blank box.
   set(
     "details_equipped_armor",
-    equippedArmor?.name ?? `${unarmoredAlt(state, library) ?? "Unarmored"} (${values["ac:calculation"] ?? 0})`,
+    (equippedArmor === undefined ? undefined : customNameOf(equippedArmor) || equippedArmor.name) ??
+      `${unarmoredAlt(state, library) ?? "Unarmored"} (${values["ac:calculation"] ?? 0})`,
   );
-  set("details_equipped_shield", equippedShield?.name ?? "");
+  set("details_equipped_shield", equippedShield === undefined ? "" : customNameOf(equippedShield) || equippedShield.name);
   // The compact top row ticks a box for the shield instead of naming it.
   set("details_shield_equipped", equippedShield === undefined ? "" : "true");
   // Bonus-AC sources outside the base calculation (a held Staff of Power, a
@@ -2257,39 +2264,15 @@ function effectiveItemElement(
 }
 
 function itemDisplayName(item: CharacterState["items"][number], library: ElementLibrary): string {
-  let name = library.byId.get(item.itemId)?.identity.name ?? item.name;
-  if (item.adorners.length > 0) {
-    const adorner = library.byId.get(item.adorners[0]!);
-    if (adorner !== undefined) {
-      const format = adorner.setters.find((setter) => setter.name === "name-format")?.value;
-      const parent = library.byId.get(item.itemId)?.identity.name ?? item.name;
-      const enhancement = adorner.setters.find((setter) => setter.name === "enhancement")?.value;
-      name = format
-        ? format.replace("{{parent}}", parent).replace("{{enhancement}}", enhancement ?? "")
-        : adorner.identity.name;
-    }
-  }
-  return name.replace(/\s+/g, " ").trim();
+  return recordDisplayName(library, item);
 }
 
 function itemRow(
   item: InventoryItemDto,
   library: ElementLibrary,
-  stateItem: { adorners: string[] } | undefined,
+  stateItem: CharacterState["items"][number] | undefined,
 ): SheetRow {
-  let name = item.name;
-  if (stateItem !== undefined && stateItem.adorners.length > 0) {
-    const adorner = library.byId.get(stateItem.adorners[0]!);
-    if (adorner !== undefined) {
-      const format = adorner.setters.find((s) => s.name === "name-format")?.value;
-      const parent = library.byId.get(item.itemId)?.identity.name ?? item.name;
-      const enhancement = adorner.setters.find((s) => s.name === "enhancement")?.value;
-      name = format
-        ? format.replace("{{parent}}", parent).replace("{{enhancement}}", enhancement ?? "")
-        : adorner.identity.name;
-      name = name.replace(/\s+/g, " ").trim();
-    }
-  }
+  const name = stateItem === undefined ? item.name : recordDisplayName(library, stateItem);
   const nameTokens = name.split(/\s+/).filter((token) => token !== "");
   // Equipped items bracket the first word of the name ("[Chain Mail]").
   const tokens = item.isEquipped || item.isAttuned

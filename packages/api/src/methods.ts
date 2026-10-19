@@ -445,6 +445,14 @@ export interface EngineMethodMap {
     WireObject
   >;
   setItemCards: MethodContract<[id: string, request: { policy: "all" | "significant" | "none" }], WireObject>;
+  /**
+   * Sets one inventory record's own name and notes (`<details><name>` and
+   * `<notes>`). Any record can carry them, book or custom; the record keeps its
+   * element and rules, and the name is what the inventory, attack rows and
+   * sheet print. An empty name goes back to the item's own; an omitted field is
+   * left alone.
+   */
+  setItemDetails: MethodContract<[id: string, identifier: string, request: { name?: string; notes?: string }], WireObject>;
   setCoins: MethodContract<[id: string, coins: CoinageDto], WireObject>;
   getAttacks: MethodContract<[id: string], WireList>;
   getAttackOptions: MethodContract<[id: string], WireObject>;
@@ -564,6 +572,7 @@ export const ENGINE_METHOD_NAMES = [
   "attuneItem",
   "setItemPresentation",
   "setItemCards",
+  "setItemDetails",
   "setCoins",
   "getAttacks",
   "getAttackOptions",
@@ -675,6 +684,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   attuneItem: implemented,
   setItemPresentation: implemented,
   setItemCards: implemented,
+  setItemDetails: implemented,
   setCoins: implemented,
   getAttacks: implemented,
   getAttackOptions: implemented,
@@ -766,6 +776,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   attuneItem: "character-write",
   setItemPresentation: "character-write",
   setItemCards: "character-write",
+  setItemDetails: "character-write",
   setCoins: "character-write",
   getAttacks: "read-only",
   getAttackOptions: "read-only",

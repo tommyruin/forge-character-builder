@@ -32,6 +32,8 @@ import type { ExtractEntry, PackExtras, ParsedElement, Rule, Setter } from "../c
 import type { CharacterState, Coinage, InventoryItemState } from "../character/state.js";
 import { equipmentMetadata, isPhysicalEquipment, type EquipmentAttunementDto } from "../content/equipment/categories.js";
 import { inventoryItemSignificance, isSignificantItem, itemSignificance } from "../content/equipment/significance.js";
+import { contentOrigin } from "../custom/placement.js";
+import { MAX_ITEM_NAME, MAX_ITEM_NOTES, customNameOf, ruleName } from "./names.js";
 
 export interface ExtractEntryDto {
   itemId: string;
@@ -67,6 +69,14 @@ export interface InventoryItemDto extends EquipmentShoppingMetadataDto {
   displayElementId: string;
   /** The record's free-text notes from the details card. */
   notes: string;
+  /** The player's name for this record (`<details><name>`), or "" when it has none. */
+  customName: string;
+  /** The physical base element's name (`Longsword` for a magic longsword). */
+  baseName: string;
+  /** What the record is called without a custom name: its rules' name (`Frostbite`, `Longsword +1`). */
+  defaultName: string;
+  /** True when the record's element was made on the character or in a homebrew collection. */
+  isCustom: boolean;
   /** `<details card="true">`: the full sheet prints an item card for this record. */
   card: boolean;
   /** `<item sidebar="true">`: the equipment page's inventory notes describe this record. */
@@ -479,9 +489,13 @@ export function buildInventoryDto(
       itemId: item.itemId,
       displayElementId: displayElement?.identity.id ?? item.itemId,
       notes: item.notes ?? "",
+      customName: customNameOf(item),
+      baseName: base?.identity.name ?? item.name,
+      defaultName: ruleName(library, item),
+      isCustom: displayElement !== undefined && contentOrigin(library, displayElement.identity.id) !== "book",
       card: item.card === true,
       sidebar: item.sidebar === true,
-      name: displayElement?.identity.name ?? item.name,
+      name: customNameOf(item) || (displayElement?.identity.name ?? item.name),
       type: base?.identity.type ?? "",
       amount: item.amount,
       isEquippable: locations.length > 0,
@@ -1248,6 +1262,117 @@ export function planSetItemPresentationEdits(
   const edits: RawEdit[] = [];
   if (presentation.card !== undefined) edits.push(...planCardEdits(document.raw, node, presentation.card));
   if (presentation.sidebar !== undefined) edits.push(...planFlagAttributeEdits(document.raw, node, "sidebar", presentation.sidebar));
+  return edits;
+}
+
+/** A record's own name and notes (`<details><name>` and `<notes>`); an omitted field is left alone. */
+export interface ItemDetails {
+  name?: string;
+  notes?: string;
+}
+
+// Control characters are never part of a name, and notes keep their line breaks only.
+const NAME_FORBIDDEN = /[\u0000-\u001f\u007f]/;
+const NOTES_FORBIDDEN = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
+
+function validateDetails(details: ItemDetails): void {
+  const { name, notes } = details;
+  if (name !== undefined) {
+    if (typeof name !== "string") throw engineError("invalid-argument", "item name must be text");
+    if (name.trim().length > MAX_ITEM_NAME) {
+      throw engineError("invalid-argument", `item name is at most ${MAX_ITEM_NAME} characters`);
+    }
+    if (NAME_FORBIDDEN.test(name)) throw engineError("invalid-argument", "item name must be a single line of plain text");
+  }
+  if (notes !== undefined) {
+    if (typeof notes !== "string") throw engineError("invalid-argument", "item notes must be text");
+    if (notes.trim().length > MAX_ITEM_NOTES) {
+      throw engineError("invalid-argument", `item notes are at most ${MAX_ITEM_NOTES} characters`);
+    }
+    if (NOTES_FORBIDDEN.test(notes)) throw engineError("invalid-argument", "item notes must be plain text");
+  }
+}
+
+/** One details child in the layout new records are written with. */
+function detailsChild(tag: "name" | "notes", text: string, closeIndent: string): string {
+  const body = text === "" ? "" : `${escapeXml(text)}\r\n`;
+  return `<${tag}>\r\n${body}${closeIndent}</${tag}>`;
+}
+
+/**
+ * Plans a record's own name and notes. Both live in the record's `<details>`
+ * element, the fields every saved character already carries, so setting one
+ * rewrites only that child's text and clearing both of a record that never had
+ * them restores its original bytes. A value equal to the stored one writes
+ * nothing. A record with no `<details>` (a hand-edited or third-party file)
+ * gains one without a card attribute, so its card state stays off.
+ */
+export function planSetItemDetailsEdits(
+  document: Dnd5eDocument,
+  state: CharacterState,
+  identifier: string,
+  details: ItemDetails,
+): RawEdit[] {
+  validateDetails(details);
+  const record = state.items.find((item) => item.identifier === identifier);
+  if (record === undefined) throw engineError("not-found", `inventory item '${identifier}' not found`);
+  const raw = document.raw;
+  const itemNode = itemNodeOf(document, identifier);
+  const name = details.name === undefined ? undefined : details.name.trim();
+  const notes = details.notes === undefined ? undefined : details.notes.trim();
+  const sameName = name === undefined || name === record.detailsName;
+  const sameNotes = notes === undefined || notes === record.notes;
+  if (sameName && sameNotes) return [];
+
+  const detailsNode = childElements(itemNode, "details")[0];
+  const nextName = name ?? record.detailsName;
+  const nextNotes = notes ?? record.notes;
+
+  if (detailsNode === undefined) {
+    const indent = indentOf(raw, itemNode);
+    const pad = `${indent}\t`;
+    const childPad = `${pad}\t`;
+    const block = [
+      `${pad}<details>`,
+      `${childPad}${detailsChild("name", nextName, childPad)}`,
+      `${childPad}${detailsChild("notes", nextNotes, childPad)}`,
+      `${pad}</details>`,
+    ].join("\r\n");
+    if (itemNode.selfClosing) {
+      const at = attributeInsertAt(openTagAttributes(raw, itemNode));
+      return [{ start: at, end: itemNode.openEnd, replacement: `>\r\n${block}\r\n${indent}</item>` }];
+    }
+    const children = childElements(itemNode);
+    const at = children.length > 0 ? children[children.length - 1]!.end : itemNode.openEnd;
+    return [{ start: at, end: at, replacement: `\r\n${block}` }];
+  }
+
+  const nameNode = childElements(detailsNode, "name")[0];
+  const notesNode = childElements(detailsNode, "notes")[0];
+  const childIndent = (node: Dnd5eNode | undefined): string =>
+    node === undefined ? `${indentOf(raw, detailsNode)}\t` : indentOf(raw, node);
+
+  if (detailsNode.selfClosing || nameNode === undefined || notesNode === undefined) {
+    // A details element missing a child is rebuilt whole, keeping its own attributes.
+    const open = raw.slice(detailsNode.start, detailsNode.openEnd).replace(/\s*\/>$/, ">");
+    const detailsIndent = indentOf(raw, detailsNode);
+    const pad = childIndent(nameNode ?? notesNode);
+    const block = [
+      open,
+      `${pad}${detailsChild("name", nextName, pad)}`,
+      `${pad}${detailsChild("notes", nextNotes, pad)}`,
+      `${detailsIndent}</details>`,
+    ].join("\r\n");
+    return [{ start: detailsNode.start, end: detailsNode.end, replacement: block }];
+  }
+
+  const edits: RawEdit[] = [];
+  if (!sameName) {
+    edits.push({ start: nameNode.start, end: nameNode.end, replacement: detailsChild("name", nextName, childIndent(nameNode)) });
+  }
+  if (!sameNotes) {
+    edits.push({ start: notesNode.start, end: notesNode.end, replacement: detailsChild("notes", nextNotes, childIndent(notesNode)) });
+  }
   return edits;
 }
 

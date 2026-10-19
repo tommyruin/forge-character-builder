@@ -507,6 +507,7 @@ export function createEngineMethodHandlers(
     attuneItem: (id, identifier, request) => objectResult(service.attuneItem(id, identifier, request.attuned)),
     setItemPresentation: (id, request) => objectResult(service.setItemPresentation(id, request)),
     setItemCards: (id, request) => objectResult(service.setItemCards(id, request)),
+    setItemDetails: (id, identifier, request) => objectResult(service.setItemDetails(id, identifier, request)),
     setCoins: (id, coins) => objectResult(service.setCoins(id, coins)),
     getAttacks: (id) => listResult(service.getAttacks(id)),
     getAttackOptions: (id) => objectResult(service.getAttackOptions(id)),

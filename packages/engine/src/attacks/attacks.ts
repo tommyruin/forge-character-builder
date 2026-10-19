@@ -43,6 +43,7 @@ import type { AbilityScores, AttackState, CharacterState } from "../character/st
 import type { RawEdit } from "../selection/selection.js";
 import { computeStatistics, type StatisticsValues } from "../statistics/calculator.js";
 import { buildMagicAttackOptions, type MagicAttackSpellOptionDto } from "../magic/reconcile.js";
+import { customNameOf } from "../inventory/names.js";
 import {
   UNARMED_SOURCE_KEYS,
   resolveUnarmedProfile,
@@ -426,7 +427,7 @@ export function weaponsWithoutRows(state: CharacterState, library: ElementLibrar
     options.push({
       identifier: item.identifier,
       itemId: item.itemId,
-      name: effective?.identity.name ?? base.identity.name,
+      name: customNameOf(item) || (effective?.identity.name ?? base.identity.name),
       isEquipped: item.equipped,
     });
   }
@@ -502,7 +503,7 @@ function resolveWeaponRow(
   library: ElementLibrary,
   statistics: StatisticsValues,
   row: AttackState,
-  item: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; location?: string } | undefined,
+  item: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; location?: string; detailsName?: string } | undefined,
   masteries: MasteryContext,
 ): ResolvedRow {
   const base = item ? elementById(library, item.itemId) : undefined;
@@ -561,7 +562,7 @@ function resolveWeaponRow(
   // computed with the row's effective ability (the current bonus/damage stays
   // there even after an explicit ability override).
   const generated: AttackGeneratedDto = {
-    name: effective.identity.name,
+    name: customNameOf(item) || effective.identity.name,
     range,
     bonus: bonusString(attackTotal),
     damage: weaponDamageString(dice, damageTotal, type),
@@ -806,7 +807,7 @@ function resolveRow(
   statistics: StatisticsValues,
   row: AttackState,
   spellOptions: MagicAttackSpellOptionDto[],
-  item?: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; location?: string },
+  item?: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; location?: string; detailsName?: string },
   contributors: readonly StatContributor[] = [],
   masteries: MasteryContext = EMPTY_MASTERY_CONTEXT,
 ): { resolved: ResolvedRow; itemEquipped: boolean } {
@@ -984,7 +985,7 @@ function resolvedOf(
   state: CharacterState,
   library: ElementLibrary,
   row: AttackState,
-  item?: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean },
+  item?: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; detailsName?: string },
 ): ResolvedRow {
   const contributors: StatContributor[] = [];
   const statistics = computeStatistics(
@@ -1011,7 +1012,7 @@ export function planInsertAttackEdits(
   library: ElementLibrary,
   row: AttackState,
   atTop: boolean,
-  item?: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean },
+  item?: { itemId: string; adorners: string[]; equipped: boolean; attuned?: boolean; detailsName?: string },
 ): RawEdit[] {
   const node = attacksNode(document);
   const raw = document.raw;
@@ -1112,7 +1113,7 @@ export function planMoveAttackEdits(document: Dnd5eDocument, attackId: string, d
 export function newWeaponAttackRow(
   state: CharacterState,
   library: ElementLibrary,
-  item: { identifier: string; itemId: string; adorners: string[] },
+  item: { identifier: string; itemId: string; adorners: string[]; detailsName?: string },
 ): AttackState {
   const base = elementById(library, item.itemId);
   const effective = effectiveElement(library, item);
@@ -1122,7 +1123,7 @@ export function newWeaponAttackRow(
   return {
     id: randomUuid().replace(/-/g, ""),
     identifier: item.identifier,
-    name: effective?.identity.name ?? base?.identity.name ?? "",
+    name: customNameOf(item) || (effective?.identity.name ?? base?.identity.name ?? ""),
     range: "",
     attack: "",
     damage: "",
@@ -1243,7 +1244,7 @@ export function planAutoAttackInsertEdits(
   state: CharacterState,
   document: Dnd5eDocument,
   library: ElementLibrary,
-  item: { identifier: string; itemId: string; adorners: string[]; equipped?: boolean; attuned?: boolean },
+  item: { identifier: string; itemId: string; adorners: string[]; equipped?: boolean; attuned?: boolean; detailsName?: string },
 ): RawEdit[] {
   const base = elementById(library, item.itemId);
   if (base === undefined || base.identity.type !== "Weapon") return [];
@@ -1257,6 +1258,7 @@ export function planAutoAttackInsertEdits(
     adorners: item.adorners,
     equipped: item.equipped ?? true,
     attuned: item.attuned,
+    detailsName: item.detailsName,
   });
 }
 

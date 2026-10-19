@@ -20,7 +20,8 @@ describe("engine method contract", () => {
     // 79: added setItemAmount (stack quantity changes).
     // 81: added setItemPresentation / setItemCards (item cards and inventory notes).
     // 88: added addGrantedElement / removeGrantedElement and the custom content methods.
-    expect(ENGINE_METHOD_NAMES).toHaveLength(88);
+    // 89: added setItemDetails (a record's own name and notes).
+    expect(ENGINE_METHOD_NAMES).toHaveLength(89);
     expect(new Set(ENGINE_METHOD_NAMES).size).toBe(ENGINE_METHOD_NAMES.length);
     expect(Object.keys(METHOD_SUPPORT).sort()).toEqual([...ENGINE_METHOD_NAMES].sort());
 
@@ -231,7 +232,8 @@ describe("typed client bridge", () => {
     // 79: added setItemAmount (stack quantity changes).
     // 81: added setItemPresentation / setItemCards (item cards and inventory notes).
     // 88: added addGrantedElement / removeGrantedElement and the custom content methods.
-    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 88 } });
+    // 89: added setItemDetails (a record's own name and notes).
+    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 89 } });
   });
 
   it("transfers snapshot buffers: nested request bodies and ArrayBuffer results", async () => {

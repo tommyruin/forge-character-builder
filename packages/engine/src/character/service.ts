@@ -97,12 +97,14 @@ import {
   planSetItemAmountEdits,
   planSetItemCardsEdits,
   planSetItemPresentationEdits,
+  planSetItemDetailsEdits,
   planSetItemStorageEdits,
   type AddItemOptions,
   type ExtractItemOptions,
   type InventoryDto,
   type ItemBaseOptionsDto,
   type ItemCardsPolicy,
+  type ItemDetails,
   type ItemPresentation,
 } from "../inventory/inventory.js";
 import { planItemRegistrationSweep } from "../inventory/item-registration.js";
@@ -2025,6 +2027,39 @@ export class CharacterService {
     });
     const next = edits.length === 0 ? state : this.applyPlan(id, state, document, edits);
     return this.inventoryDto(next, this.library);
+  }
+
+  /**
+   * Sets a record's own name and notes. Presentation only: the record keeps its
+   * element, its rules and its registrations. The record's automatic attack row
+   * follows the new name unless the player typed a row name by hand; an
+   * explicit row name stays exactly as it was.
+   */
+  setItemDetails(id: string, identifier: string, details: ItemDetails): InventoryDto {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for inventory");
+    }
+    const edits = planSetItemDetailsEdits(document, state, identifier, details);
+    if (edits.length === 0) return this.inventoryDto(state, this.library);
+    const row = state.attacks.find((candidate) => candidate.kind === "weapon" && candidate.identifier === identifier);
+    const previousName = row === undefined
+      ? undefined
+      : buildAttacksDto(state, this.library).find((candidate) => candidate.id === row.id)?.generated?.name;
+    let current = parseDnd5e(applyRawEdits(document.raw, edits));
+    let next = this.remap(current, state, id);
+    if (row !== undefined && (row.name === "" || row.name === previousName)) {
+      // The stored row name was the generated one, so it follows the record's name.
+      const renamed = next.attacks.find((candidate) => candidate.id === row.id);
+      if (renamed !== undefined) {
+        renamed.name = "";
+        const rowEdits = planRewriteAttackEdits(next, current, this.library, renamed);
+        current = parseDnd5e(applyRawEdits(current.raw, rowEdits));
+        next = this.remap(current, next, id);
+      }
+    }
+    const combined = { start: 0, end: document.raw.length, replacement: current.raw };
+    return this.inventoryDto(this.applyInventoryPlan(id, state, document, [combined]), this.library);
   }
 
   /** Applies one item-card choice to every carried record (see `planSetItemCardsEdits`). */
