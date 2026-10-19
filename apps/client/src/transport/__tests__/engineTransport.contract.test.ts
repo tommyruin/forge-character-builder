@@ -40,7 +40,7 @@ function fakeClient() {
   const methods = [
     "boot", "createCharacter", "getCharacter", "deleteCharacter", "setCharacterSources",
     "getCharacterSources", "exportCharacterXml", "importCharacterXml", "contentStatus",
-    "contentSources", "equipmentCategories", "contentElements", "contentElement", "getElementSource", "checkPackContent", "ingestUploaded", "removeUploaded", "patchHomebrew",
+    "contentSources", "equipmentCategories", "contentElements", "contentElement", "getElementSource", "checkPackContent", "getPackChoiceImpact", "ingestUploaded", "removeUploaded", "patchHomebrew",
     "setPortrait", "removePortrait", "updateDetails", "setAbilities", "getSelectionOptions",
     "setSelection", "clearSelection", "getOptionalRules", "getRulesetMode", "setRulesetMode", "getCharacterAdjustments",
     "setCharacterControl", "getStatistics", "levelUp", "levelUpTo", "levelDown", "delevel", "undoDelevel",
@@ -558,6 +558,8 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["getElementSource", "ID_BOOK_FEAT_ONE"]);
     await api.content.checkPack({ path: "imports/pack.xml", xml: "<elements />", overrides: ["ID_BOOK_FEAT_ONE"] });
     expect(calls).toContainEqual(["checkPackContent", { path: "imports/pack.xml", xml: "<elements />", overrides: ["ID_BOOK_FEAT_ONE"] }]);
+    await api.content.packChoiceImpact(null, { id: "ID_X" });
+    expect(calls).toContainEqual(["getPackChoiceImpact", { before: null, after: { id: "ID_X" } }]);
   });
 
   it("reads resources and spends, switches, rests and keeps trackers as undoable edits", async () => {

@@ -1076,6 +1076,9 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     // A pack's compiled file checked against the loaded library without loading it.
     checkPack: async (request: { path: string; xml: string; overrides?: string[] }) =>
       invoke(await ensureContentReady(), "checkPackContent", request),
+    // The picks changing a pack element's choices would clear, from the element's two draft versions.
+    packChoiceImpact: async (before: AnyRecord | null, after: AnyRecord) =>
+      invoke(await ensureContentReady(), "getPackChoiceImpact", { before, after }),
     clearCache: () => undefined,
     importStatus: async () => ({ status: "succeeded" }),
     reload: async (knownStalePaths: string[] = []) => {

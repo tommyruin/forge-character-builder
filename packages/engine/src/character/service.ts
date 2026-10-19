@@ -2531,6 +2531,11 @@ export class CharacterService {
     return this.custom.impact(id, request);
   }
 
+  /** The picks losing a pack element's choice identity would clear, from the element's two draft versions. */
+  getPackChoiceImpact(request: { before: unknown; after: unknown }): ChoiceIdentityReportDto {
+    return this.custom.packImpact(request);
+  }
+
   /**
    * What an item draft would give this character, without saving it. The draft
    * is added to a scratch copy of the character, wielded and attuned, and its

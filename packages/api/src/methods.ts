@@ -2,6 +2,7 @@ import type {
   ChoiceIdentityReportDto,
   CustomContentDto,
   CustomEntryDraft,
+  CustomPackDraft,
   CustomDraftMutationDto,
   CustomItemPreviewDto,
   CustomSpellPreviewDto,
@@ -496,6 +497,12 @@ export interface EngineMethodMap {
    */
   getChoiceIdentityImpact: MethodContract<[id: string, request: { draft: CustomEntryDraft }], ChoiceIdentityReportDto>;
   /**
+   * The picks changing a homebrew pack element's choices would clear, from the
+   * two versions of its draft (`before` null for a new element). It counts every
+   * loaded character that carries the element; no character needs to be open.
+   */
+  getPackChoiceImpact: MethodContract<[request: { before: CustomPackDraft | null; after: CustomPackDraft }], ChoiceIdentityReportDto>;
+  /**
    * What an item draft would give this character, computed on a scratch copy so
    * nothing is saved: the weapon's attack row once it is wielded and attuned.
    */
@@ -670,6 +677,7 @@ export const ENGINE_METHOD_NAMES = [
   "deleteCustomDraft",
   "promoteCustomDraft",
   "getChoiceIdentityImpact",
+  "getPackChoiceImpact",
   "previewCustomItem",
   "previewCustomSpell",
   "getCompanion",
@@ -794,6 +802,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   deleteCustomDraft: implemented,
   promoteCustomDraft: implemented,
   getChoiceIdentityImpact: implemented,
+  getPackChoiceImpact: implemented,
   previewCustomItem: implemented,
   previewCustomSpell: implemented,
   getCompanion: implemented,
@@ -898,6 +907,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   deleteCustomDraft: "character-write",
   promoteCustomDraft: "read-only",
   getChoiceIdentityImpact: "read-only",
+  getPackChoiceImpact: "read-only",
   previewCustomItem: "read-only",
   previewCustomSpell: "read-only",
   getCompanion: "read-only",

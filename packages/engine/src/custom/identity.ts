@@ -10,7 +10,7 @@
  * which pick slots that would orphan, so the editor can warn first.
  */
 
-import type { ChoiceIdentityChangeDto, CustomDraft } from "@forge-cb/api";
+import type { ChoiceIdentityChangeDto, CustomCatalogDraft, CustomDraft } from "@forge-cb/api";
 import { parseElementsFile, type SelectRule } from "../content/parser.js";
 import { selectionRuleChecksum } from "../selection/selection.js";
 import { compileCustomElement } from "./compile.js";
@@ -28,8 +28,11 @@ export interface ChoiceIdentity {
   checksums: string[];
 }
 
+/** The drafts that can hold a choice: features, and catalogue entries (a proficiency or a deity can grant rules too). */
+export type ChoiceDraft = CustomDraft | CustomCatalogDraft;
+
 /** The select rules a draft compiles to, in block order, keyed by choice block id. */
-function choiceIdentities(draft: CustomDraft): Map<string, ChoiceIdentity> {
+function choiceIdentities(draft: ChoiceDraft): Map<string, ChoiceIdentity> {
   const [element] = parseElementsFile(`<elements>${compileCustomElement(draft)}</elements>`, "identity.xml");
   const selects = (element?.rules ?? []).filter((rule): rule is SelectRule => rule.kind === "select");
   const out = new Map<string, ChoiceIdentity>();
@@ -52,7 +55,7 @@ function choiceIdentities(draft: CustomDraft): Map<string, ChoiceIdentity> {
 }
 
 /** The identity of every choice block of a draft, by block id. */
-export function draftChoiceIdentities(draft: CustomDraft): ReadonlyMap<string, ChoiceIdentity> {
+export function draftChoiceIdentities(draft: ChoiceDraft): ReadonlyMap<string, ChoiceIdentity> {
   return choiceIdentities(draft);
 }
 
@@ -72,7 +75,7 @@ export interface ChoiceIdentityChange {
  * Adding a choice, or only raising a choice's count, orphans nothing and is
  * reported only when the count changed.
  */
-export function diffChoiceIdentity(before: CustomDraft, after: CustomDraft): ChoiceIdentityChange[] {
+export function diffChoiceIdentity(before: ChoiceDraft, after: ChoiceDraft): ChoiceIdentityChange[] {
   const old = choiceIdentities(before);
   const next = choiceIdentities(after);
   const changes: ChoiceIdentityChange[] = [];

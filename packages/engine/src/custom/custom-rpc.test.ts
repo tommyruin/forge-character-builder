@@ -188,6 +188,22 @@ describe("choice identity", () => {
     expect(raised.hasPicks).toBe(false);
   });
 
+  it("reports the picks under a pack element's choice from the two versions of its draft, with no character open", () => {
+    const built = fighter();
+    const draft = gift([choice()]);
+    built.service.saveCustomDraft(built.id, { draft });
+    const rules = pendingSelectionRules(built.service.getCharacter(built.id)).filter((rule) => rule.name === "Borrowed tongue");
+    built.service.setSelection(built.id, rules[0]!.identifier, "ID_LANGUAGE_ELVISH");
+
+    const renamed = built.service.getPackChoiceImpact({ before: draft, after: gift([choice({ name: "Other tongue" })]) });
+    expect(renamed.hasPicks).toBe(true);
+    expect(renamed.changes[0]!.picks.map((pick) => [pick.characterId, pick.slot, pick.elementId])).toEqual([[built.id, 1, "ID_LANGUAGE_ELVISH"]]);
+
+    expect(built.service.getPackChoiceImpact({ before: draft, after: draft })).toEqual({ changes: [], hasPicks: false });
+    // A brand-new element has no earlier version to lose picks from.
+    expect(built.service.getPackChoiceImpact({ before: null, after: draft })).toEqual({ changes: [], hasPicks: false });
+  });
+
   it("a draft the character has never stored has no identity to lose", () => {
     const { service, id } = fighter();
     expect(service.getChoiceIdentityImpact(id, { draft: gift([choice()]) })).toEqual({ changes: [], hasPicks: false });

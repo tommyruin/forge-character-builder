@@ -594,6 +594,7 @@ export function createEngineMethodHandlers(
     promoteCustomDraft: (id, request) => service.promoteCustomDraft(id, request),
     getMissingGrants: (id) => service.getMissingGrants(id),
     getChoiceIdentityImpact: (id, request) => service.getChoiceIdentityImpact(id, request),
+    getPackChoiceImpact: (request) => service.getPackChoiceImpact(request),
     previewCustomItem: (id, request) => service.previewCustomItem(id, request),
     previewCustomSpell: (id, request) => service.previewCustomSpell(id, request),
     getAppearanceSuggestions: (id, seed) => objectResult(service.getAppearanceSuggestions(id, seed)),

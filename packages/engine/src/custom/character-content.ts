@@ -35,13 +35,18 @@ import { engineError } from "../errors.js";
 import { pendingSelectionRules, type RawEdit } from "../selection/selection.js";
 import { elementTypeFor } from "./catalogue.js";
 import { compileCustomElement, compileCustomPack } from "./compile.js";
-import { diffChoiceIdentity } from "./identity.js";
+import { diffChoiceIdentity, type ChoiceDraft } from "./identity.js";
 import { buildSectionOfType } from "./placement.js";
 import { entriesWithDraft, entriesWithoutDraft, planCustomPackEdits, readCustomPack } from "./pack.js";
 import { promoteCustomDraft } from "./promote.js";
-import { isCustomItemDraft, isCustomSpellDraft } from "./schema.js";
-import { readCustomEntry } from "./validate.js";
+import { isCustomAppendDraft, isCustomItemDraft, isCustomOverrideDraft, isCustomSpellDraft, type CustomPackDraft } from "./schema.js";
+import { readCustomEntry, readCustomPackDraft } from "./validate.js";
 import type { AddItemOptions, ItemDetails } from "../inventory/inventory.js";
+
+/** True for the drafts whose rules can hold a choice: a feature or a catalogue entry. */
+function hasChoices(draft: CustomPackDraft): draft is ChoiceDraft {
+  return !isCustomItemDraft(draft) && !isCustomSpellDraft(draft) && !isCustomAppendDraft(draft) && !isCustomOverrideDraft(draft);
+}
 
 /** What the content operations need from the character service. */
 export interface CustomContentHost {
@@ -443,6 +448,25 @@ export class CharacterCustomContent {
     ) {
       return { changes: [], hasPicks: false };
     }
+    return this.picksLost(stored, proposed);
+  }
+
+  /**
+   * The same report for an element a homebrew pack holds, from the two versions
+   * of its draft. No character owns the draft, so it is the loaded characters
+   * that carry the element (granted, or picked) whose picks are counted. A new
+   * element (`before` null) has no earlier identity to lose.
+   */
+  packImpact(request: { before: unknown; after: unknown }): ChoiceIdentityReportDto {
+    const none: ChoiceIdentityReportDto = { changes: [], hasPicks: false };
+    if (request.before === null || request.before === undefined) return none;
+    const before = readCustomPackDraft(request.before);
+    const after = readCustomPackDraft(request.after);
+    if (!hasChoices(before) || !hasChoices(after) || before.id !== after.id) return none;
+    return this.picksLost(before, after);
+  }
+
+  private picksLost(stored: ChoiceDraft, proposed: ChoiceDraft): ChoiceIdentityReportDto {
     const library = this.host.library;
     const changes = diffChoiceIdentity(stored, proposed).map((change) => {
       const picks: ChoiceIdentityReportDto["changes"][number]["picks"] = [];
