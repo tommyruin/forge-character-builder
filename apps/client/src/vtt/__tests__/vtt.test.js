@@ -62,6 +62,12 @@ describe("rules5e", () => {
     // perception (wis): not proficient here -> 10 + 3 = 13
     expect(passivePerception(statValues, abilities, 2)).toBe(13);
   });
+
+  it("adds only the part of the engine's passive statistic above its base 10", () => {
+    // The engine reports 10 + a feature's dedicated passive bonus (+5 here).
+    expect(passivePerception({ ...statValues, "perception:passive": 15 }, abilities, 2)).toBe(18);
+    expect(passivePerception({ ...statValues, "perception:passive": 10 }, abilities, 2)).toBe(13);
+  });
 });
 
 describe("parseDamage", () => {

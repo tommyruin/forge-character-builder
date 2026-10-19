@@ -90,8 +90,11 @@ export function allSaves(stats, abilities) {
   return out;
 }
 
-// Passive Perception = 10 + Perception skill bonus (+ any explicit passive statistic bonus).
+// Passive Perception = 10 + Perception skill bonus + any dedicated passive bonus. The engine
+// keeps the passive base in `perception:passive` (10 plus the bonus), so only the part above 10
+// is added; counting the whole value would add the 10 twice.
 export function passivePerception(stats, abilities, proficiencyBonus) {
   const per = skillInfo(stats, abilities, 'perception', proficiencyBonus);
-  return 10 + per.bonus + statValue(stats, 'perception:passive');
+  const passive = stats?.['perception:passive'];
+  return 10 + per.bonus + (typeof passive === 'number' ? passive - 10 : 0);
 }

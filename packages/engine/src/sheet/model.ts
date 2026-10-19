@@ -234,6 +234,20 @@ function proficiencyMarkerCount(contribution: number, proficiencyBonus: number):
   return Math.max(1, Math.ceil(contribution / proficiencyBonus));
 }
 
+/**
+ * Passive Perception: the passive base (10 plus any feature's dedicated
+ * passive bonus, which the calculator keeps in `perception:passive`) plus the
+ * Perception check bonus. The check components alone miss a feature that
+ * raises the passive score without touching the check.
+ */
+function passivePerception(values: StatisticsValues): number {
+  return (values["perception:passive"] ?? 10) +
+    (values["wisdom:modifier"] ?? 0) +
+    (values["perception"] ?? 0) +
+    (values["perception:proficiency"] ?? 0) +
+    (values["perception:misc"] ?? 0);
+}
+
 function signed(value: number): string {
   return value >= 0 ? `+${value}` : `${value}`;
 }
@@ -513,8 +527,7 @@ function buildFormValues(
   set("HPMax", values.hp ?? 0);
   set("HPCurrent", values.hp ?? 0);
   set("HPTemp", values["hp:temp"] ?? 0);
-  set("Passive", 10 + (values["wisdom:modifier"] ?? 0) + (values.perception ?? 0) +
-    (values["perception:proficiency"] ?? 0) + (values["perception:misc"] ?? 0));
+  set("Passive", passivePerception(values));
 
   const classBuildLabel = classDisplayWithArchetypes(state, library);
   set("details_build", `Level ${state.level}${state.race === "" ? "" : ` ${state.race}`}${classBuildLabel === "" ? "" : ` ${classBuildLabel}`}`);
@@ -886,12 +899,7 @@ function buildPage1(
     row.push(signed(value), ...skill.name.split(/\s+/), `(${ABILITY_ABBREV[skill.ability]})`);
     skillRows.push({ kind: "tokens", tokens: row });
   }
-  const passive =
-    10 +
-    (values["wisdom:modifier"] ?? 0) +
-    (values["perception"] ?? 0) +
-    (values["perception:proficiency"] ?? 0) +
-    (values["perception:misc"] ?? 0);
+  const passive = passivePerception(values);
   sections.push({ title: "skills", rows: skillRows });
 
   sections.push({
