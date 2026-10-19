@@ -18,7 +18,7 @@ import {
   InspectableItemButton,
 } from "../InspectableItemControls";
 import Modal from "../Modal";
-import { resolveMagicBaseAction } from "../magicBaseAction";
+import { baseOptionLabel, resolveMagicBaseAction } from "../magicBaseAction";
 import {
   newItemCardOptions,
   sheetLayoutOptionsSettingStore,
@@ -1219,6 +1219,7 @@ function BaseSelector({ item, slot, busy, onAdd }) {
   const options = item.options;
   const [baseId, setBaseId] = useState(() => options[0]?.id ?? "");
   const label = slot === "weapon" ? "weapon" : "armor";
+  const baseLabel = (option) => (option ? baseOptionLabel(option, options) : null);
 
   return (
     <section className="fcb-panel">
@@ -1240,7 +1241,7 @@ function BaseSelector({ item, slot, busy, onAdd }) {
           >
             {options.map((o) => (
               <option key={o.id} value={o.id}>
-                {o.name} — {o.equipmentKind ?? o.category} · {o.displayPrice}
+                {baseOptionLabel(o, options)} — {o.equipmentKind ?? o.category} · {o.displayPrice}
               </option>
             ))}
           </select>
@@ -1254,7 +1255,7 @@ function BaseSelector({ item, slot, busy, onAdd }) {
               item,
               1,
               baseId,
-              options.find((o) => o.id === baseId)?.name ?? null,
+              baseLabel(options.find((o) => o.id === baseId)),
             )
           }
         >

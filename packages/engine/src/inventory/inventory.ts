@@ -114,7 +114,8 @@ export interface InventoryDto {
 
 export interface ItemBaseOptionsDto {
   slot: string | null;
-  options: Array<{ id: string; name: string } & EquipmentShoppingMetadataDto>;
+  /** Every legal base, one per element: two editions' "Shield" are two options, told apart by `source`. */
+  options: Array<{ id: string; name: string; source: string } & EquipmentShoppingMetadataDto>;
 }
 
 /**
@@ -513,21 +514,27 @@ export function itemBaseOptions(library: ElementLibrary, itemId: string, state?:
   const value = setter.value;
   const matched = /[|,]/.test(value) || value.includes("ID_")
     ? candidates.filter((candidate) => matchesBaseSupports(value, candidate))
-    : candidates.find(
+    : candidates.filter(
         (candidate) =>
           candidate.identity.id !== element.identity.id &&
           candidate.identity.name.toLowerCase() === value.toLowerCase(),
       );
+  // One option per element, never per name: the 2014 and 2024 books each have a
+  // Shield, and the character must be able to choose which one the item sits on.
   const seen = new Set<string>();
-  const options = (Array.isArray(matched) ? matched : matched ? [matched] : [])
+  const options = matched
     .filter((candidate) => {
-      const key = candidate.identity.name.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
+      if (seen.has(candidate.identity.id)) return false;
+      seen.add(candidate.identity.id);
       return true;
     })
-    .map((candidate) => ({ id: candidate.identity.id, name: candidate.identity.name, ...equipmentMetadata(candidate, id => library.byId.get(id), state) }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .map((candidate) => ({
+      id: candidate.identity.id,
+      name: candidate.identity.name,
+      source: candidate.identity.source,
+      ...equipmentMetadata(candidate, id => library.byId.get(id), state),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.source.localeCompare(b.source));
   return { slot: setter.name, options };
 }
 

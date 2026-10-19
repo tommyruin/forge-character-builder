@@ -164,20 +164,23 @@ describe("inventory DTO", () => {
     const staff = service.getItemBaseOptions(id, STAFF_OF_POWER);
     expect(staff.slot).toBe("weapon");
     const content = await library();
-    expect(staff.options).toEqual([{
-      id: QUARTERSTAFF, name: "Quarterstaff",
+    expect(staff.options.map((option) => option.id)).toEqual([QUARTERSTAFF, "ID_WOTC_PHB24_WEAPON_QUARTERSTAFF"]);
+    expect(staff.options[0]).toEqual({
+      id: QUARTERSTAFF, name: "Quarterstaff", source: "Player’s Handbook",
       ...equipmentMetadata(content.byId.get(QUARTERSTAFF), key => content.byId.get(key), service.getCharacter(id)),
-    }]);
+    });
     expect(staff.options[0]).toMatchObject({ priceGp: 0.2, equipmentKind: "Simple melee weapon", isProficient: false });
     const flame = service.getItemBaseOptions(id, "ID_WOTC_DMG_MAGIC_ITEM_FLAME_TONGUE");
     expect(flame.slot).toBe("weapon");
-    expect(flame.options.map((o) => o.name)).toEqual([
+    // One option per element: each blade appears once per edition.
+    expect([...new Set(flame.options.map((o) => o.name))]).toEqual([
       "Greatsword",
       "Longsword",
       "Rapier",
       "Scimitar",
       "Shortsword",
     ]);
+    expect(flame.options).toHaveLength(10);
   });
 });
 
