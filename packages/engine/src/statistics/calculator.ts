@@ -27,8 +27,22 @@ import { ENGINE_INTERNAL_ELEMENTS, resolveElementType } from "../selection/selec
 import { classElementForMulticlass, extractHitDie } from "../progression/leveling.js";
 import { itemBenefitsActive } from "../inventory/inventory.js";
 import { OPTION_AVERAGE_HP } from "../progression/leveling.js";
+import { isCustomElementId } from "../custom/schema.js";
 
 export type StatisticsValues = Record<string, number>;
+
+/**
+ * Whether a conditional stat rule applies because a switch is on. The
+ * `condition` of a rule made in the builder names the switch that gates it;
+ * book content only describes circumstances ("while raging") the engine does
+ * not model, so a switch that happens to share its words never turns a book
+ * rule on.
+ */
+export function switchGateOpen(state: CharacterState, elementId: string, condition: string): boolean {
+  if (!isCustomElementId(elementId)) return false;
+  const name = condition.trim().toLowerCase();
+  return state.resources.switchesOn.some((on) => on.trim().toLowerCase() === name);
+}
 
 const ABILITIES = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
 
@@ -1061,8 +1075,12 @@ export function computeStatistics(
   // Score-set overrides, max raises, and their ":max:extra" feeders finalize
   // alongside the ability bonuses: all of them must be known before scores
   // clamp and modifiers derive.
+  // Scale values settle here too, so an ability bonus that reads one sees its final number.
   const scoreFamilyRule = (source: RuleSource): boolean =>
-    abilityRule(source) || ABILITY_SCORE_SET_KEY.test(source.rule.name) || ABILITY_MAX_EXTRA_KEY.test(source.rule.name);
+    abilityRule(source) ||
+    ABILITY_SCORE_SET_KEY.test(source.rule.name) ||
+    ABILITY_MAX_EXTRA_KEY.test(source.rule.name) ||
+    source.rule.name.startsWith("scale:");
   const deferredMovementRules: RuleSource[] = [];
 
   const ruleCtxRaw = requirementContext(state, library, { ...state.abilities }, values);
@@ -1074,8 +1092,11 @@ export function computeStatistics(
     const rule = source.rule;
     if (rule.inline === true) return false;
     // Conditional rules ("while raging") describe circumstances, not
-    // always-on statistics; they never join the unconditional totals.
-    if (rule.condition !== undefined && rule.condition.trim() !== "") return false;
+    // always-on statistics; they never join the unconditional totals. The
+    // exception is a custom rule gated by a switch that is on.
+    if (rule.condition !== undefined && rule.condition.trim() !== "" && !switchGateOpen(state, source.element.identity.id, rule.condition)) {
+      return false;
+    }
     if (rule.level !== undefined && rule.level > source.classLevel) return false;
     if (rule.requirements !== undefined && !evaluateRequirements(rule.requirements, ctx)) return false;
     if (rule.equipped !== undefined && !equipmentMatches(rule.equipped, equipped, library)) return false;

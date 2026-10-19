@@ -178,8 +178,11 @@ import type {
   CustomSpellPreviewDto,
   MissingGrantDto,
   PromotedCustomElementDto,
+  ResourcesDto,
+  TrackerDef,
 } from "@forge-cb/api";
 import { CharacterCustomContent } from "../custom/character-content.js";
+import { CharacterResources } from "../resources/character-resources.js";
 import { compileCustomElement } from "../custom/compile.js";
 import { isCustomItemDraft, isCustomSpellDraft } from "../custom/schema.js";
 import { readCustomEntry } from "../custom/validate.js";
@@ -651,6 +654,7 @@ export class CharacterService {
 
   /** The character's own custom content (drafts in the file, elements in the library). */
   private readonly custom: CharacterCustomContent;
+  private readonly resources: CharacterResources;
 
   constructor(store?: CharacterStore, library?: ElementLibrary, options: CharacterServiceOptions = {}) {
     this.store = store ?? new InMemoryCharacterStore();
@@ -674,6 +678,11 @@ export class CharacterService {
       removeGrantedSpell: (id, request) => this.removeGrantedSpell(id, request),
       clearSpellPicks: (id, spellId) => this.clearSpellPicks(id, spellId),
       refreshSpellEntries: (id, spellId) => this.refreshSpellEntries(id, spellId),
+    });
+    this.resources = new CharacterResources({
+      library,
+      snapshot: (id) => this.require(id),
+      applyRegionEdits: (id, edits) => this.applyRegionEdits(id, edits),
     });
   }
 
@@ -2284,6 +2293,32 @@ export class CharacterService {
     const next = edits.length === 0 ? state : this.applyWithMagicReconcile(id, state, document, edits);
     this.ensureMagicCasterIds(next);
     return buildSpellcastingDto(next, this.library, this.magicStatistics(next), next.magicCasterIds);
+  }
+
+  /** The character's trackers (what is spent of each) and the switches that gate custom modifiers. */
+  getResources(id: string): ResourcesDto {
+    return this.resources.get(id);
+  }
+
+  setTrackerUsed(id: string, request: { trackerId: string; used: number }): ResourcesDto {
+    return this.resources.setUsed(id, request);
+  }
+
+  setResourceSwitch(id: string, request: { name: string; on: boolean }): ResourcesDto {
+    return this.resources.setSwitch(id, request);
+  }
+
+  /** A short rest refills short-rest trackers; a long rest also refills long rest, dawn and day ones. */
+  restCharacter(id: string, request: { kind: "short" | "long" }): ResourcesDto {
+    return this.resources.rest(id, request);
+  }
+
+  saveManualTracker(id: string, request: { tracker: TrackerDef }): ResourcesDto {
+    return this.resources.saveManual(id, request);
+  }
+
+  deleteManualTracker(id: string, request: { trackerId: string }): ResourcesDto {
+    return this.resources.deleteManual(id, request);
   }
 
   /** The spell-browse DTO for a Spell rule. */

@@ -1,0 +1,229 @@
+/**
+ * The character's resources: every limited use its features and items carry,
+ * with what is spent, and the switches that gate custom modifiers.
+ *
+ * A tracker has four possible sources, all read here and merged into one list:
+ *
+ *  - a custom entry's tracker (a feature's uses, an item's charges) or the free
+ *    cast of a spell that entry grants, declared by the draft;
+ *  - a tracker the player added by hand;
+ *  - a book feature whose sheet usage line states a count and a rest
+ *    ("2/Short Rest", "{{proficiency}}/Long Rest" once its token is filled in).
+ *    Lines in any other shape ("Channel Divinity", "1/Turn") are not tracked.
+ *
+ * Trackers naming one pool are a single resource. What is spent is stored under
+ * the tracker's key (its id, `pool:<name>`, or `usage:<element id>`).
+ */
+
+import type { ResourcesDto, SwitchDto, TrackerDto, TrackerSourceDto, TrackerDef } from "@forge-cb/api";
+import type { CharacterState } from "../character/state.js";
+import type { ElementLibrary } from "../content/library.js";
+import { rechargeLabel, REST_RECHARGES, trackerStatKey } from "../custom/trackers.js";
+import { isCustomElementId } from "../custom/schema.js";
+import { spellInfo } from "../magic/spelllist.js";
+import { parseUsageText } from "./usage.js";
+import type { DeclaredTracker } from "./types.js";
+
+/** A feature printed on the sheet that states a usage line, with its tokens already filled in. */
+export interface FeatureUsage {
+  elementId: string;
+  title: string;
+  usage: string;
+}
+
+type Statistics = Readonly<Record<string, number>>;
+
+/** One tracker before pools are merged. */
+interface Candidate {
+  key: string;
+  label: string;
+  source: TrackerSourceDto;
+  isCustom: boolean;
+  manual: boolean;
+  max: number;
+  unit: TrackerDef["unit"];
+  recharge: TrackerDef["recharge"];
+  regain?: string;
+  pool?: string;
+  spendOnSwitch?: string;
+  def?: TrackerDef;
+}
+
+export const poolKey = (name: string): string => `pool:${name.trim().toLowerCase()}`;
+
+const sameName = (left: string, right: string): boolean => left.trim().toLowerCase() === right.trim().toLowerCase();
+
+/** The count a tracker holds now: a literal, or the statistic the draft made it follow. */
+function resolvedMax(def: TrackerDef, values: Statistics): number {
+  if (def.max.kind === "number") return def.max.value;
+  return Math.max(0, Math.trunc(values[trackerStatKey(def)] ?? 0));
+}
+
+function ownerActive(state: CharacterState, declared: Pick<DeclaredTracker, "ownerId" | "kind">): boolean {
+  if (declared.kind === "item") {
+    return state.items.some((item) => item.itemId === declared.ownerId || item.adorners.includes(declared.ownerId));
+  }
+  return state.sum.elements.some((entry) => entry.id === declared.ownerId);
+}
+
+function declaredCandidates(state: CharacterState, library: ElementLibrary, values: Statistics): Candidate[] {
+  const out: Candidate[] = [];
+  for (const declared of state.resources.declared.trackers) {
+    if (!ownerActive(state, declared)) continue;
+    const max = resolvedMax(declared.def, values);
+    if (max < 1) continue;
+    let label = declared.def.label;
+    if (declared.kind === "spell" && declared.spellId !== undefined) {
+      const spell = spellInfo(library, declared.spellId);
+      const alias = state.spellAliases[declared.spellId]?.name.trim() ?? "";
+      if (alias !== "") label = alias;
+      else if (spell !== null) label = spell.name;
+    }
+    out.push({
+      key: declared.def.id,
+      label,
+      source: { name: declared.ownerName, kind: "custom", elementId: declared.ownerId },
+      isCustom: true,
+      manual: false,
+      max,
+      unit: declared.def.unit,
+      recharge: declared.def.recharge,
+      ...(declared.def.regain === undefined ? {} : { regain: declared.def.regain }),
+      ...(declared.def.pool === undefined ? {} : { pool: declared.def.pool.trim() }),
+      ...(declared.def.spendOnSwitch === undefined ? {} : { spendOnSwitch: declared.def.spendOnSwitch }),
+    });
+  }
+  return out;
+}
+
+function manualCandidates(state: CharacterState): Candidate[] {
+  return state.resources.manual.map((def) => ({
+    key: def.id,
+    label: def.label,
+    source: { name: def.label, kind: "manual" as const },
+    isCustom: true,
+    manual: true,
+    max: def.max.kind === "number" ? def.max.value : 0,
+    unit: def.unit,
+    recharge: def.recharge,
+    ...(def.regain === undefined ? {} : { regain: def.regain }),
+    ...(def.spendOnSwitch === undefined ? {} : { spendOnSwitch: def.spendOnSwitch }),
+    def,
+  }));
+}
+
+function usageCandidates(state: CharacterState, usages: readonly FeatureUsage[]): Candidate[] {
+  const owned = new Set(state.resources.declared.trackedOwners);
+  const out: Candidate[] = [];
+  for (const entry of usages) {
+    // A custom entry that declares its own trackers is tracked by them.
+    if (owned.has(entry.elementId)) continue;
+    const parsed = parseUsageText(entry.usage);
+    if (parsed === null) continue;
+    const custom = isCustomElementId(entry.elementId);
+    out.push({
+      key: `usage:${entry.elementId}`,
+      label: entry.title,
+      source: { name: entry.title, kind: custom ? "custom" : "book", elementId: entry.elementId },
+      isCustom: custom,
+      manual: false,
+      max: parsed.count,
+      unit: parsed.unit,
+      recharge: parsed.recharge,
+    });
+  }
+  return out;
+}
+
+function toDto(candidates: readonly Candidate[], state: CharacterState): TrackerDto {
+  const first = candidates[0]!;
+  const pooled = first.pool !== undefined;
+  const key = pooled ? poolKey(first.pool!) : first.key;
+  // Members of a pool agree on what it holds; if they do not, the larger count stands.
+  const max = Math.max(...candidates.map((candidate) => candidate.max));
+  const used = Math.min(max, Math.max(0, state.resources.spent[key] ?? 0));
+  const sources = candidates.map((candidate) => candidate.source).filter(
+    (source, index, all) => all.findIndex((other) => other.name === source.name && other.elementId === source.elementId) === index,
+  );
+  const spendOnSwitch = candidates.find((candidate) => candidate.spendOnSwitch !== undefined)?.spendOnSwitch;
+  return {
+    id: key,
+    label: pooled ? first.pool! : first.label,
+    sources,
+    isCustom: candidates.some((candidate) => candidate.isCustom),
+    manual: first.manual,
+    max,
+    used,
+    remaining: max - used,
+    unit: first.unit,
+    recharge: first.recharge,
+    rechargeLabel: rechargeLabel(first),
+    ...(first.regain === undefined ? {} : { regain: first.regain }),
+    ...(pooled ? { pool: first.pool! } : {}),
+    ...(spendOnSwitch === undefined ? {} : { spendOnSwitch }),
+    ...(first.def === undefined ? {} : { def: first.def }),
+  };
+}
+
+/** Every tracker, merged by pool and ordered: book features, then custom entries, then trackers kept by hand. */
+export function buildTrackers(
+  state: CharacterState,
+  library: ElementLibrary,
+  values: Statistics,
+  usages: readonly FeatureUsage[],
+): TrackerDto[] {
+  const candidates = [...usageCandidates(state, usages), ...declaredCandidates(state, library, values), ...manualCandidates(state)];
+  const groups = new Map<string, Candidate[]>();
+  for (const candidate of candidates) {
+    const key = candidate.pool === undefined ? candidate.key : poolKey(candidate.pool);
+    const group = groups.get(key);
+    if (group === undefined) groups.set(key, [candidate]);
+    else if (candidate.pool !== undefined) group.push(candidate);
+    // A repeated key that is not a pool is the same tracker seen twice; it counts once.
+  }
+  return [...groups.values()].map((group) => toDto(group, state));
+}
+
+export function buildSwitches(state: CharacterState, trackers: readonly TrackerDto[]): SwitchDto[] {
+  const declared = state.resources.declared;
+  const active = new Set<string>();
+  const items = state.items;
+  for (const entry of state.sum.elements) active.add(entry.id);
+  for (const item of items) {
+    active.add(item.itemId);
+    for (const adorner of item.adorners) active.add(adorner);
+  }
+  const out: SwitchDto[] = [];
+  for (const entry of declared.switches) {
+    if (!active.has(entry.ownerId)) continue;
+    const existing = out.find((candidate) => sameName(candidate.name, entry.name));
+    if (existing !== undefined) {
+      if (!existing.sources.includes(entry.ownerName)) (existing.sources as string[]).push(entry.ownerName);
+      continue;
+    }
+    const spends = trackers.find((tracker) => tracker.spendOnSwitch !== undefined && sameName(tracker.spendOnSwitch, entry.name));
+    out.push({
+      name: entry.name,
+      on: state.resources.switchesOn.some((name) => sameName(name, entry.name)),
+      sources: [entry.ownerName],
+      ...(spends === undefined ? {} : { spends: spends.label }),
+    });
+  }
+  return out;
+}
+
+export function buildResources(
+  state: CharacterState,
+  library: ElementLibrary,
+  values: Statistics,
+  usages: readonly FeatureUsage[],
+): ResourcesDto {
+  const trackers = buildTrackers(state, library, values, usages);
+  return { trackers, switches: buildSwitches(state, trackers) };
+}
+
+/** The tracker keys a rest of this kind refills. */
+export function restKeys(trackers: readonly TrackerDto[], kind: "short" | "long"): string[] {
+  const recharges = REST_RECHARGES[kind];
+  return trackers.filter((tracker) => recharges.includes(tracker.recharge)).map((tracker) => tracker.id);
+}

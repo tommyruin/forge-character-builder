@@ -8,6 +8,8 @@ import type {
   MissingGrantDto,
   DmGrantDto,
   PromotedCustomElementDto,
+  ResourcesDto,
+  TrackerDef,
 } from "./custom.js";
 import type { QueueKind } from "./protocol.js";
 
@@ -386,6 +388,28 @@ export interface EngineMethodMap {
    */
   setSpellAlias: MethodContract<[id: string, spellId: string, request: { name?: string; note?: string }], SpellcasterDto[]>;
   /**
+   * The character's resources: every limited use its features and items carry
+   * (read from sheet usage lines, custom entries and manual trackers), with
+   * what is spent, and the switches that gate custom modifiers.
+   */
+  getResources: MethodContract<[id: string], ResourcesDto>;
+  /** Sets how many of a tracker are spent (clamped to its maximum). `trackerId` is a `TrackerDto.id`. */
+  setTrackerUsed: MethodContract<[id: string, request: { trackerId: string; used: number }], ResourcesDto>;
+  /**
+   * Turns a switch on or off. Turning one on spends one use of the tracker it
+   * is linked to, and is refused when none is left.
+   */
+  setResourceSwitch: MethodContract<[id: string, request: { name: string; on: boolean }], ResourcesDto>;
+  /**
+   * A short rest refills what recharges on a short rest; a long rest also
+   * refills long rest, dawn and day trackers. Dice-roll and never trackers
+   * are left to the player.
+   */
+  restCharacter: MethodContract<[id: string, request: { kind: "short" | "long" }], ResourcesDto>;
+  /** Adds or replaces a tracker kept by hand on the Resources page. */
+  saveManualTracker: MethodContract<[id: string, request: { tracker: TrackerDef }], ResourcesDto>;
+  deleteManualTracker: MethodContract<[id: string, request: { trackerId: string }], ResourcesDto>;
+  /**
    * Grants any spell to the character, ignoring class lists and known/prepared
    * limits. With `caster` (a class spellcasting name the character has) the
    * spell joins that caster's spells, always prepared, and casts with its
@@ -607,6 +631,12 @@ export const ENGINE_METHOD_NAMES = [
   "setPrepared",
   "getSpellBrowse",
   "setSpellAlias",
+  "getResources",
+  "setTrackerUsed",
+  "setResourceSwitch",
+  "restCharacter",
+  "saveManualTracker",
+  "deleteManualTracker",
   "addGrantedSpell",
   "removeGrantedSpell",
   "addGrantedFeat",
@@ -723,6 +753,12 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   setPrepared: implemented,
   getSpellBrowse: implemented,
   setSpellAlias: implemented,
+  getResources: implemented,
+  setTrackerUsed: implemented,
+  setResourceSwitch: implemented,
+  restCharacter: implemented,
+  saveManualTracker: implemented,
+  deleteManualTracker: implemented,
   addGrantedSpell: implemented,
   removeGrantedSpell: implemented,
   addGrantedFeat: implemented,
@@ -819,6 +855,12 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   setPrepared: "character-write",
   getSpellBrowse: "read-only",
   setSpellAlias: "character-write",
+  getResources: "read-only",
+  setTrackerUsed: "character-write",
+  setResourceSwitch: "character-write",
+  restCharacter: "character-write",
+  saveManualTracker: "character-write",
+  deleteManualTracker: "character-write",
   addGrantedSpell: "character-write",
   removeGrantedSpell: "character-write",
   addGrantedFeat: "character-write",

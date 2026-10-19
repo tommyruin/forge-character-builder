@@ -644,6 +644,7 @@ const CHARACTER_STATE_KEYS = [
   "magic",
   "magicCasterIds",
   "spellAliases",
+  "resources",
   "sum",
   "restrictedSources",
   "restrictedElements",
@@ -763,6 +764,31 @@ function validateCharacterState(value: unknown): void {
     checkString(record.name, `state.spellAliases.${spellId}.name`);
     checkString(record.note, `state.spellAliases.${spellId}.note`);
   }
+  const resources = checkRecord(state.resources, "state.resources", ["spent", "switchesOn", "manual", "declared"], []);
+  if (!isRecord(resources.spent)) throwBad("invalid-structure", "state.resources.spent: expected an object");
+  for (const [key, spent] of Object.entries(resources.spent)) checkNumber(spent, `state.resources.spent.${key}`);
+  checkStringArray(resources.switchesOn, "state.resources.switchesOn");
+  if (!Array.isArray(resources.manual)) throwBad("invalid-structure", "state.resources.manual: expected an array");
+  resources.manual.forEach((tracker, index) => checkRecord(tracker, `state.resources.manual[${index}]`, ["id", "label", "max", "unit", "recharge"], ["regain", "pool", "spendOnSwitch"]));
+  const declared = checkRecord(resources.declared, "state.resources.declared", ["trackers", "switches", "trackedOwners"], []);
+  if (!Array.isArray(declared.trackers)) throwBad("invalid-structure", "state.resources.declared.trackers: expected an array");
+  declared.trackers.forEach((entry, index) => {
+    const context = `state.resources.declared.trackers[${index}]`;
+    const record = checkRecord(entry, context, ["ownerId", "ownerName", "kind", "def"], ["spellId"]);
+    checkString(record.ownerId, `${context}.ownerId`);
+    checkString(record.ownerName, `${context}.ownerName`);
+    checkString(record.kind, `${context}.kind`);
+    checkRecord(record.def, `${context}.def`, ["id", "label", "max", "unit", "recharge"], ["regain", "pool", "spendOnSwitch"]);
+  });
+  if (!Array.isArray(declared.switches)) throwBad("invalid-structure", "state.resources.declared.switches: expected an array");
+  declared.switches.forEach((entry, index) => {
+    const context = `state.resources.declared.switches[${index}]`;
+    const record = checkRecord(entry, context, ["name", "ownerId", "ownerName"], []);
+    checkString(record.name, `${context}.name`);
+    checkString(record.ownerId, `${context}.ownerId`);
+    checkString(record.ownerName, `${context}.ownerName`);
+  });
+  checkStringArray(declared.trackedOwners, "state.resources.declared.trackedOwners");
   const sum = checkRecord(state.sum, "state.sum", ["elementCount", "elements"], []);
   checkNumber(sum.elementCount, "state.sum.elementCount");
   const sumElements = sum.elements;

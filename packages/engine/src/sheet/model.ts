@@ -22,6 +22,7 @@ import {
   elementRequirementContext,
   initiativeAdvantageSources,
   resolveRuleValue,
+  switchGateOpen,
   type StatisticsValues,
 } from "../statistics/calculator.js";
 import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
@@ -53,6 +54,8 @@ import {
   type DescriptionCard,
   type LayoutRun,
 } from "./card-layout.js";
+import { buildTrackers, type FeatureUsage } from "../resources/view.js";
+import { resourceSheetText } from "../resources/sheet.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote, type SheetAttackRow } from "./attack-notes.js";
 
@@ -1167,7 +1170,7 @@ function acContributionLines(state: CharacterState, library: ElementLibrary, val
     let alt: string | undefined;
     for (const rule of element.rules) {
       if (rule.kind !== "stat" || rule.name !== "ac:misc") continue;
-      if (rule.condition !== undefined && rule.condition.trim() !== "") continue;
+      if (rule.condition !== undefined && rule.condition.trim() !== "" && !switchGateOpen(state, elementId, rule.condition)) continue;
       if (rule.value === undefined) continue;
       total += resolveRuleValue(rule, values);
       if (rule.alt !== undefined) alt = rule.alt;
@@ -1413,8 +1416,17 @@ function collectFeatures(
   library: ElementLibrary,
   values: StatisticsValues,
   inline?: Readonly<Record<string, string>>,
-): { senses: SheetRow[]; features: SheetRow[]; racial: SheetRow[]; orderedFeatures: SheetRow[]; groups: Record<string, SheetRow[]> } {
+): {
+  senses: SheetRow[];
+  features: SheetRow[];
+  racial: SheetRow[];
+  orderedFeatures: SheetRow[];
+  groups: Record<string, SheetRow[]>;
+  /** The usage line of every printed feature that states one, tokens filled in. */
+  usages: FeatureUsage[];
+} {
   const out: CollectedFeature[] = [];
+  const usages: FeatureUsage[] = [];
   const seen = new Set<string>();
   const ids = featureOrderIds(state, library);
   const classLevels = featureClassLevels(state);
@@ -1460,6 +1472,14 @@ function collectFeatures(
     const description = sheetDescriptionAtLevel(sheet, classLevels.get(id) ?? state.level);
     if (description === undefined) continue;
     const parenthetical = featureParenthetical(sheet, description);
+    const usageLine = sheet.usage ?? description.usage;
+    if (usageLine !== undefined && usageLine !== "") {
+      usages.push({
+        elementId: id,
+        title: sheet.alt !== undefined && sheet.alt !== "" ? sheet.alt : element.identity.name,
+        usage: substitute(usageLine, values, inline),
+      });
+    }
     out.push({
       class: cls,
       type: element.identity.type,
@@ -1480,17 +1500,36 @@ function collectFeatures(
     ["Archetype", "Archetype Feature"].includes(item.type) ? "subclass-features"
       : ["Feat", "Feat Feature"].includes(item.type) ? "feats"
         : "class-features";
+  // The character's resources close the features text: every template has that
+  // box, and what it cannot hold continues on a continuation page.
+  const resourceText = resourceSheetText(buildTrackers(state, library, values, usages));
+  const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
     senses: rows((item) => item.class === "senses"),
-    features: rows((item) => item.class === "features"),
+    features: [...rows((item) => item.class === "features"), ...resourceRows],
     racial: rows((item) => item.class === "racial"),
-    orderedFeatures: rows(inBox),
+    orderedFeatures: [...rows(inBox), ...resourceRows],
     groups: {
-      "class-features": rows((item) => inBox(item) && group(item) === "class-features"),
+      "class-features": [...rows((item) => inBox(item) && group(item) === "class-features"), ...resourceRows],
       "subclass-features": rows((item) => inBox(item) && group(item) === "subclass-features"),
       feats: rows((item) => inBox(item) && group(item) === "feats"),
     },
+    usages,
   };
+}
+
+/**
+ * The usage line of every feature the sheet prints that states one, with its
+ * `{{token}}` filled in ("{{proficiency}}/Long Rest" is "3/Long Rest"). The
+ * Resources page reads its book trackers from these.
+ */
+export function featureUsageEntries(
+  state: CharacterState,
+  library: ElementLibrary,
+  values: StatisticsValues,
+  inline: Readonly<Record<string, string>>,
+): FeatureUsage[] {
+  return collectFeatures(state, library, values, inline).usages;
 }
 
 /** Feature types whose own `<requirements>` decide whether they print. */

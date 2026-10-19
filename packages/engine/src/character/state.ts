@@ -10,6 +10,7 @@
 import type { AbilityKey } from "../elements/types.js";
 
 import type { MagicState } from "../magic/state.js";
+import { emptyResourceState, type ResourceState } from "../resources/types.js";
 
 export interface AbilityScores {
   strength: number;
@@ -346,6 +347,12 @@ export interface CharacterState {
    * builder block of the file; empty when the file has none).
    */
   spellAliases: Record<string, { name: string; note: string }>;
+  /**
+   * What is spent of each tracker, which switches are on, and the trackers kept
+   * by hand (the builder block of the file), with the limited uses and switches
+   * the file's custom pack declares. Empty for a file that uses none of them.
+   */
+  resources: ResourceState;
 
   // build/sum
   sum: SumState;
@@ -426,6 +433,7 @@ export function emptyCharacterState(id: string): CharacterState {
     magic: null,
     magicCasterIds: new Map(),
     spellAliases: {},
+    resources: emptyResourceState(),
     sum: { elementCount: 0, elements: [] },
     restrictedSources: [],
     restrictedElements: [],

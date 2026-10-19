@@ -20,6 +20,9 @@ import {
 import { md5Hex } from "../platform.js";
 import { parseMagicState } from "../magic/state.js";
 import { readSpellAliases } from "../magic/spell-aliases.js";
+import { readCustomPack } from "../custom/pack.js";
+import { readResourceBlock } from "../resources/block.js";
+import { declareResources } from "../resources/declared.js";
 import { pointBuyRemaining } from "./point-buy.js";
 import {
   emptyCharacterState,
@@ -433,6 +436,10 @@ export function mapToState(document: Dnd5eDocument, id: string): CharacterState 
   state.spellcasting = build.spellcasting.map(mapSpellcasting);
   state.magic = parseMagicState(build.magic);
   state.spellAliases = readSpellAliases(document);
+  state.resources = {
+    ...readResourceBlock(document).state,
+    declared: declareResources(readCustomPack(document).drafts),
+  };
   state.controls = new Map();
   state.rulesetMode = root.rulesetMode() ?? "all";
 

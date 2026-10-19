@@ -626,7 +626,8 @@ describe("engine worker handlers", () => {
     // 90: added previewCustomItem (an item draft's attack row on a scratch copy).
     // 92: added previewCustomSpell (a spell draft's attack row) and setSpellAlias (a spell's display name).
     // 93: added getMissingGrants (grants a character holds that resolve to nothing).
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 93, engineVersion: ENGINE_VERSION } }]);
+    // 99: added getResources, setTrackerUsed, setResourceSwitch, restCharacter, saveManualTracker and deleteManualTracker (trackers and switches).
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 99, engineVersion: ENGINE_VERSION } }]);
   });
 });
 
