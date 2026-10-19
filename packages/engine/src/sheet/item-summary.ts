@@ -18,6 +18,11 @@ import { plainDescriptionText, rulesCueScore } from "../content/equipment/signif
 
 /** The characters of text one note may carry, headings included. */
 export const NOTE_BUDGET = 450;
+/**
+ * What an item with several headed uses may run to so that every use keeps its
+ * key clause. Past it the item prints by name alone.
+ */
+export const USES_BUDGET = 520;
 
 export interface ItemNote {
   /** Escaped `<p>` markup for the column; empty when the item prints by name alone. */
@@ -29,6 +34,8 @@ export interface ItemNote {
 interface Unit {
   text: string;
   score: number;
+  /** Opens by leaning on the sentence before it; weighed down only as a use's key clause. */
+  lean?: boolean;
 }
 
 /** One paragraph, list line or table: a run-in heading and the units under it. */
@@ -41,6 +48,10 @@ interface Block {
 
 const FIELD_SCORES: Record<string, number> = { ability: 4, utilize: 6, craft: 3 };
 const IGNORED_FIELDS = new Set(["weight"]);
+/** List lines that add to a use but are not one ("Craft: <items>"). */
+const OPTIONAL_FIELDS = new Set(["craft"]);
+/** An opening that leans on the sentence before it ("That duration ..."): poor on its own. */
+const ANAPHORA = /^(?:That|This|These|Those|It|Its|They|Such)\b/;
 const SENTENCE_BREAK = /(?<=[.!?])\s+(?=[A-Z“‘("])/;
 /** "as detailed below": a pointer to text the note does not carry. */
 const DANGLING = /\b(?:detailed|described|listed|shown|given|explained)\s+(?:below|above)\b/i;
@@ -64,12 +75,12 @@ const DM_ASIDE = /^The DM\b/;
 /** Shorter than this, an opening sentence is a remark ("Adventuring is a hard life."), not a description. */
 const MIN_PURPOSE = 40;
 
-function proseBlock(markup: string, first: boolean): Block | null {
+function proseBlock(markup: string, first: boolean, compact: boolean): Block | null {
   const match = HEADING.exec(markup);
   const heading = match === null ? "" : plainDescriptionText(match[3]).replace(/\.$/, "");
   if (SKILL_HEADING.test(heading)) return null;
   const body = plainDescriptionText(match === null ? markup : match[4]);
-  if (heading !== "" && body.length <= WHOLE_PARAGRAPH && !DANGLING.test(body)) {
+  if (!compact && heading !== "" && body.length <= WHOLE_PARAGRAPH && !DANGLING.test(body)) {
     return body === "" ? null : { heading, units: [{ text: body, score: rulesCueScore(body) }], field: false };
   }
   const units = sentences(body)
@@ -78,6 +89,7 @@ function proseBlock(markup: string, first: boolean): Block | null {
       text: part,
       // What the item is for reads well when there is room, and not before a rule.
       score: (DM_ASIDE.test(part) ? 0 : rulesCueScore(part)) + (first && index === 0 && part.length >= MIN_PURPOSE ? 0.5 : 0),
+      lean: index > 0 && ANAPHORA.test(part),
     }));
   return units.length === 0 ? null : { heading, units, field: false };
 }
@@ -104,7 +116,7 @@ function tableBlock(markup: string): Block | null {
   return { heading: "", units: [{ text, score: rulesCueScore(text) + 1 }], field: true };
 }
 
-function parse(xml: string): Block[] {
+function parse(xml: string, compact: boolean): Block[] {
   const source = xml
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<div\b[^>]*class="reference"[^>]*>[\s\S]*?<\/div>/gi, "");
@@ -113,7 +125,7 @@ function parse(xml: string): Block[] {
     const kind = match[1]!.toLowerCase();
     const inner = match[2]!;
     if (kind === "p") {
-      const block = proseBlock(inner, blocks.length === 0);
+      const block = proseBlock(inner, blocks.length === 0, compact);
       if (block !== null) blocks.push(block);
     } else if (kind === "table") {
       const block = tableBlock(inner);
@@ -122,7 +134,7 @@ function parse(xml: string): Block[] {
       for (const item of inner.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)) {
         const labelled = /^\s*<(?:strong|b)>([\s\S]*?)<\/(?:strong|b)>([\s\S]*)$/i.exec(item[1]!);
         const block = labelled === null
-          ? proseBlock(item[1]!, blocks.length === 0)
+          ? proseBlock(item[1]!, blocks.length === 0, compact)
           : fieldBlock(plainDescriptionText(labelled[1]).replace(/:$/, ""), labelled[2]!);
         if (block !== null) blocks.push(block);
       }
@@ -151,39 +163,76 @@ function blockHtml(block: Block): string {
     : `<p><strong><em>${heading}.</em></strong> ${body}</p>`;
 }
 
+/** The unit that carries a block: the highest-ranked, the shorter of equals. */
+function keyUnit(block: Block): Unit {
+  const worth = (unit: Unit): number => unit.score - (unit.lean === true ? 1.5 : 0);
+  return block.units.reduce((best, unit) =>
+    worth(unit) > worth(best) || (worth(unit) === worth(best) && unit.text.length < best.text.length) ? unit : best,
+  );
+}
+
 /**
- * The note for one item description: the highest-ranked sentences that fit
- * `budget`, in the description's own order, each rule paragraph keeping its
- * heading. Null when the description says nothing; an empty note when its
- * rules cannot be shortened to fit.
+ * The units a note cannot leave out: the key clause of every headed use (an
+ * indented rule paragraph with its run-in heading), every list line but
+ * "Craft", and every DC table. Dropping one drops a way of using the item.
+ */
+function mandatoryUnits(blocks: readonly Block[]): Set<Unit> {
+  const required = new Set<Unit>();
+  for (const block of blocks) {
+    if (block.field) {
+      if (!OPTIONAL_FIELDS.has(block.heading.toLowerCase())) required.add(block.units[0]!);
+    } else if (block.heading !== "") {
+      required.add(keyUnit(block));
+    }
+  }
+  return required;
+}
+
+/**
+ * The note for one item description, in the description's own order. Null when
+ * the description says nothing; an empty note (the item prints by name alone)
+ * when what it must say cannot be shortened to fit.
  *
- * Each paragraph's best sentence is placed first, strongest paragraph first, so
- * every way of using the item gets a say before any of them gets a second
- * sentence. Passages with no rules cue are flavour and only stand in when there
- * is nothing else.
+ * Every headed use keeps its key clause, whatever else goes, up to
+ * {@link USES_BUDGET}; a use is never dropped to make the budget (a heading
+ * paragraph is split into sentences before giving up). Beyond those, the
+ * highest-ranked sentences fill {@link NOTE_BUDGET}, each paragraph's best
+ * first, so every paragraph gets a say before any gets a second sentence.
+ * Passages with no rules cue are flavour and only stand in when there is
+ * nothing else.
  */
 export function itemNote(xml: string | undefined, budget = NOTE_BUDGET): ItemNote | null {
-  const blocks = parse(xml ?? "");
-  if (blocks.length === 0) return null;
-  const all = blocks.flatMap((block) => block.units.map((unit) => ({ block, unit })));
+  const whole = parse(xml ?? "", false);
+  if (whole.length === 0) return null;
+  let blocks = whole;
+  let required = mandatoryUnits(blocks);
+  const length = (kept: ReadonlySet<Unit>): number =>
+    noteLength(blocks.map((block) => ({ ...block, units: block.units.filter((unit) => kept.has(unit)) })));
+  if (length(required) > USES_BUDGET) {
+    // Cut headed paragraphs down to their key sentence before giving up.
+    blocks = parse(xml ?? "", true);
+    required = mandatoryUnits(blocks);
+    if (length(required) > USES_BUDGET) return { html: "", text: "" };
+  }
+  const all = blocks.flatMap((block) => block.units);
   const anchors = new Set(
-    blocks.map((block) => block.units.reduce((best, unit) => (unit.score > best.score ? unit : best))),
+    blocks.filter((block) => !required.has(block.units[0]!) || block.units.length > 1).map(keyUnit),
   );
   const ranked = all
-    .filter(({ unit }) => unit.score > 0)
-    .sort((a, b) => Number(anchors.has(b.unit)) - Number(anchors.has(a.unit)) || b.unit.score - a.unit.score);
-  const kept = new Set<Unit>();
-  const view = (): Block[] =>
-    blocks.map((block) => ({ ...block, units: block.units.filter((unit) => kept.has(unit)) }));
-  for (const { unit } of ranked) {
+    .filter((unit) => unit.score > 0 && !required.has(unit))
+    .sort((a, b) => Number(anchors.has(b)) - Number(anchors.has(a)) || b.score - a.score);
+  const kept = new Set<Unit>(required);
+  for (const unit of ranked) {
     kept.add(unit);
-    if (noteLength(view()) > budget) kept.delete(unit);
+    if (length(kept) > Math.max(budget, length(required))) kept.delete(unit);
   }
   if (kept.size === 0) {
     if (ranked.length > 0) return { html: "", text: "" };
-    kept.add(all[0]!.unit);
-    if (noteLength(view()) > budget) return { html: "", text: "" };
+    kept.add(all[0]!);
+    if (length(kept) > budget) return { html: "", text: "" };
   }
-  const shown = view().filter((block) => block.units.length > 0);
+  const shown = blocks
+    .map((block) => ({ ...block, units: block.units.filter((unit) => kept.has(unit)) }))
+    .filter((block) => block.units.length > 0);
   return { html: shown.map(blockHtml).join(""), text: shown.map(blockText).join(" ") };
 }
