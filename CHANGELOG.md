@@ -6,6 +6,67 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Text a box can't hold continues on a plain "(continued)" page under the box's
+  own name, re-wrapped at full width, instead of on a reprint of the character
+  page. Background, companion and equipment boxes continue the same way.
+- An "All item cards" button in Sheet options.
+
+### Changed
+
+- The 2024 and Hybrid character pages are redesigned: one Armor Class box holds
+  armor, AC sources, resistances and the Shield and Stealth ticks; ability
+  blocks put the modifier in a circle with the score beside it; Encounter Notes
+  is gone; Species Traits is shorter; Weapons has five rows and features get
+  the rest. The compact top row is the default on these sheets.
+- On the Hybrid page, Senses joins "Proficiencies, Training, Languages &
+  Senses" and Conditions & Exhaustion moves to the bottom left.
+- The 2014 page prints five attack rows and no Actions box. The compact top
+  row stacks Proficiency Bonus and Initiative, and the readable body keeps the
+  classic ability shields with larger numbers and roomier Armor Class and Hit
+  Points boxes.
+- Split feature boxes print one box with Class Features, Subclass Features and
+  Feats headings.
+- Sheet text never prints below 5.5pt: a value that doesn't fit ends in "…" and
+  prints in full on a continuation page. Every text box starts its first line
+  the same distance below its top.
+- Prepared and known spells fill their circle on the spell pages, for casters
+  that prepare spells and those that don't. Cantrips are never marked.
+- Tool and gear notes in the inventory column say what the item does (ability,
+  use, DC, save, damage) and leave out its weight.
+- Familiar & Companion moves from Magic to Build, background personality picks
+  sit in Background, and an open spell choice flags the Magic tab. Manage's
+  sheet tab is called Sheet options.
+- Levelling up several levels at once offers each new spell choice only spells
+  of the level it was gained at. Swapping a spell still reaches your current
+  level.
+
+### Fixed
+
+- A multiclass caster lists each class's spells only up to that class's own
+  spell level, prints the shared slots once and points the other classes to
+  them. Feat spellcasting gets no slot circles, and a Druid 5 can't prepare
+  4th-level spells.
+- A Warlock's spell pages list lower-level spells as well as the pact level.
+- 2014 Magic Initiate and other feat spellcasting use the ability the feat
+  states and keep their free cast.
+- Spell card details no longer drop words, usage notes in the spell list use
+  the space beside a short name, and card text lays out in the chosen body
+  font.
+- A long card continues in a slot of its own instead of printing over a later
+  card.
+- A magic weapon or armor offers each edition's base item, such as both
+  Shields for a Sentinel Shield, and keeps the one chosen. An attack matches
+  its own item when two share a name.
+- Gear, magic items and containers past the equipment tables' rows print in
+  the notes column instead of being left off.
+- Background feature text and Roll20 exports keep their paragraph and list
+  breaks.
+- Save and skill numbers sit centred between their lines, and 2024 range,
+  speed and armor cells no longer clip.
+- Companion Trait choices sit with their companion.
+
 ## [2.5.0] - 2026-10-08
 
 ### Added
