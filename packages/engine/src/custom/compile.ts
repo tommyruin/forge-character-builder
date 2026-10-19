@@ -404,8 +404,9 @@ function spellTags(draft: CustomSpellDraft): string[] {
 /**
  * A spell draft: a Spell element with the setters every book spell carries,
  * its class lists and shape tags as `supports`, and the structured mechanics
- * as `spell …` setters. The element is Aurora-shaped: a tool that does not know
- * the structured setters reads the rest as it reads any spell.
+ * as `spell …` setters. The element keeps the content grammar's own shape, so a
+ * tool that does not know the structured setters reads the rest as it reads any
+ * spell.
  */
 function compileValidatedSpell(draft: CustomSpellDraft, options: CompileOptions): string {
   const id = options.id ?? draft.id;
