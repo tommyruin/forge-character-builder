@@ -8391,3 +8391,150 @@ html.fcb-busy-cursor * {
   font-weight: 700;
   line-height: 1.2;
 }
+
+/* Custom features: the Build tab's own entries and the form that makes them. */
+.fcb-custom-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 1px 7px;
+  border: 1px solid color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+  color: var(--fcb-text);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.fcb-custom-entry-meta {
+  display: block;
+  color: var(--fcb-text-faint);
+  font-size: 0.72rem;
+}
+
+.fcb-custom-note {
+  color: var(--fcb-warning-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.fcb-custom-form {
+  display: grid;
+  gap: 16px;
+}
+
+.fcb-custom-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+  gap: 10px;
+}
+
+.fcb-custom-block {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 60%, transparent);
+}
+
+.fcb-custom-value {
+  display: grid;
+  gap: 6px;
+}
+
+.fcb-custom-gates > summary {
+  cursor: pointer;
+  color: var(--fcb-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.fcb-custom-gates-body {
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.fcb-custom-group {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--fcb-border-soft);
+  border-left: 3px solid color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  border-radius: var(--fcb-radius-sm);
+}
+
+.fcb-custom-conditions {
+  display: grid;
+  gap: 8px;
+}
+
+.fcb-custom-condition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fcb-custom-condition > .fcb-input,
+.fcb-custom-condition > .fcb-select {
+  width: auto;
+  min-width: 7rem;
+}
+
+.fcb-custom-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 10px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.fcb-custom-picked {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fcb-custom-results {
+  display: grid;
+  max-height: 11rem;
+  margin-top: 6px;
+  overflow-y: auto;
+  gap: 2px;
+}
+
+.fcb-custom-issues {
+  margin: 4px 0 0;
+  padding-left: 0;
+  color: var(--fcb-danger-text);
+  font-size: 0.78rem;
+  list-style: none;
+}
+
+.fcb-custom-readout {
+  margin-top: 6px;
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+}
+
+.fcb-custom-summary {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+}
+
+.fcb-custom-summary-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  list-style: disc;
+}
