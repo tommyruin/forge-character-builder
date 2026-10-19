@@ -72,7 +72,11 @@ Only the Character Builder library is eligible:
   `docs/contract.md`), so it syncs with the character without a separate record
 - `content`: uploaded `.xml`/`.index` bytes and source/path metadata
 - `content-import-sources`: labels and refresh metadata for imported content sources
-- `homebrew`: complete editable drafts, including their stable element identifiers
+- `homebrew`: complete editable drafts (packs), including their stable element identifiers.
+  A pack carries a `schemaVersion` (2), its author, release date and playtest flag, and
+  each element made with a form keeps its `customDraft`. A record without a version is
+  read as version 1 and is rewritten at the current version when it is opened; nothing
+  else in it changes, so older and newer devices keep syncing the same records.
 
 The following remain device-local:
 
