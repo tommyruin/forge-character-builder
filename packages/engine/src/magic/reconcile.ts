@@ -8,6 +8,7 @@ import { multiclassSlotProgression } from "../statistics/calculator.js";
 import { spellInfo, canonicalSourceRank, alwaysPreparedSets, casterSpellLevelCap } from "./spelllist.js";
 import { applySpellRiders, damageWithBonus, ATTACK_ROLL_RIDER_IDS } from "./spell-riders.js";
 import { ordinal, structuredSpellMechanics } from "./structured-spell.js";
+import { spellDisplayName } from "./spell-aliases.js";
 import { featureSpellCasters } from "./feature-casters.js";
 import { casterModifier } from "./caster-modifiers.js";
 import { classCasterSpellIds, grantedCasterIdentifier, partitionAdditionalGrants, GRANTED_CASTER_NAME } from "./dto.js";
@@ -769,7 +770,7 @@ export function buildMagicAttackOptions(
         casterIdentifier: block.identifier,
         casterName: block.name,
         spellId: id,
-        spellName: info.name,
+        spellName: spellDisplayName(info.name, state.spellAliases?.[id]),
         level: info.level,
         range: riders.range,
         bonus: save === null

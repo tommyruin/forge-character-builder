@@ -402,7 +402,25 @@ export function buildSpellcastingDto(
     const identifier = grantedCasterIdentifier(partition.groups.length, group.profile);
     casters.push(grantedCasterDto(casterIds, group.spells, group.profile, identifier));
   }
-  return casters;
+  return withSpellAliases(casters, state.spellAliases);
+}
+
+/**
+ * Attaches the character's own spell names and notes. A spell without an alias
+ * keeps exactly the shape it had, so a file that uses none projects unchanged.
+ */
+function withSpellAliases(
+  casters: SpellcasterDto[],
+  aliases: CharacterState["spellAliases"] | undefined,
+): SpellcasterDto[] {
+  if (aliases === undefined || Object.keys(aliases).length === 0) return casters;
+  return casters.map((caster) => ({
+    ...caster,
+    knownSpells: caster.knownSpells.map((spell) => {
+      const alias = aliases[spell.id];
+      return alias === undefined ? spell : { ...spell, alias: { name: alias.name, note: alias.note } };
+    }),
+  }));
 }
 
 /**

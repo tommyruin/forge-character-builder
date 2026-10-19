@@ -530,6 +530,7 @@ export function createEngineMethodHandlers(
     },
     getSpellcasting: (id) => service.getSpellcasting(id),
     setPrepared: (id, casterId, request) => service.setPrepared(id, casterId, request),
+    setSpellAlias: (id, spellId, request) => service.setSpellAlias(id, spellId, request),
     getSpellBrowse: (id, ruleId) => objectResult(service.getSpellBrowse(id, ruleId)),
     addGrantedSpell: (id, request) => objectResult(service.getCharacterDetail(service.addGrantedSpell(id, request).id)),
     removeGrantedSpell: (id, request) => objectResult(service.getCharacterDetail(service.removeGrantedSpell(id, request).id)),

@@ -643,6 +643,7 @@ const CHARACTER_STATE_KEYS = [
   "spellcasting",
   "magic",
   "magicCasterIds",
+  "spellAliases",
   "sum",
   "restrictedSources",
   "restrictedElements",
@@ -756,6 +757,12 @@ function validateCharacterState(value: unknown): void {
   spellcasting.forEach((block, index) => checkSpellcastingBlock(block, `state.spellcasting[${index}]`));
   checkMagic(state.magic, "state.magic");
   checkStringMap(state.magicCasterIds, "state.magicCasterIds");
+  if (!isRecord(state.spellAliases)) throwBad("invalid-structure", "state.spellAliases: expected an object");
+  for (const [spellId, alias] of Object.entries(state.spellAliases)) {
+    const record = checkRecord(alias, `state.spellAliases.${spellId}`, ["name", "note"], []);
+    checkString(record.name, `state.spellAliases.${spellId}.name`);
+    checkString(record.note, `state.spellAliases.${spellId}.note`);
+  }
   const sum = checkRecord(state.sum, "state.sum", ["elementCount", "elements"], []);
   checkNumber(sum.elementCount, "state.sum.elementCount");
   const sumElements = sum.elements;

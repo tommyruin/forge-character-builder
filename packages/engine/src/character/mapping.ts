@@ -19,6 +19,7 @@ import {
 } from "../dnd5e/document.js";
 import { md5Hex } from "../platform.js";
 import { parseMagicState } from "../magic/state.js";
+import { readSpellAliases } from "../magic/spell-aliases.js";
 import { pointBuyRemaining } from "./point-buy.js";
 import {
   emptyCharacterState,
@@ -431,6 +432,7 @@ export function mapToState(document: Dnd5eDocument, id: string): CharacterState 
 
   state.spellcasting = build.spellcasting.map(mapSpellcasting);
   state.magic = parseMagicState(build.magic);
+  state.spellAliases = readSpellAliases(document);
   state.controls = new Map();
   state.rulesetMode = root.rulesetMode() ?? "all";
 

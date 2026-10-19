@@ -42,6 +42,7 @@ import {
 } from "../magic/dto.js";
 import { buildCompanionDto, type CompanionDto, type CompanionFeatureDto } from "../magic/reconcile.js";
 import { spellInfo } from "../magic/spelllist.js";
+import { spellDisplayName, spellShortName } from "../magic/spell-aliases.js";
 import { decodeEntities } from "../dnd5e/document.js";
 import { buildProgression } from "../progression/progression.js";
 import {
@@ -436,7 +437,8 @@ function sheetAttackNote(attack: AttackDto, library: ElementLibrary): string {
 function layoutSpell(spell: KnownSpellDto, requiresPreparation: boolean): SheetSpellListSection["spells"][number] {
   const levelled = spell.level > 0;
   return {
-    name: spell.name,
+    // The list is narrow: a spell with an alias prints the alias alone.
+    name: spellShortName(spell.name, spell.alias),
     prepared: levelled && (spell.isPrepared || !requiresPreparation),
     alwaysPrepared: levelled && spell.isAlwaysPrepared,
     ...(spell.usage === undefined || spell.usage === null || spell.usage === "" ? {} : { usage: spell.usage }),
@@ -792,7 +794,7 @@ function buildFormValues(
       set(`SlotsTotal ${18 + level}`, caster.slotsPerLevel[level - 1] ?? 0);
       set(`SlotsRemaining ${18 + level}`, caster.slotsPerLevel[level - 1] ?? 0);
     }
-    caster.knownSpells.slice(0, 120).forEach((spell, index) => set(`Spells ${1014 + index}`, spell.name));
+    caster.knownSpells.slice(0, 120).forEach((spell, index) => set(`Spells ${1014 + index}`, spellShortName(spell.name, spell.alias)));
   }
   return fields;
 }
@@ -2562,7 +2564,7 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       if (gridCellIsCanonicalLabel(index, sectionTop)) continue;
       const spell = spells[index]!;
       if (index < prepared.length) tokens.push(PREPARED_MARK);
-      tokens.push(...spell.name.split(/\s+/));
+      tokens.push(...spellShortName(spell.name, spell.alias).split(/\s+/));
       if (index < prepared.length && spell.isAlwaysPrepared) tokens.push("(Always", "Prepared)");
       // A spell with a free cast also carries its allowance ("(1/Long Rest)").
       if (spell.usage !== undefined && spell.usage !== null && spell.usage !== "") {
@@ -2689,7 +2691,7 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       if (cantrips.length > 0) gridGeometry = advanceSpellGrid(gridGeometry, cantrips.length).next;
       section("cantrips").rows.push({
         kind: "tokens",
-        tokens: cantrips.flatMap((spell) => spell.name.split(/\s+/)),
+        tokens: cantrips.flatMap((spell) => spellShortName(spell.name, spell.alias).split(/\s+/)),
       });
     }
     row += cantripSectionRows;
@@ -2729,7 +2731,11 @@ function buildSpellDescriptionPages(
   // pact/known casters expose their complete known spell entries.
   const union = new Map<string, SpellDescriptionEntry>();
   const casterByName = new Map(casters.map((caster) => [caster.name, caster]));
-  const add = (spell: KnownSpellDto, caster: SpellcasterDto | null, additionalSource?: string): void => {
+  const add = (listed: KnownSpellDto, caster: SpellcasterDto | null, additionalSource?: string): void => {
+    // A spell read straight from the library (a grant outside any caster) has no
+    // alias yet; the character's own name for it comes from the state.
+    const alias = state.spellAliases?.[listed.id];
+    const spell = listed.alias === undefined && alias !== undefined ? { ...listed, alias } : listed;
     const existing = union.get(spell.id);
     if (
       existing === undefined ||
@@ -2872,6 +2878,14 @@ function setterValue(element: ParsedElement | undefined, name: string): string {
   return element?.setters.find((setter) => setter.name === name)?.value ?? "";
 }
 
+/** The character's note on a spell, as the paragraph that closes its card. */
+function aliasNoteHtml(alias: KnownSpellDto["alias"]): string {
+  const note = alias?.note.trim() ?? "";
+  if (note === "") return "";
+  const escaped = note.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replace(/\s*\n\s*/g, " ");
+  return `<p>Note: ${escaped}</p>`;
+}
+
 function spellDescriptionCard(state: CharacterState, library: ElementLibrary, entry: SpellDescriptionEntry): DescriptionCard {
   const element = library.byId.get(entry.spell.id);
   const ordinal = ordinalLevel(entry.spell.level);
@@ -2885,7 +2899,8 @@ function spellDescriptionCard(state: CharacterState, library: ElementLibrary, en
     : duration;
   return {
     kind: "spell",
-    title: entry.spell.name,
+    // A card has room for both names, and its note is the character's own gloss.
+    title: spellDisplayName(entry.spell.name, entry.spell.alias),
     subtitle,
     metadata: [
       ["CASTING TIME", info?.castingTime ?? entry.spell.castingTime],
@@ -2893,7 +2908,7 @@ function spellDescriptionCard(state: CharacterState, library: ElementLibrary, en
       ["DURATION", concentration],
       ["COMPONENTS", info?.components ?? ""],
     ],
-    body: element?.descriptionXml ?? "",
+    body: `${element?.descriptionXml ?? ""}${aliasNoteHtml(entry.spell.alias)}`,
     footer: spellOriginLabel(state, entry),
     footerRight: entry.spell.source,
   };
@@ -2905,7 +2920,7 @@ function descriptionPageRows(
   element: ParsedElement | undefined,
   origin: string,
 ): SheetRow[] {
-  const rows: SheetRow[] = [{ kind: "tokens", tokens: spell.name.split(/\s+/) }];
+  const rows: SheetRow[] = [{ kind: "tokens", tokens: spellDisplayName(spell.name, spell.alias).split(/\s+/) }];
   const ordinal = ordinalLevel(spell.level);
   const school = spell.level === 0 ? spell.school : spell.school.toLowerCase();
   const ritual = spell.isRitual ? " (ritual)" : "";

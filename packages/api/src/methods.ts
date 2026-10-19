@@ -138,6 +138,12 @@ export interface KnownSpellDto {
   /** Conditions or shared-feature limits on the free-cast allowance. */
   usageNote?: string;
   /**
+   * This character's own name and note for the spell (`setSpellAlias`). When
+   * set, `name` stays the spell's real name and the alias is what the Magic tab
+   * leads with and the sheet prints.
+   */
+  alias?: { name: string; note: string };
+  /**
    * The feature or item that gave the character this spell, for spells a
    * feature caster projects. The spell lists name it in place of the spell's
    * own book, and mark it when it is custom content.
@@ -370,6 +376,15 @@ export interface EngineMethodMap {
   >;
   getSpellBrowse: MethodContract<[id: string, ruleId: string], WireObject>;
   /**
+   * Gives a spell a display name and a note on this character: any spell the
+   * library knows, book or custom, that the character has. Presentation only:
+   * the spell keeps its element, its rules and its numbers, and the Magic tab,
+   * the sheet's spell pages and cards and the spell's attack row print the
+   * name. An empty name goes back to the spell's own; an omitted field is left
+   * alone. Returns the spellcasting projection.
+   */
+  setSpellAlias: MethodContract<[id: string, spellId: string, request: { name?: string; note?: string }], SpellcasterDto[]>;
+  /**
    * Grants any spell to the character, ignoring class lists and known/prepared
    * limits. With `caster` (a class spellcasting name the character has) the
    * spell joins that caster's spells, always prepared, and casts with its
@@ -584,6 +599,7 @@ export const ENGINE_METHOD_NAMES = [
   "getSpellcasting",
   "setPrepared",
   "getSpellBrowse",
+  "setSpellAlias",
   "addGrantedSpell",
   "removeGrantedSpell",
   "addGrantedFeat",
@@ -698,6 +714,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   getSpellcasting: implemented,
   setPrepared: implemented,
   getSpellBrowse: implemented,
+  setSpellAlias: implemented,
   addGrantedSpell: implemented,
   removeGrantedSpell: implemented,
   addGrantedFeat: implemented,
@@ -792,6 +809,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   getSpellcasting: "read-only",
   setPrepared: "character-write",
   getSpellBrowse: "read-only",
+  setSpellAlias: "character-write",
   addGrantedSpell: "character-write",
   removeGrantedSpell: "character-write",
   addGrantedFeat: "character-write",

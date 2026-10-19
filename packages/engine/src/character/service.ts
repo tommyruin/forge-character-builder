@@ -142,6 +142,7 @@ import {
 } from "../magic/dto.js";
 import { additionalSpellPool, dmGrantSource, isGeneratedSpellProxyId } from "../magic/granted-spells.js";
 import { spellInfo } from "../magic/spelllist.js";
+import { MAX_ALIAS_NAME, MAX_ALIAS_NOTE, planSpellAliasEdits, readSpellAliasBlock } from "../magic/spell-aliases.js";
 import {
   planSetPrepared,
   planAddAdditionalSpell,
@@ -2242,6 +2243,41 @@ export class CharacterService {
     }
     const plan = planSetPrepared(document, state, this.library, casterId, request.spellId, request.prepared);
     const next = this.applyPlan(id, state, document, plan.edits);
+    this.ensureMagicCasterIds(next);
+    return buildSpellcastingDto(next, this.library, this.magicStatistics(next), next.magicCasterIds);
+  }
+
+  /**
+   * Sets this character's own name and note for a spell (see `spell-aliases.ts`).
+   * The aliases live in the builder block of the file; the magic region and the
+   * stored attack rows are re-derived afterwards so a spell attack row prints the
+   * new name in an export as well as on screen.
+   */
+  setSpellAlias(id: string, spellId: string, request: { name?: string; note?: string }): SpellcasterDto[] {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for spellcasting");
+    }
+    if (spellInfo(this.library, spellId) === null) {
+      throw engineError("not-found", `spell '${spellId}' not found`);
+    }
+    const read = readSpellAliasBlock(document);
+    // Rewriting a block that cannot be read would destroy whatever it still says.
+    if (read.unreadable) throw engineError("conflict", "the spell alias block is not valid JSON; it was not changed");
+    const current = read.aliases[spellId] ?? { name: "", note: "" };
+    const name = request.name === undefined ? current.name : request.name.replace(/\s+/g, " ").trim();
+    const note = request.note === undefined ? current.note : request.note.trim();
+    if (name.length > MAX_ALIAS_NAME) {
+      throw engineError("invalid-argument", `The name is at most ${MAX_ALIAS_NAME} characters.`);
+    }
+    if (note.length > MAX_ALIAS_NOTE) {
+      throw engineError("invalid-argument", `The note is at most ${MAX_ALIAS_NOTE} characters.`);
+    }
+    const stored: Record<string, unknown> = { ...read.stored };
+    if (name === "" && note === "") delete stored[spellId];
+    else stored[spellId] = { name, note };
+    const edits = planSpellAliasEdits(document, stored);
+    const next = edits.length === 0 ? state : this.applyWithMagicReconcile(id, state, document, edits);
     this.ensureMagicCasterIds(next);
     return buildSpellcastingDto(next, this.library, this.magicStatistics(next), next.magicCasterIds);
   }

@@ -22,8 +22,8 @@ describe("engine method contract", () => {
     // 88: added addGrantedElement / removeGrantedElement and the custom content methods.
     // 89: added setItemDetails (a record's own name and notes).
     // 90: added previewCustomItem (an item draft's attack row on a scratch copy).
-    // 91: added previewCustomSpell (a spell draft's attack row on a scratch copy).
-    expect(ENGINE_METHOD_NAMES).toHaveLength(91);
+    // 92: added previewCustomSpell (a spell draft's attack row) and setSpellAlias (a spell's display name).
+    expect(ENGINE_METHOD_NAMES).toHaveLength(92);
     expect(new Set(ENGINE_METHOD_NAMES).size).toBe(ENGINE_METHOD_NAMES.length);
     expect(Object.keys(METHOD_SUPPORT).sort()).toEqual([...ENGINE_METHOD_NAMES].sort());
 
@@ -236,8 +236,8 @@ describe("typed client bridge", () => {
     // 88: added addGrantedElement / removeGrantedElement and the custom content methods.
     // 89: added setItemDetails (a record's own name and notes).
     // 90: added previewCustomItem (an item draft's attack row on a scratch copy).
-    // 91: added previewCustomSpell (a spell draft's attack row on a scratch copy).
-    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 91 } });
+    // 92: added previewCustomSpell (a spell draft's attack row) and setSpellAlias (a spell's display name).
+    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 92 } });
   });
 
   it("transfers snapshot buffers: nested request bodies and ArrayBuffer results", async () => {

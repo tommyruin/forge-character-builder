@@ -341,6 +341,11 @@ export interface CharacterState {
   magic: MagicState | null;
   /** Per-caster session identifiers (persisted across remaps). */
   magicCasterIds: Map<string, string>;
+  /**
+   * This character's own name and note for spells, by spell element id (the
+   * builder block of the file; empty when the file has none).
+   */
+  spellAliases: Record<string, { name: string; note: string }>;
 
   // build/sum
   sum: SumState;
@@ -420,6 +425,7 @@ export function emptyCharacterState(id: string): CharacterState {
     spellcasting: [],
     magic: null,
     magicCasterIds: new Map(),
+    spellAliases: {},
     sum: { elementCount: 0, elements: [] },
     restrictedSources: [],
     restrictedElements: [],
