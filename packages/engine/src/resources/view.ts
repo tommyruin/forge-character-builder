@@ -22,7 +22,7 @@ import { rechargeLabel, REST_RECHARGES, trackerStatKey } from "../custom/tracker
 import { isCustomElementId } from "../custom/schema.js";
 import { spellInfo } from "../magic/spelllist.js";
 import { parseUsageText } from "./usage.js";
-import type { DeclaredTracker } from "./types.js";
+import type { DeclaredSwitch, DeclaredTracker } from "./types.js";
 
 /** A feature printed on the sheet that states a usage line, with its tokens already filled in. */
 export interface FeatureUsage {
@@ -184,7 +184,31 @@ export function buildTrackers(
   return [...groups.values()].map((group) => toDto(group, state));
 }
 
-export function buildSwitches(state: CharacterState, trackers: readonly TrackerDto[]): SwitchDto[] {
+/**
+ * The switches the compiled rules of the character's active custom elements name.
+ * A draft in the character's own file declares its switches itself; an element a
+ * pack defines has no draft here, but its rules carry the same `condition`, so the
+ * switch is read off them and the player can turn it on.
+ */
+function ruleSwitches(state: CharacterState, library: ElementLibrary, active: ReadonlySet<string>): DeclaredSwitch[] {
+  const out: DeclaredSwitch[] = [];
+  for (const id of active) {
+    if (!isCustomElementId(id)) continue;
+    const element = library.byId.get(id);
+    if (element === undefined) continue;
+    const seen = new Set<string>();
+    for (const rule of element.rules) {
+      if (rule.kind !== "stat" && rule.kind !== "grant") continue;
+      const name = rule.condition?.trim() ?? "";
+      if (name === "" || seen.has(name.toLowerCase())) continue;
+      seen.add(name.toLowerCase());
+      out.push({ name, ownerId: id, ownerName: element.identity.name });
+    }
+  }
+  return out;
+}
+
+export function buildSwitches(state: CharacterState, library: ElementLibrary, trackers: readonly TrackerDto[]): SwitchDto[] {
   const declared = state.resources.declared;
   const active = new Set<string>();
   const items = state.items;
@@ -194,7 +218,7 @@ export function buildSwitches(state: CharacterState, trackers: readonly TrackerD
     for (const adorner of item.adorners) active.add(adorner);
   }
   const out: SwitchDto[] = [];
-  for (const entry of declared.switches) {
+  for (const entry of [...declared.switches, ...ruleSwitches(state, library, active)]) {
     if (!active.has(entry.ownerId)) continue;
     const existing = out.find((candidate) => sameName(candidate.name, entry.name));
     if (existing !== undefined) {
@@ -219,7 +243,7 @@ export function buildResources(
   usages: readonly FeatureUsage[],
 ): ResourcesDto {
   const trackers = buildTrackers(state, library, values, usages);
-  return { trackers, switches: buildSwitches(state, trackers) };
+  return { trackers, switches: buildSwitches(state, library, trackers) };
 }
 
 /** The tracker keys a rest of this kind refills. */

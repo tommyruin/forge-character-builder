@@ -46,6 +46,12 @@ export function declareResources(drafts: readonly CustomEntryDraft[]): DeclaredR
       trackedOwners.add(draft.id);
     }
     const seen = new Set<string>();
+    const declareSwitch = (name: string | undefined): void => {
+      const trimmed = name?.trim();
+      if (trimmed === undefined || trimmed === "" || seen.has(trimmed.toLowerCase())) return;
+      seen.add(trimmed.toLowerCase());
+      switches.push({ name: trimmed, ownerId: draft.id, ownerName: draft.name });
+    };
     for (const block of draft.blocks) {
       if (block.kind === "grant") {
         const declared = spellGrantTracker(draft, block);
@@ -53,12 +59,9 @@ export function declareResources(drafts: readonly CustomEntryDraft[]): DeclaredR
           trackers.push(declared);
           trackedOwners.add(draft.id);
         }
+        declareSwitch(block.switch);
       } else if (block.kind === "modifier") {
-        const name = block.gates?.switch?.trim();
-        if (name !== undefined && name !== "" && !seen.has(name.toLowerCase())) {
-          seen.add(name.toLowerCase());
-          switches.push({ name, ownerId: draft.id, ownerName: draft.name });
-        }
+        declareSwitch(block.gates?.switch);
       }
     }
   }

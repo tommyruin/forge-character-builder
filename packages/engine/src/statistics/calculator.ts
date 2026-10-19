@@ -27,22 +27,11 @@ import { ENGINE_INTERNAL_ELEMENTS, resolveElementType } from "../selection/selec
 import { classElementForMulticlass, extractHitDie } from "../progression/leveling.js";
 import { itemBenefitsActive } from "../inventory/inventory.js";
 import { OPTION_AVERAGE_HP } from "../progression/leveling.js";
-import { isCustomElementId } from "../custom/schema.js";
+import { switchGateOpen } from "../custom/switch-gate.js";
 
 export type StatisticsValues = Record<string, number>;
 
-/**
- * Whether a conditional stat rule applies because a switch is on. The
- * `condition` of a rule made in the builder names the switch that gates it;
- * book content only describes circumstances ("while raging") the engine does
- * not model, so a switch that happens to share its words never turns a book
- * rule on.
- */
-export function switchGateOpen(state: CharacterState, elementId: string, condition: string): boolean {
-  if (!isCustomElementId(elementId)) return false;
-  const name = condition.trim().toLowerCase();
-  return state.resources.switchesOn.some((on) => on.trim().toLowerCase() === name);
-}
+export { switchGateOpen };
 
 const ABILITIES = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
 

@@ -181,7 +181,7 @@ function activeClassSpellGrants(state: CharacterState, library: ElementLibrary):
           const casterName = rule.spellcasting;
           if (casterName === undefined) continue;
           if (!levels.has(casterName)) levels.set(casterName, casterClassLevel(state, library, casterName) || state.level);
-          if (!grantEligible(rule, state, { ...context, level: levels.get(casterName)! })) continue;
+          if (!grantEligible(rule, state, { ...context, level: levels.get(casterName)! }, element.identity.id)) continue;
           grants.push({ element, casterName, spellId: rule.id });
         }
       }

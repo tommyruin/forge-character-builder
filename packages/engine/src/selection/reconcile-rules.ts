@@ -19,9 +19,9 @@
  * Two deliberate limits keep the sweep clear of machinery that already owns its
  * own bookkeeping:
  *
- * - only rules carrying a `requirements` expression. A rule without one can
- *   never change its mind, so there is nothing to reconcile and nothing to
- *   disturb.
+ * - only rules carrying a `requirements` expression, or a grant gated on a
+ *   switch. A rule with neither can never change its mind, so there is nothing
+ *   to reconcile and nothing to disturb.
  * - only rules with no `level` attribute. Level-gated rules belong to the
  *   leveling planner, which materialises them under the `<element type="Level">`
  *   node of the level that granted them rather than under their owning element;
@@ -33,14 +33,14 @@ import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState, RegisteredElement } from "../character/state.js";
 import type { Dnd5eDocument } from "../dnd5e/document.js";
 import type { GrantRule, ParsedElement, Rule, SelectRule } from "../content/parser.js";
-import { countItemNodes } from "../character/options.js";
+import { registrationCount } from "../character/registration-count.js";
 import { engineError } from "../errors.js";
 import { nestedInsertEdits, planElementsCountEdits, planSumReplaceEdits } from "../progression/leveling.js";
+import { grantSwitchOpen } from "../custom/switch-gate.js";
 import { evaluateRequirements, type RequirementContext } from "./expr.js";
 import {
   ENGINE_INTERNAL_ELEMENTS,
   createRegistrationContext,
-  filledWrapperCount,
   nodeByPath,
   registerElement,
   removeNodeEdit,
@@ -71,10 +71,26 @@ type WrapperNode = TreeNode & { kind: "wrapper" };
 
 const NOTHING: RuleReconcileResult = { edits: [], changed: false, flips: [] };
 
-/** True when a rule is in scope for reconciliation (see the module header). */
+/**
+ * True when a rule is in scope for reconciliation (see the module header). A
+ * grant gated on a switch is in scope too: a switch can flip at any time, so
+ * the grant has to come and go with it.
+ */
 function reconcilable(rule: Rule): rule is SelectRule | GrantRule {
   if (rule.kind !== "select" && rule.kind !== "grant") return false;
-  return rule.level === undefined && (rule.requirements ?? "").trim() !== "";
+  if (rule.level !== undefined) return false;
+  return (rule.requirements ?? "").trim() !== "" || (rule.kind === "grant" && (rule.condition ?? "").trim() !== "");
+}
+
+/** Whether a rule currently applies: its switch is on (grants) and its requirements hold. */
+function ruleEligible(
+  rule: SelectRule | GrantRule,
+  owner: ParsedElement,
+  state: CharacterState,
+  ctx: ReturnType<typeof createRegistrationContext>,
+): boolean {
+  if (rule.kind === "grant" && !grantSwitchOpen(state, owner.identity.id, rule.condition)) return false;
+  return evaluateRequirements(rule.requirements, ctx);
 }
 
 /** `[level:5]`, `[level:barbarian:3]`, `level:5` — a level test, not an element test. */
@@ -92,7 +108,9 @@ const LEVEL_ATOM = /\blevel\s*:/u;
  * treated as met, and only a rule that still fails has lost something other
  * than a level. A rule with no level test is read as it stands.
  */
-function removable(rule: SelectRule | GrantRule, ctx: RequirementContext): boolean {
+function removable(rule: SelectRule | GrantRule, ctx: RequirementContext, switchOpen: boolean): boolean {
+  // A closed switch is no level matter: the grant leaves with it.
+  if (!switchOpen) return true;
   const requirements = rule.requirements ?? "";
   if (!LEVEL_ATOM.test(requirements)) return true;
   return !evaluateRequirements(requirements, {
@@ -194,11 +212,13 @@ function findGrantChild(node: RegisteredElement, targetId: string): RegisteredEl
 function heldGrantTargets(
   owner: ParsedElement,
   library: ElementLibrary,
+  state: CharacterState,
   ctx: ReturnType<typeof createRegistrationContext>,
 ): Set<string> {
   const held = new Set<string>();
   for (const rule of owner.rules) {
     if (rule.kind !== "grant" || rule.level !== undefined) continue;
+    if (!grantSwitchOpen(state, owner.identity.id, rule.condition)) continue;
     if ((rule.requirements ?? "").trim() !== "" && !evaluateRequirements(rule.requirements, ctx)) continue;
     const target = resolveGrant(rule, library);
     if (target !== undefined) held.add(target.identity.id);
@@ -298,7 +318,8 @@ export function reconcileRegistrationRules(
         let held: Set<string> | undefined;
         for (const rule of owner.rules) {
           if (!reconcilable(rule)) continue;
-          const eligible = evaluateRequirements(rule.requirements, ctx);
+          const eligible = ruleEligible(rule, owner, state, ctx);
+          const switchOpen = rule.kind !== "grant" || grantSwitchOpen(state, owner.identity.id, rule.condition);
           if (rule.kind === "select") {
             const count = rule.number ?? 1;
             for (let number = 1; number <= count; number++) {
@@ -306,7 +327,7 @@ export function reconcileRegistrationRules(
               const child = findWrapper(node, wrapper, takenWrappers);
               if (child === undefined) continue;
               takenWrappers.add(child);
-              if (eligible || !removable(rule, ctx)) continue;
+              if (eligible || !removable(rule, ctx, switchOpen)) continue;
               removals.push({
                 path: [...here, node.children.indexOf(child)],
                 ids: subtreeIds([child]),
@@ -315,10 +336,10 @@ export function reconcileRegistrationRules(
             }
             continue;
           }
-          if (rule.kind !== "grant" || eligible || !removable(rule, ctx)) continue;
+          if (rule.kind !== "grant" || eligible || !removable(rule, ctx, switchOpen)) continue;
           const target = resolveGrant(rule, library);
           if (target === undefined) continue;
-          held ??= heldGrantTargets(owner, library, ctx);
+          held ??= heldGrantTargets(owner, library, state, ctx);
           if (held.has(target.identity.id)) continue;
           const child = findGrantChild(node, target.identity.id);
           if (child === undefined) continue;
@@ -366,7 +387,7 @@ export function reconcileRegistrationRules(
         const flips: RuleFlip[] = [];
         for (const rule of owner.rules) {
           if (!reconcilable(rule)) continue;
-          if (!evaluateRequirements(rule.requirements, ctx)) continue;
+          if (!ruleEligible(rule, owner, state, ctx)) continue;
           if (rule.kind === "select") {
             const count = rule.number ?? 1;
             for (let number = 1; number <= count; number++) {
@@ -424,14 +445,17 @@ export function reconcileRegistrationRules(
   ];
   edits.push(...planSumReplaceEdits(document, sum));
 
-  // An empty wrapper does not count as registered, so only a removed *filled*
-  // wrapper (or a removed item) moves the tally; additions never do.
+  // The tally is the file format's own count of registrations, taken over the
+  // tree the sweep leaves behind: an empty wrapper does not count, so only a
+  // removed *filled* wrapper (or a removed item or granted feature) moves it and
+  // additions never do. Counting with the shared function keeps a granted
+  // feature in the tally, which a sum of the pieces would leave out.
   const surviving = pruneTree(state.elements, staleIds);
   edits.push(
     ...planElementsCountEdits(
       document,
       state.levelCount,
-      state.levelCount + filledWrapperCount(surviving) + state.options.size + countItemNodes(surviving),
+      registrationCount({ ...state, elements: surviving, sum: { ...state.sum, elements: sum } }),
     ),
   );
 

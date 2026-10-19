@@ -5,7 +5,7 @@
  *
  * Block to rule mapping (design section 4):
  *   modifier -> `<stat name value bonus maximum level equipped requirements condition alt>`
- *   grant    -> `<grant type id|name level requirements spellcasting prepared>`
+ *   grant    -> `<grant type id|name level requirements spellcasting prepared condition>`
  *   choice   -> `<select type name number level requirements supports optional spellcasting>`
  *   sheet    -> `<sheet alt action usage><description level>`
  *   tags     -> `<supports>`; requirements tree -> `<requirements>` and `<prerequisite>`
@@ -168,6 +168,7 @@ function grantRule(block: GrantBlock): string {
     ["requirements", block.requirements === undefined ? "" : compileRequirements(block.requirements)],
     ["spellcasting", spell?.caster],
     ["prepared", spell?.prepared === true ? "true" : undefined],
+    ["condition", block.switch?.trim()],
   ])} />`;
 }
 

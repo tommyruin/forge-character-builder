@@ -2305,7 +2305,14 @@ export class CharacterService {
   }
 
   setResourceSwitch(id: string, request: { name: string; on: boolean }): ResourcesDto {
-    return this.resources.setSwitch(id, request);
+    const result = this.resources.setSwitch(id, request);
+    // A grant gated on the switch registers or leaves with it, like any rule whose
+    // requirements just flipped. Nothing is rewritten when no rule names the switch.
+    const { state, document } = this.require(id);
+    const settled = this.settleRegistrationRules(id, document, state, state);
+    if (settled.document === document) return result;
+    this.reconcileMagicRegion(id, settled.document, settled.state);
+    return this.resources.get(id);
   }
 
   /** A short rest refills short-rest trackers; a long rest also refills long rest, dawn and day ones. */

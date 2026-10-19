@@ -38,6 +38,12 @@ export interface GrantRule {
   prepared?: boolean;
   /** Spell-grant spellcasting target (the caster name). */
   spellcasting?: string;
+  /**
+   * The switch that gates the grant ("Moonlit form"). Only content made in the
+   * builder reads it: a book grant's condition describes a circumstance the
+   * engine does not model and never stops it registering.
+   */
+  condition?: string;
 }
 
 export interface StatRule {
@@ -287,6 +293,8 @@ function parseRule(node: XmlNode): Rule {
         requirements: node.attrs.requirements,
         prepared: booleanAttr(node, "prepared"),
         spellcasting: node.attrs.spellcasting,
+        // Present only when written, so content without it parses exactly as before.
+        ...(node.attrs.condition !== undefined && node.attrs.condition.trim() !== "" ? { condition: node.attrs.condition } : {}),
       };
     case "stat":
       return {

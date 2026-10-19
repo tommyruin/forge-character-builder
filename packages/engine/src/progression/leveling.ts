@@ -407,7 +407,7 @@ function withNestedLevelRules(
         const granted: TreeNode[] = [];
         const sumIds: string[] = [];
         for (const grant of element.rules) {
-          if (grant.kind !== "grant" || grant.level !== matchLevel || !grantEligible(grant, state, ctx)) continue;
+          if (grant.kind !== "grant" || grant.level !== matchLevel || !grantEligible(grant, state, ctx, element.identity.id)) continue;
           const target = resolveGrant(grant, library);
           if (target === undefined || ctx.ids.includes(target.identity.id)) continue;
           const alreadyThere = node.children.some((child) => child.id === target.identity.id);

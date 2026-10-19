@@ -31,6 +31,7 @@ import { isSpellcastingExtension, type GrantRule, type ParsedElement, type Rule,
 import type { CharacterState, RegisteredElement, SumElement } from "../character/state.js";
 import { computeStatistics } from "../statistics/calculator.js";
 import { engineError } from "../errors.js";
+import { grantSwitchOpen } from "../custom/switch-gate.js";
 import { evaluateRequirements, type RequirementContext } from "./expr.js";
 import {
   isRestrictedForCharacter,
@@ -1233,8 +1234,9 @@ export function selectEligible(select: SelectRule, state: CharacterState, ctx: R
   return evaluateRequirements(select.requirements, ctx);
 }
 
-export function grantEligible(grant: GrantRule, state: CharacterState, ctx: RequirementContext): boolean {
+export function grantEligible(grant: GrantRule, state: CharacterState, ctx: RequirementContext, ownerId: string): boolean {
   if (grant.level !== undefined && grant.level > ctx.level) return false;
+  if (!grantSwitchOpen(state, ownerId, grant.condition)) return false;
   return evaluateRequirements(grant.requirements, ctx);
 }
 
@@ -1329,7 +1331,7 @@ export function reconcilePendingGrants(
             const target = resolveGrant(rule, library);
             if (!target) continue;
             if (ctx.registered.has(target.identity.id) || ctx.ids.includes(target.identity.id)) continue;
-            if (!grantEligible(rule, state, ctx)) continue;
+            if (!grantEligible(rule, state, ctx, registeredId)) continue;
             const registered = registerElement(target, library, state, ctx, new Set());
             if (registered !== null) {
               children.push({ kind: "element", element: target, children: registered });
@@ -1501,7 +1503,7 @@ export function registerElement(
     (rule): rule is SelectRule => rule.kind === "select" && selectEligible(rule, state, ctx),
   );
   const grants = element.rules.filter(
-    (rule): rule is GrantRule => rule.kind === "grant" && grantEligible(rule, state, ctx),
+    (rule): rule is GrantRule => rule.kind === "grant" && grantEligible(rule, state, ctx, element.identity.id),
   );
   for (const select of selects) {
     const count = select.number ?? 1;
@@ -1657,7 +1659,7 @@ function removeInvalidGrantChildren(state: CharacterState, library: ElementLibra
               (candidate): candidate is GrantRule =>
                 candidate.kind === "grant" && resolveGrant(candidate, library)?.identity.id === childId,
             );
-            if (grants.length > 0 && !grants.some((grant) => grantEligible(grant, state, ctx))) {
+            if (grants.length > 0 && !grants.some((grant) => grantEligible(grant, state, ctx, ownerId))) {
               for (const id of subtreeIds([child])) stale.add(id);
             }
           }

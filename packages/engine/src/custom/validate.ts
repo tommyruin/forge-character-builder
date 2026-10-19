@@ -172,10 +172,14 @@ function gateIssues(gates: unknown, path: string): CustomDraftIssue[] {
     }
   }
   if (gates.requirements !== undefined) issues.push(...withPrefix(`${path}.requirements`, requirementIssues(gates.requirements)));
-  if (gates.switch !== undefined && !(isName(gates.switch, 40) && !/[<>&"]/.test(gates.switch))) {
-    issues.push({ path: `${path}.switch`, message: "a switch needs a short name without < > & or quotes" });
-  }
+  if (gates.switch !== undefined) issues.push(...switchNameIssues(gates.switch, `${path}.switch`));
   return issues;
+}
+
+function switchNameIssues(name: unknown, path: string): CustomDraftIssue[] {
+  return isName(name, 40) && !/[<>&"]/.test(name)
+    ? []
+    : [{ path, message: "a switch needs a short name without < > & or quotes" }];
 }
 
 function grantIssues(block: Record<string, unknown>, path: string): CustomDraftIssue[] {
@@ -203,6 +207,14 @@ function grantIssues(block: Record<string, unknown>, path: string): CustomDraftI
     issues.push({ path: `${path}.level`, message: "a grant level is a whole number from 1 to 20" });
   }
   if (block.requirements !== undefined) issues.push(...withPrefix(`${path}.requirements`, requirementIssues(block.requirements)));
+  if (block.switch !== undefined) {
+    issues.push(...switchNameIssues(block.switch, `${path}.switch`));
+    // A level-gated grant is registered by the leveling planner, which a switch
+    // flipping later does not reach; gate it on a requirement instead.
+    if (block.level !== undefined) {
+      issues.push({ path: `${path}.switch`, message: "a grant is gated by a level or a switch, not both; add the level as a requirement instead" });
+    }
+  }
   if (block.spell !== undefined) {
     const spell = block.spell;
     if (!isRecord(spell) || targetType !== "Spell") {

@@ -111,6 +111,8 @@ export interface GrantBlock {
   level?: number;
   requirements?: RequirementNode;
   spell?: SpellGrantOptions;
+  /** A named switch: the grant registers only while it is on. */
+  switch?: string;
 }
 
 /** B5/B3: a filter over what a choice may offer. */
