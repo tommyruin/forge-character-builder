@@ -524,10 +524,12 @@ function hitPointBox(s, prefix, x, y, width, height, { splitDice = false, readab
   const dice = s.section("HIT DICE", x, y, half, tallyHeight, { style: "caption" });
   if (splitDice) {
     // Maximum and spent side by side, each captioned above its rule.
-    const cell = (dice.width - 10) / 2;
+    // The maximum is wide enough for three classes' dice at 5.5pt ("12d10/4d8/4d6");
+    // the dice spent is a short write-in.
+    const [maxWidth, spentWidth] = [44, 24];
     const [fieldY, fieldH, captionSize] = readable ? [y + 13, 10, 4.2] : [y + 13, 11, 3.2];
-    s.captioned(`${prefix}_hd`, "MAX", dice.x + 3, fieldY, cell, fieldH, { align: "center", captionAlign: "center", size: 10, captionSize });
-    s.captioned(`${prefix}_hd_spent`, "SPENT", dice.x + 7 + cell, fieldY, cell, fieldH, { align: "center", captionAlign: "center", size: 10, captionSize });
+    s.captioned(`${prefix}_hd`, "MAX", dice.x + 3, fieldY, maxWidth, fieldH, { align: "center", captionAlign: "center", size: 10, captionSize });
+    s.captioned(`${prefix}_hd_spent`, "SPENT", dice.x + 3 + maxWidth + 6, fieldY, spentWidth, fieldH, { align: "center", captionAlign: "center", size: 10, captionSize });
   } else {
     s.text(`${prefix}_hd`, dice.x + 4, y + 13, dice.width - 8, 15, { align: "center", size: 12, box: "none" });
   }
@@ -596,12 +598,14 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   const style = EDITION[edition];
   const { doc, sheet: s } = await newDocument(C.pageWidth, C.pageHeight, style);
   masthead(s, edition, "CHARACTER", "details_character_name", "CHARACTER NAME", [
-    ["details_build", "CLASS & LEVEL", 289, 196, 0],
-    ["details_xp", "EXPERIENCE POINTS", 493, 87, 0],
-    ["details_background", "BACKGROUND", 289, 92, 1],
-    ["details_alignment", "ALIGNMENT", 389, 92, 1],
-    ["details_deity", "DEITY", 489, 44, 1],
-    ["details_player", "PLAYER", 541, 39, 1],
+    // Class and level takes the whole upper row, so a three-class build with
+    // its archetypes fits at the writer's smallest size.
+    ["details_build", "CLASS & LEVEL", 289, 291, 0],
+    ["details_background", "BACKGROUND", 289, 64, 1],
+    ["details_alignment", "ALIGNMENT", 358, 62, 1],
+    ["details_deity", "DEITY", 425, 56, 1],
+    ["details_player", "PLAYER", 486, 50, 1],
+    ["details_xp", "XP", 541, 39, 1],
   ]);
 
   // Column A: the six ability shields on a grey backing panel. Readable, the
@@ -631,7 +635,9 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   ABILITIES.forEach(([key], index) => {
     const y = savesTop - 14.4 - index * 12;
     s.check(`details_${key}_save_proficiency`, 102, y, 6.7);
-    s.text(`details_${key}_save_total`, 111, y - 1, 17, 9, { align: "center", size: 8 });
+    s.text(`details_${key}_save_total`, 111, y - 1, 17, 9, { align: "center", size: 8, box: "none" });
+    // The writer centres the number in its field, so the rule sits half a row under the field's middle.
+    s.rule(111, y + 3.5 - 6, 128, y + 3.5 - 6, RULE, 0.5);
     s.note(ABILITY_NAME[key], 131, y + 1, { size: saves.name });
   });
   s.text("details_saving_throws", 100, savesY + saves.notes[0], 97, saves.notes[1], { multiline: true, size: 5.5, box: "none" });
@@ -648,7 +654,8 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
     const y = skillsRows.first - index * skillsPitch;
     s.check(`details_${key}_proficiency`, 101, y, 6);
     s.check(`details_${key}_expertise`, 108, y, 6);
-    s.text(`details_${key}_total`, 115, y - 1, 15, 9, { align: "center", size: 8 });
+    s.text(`details_${key}_total`, 115, y - 1, 15, 9, { align: "center", size: 8, box: "none" });
+    s.rule(115, y + 3.5 - skillsPitch / 2, 130, y + 3.5 - skillsPitch / 2, RULE, 0.5);
     s.note(caption, 131, y + 0.5, { size: skillsRows.name });
     s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, 131 + s.textWidth(caption, "captionLight", skillsRows.name) + 2, y + 0.5, { size: skillsRows.ability, color: "lines" });
   });

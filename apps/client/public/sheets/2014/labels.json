@@ -48,14 +48,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -65,7 +57,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -73,7 +65,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -81,6 +73,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -1890,14 +1890,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -1907,7 +1899,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -1915,7 +1907,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -1923,6 +1915,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -2687,14 +2687,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -2704,7 +2696,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -2712,7 +2704,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -2720,6 +2712,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -3266,17 +3266,17 @@
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
+    "x": 270,
     "y": 518,
     "size": 3.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
@@ -3504,14 +3504,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -3521,7 +3513,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -3529,7 +3521,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -3537,6 +3529,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -4083,17 +4083,17 @@
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
+    "x": 270,
     "y": 518,
     "size": 3.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
@@ -4321,14 +4321,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -4338,7 +4330,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -4346,7 +4338,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -4354,6 +4346,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -5118,14 +5118,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -5135,7 +5127,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -5143,7 +5135,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -5151,6 +5143,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -5915,14 +5915,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -5932,7 +5924,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -5940,7 +5932,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -5948,6 +5940,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -6494,17 +6494,17 @@
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
+    "x": 270,
     "y": 502,
     "size": 4.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
@@ -6732,14 +6732,6 @@
     "color": "lines"
    },
    {
-    "text": "EXPERIENCE POINTS",
-    "x": 493,
-    "y": 724,
-    "size": 3.4,
-    "font": "captions",
-    "color": "lines"
-   },
-   {
     "text": "BACKGROUND",
     "x": 289,
     "y": 707,
@@ -6749,7 +6741,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 389,
+    "x": 358,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -6757,7 +6749,7 @@
    },
    {
     "text": "DEITY",
-    "x": 489,
+    "x": 425,
     "y": 707,
     "size": 3.4,
     "font": "captions",
@@ -6765,6 +6757,14 @@
    },
    {
     "text": "PLAYER",
+    "x": 486,
+    "y": 707,
+    "size": 3.4,
+    "font": "captions",
+    "color": "lines"
+   },
+   {
+    "text": "XP",
     "x": 541,
     "y": 707,
     "size": 3.4,
@@ -7311,17 +7311,17 @@
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 44
    },
    {
     "text": "SPENT",
-    "x": 259,
+    "x": 270,
     "y": 502,
     "size": 4.2,
     "font": "captions",
     "color": "lines",
     "align": "center",
-    "width": 35
+    "width": 24
    },
    {
     "text": "DEATH SAVES",
