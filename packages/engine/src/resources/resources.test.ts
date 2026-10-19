@@ -46,7 +46,7 @@ const byLabel = (resources: ResourcesDto, label: string): TrackerDto => {
   return found;
 };
 
-describe("an Aurora file that never used a tracker", () => {
+describe("a character file written elsewhere that never used a tracker", () => {
   it.each([["minimal", SAMPLE_CHARACTER], ["caster", SAMPLE_CASTER]])("round-trips the %s sample byte for byte after resources are read and a rest is taken", (_name, sample) => {
     const service = new CharacterService(undefined, library);
     service.importCharacterXml("Sample", sample);
