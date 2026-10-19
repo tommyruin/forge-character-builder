@@ -1,3 +1,11 @@
+import type {
+  ChoiceIdentityReportDto,
+  CustomContentDto,
+  CustomDraft,
+  CustomDraftMutationDto,
+  DmGrantDto,
+  PromotedCustomElementDto,
+} from "./custom.js";
 import type { QueueKind } from "./protocol.js";
 
 export type WireObject = Readonly<Record<string, unknown>>;
@@ -359,7 +367,36 @@ export interface EngineMethodMap {
   removeGrantedFeat: MethodContract<[id: string, request: { featId: string }], WireObject>;
   addGrantedAbilityScore: MethodContract<[id: string, request: { abilityElementIds: string[] }], WireObject>;
   removeGrantedAbilityScore: MethodContract<[id: string, request: { abilityElementId: string }], WireObject>;
-  getDmGrants: MethodContract<[id: string], WireList>;
+  /**
+   * Grants any feature-type element (book, homebrew, or the character's own
+   * pack) at the top level of the character: the general form of
+   * `addGrantedFeat` and `addGrantedAbilityScore`, which remain as wrappers.
+   */
+  addGrantedElement: MethodContract<[id: string, request: { elementId: string }], WireObject>;
+  removeGrantedElement: MethodContract<[id: string, request: { elementId: string }], WireObject>;
+  getDmGrants: MethodContract<[id: string], DmGrantDto[]>;
+  /** The character's own pack: its custom drafts and what the engine knows of each. */
+  getCustomContent: MethodContract<[id: string], CustomContentDto>;
+  /**
+   * Creates or updates a custom draft: stores it in the character file,
+   * compiles and installs it, and (for a new draft, unless `grant` is false)
+   * grants it. Editing a granted draft re-registers it and keeps the picks
+   * whose choice identity did not change.
+   */
+  saveCustomDraft: MethodContract<[id: string, request: { draft: CustomDraft; grant?: boolean }], CustomDraftMutationDto>;
+  /** Removes the draft's grant, its stored copy and its installed element. */
+  deleteCustomDraft: MethodContract<[id: string, request: { draftId: string }], CustomDraftMutationDto>;
+  /**
+   * What the client needs to copy a draft into a homebrew collection, keeping
+   * its id. The collection store is the client's, so the engine returns the
+   * element in that store's shape and does not write it.
+   */
+  promoteCustomDraft: MethodContract<[id: string, request: { draftId: string; source: string }], PromotedCustomElementDto>;
+  /**
+   * Which choices of `draft` would change identity against the stored draft of
+   * the same id, and whether any loaded character has picks under them.
+   */
+  getChoiceIdentityImpact: MethodContract<[id: string, request: { draft: CustomDraft }], ChoiceIdentityReportDto>;
   getCompanion: MethodContract<[id: string], WireObject | null>;
   setCompanionName: MethodContract<[id: string, request: { name: string }], WireObject>;
   setCompanionPortrait: MethodContract<[id: string, base64: string], WireObject>;
@@ -498,7 +535,14 @@ export const ENGINE_METHOD_NAMES = [
   "removeGrantedFeat",
   "addGrantedAbilityScore",
   "removeGrantedAbilityScore",
+  "addGrantedElement",
+  "removeGrantedElement",
   "getDmGrants",
+  "getCustomContent",
+  "saveCustomDraft",
+  "deleteCustomDraft",
+  "promoteCustomDraft",
+  "getChoiceIdentityImpact",
   "getCompanion",
   "setCompanionName",
   "setCompanionPortrait",
@@ -602,7 +646,14 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   removeGrantedFeat: implemented,
   addGrantedAbilityScore: implemented,
   removeGrantedAbilityScore: implemented,
+  addGrantedElement: implemented,
+  removeGrantedElement: implemented,
   getDmGrants: implemented,
+  getCustomContent: implemented,
+  saveCustomDraft: implemented,
+  deleteCustomDraft: implemented,
+  promoteCustomDraft: implemented,
+  getChoiceIdentityImpact: implemented,
   getCompanion: implemented,
   setCompanionName: implemented,
   setCompanionPortrait: implemented,
@@ -686,7 +737,14 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   removeGrantedFeat: "character-write",
   addGrantedAbilityScore: "character-write",
   removeGrantedAbilityScore: "character-write",
+  addGrantedElement: "character-write",
+  removeGrantedElement: "character-write",
   getDmGrants: "read-only",
+  getCustomContent: "read-only",
+  saveCustomDraft: "character-write",
+  deleteCustomDraft: "character-write",
+  promoteCustomDraft: "read-only",
+  getChoiceIdentityImpact: "read-only",
   getCompanion: "read-only",
   setCompanionName: "character-write",
   setCompanionPortrait: "character-write",

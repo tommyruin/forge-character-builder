@@ -622,7 +622,7 @@ describe("engine worker handlers", () => {
     // 78: added levelUpTo (level straight to a target level).
     // 79: added setItemAmount (stack quantity changes).
     // 81: added setItemPresentation / setItemCards (item cards and inventory notes).
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 81, engineVersion: ENGINE_VERSION } }]);
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 88, engineVersion: ENGINE_VERSION } }]);
   });
 });
 
