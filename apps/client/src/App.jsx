@@ -468,6 +468,8 @@ export default function App() {
                 <HomebrewEditor
                   ref={homebrewRef}
                   active={activeSection === 'homebrew'}
+                  characterId={openCharacterId}
+                  onOpenContent={() => selectSection('content')}
                   beforeLibraryMutation={beforeLibraryMutation}
                   libraryPhase={libraryPhase}
                   libraryProgress={libraryProgress}

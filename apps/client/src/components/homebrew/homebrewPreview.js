@@ -17,7 +17,7 @@ export function buildHomebrewPreviewElement(element, collection) {
           ],
         }
       : null,
-    ...(element.rawXml != null
+    ...(element.customDraft == null && element.rawXml != null
       ? {
           previewNote:
             "Raw XML is shown using the last structured form values until it is loaded.",

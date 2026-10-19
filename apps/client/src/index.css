@@ -8745,3 +8745,82 @@ html.fcb-busy-cursor * {
   font-size: 0.85rem;
   list-style: disc;
 }
+
+/* Homebrew packs: the New element template picker and the pack health card. */
+.fcb-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.fcb-template-card {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 60%, transparent);
+  color: var(--fcb-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fcb-template-card:hover {
+  border-color: var(--fcb-border);
+}
+
+.fcb-template-card.is-selected {
+  border-color: color-mix(in srgb, var(--fcb-primary) 62%, transparent);
+  background: color-mix(in srgb, var(--fcb-primary) 16%, transparent);
+}
+
+.fcb-template-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.fcb-template-card-summary {
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+}
+
+.fcb-template-soon {
+  padding: 1px 7px;
+  border: 1px solid var(--fcb-border);
+  border-radius: 999px;
+  color: var(--fcb-text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.fcb-pack-health-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 16px 16px;
+  list-style: none;
+}
+
+.fcb-pack-health-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--fcb-primary) 45%, transparent);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-primary) 8%, transparent);
+}
+
+.fcb-pack-health-item.is-note {
+  border-color: var(--fcb-border-soft);
+  background: transparent;
+  color: var(--fcb-text-muted);
+}

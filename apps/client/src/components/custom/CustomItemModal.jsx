@@ -189,6 +189,7 @@ export default function CustomItemModal({
   characterName,
   entry = null,
   initialTemplate = 'weapon',
+  pack = null,
   onClose,
   onSaved,
 }) {
@@ -315,7 +316,7 @@ export default function CustomItemModal({
     let result;
     try {
       const options = {};
-      if (!editing && template === 'gear') {
+      if (!editing && template === 'gear' && pack === null) {
         options.amount = quantity;
         if (notes.trim() !== '') options.notes = notes;
       }
@@ -493,7 +494,7 @@ export default function CustomItemModal({
         {template === 'gear' && (
           <>
             <div className="fcb-custom-row">
-              {!editing && (
+              {!editing && pack === null && (
                 <Field label="Quantity">
                   <NumberInput label="Quantity" min={1} max={999} value={quantity} onChange={(next) => setQuantity(next ?? 1)} />
                 </Field>
@@ -538,7 +539,7 @@ export default function CustomItemModal({
               <input type="checkbox" checked={draft.stackable === true} onChange={(event) => patch({ stackable: event.target.checked })} />
               Copies stack into one line
             </label>
-            {!editing && (
+            {!editing && pack === null && (
               <Field label="Notes">
                 <input className="fcb-input" aria-label="Notes" value={notes} onChange={(event) => setNotes(event.target.value)} />
               </Field>
@@ -658,7 +659,12 @@ export default function CustomItemModal({
           )}
         </div>
 
-        {!editing && (
+        {pack !== null && (
+          <p className="fcb-muted-copy text-xs">
+            This item is saved to the {pack.name} pack, so every character that uses the pack can have it.
+          </p>
+        )}
+        {!editing && pack === null && (
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" checked={promote} onChange={(event) => setPromote(event.target.checked)} />
             <span>Also save to a homebrew pack, so it can be added to other characters</span>
@@ -685,7 +691,7 @@ export default function CustomItemModal({
         )}
 
         <div className="fcb-toolbar justify-end">
-          {editing && (
+          {editing && pack === null && (
             <button type="button" className="fcb-button fcb-button-danger mr-auto" disabled={saving} onClick={() => setConfirmRemove(true)}>
               Delete custom item
             </button>
@@ -694,7 +700,15 @@ export default function CustomItemModal({
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" disabled={saving}>
-            {saving ? 'Saving…' : editing ? 'Save changes' : template === 'gear' ? `Add ${quantity > 1 ? `${quantity} ` : ''}to inventory` : 'Add to inventory'}
+            {saving
+              ? 'Saving…'
+              : editing
+                ? 'Save changes'
+                : pack
+                  ? `Add to ${pack.name}`
+                  : template === 'gear'
+                    ? `Add ${quantity > 1 ? `${quantity} ` : ''}to inventory`
+                    : 'Add to inventory'}
           </button>
         </div>
       </form>

@@ -45,7 +45,7 @@ There are currently no public roadmap-unsupported methods. Groups:
   `ingestUploaded`, `removeUploaded`, `patchHomebrew`,
   `prepareFastStartSnapshot`, `getFastStartSnapshotBuffer`
 - **Content reads**: `contentStatus`, `contentSources`, `equipmentCategories`,
-  `contentElements`, `contentElement`
+  `contentElements`, `contentElement`, `getElementSource`, `checkPackContent`
 - **Characters**: `createCharacter`, `getCharacter`, `deleteCharacter`,
   `setCharacterSources`, `getCharacterSources`, `setPortrait`, `removePortrait`,
   `updateDetails`, `setAbilities`, `getSelectionOptions`, `setSelection`,
@@ -63,7 +63,7 @@ There are currently no public roadmap-unsupported methods. Groups:
   `setCompanionName`
 - **Custom content**: `getCustomContent`, `getMissingGrants`, `saveCustomDraft`,
   `deleteCustomDraft`, `promoteCustomDraft`, `getChoiceIdentityImpact`,
-  `previewCustomItem`, `previewCustomSpell`
+  `previewCustomItem`, `previewCustomSpell`, `getPackChoiceImpact`
 - **Resources**: `getResources`, `setTrackerUsed`, `setResourceSwitch`,
   `restCharacter`, `saveManualTracker`, `deleteManualTracker`
 - **Inventory**: `getInventory`, `getItemBaseOptions`, `addItem`, `removeItem`,
@@ -631,6 +631,23 @@ the character or its last copy of an entry removes it.
   `picks` the picks currently made under them on every loaded character. The
   client warns before saving when `hasPicks` is true. Raising a count orphans
   nothing.
+
+- `getPackChoiceImpact({before, after})` -> `{changes, hasPicks}`: the same
+  report for an element a homebrew pack holds, from the two versions of its
+  draft (`before` null for a new element, which has no earlier identity to
+  lose). It counts the picks of every loaded character that carries the
+  element; no character needs to be open. Features and catalogue entries can
+  hold choices; spells, items, additions and replacements report nothing.
+- `getElementSource(id)` -> `{id, name, type, source, xml, reason?}` or `null`:
+  a loaded element as `<element>` XML, to start a house rule or a reflavour
+  from. `xml` is null, with a `reason`, for an element a copy would lose
+  structure from.
+- `checkPackContent({path, xml, overrides?})` -> `PackFindingDto[]`: checks a
+  pack's compiled file against the loaded library without loading it. Kinds:
+  `missing-grant`, `duplicate-id`, `unattachable`, `append-target`,
+  `invalid-requirements`, and `overrides` (a deliberate replacement, listed in
+  `overrides`, which is a note and not a fault). Each finding names the pack
+  element that carries it.
 
 ### Companion
 

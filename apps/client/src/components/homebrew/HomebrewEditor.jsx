@@ -7,53 +7,52 @@ import {
   useRef,
   useState,
 } from "react";
+import { compileCustomPack } from "@forge-cb/engine/custom";
 import { api } from "../../api";
 import { localStore } from "../../transport/localStore";
 import ContentRenderer from "../ContentRenderer";
 import ContentLoadingProgress from "../ContentLoadingProgress";
-import ElementForm from "./ElementForm";
+import CustomSpellModal from "../custom/CustomSpellModal";
+import { MY_HOMEBREW_NAME, writePromotedElement } from "../custom/customServices";
+import { spellDraftFromMissing } from "../custom/draftModel";
+import CharacterPackView, { characterEntryMeta } from "./CharacterPackView";
+import ElementEditor from "./ElementEditor";
+import NewElementDialog from "./NewElementDialog";
+import PackDetails from "./PackDetails";
+import PackHealthCard from "./PackHealthCard";
 import { buildHomebrewPreviewElement } from "./homebrewPreview";
-import Icon from '../Icon';
+import { checkPackHealth, problemsIn } from "./packHealth";
+import { CHARACTER_PACK_PREFIX, convertToFeature, elementForDraft, elementIdOf, elementMeta, migratePack } from "./packModel";
+import { makePackFormServices } from "./packServices";
+import Icon from "../Icon";
 import {
-  ELEMENT_TYPES,
-  RULESET_OPTIONS,
   buildCollectionXml,
   buildElementXml,
   collectionFileName,
   createCollection,
-  createElement,
   deriveAbbreviation,
   fileSlug,
-  resolveElementId,
-  normalizeCollectionRuleset,
   validateDraft,
 } from "./xmlBuilder";
 import { consolidateStrayCopies, removeCollection, saveCollection } from "./homebrewStorage";
 
-const ELEMENT_TYPE_GROUPS = [
-  { label: "Magic", types: ["Spell"] },
-  {
-    label: "Character options",
-    types: [
-      "Feat",
-      "Racial Trait",
-      "Class Feature",
-      "Archetype Feature",
-      "Background Feature",
-      "Language",
-    ],
-  },
-  {
-    label: "Equipment",
-    types: ["Weapon", "Armor", "Item", "Magic Item"],
-  },
-];
-
 let strayCopiesChecked = false;
 
-// In-app homebrew content editor. Collections are structured drafts
-// stored in IndexedDB (localStore.homebrew); Save & Ingest generates compatible XML and
-// uploads it under one stable stored path per collection, so re-saving edits in place.
+// The version of an element's draft that is in the library now, kept so a later edit to one of its
+// choices can be checked against the picks characters made under it. Only a draft that holds a
+// choice needs one.
+function withLoadedDraft(element) {
+  const holdsChoice = element.customDraft?.blocks?.some((block) => block.kind === "choice");
+  if (!holdsChoice) {
+    const { loadedDraft: _gone, ...rest } = element;
+    return rest;
+  }
+  return { ...element, loadedDraft: structuredClone(element.customDraft) };
+}
+
+// In-app homebrew pack editor. Packs are structured drafts stored in IndexedDB (localStore.homebrew,
+// the name the earlier collections used); Update builder generates compatible XML and uploads it
+// under one stable stored path per pack, so re-saving edits in place.
 const HomebrewEditor = forwardRef(function HomebrewEditor(
   {
     beforeLibraryMutation,
@@ -62,13 +61,17 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     libraryRevision = 0,
     onLibraryChanged,
     onLibraryMutationFinished,
+    characterId = null,
+    onOpenContent,
   },
   ref,
 ) {
-  const [collections, setCollections] = useState(null);
+  const [packs, setPacks] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [characterView, setCharacterView] = useState(false);
+  const [characterContent, setCharacterContent] = useState(null);
+  const [characterNotice, setCharacterNotice] = useState(null);
   const [selectedElementId, setSelectedElementId] = useState(null);
-  const [newType, setNewType] = useState(ELEMENT_TYPES[0]);
   const [busy, setBusy] = useState(false);
   const [ingestResult, setIngestResult] = useState(null);
   const [inspectorView, setInspectorView] = useState("xml");
@@ -77,9 +80,15 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
   const [draftSaveState, setDraftSaveState] = useState("saved");
   const [copyResult, setCopyResult] = useState(null);
   const [mobilePane, setMobilePane] = useState("library");
+  const [newElementOpen, setNewElementOpen] = useState(false);
+  const [showIssues, setShowIssues] = useState(false);
+  const [health, setHealth] = useState({ status: "idle", findings: [] });
+  const [identityReport, setIdentityReport] = useState(null);
+  const [riskPrompt, setRiskPrompt] = useState(null);
+  const [spellFix, setSpellFix] = useState(null);
   const draftRef = useRef(draft);
   const persistTimerRef = useRef(null);
-  const collectionRequestRef = useRef(0);
+  const packRequestRef = useRef(0);
   const observedLibraryRevision = useRef(libraryRevision);
 
   useEffect(() => {
@@ -90,19 +99,40 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     localStore
       .listHomebrew()
       .then((records) =>
-        setCollections(
-          [...records].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
+        setPacks(
+          records
+            .map(migratePack)
+            .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
         ),
       )
-      .catch(() => setCollections([]));
+      .catch(() => setPacks([]));
   }, []);
 
   useEffect(() => {
     refreshList();
   }, [refreshList]);
 
+  // The open character's own pack, for the packs list.
+  const refreshCharacterPack = useCallback(() => {
+    if (!characterId) {
+      setCharacterContent(null);
+      return Promise.resolve();
+    }
+    return Promise.resolve(api.characters.customContent?.(characterId))
+      .then((content) => setCharacterContent(content ?? { entries: [], problems: [] }))
+      .catch(() => setCharacterContent(null));
+  }, [characterId]);
+
+  useEffect(() => {
+    void refreshCharacterPack();
+  }, [refreshCharacterPack, libraryRevision]);
+
+  useEffect(() => {
+    if (!characterId) setCharacterView(false);
+  }, [characterId]);
+
   // Earlier versions stored a new copy of a collection on every save. Fold any such copies into
-  // each collection's single stored file, once per page load.
+  // each pack's single stored file, once per page load.
   useEffect(() => {
     if (strayCopiesChecked) return;
     strayCopiesChecked = true;
@@ -133,16 +163,10 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     }
   }, [refreshList]);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      flushPendingDraft,
-    }),
-    [flushPendingDraft],
-  );
+  useImperativeHandle(ref, () => ({ flushPendingDraft }), [flushPendingDraft]);
 
   // Debounce-persist the working draft so edits survive tab switches without an
-  // explicit save (Save & Ingest additionally regenerates + uploads the XML).
+  // explicit save (Update builder additionally regenerates + uploads the XML).
   useEffect(() => {
     if (!draft) return undefined;
     window.clearTimeout(persistTimerRef.current);
@@ -158,97 +182,149 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     refreshList();
   }, [libraryRevision, refreshList]);
 
-  const selectedElement =
-    draft?.elements.find((el) => el.localId === selectedElementId) ?? null;
+  const selectedElement = draft?.elements.find((el) => el.localId === selectedElementId) ?? null;
   const canRemoveContent = typeof api.content.remove === "function";
 
-  const collectionXml = useMemo(
-    () => (draft ? buildCollectionXml(draft) : ""),
-    [draft],
-  );
+  const collectionXml = useMemo(() => (draft ? buildCollectionXml(draft) : ""), [draft]);
 
   const elementXml = useMemo(
-    () =>
-      selectedElement && draft ? buildElementXml(selectedElement, draft) : "",
+    () => (selectedElement && draft ? buildElementXml(selectedElement, draft) : ""),
     [draft, selectedElement],
   );
 
   const previewElement = useMemo(
-    () =>
-      selectedElement && draft
-        ? buildHomebrewPreviewElement(selectedElement, draft)
-        : null,
+    () => (selectedElement && draft ? buildHomebrewPreviewElement(selectedElement, draft) : null),
     [draft, selectedElement],
   );
 
-  const inspectorXml =
-    xmlScope === "element" && selectedElement ? elementXml : collectionXml;
-  const copyStatus =
-    copyResult?.xml === inspectorXml ? copyResult.status : null;
+  const characterXml = useMemo(() => {
+    const drafts = (characterContent?.entries ?? []).map((entry) => entry.draft);
+    if (drafts.length === 0) return "";
+    try {
+      return compileCustomPack(drafts, { source: `${characterId}'s pack` });
+    } catch {
+      return "";
+    }
+  }, [characterContent, characterId]);
+
+  const inspectorXml = characterView
+    ? characterXml
+    : xmlScope === "element" && selectedElement
+      ? elementXml
+      : collectionXml;
+  const copyStatus = copyResult?.xml === inspectorXml ? copyResult.status : null;
 
   const updateDraft = useCallback((updater) => {
     setDraft((previous) => {
       if (!previous) return previous;
       const next = typeof updater === "function" ? updater(previous) : updater;
       if (!next || next === previous) return next;
-      return {
-        ...next,
-        hasUnloadedChanges: Boolean(previous.ingestedAt),
-      };
+      return { ...next, hasUnloadedChanges: Boolean(previous.ingestedAt) };
     });
     setDraftSaveState("saving");
   }, []);
 
-  const selectCollection = async (id) => {
-    if (!id || id === draftRef.current?.id) return;
-    const requestId = ++collectionRequestRef.current;
+  // Pack health, found by the engine from the pack's own file. It waits for the author to pause and
+  // ignores an answer for a pack that has changed since.
+  useEffect(() => {
+    if (!draft) {
+      setHealth({ status: "idle", findings: [] });
+      return undefined;
+    }
+    let alive = true;
+    setHealth((current) => ({ ...current, status: "checking" }));
+    const handle = window.setTimeout(() => {
+      checkPackHealth(api, draft)
+        .then((findings) => alive && setHealth({ status: "ready", findings }))
+        .catch(() => alive && setHealth({ status: "error", findings: [] }));
+    }, 700);
+    return () => {
+      alive = false;
+      window.clearTimeout(handle);
+    };
+  }, [draft, libraryRevision]);
+
+  // Picks characters made under the selected element's choices that an edit would clear.
+  const selectedDraft = selectedElement?.customDraft;
+  const selectedLoaded = selectedElement?.loadedDraft;
+  useEffect(() => {
+    if (!selectedDraft || !selectedLoaded || typeof api.content.packChoiceImpact !== "function") {
+      setIdentityReport(null);
+      return undefined;
+    }
+    let alive = true;
+    const handle = window.setTimeout(() => {
+      api.content
+        .packChoiceImpact(selectedLoaded, selectedDraft)
+        .then((report) => alive && setIdentityReport(report))
+        .catch(() => alive && setIdentityReport(null));
+    }, 400);
+    return () => {
+      alive = false;
+      window.clearTimeout(handle);
+    };
+  }, [selectedDraft, selectedLoaded]);
+
+  const resetSelection = () => {
+    setSelectedElementId(null);
+    setIngestResult(null);
+    setInspectorView("xml");
+    setXmlScope("collection");
+    setElementSearch("");
+    setDraftSaveState("saved");
+    setShowIssues(false);
+    setRiskPrompt(null);
+    setIdentityReport(null);
+    setMobilePane("editor");
+  };
+
+  const selectPack = async (value) => {
+    if (!value) return;
+    const requestId = ++packRequestRef.current;
     try {
       await flushPendingDraft();
-      const record = await localStore.getHomebrew(id);
-      if (!record || requestId !== collectionRequestRef.current) return;
+      if (value.startsWith(CHARACTER_PACK_PREFIX)) {
+        setCharacterNotice(null);
+        await refreshCharacterPack();
+        if (requestId !== packRequestRef.current) return;
+        setDraft(null);
+        setCharacterView(true);
+        resetSelection();
+        return;
+      }
+      if (value === draftRef.current?.id && !characterView) return;
+      const stored = await localStore.getHomebrew(value);
+      if (!stored || requestId !== packRequestRef.current) return;
+      const record = migratePack(stored);
+      // Opening an older collection brings it up to the current shape in the store too.
+      if (record !== stored) await localStore.putHomebrew(record);
+      setCharacterView(false);
       setDraft(record);
-      setSelectedElementId(null);
-      setIngestResult(null);
-      setInspectorView("xml");
-      setXmlScope("collection");
-      setElementSearch("");
-      setDraftSaveState("saved");
-      setMobilePane("editor");
+      resetSelection();
     } catch (error) {
-      setIngestResult({
-        ok: false,
-        errors: [{ where: "Storage", message: error.message }],
-      });
+      setIngestResult({ ok: false, errors: [{ where: "Storage", message: error.message }] });
     }
   };
 
-  const createNewCollection = async () => {
-    ++collectionRequestRef.current;
-    const record = createCollection("New Collection");
+  const createNewPack = async () => {
+    ++packRequestRef.current;
+    const record = createCollection("New Pack");
     try {
       await flushPendingDraft();
       await localStore.putHomebrew(record);
+      setCharacterView(false);
       setDraft(record);
-      setSelectedElementId(null);
-      setIngestResult(null);
-      setInspectorView("xml");
-      setXmlScope("collection");
-      setElementSearch("");
-      setDraftSaveState("saved");
-      setMobilePane("editor");
+      resetSelection();
       refreshList();
     } catch (error) {
-      setIngestResult({
-        ok: false,
-        errors: [{ where: "Storage", message: error.message }],
-      });
+      setIngestResult({ ok: false, errors: [{ where: "Storage", message: error.message }] });
     }
   };
 
-  // Collection meta edits. Slug and abbreviation auto-derive from the name until the user
-  // edits them directly or the collection is first ingested (the slug is the upload path,
-  // so it must stay stable once the engine holds a file under it).
-  const setCollectionField = (key, value) => {
+  // Pack detail edits. Slug and abbreviation auto-derive from the name until the user edits them
+  // directly or the pack is first loaded (the slug is the upload path, so it must stay stable once
+  // the engine holds a file under it).
+  const setPackField = (key, value) => {
     updateDraft((prev) => {
       if (!prev) return prev;
       const next = { ...prev, [key]: value };
@@ -268,32 +344,40 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     });
   };
 
-  const addElement = () => {
-    const element = createElement(newType);
-    updateDraft((prev) => ({
-      ...prev,
-      elements: [...prev.elements, element],
-    }));
-    setSelectedElementId(element.localId);
-    setInspectorView("preview");
-    setXmlScope("element");
-    setMobilePane("editor");
-  };
+  const addElement = useCallback(
+    (element) => {
+      updateDraft((prev) => {
+        const at = prev.elements.findIndex((entry) => entry.id && entry.id === element.id && entry.localId !== element.localId);
+        // An element with an id the pack already holds replaces it, as promotion does.
+        if (at === -1) return { ...prev, elements: [...prev.elements, element] };
+        return {
+          ...prev,
+          elements: prev.elements.map((entry, index) => (index === at ? { ...element, localId: entry.localId } : entry)),
+        };
+      });
+      setSelectedElementId(element.localId);
+      setInspectorView("preview");
+      setXmlScope("element");
+      setMobilePane("editor");
+    },
+    [updateDraft],
+  );
 
-  const changeElement = (next) => {
-    updateDraft((prev) => ({
-      ...prev,
-      elements: prev.elements.map((el) =>
-        el.localId === next.localId ? next : el,
-      ),
-    }));
-  };
+  const changeElement = useCallback(
+    (next) => {
+      updateDraft((prev) => ({
+        ...prev,
+        elements: prev.elements.map((el) => (el.localId === next.localId ? next : el)),
+      }));
+    },
+    [updateDraft],
+  );
 
   const removeElement = (localId) => {
     const element = draft.elements.find((el) => el.localId === localId);
     if (
       !window.confirm(
-        `Remove "${element?.name ?? "this element"}" from the collection? It disappears from the library the next time you update the builder.`,
+        `Remove "${element?.name ?? "this element"}" from the pack? It disappears from the library the next time you update the builder.`,
       )
     )
       return;
@@ -308,13 +392,54 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     }
   };
 
-  const saveAndIngest = async () => {
+  // What the pack health card's fixes do.
+  const applyFix = (finding, fix) => {
+    if (fix.action === "open") {
+      selectElement(fix.element);
+    } else if (fix.action === "convert") {
+      updateDraft((prev) => ({
+        ...prev,
+        elements: prev.elements.map((el) => (el.localId === fix.element.localId ? convertToFeature(el, prev) : el)),
+      }));
+    } else if (fix.action === "create-spell") {
+      setSpellFix({ finding });
+    }
+  };
+
+  // Elements whose choices an update would change, with the picks that would be cleared.
+  const collectRisks = async () => {
+    if (typeof api.content.packChoiceImpact !== "function") return [];
+    const risks = [];
+    for (const element of draftRef.current?.elements ?? []) {
+      if (!element.loadedDraft || !element.customDraft) continue;
+      if (JSON.stringify(element.loadedDraft) === JSON.stringify(element.customDraft)) continue;
+      try {
+        const report = await api.content.packChoiceImpact(element.loadedDraft, element.customDraft);
+        const changes = (report?.changes ?? []).filter((change) => change.picks.length > 0);
+        if (changes.length > 0) risks.push({ element, changes });
+      } catch {
+        // An element the check cannot read is reported by validation, not here.
+      }
+    }
+    return risks;
+  };
+
+  const saveAndIngest = async ({ skipRiskCheck = false } = {}) => {
     if (!draft) return;
     const errors = validateDraft(draft);
     if (errors.length) {
+      setShowIssues(true);
       setIngestResult({ ok: false, errors });
       return;
     }
+    if (!skipRiskCheck) {
+      const risks = await collectRisks();
+      if (risks.length > 0) {
+        setRiskPrompt(risks);
+        return;
+      }
+    }
+    setRiskPrompt(null);
     setBusy(true);
     setIngestResult(null);
     try {
@@ -325,42 +450,37 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
       await onLibraryChanged?.({ source: "homebrew", result });
 
       if (diagnostics.length === 0 && rejected.length === 0) {
-        // Ingested clean: freeze element ids (stable across renames / re-uploads).
+        // Ingested clean: freeze element ids (stable across renames / re-uploads) and remember the
+        // version of each element's draft that is now in the library.
         const locked = {
           ...draft,
           ingestedAt: Date.now(),
           hasUnloadedChanges: false,
-          elements: draft.elements.map((el) => ({
-            ...el,
-            id: resolveElementId(el, draft),
-            idLocked: true,
-          })),
+          elements: draft.elements.map((el) =>
+            withLoadedDraft({ ...el, id: elementIdOf(el, draft), idLocked: true }),
+          ),
         };
         await localStore.putHomebrew(locked);
         setDraft(locked);
         setDraftSaveState("saved");
+        setShowIssues(false);
         setIngestResult({ ok: true, count: result.elementCountAfterReload, warnings });
       } else {
         setIngestResult({ ok: false, diagnostics, rejected });
       }
       refreshList();
     } catch (e) {
-      setIngestResult({
-        ok: false,
-        errors: [{ where: "Ingest", message: e.message }],
-      });
+      setIngestResult({ ok: false, errors: [{ where: "Ingest", message: e.message }] });
     } finally {
       setBusy(false);
       onLibraryMutationFinished?.();
     }
   };
 
-  // Download of the generated collection XML.
+  // Download of the generated pack XML.
   const download = () => {
     if (!draft) return;
-    const url = URL.createObjectURL(
-      new Blob([buildCollectionXml(draft)], { type: "application/xml" }),
-    );
+    const url = URL.createObjectURL(new Blob([buildCollectionXml(draft)], { type: "application/xml" }));
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = collectionFileName(draft);
@@ -370,11 +490,11 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     URL.revokeObjectURL(url);
   };
 
-  const deleteCollection = async () => {
+  const deletePack = async () => {
     if (!draft) return;
     if (
       !window.confirm(
-        `Delete the collection "${draft.name}"? This removes the draft${draft.ingestedAt ? " and unloads its content from the library" : ""}. Characters using its elements will lose those picks.`,
+        `Delete the pack "${draft.name}"? This removes the draft${draft.ingestedAt ? " and unloads its content from the library" : ""}. Characters using its elements will lose those picks.`,
       )
     )
       return;
@@ -382,54 +502,60 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     try {
       await beforeLibraryMutation?.();
       let result = { characterReloadRequired: false };
-      // Always: a collection that loaded with advice never gets ingestedAt, but its file is stored.
+      // Always: a pack that loaded with advice never gets ingestedAt, but its file is stored.
       if (canRemoveContent) {
         result = await removeCollection(api, draft);
         api.content.clearCache();
       }
       await localStore.deleteHomebrew(draft.id);
       setDraft(null);
-      setSelectedElementId(null);
-      setIngestResult(null);
-      setInspectorView("xml");
-      setXmlScope("collection");
-      setElementSearch("");
-      setDraftSaveState("saved");
+      resetSelection();
       setMobilePane("library");
       refreshList();
       await onLibraryChanged?.({ source: "homebrew", result });
     } catch (e) {
-      setIngestResult({
-        ok: false,
-        errors: [{ where: "Delete", message: e.message }],
-      });
+      setIngestResult({ ok: false, errors: [{ where: "Delete", message: e.message }] });
     } finally {
       setBusy(false);
       onLibraryMutationFinished?.();
     }
   };
 
+  // Copies one of the character's entries into My homebrew; its id stays, so the character keeps it.
+  const copyCharacterEntry = async (entry) => {
+    setBusy(true);
+    setCharacterNotice(null);
+    try {
+      const promoted = await api.characters.promoteCustomDraft(characterId, entry.elementId, MY_HOMEBREW_NAME);
+      await writePromotedElement(localStore, promoted, MY_HOMEBREW_NAME);
+      refreshList();
+      setCharacterNotice(`${entry.draft.name} is in ${MY_HOMEBREW_NAME}. Open that pack and update the builder to share it.`);
+    } catch (e) {
+      setIngestResult({ ok: false, errors: [{ where: "Copy", message: e.message }] });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const visibleElements = useMemo(() => {
     const query = elementSearch.trim().toLowerCase();
     if (!draft || !query) return draft?.elements ?? [];
-    return draft.elements.filter((element) =>
-      `${element.name} ${element.type}`.toLowerCase().includes(query),
-    );
+    return draft.elements.filter((element) => `${element.name} ${element.type}`.toLowerCase().includes(query));
   }, [draft, elementSearch]);
 
-  const selectCollectionDetails = () => {
+  const selectPackDetails = () => {
     setSelectedElementId(null);
     setInspectorView("xml");
     setXmlScope("collection");
     setMobilePane("editor");
   };
 
-  const selectElement = (element) => {
+  function selectElement(element) {
     setSelectedElementId(element.localId);
     setXmlScope("element");
     setInspectorView("preview");
     setMobilePane("editor");
-  };
+  }
 
   const copyInspectorXml = async () => {
     try {
@@ -440,62 +566,93 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     }
   };
 
+  const problemCount = problemsIn(health.findings).length;
+  const spellServices = useMemo(
+    () =>
+      spellFix && draft
+        ? makePackFormServices({
+            api,
+            pack: draft,
+            kind: "spell",
+            onSave: async (spell) => addElement(elementForDraft(spell, draftRef.current ?? draft)),
+          })
+        : null,
+    [spellFix, draft, addElement],
+  );
+
   return (
     <div aria-labelledby="homebrew-editor-title">
       <div className="fcb-page-heading fcb-homebrew-heading">
         <h1 id="homebrew-editor-title">Homebrew</h1>
-        <p>Author your own spells, feats, items, and features.</p>
+        <p>Author your own spells, feats, items, and features in packs you can share.</p>
       </div>
 
       <HomebrewToolbar
-        collections={collections}
+        packs={packs}
         draft={draft}
+        characterId={characterId}
+        characterView={characterView}
         busy={busy}
         draftSaveState={draftSaveState}
-        onCollectionChange={selectCollection}
-        onNewCollection={createNewCollection}
-        onLoad={saveAndIngest}
+        onPackChange={selectPack}
+        onNewPack={createNewPack}
+        onLoad={() => saveAndIngest()}
         onDownload={download}
-        onDelete={deleteCollection}
+        onDelete={deletePack}
       />
 
       {busy ? (
-        <div
-          data-testid="hb-ingest-progress"
-          className="fcb-homebrew-ingest-result"
-        >
-          <ContentLoadingProgress
-            phase={libraryPhase}
-            progress={libraryProgress}
-            fallbackMessage="Preparing content update…"
-          />
+        <div data-testid="hb-ingest-progress" className="fcb-homebrew-ingest-result">
+          <ContentLoadingProgress phase={libraryPhase} progress={libraryProgress} fallbackMessage="Preparing content update…" />
         </div>
       ) : (
         <IngestResult result={ingestResult} />
       )}
 
+      {riskPrompt && (
+        <div role="alert" className="fcb-alert space-y-2" data-testid="hb-risk-prompt">
+          <p className="font-semibold">Updating the builder would clear picks characters already made.</p>
+          <ul className="list-disc pl-5 text-sm">
+            {riskPrompt.flatMap(({ element, changes }) =>
+              changes.map((change) => (
+                <li key={`${element.localId}-${change.blockId}`}>
+                  {element.name}: &ldquo;{change.name}&rdquo; {change.change === "removed" ? "is being removed" : `changes its ${change.fields.join(", ")}`}.
+                  Cleared: {change.picks.map((pick) => pick.elementName).join(", ")}.
+                </li>
+              )),
+            )}
+          </ul>
+          <div className="fcb-toolbar">
+            <button type="button" className="fcb-button" onClick={() => setRiskPrompt(null)}>
+              Keep editing
+            </button>
+            <button type="button" className="fcb-button fcb-button-danger" onClick={() => saveAndIngest({ skipRiskCheck: true })}>
+              Update and clear those picks
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={`fcb-homebrew-workspace is-mobile-${mobilePane}`}>
         <HomebrewNavigator
-          draft={draft}
+          draft={characterView ? null : draft}
+          characterView={characterView}
+          characterEntries={characterContent?.entries ?? []}
+          characterName={characterId}
           busy={busy}
+          problemCount={problemCount}
+          healthStatus={health.status}
           selectedElementId={selectedElementId}
           elementSearch={elementSearch}
           visibleElements={visibleElements}
-          newType={newType}
-          onCollectionDetails={selectCollectionDetails}
+          onPackDetails={selectPackDetails}
           onElementSearch={setElementSearch}
-          onElementType={setNewType}
-          onAddElement={addElement}
+          onAddElement={() => setNewElementOpen(true)}
           onSelectElement={selectElement}
           onRemoveElement={removeElement}
         />
 
-        <section
-          id="hb-main-editor"
-          className="fcb-homebrew-editor min-w-0"
-          data-testid="hb-main-editor"
-          aria-label="Homebrew editor"
-        >
+        <section id="hb-main-editor" className="fcb-homebrew-editor min-w-0" data-testid="hb-main-editor" aria-label="Homebrew editor">
           <button
             type="button"
             data-testid="hb-mobile-back"
@@ -504,39 +661,48 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
           >
             Back to elements
           </button>
-          {!draft && (
+          {!draft && !characterView && (
             <section className="fcb-panel">
               <div className="fcb-panel-body">
-                <p className="fcb-empty-copy">
-                  Create or select a collection to edit its contents.
-                </p>
+                <p className="fcb-empty-copy">Create or select a pack to edit its contents.</p>
               </div>
             </section>
           )}
-          {draft && !selectedElement && (
-            <CollectionDetails
-              draft={draft}
+          {characterView && (
+            <CharacterPackView
+              characterName={characterId}
+              content={characterContent}
               busy={busy}
-              onFieldChange={setCollectionField}
+              notice={characterNotice}
+              onCopy={copyCharacterEntry}
             />
           )}
-          {draft && selectedElement && (
-            <ElementForm
+          {draft && !characterView && !selectedElement && (
+            <div className="space-y-4">
+              <PackHealthCard pack={draft} health={health} busy={busy} onFix={applyFix} />
+              <PackDetails pack={draft} busy={busy} onFieldChange={setPackField} onOpenContent={onOpenContent} />
+            </div>
+          )}
+          {draft && !characterView && selectedElement && (
+            <ElementEditor
               key={selectedElement.localId}
               element={selectedElement}
-              collection={draft}
+              pack={draft}
+              api={api}
               disabled={busy}
+              showIssues={showIssues}
+              identityReport={identityReport}
               onChange={changeElement}
             />
           )}
         </section>
 
         <HomebrewInspector
-          draft={draft}
-          selectedElement={selectedElement}
+          draft={characterView ? { name: `${characterId}'s pack` } : draft}
+          selectedElement={characterView ? null : selectedElement}
           previewElement={previewElement}
-          inspectorView={inspectorView}
-          xmlScope={xmlScope}
+          inspectorView={characterView ? "xml" : inspectorView}
+          xmlScope={characterView ? "collection" : xmlScope}
           inspectorXml={inspectorXml}
           copyStatus={copyStatus}
           onViewChange={setInspectorView}
@@ -544,17 +710,34 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
           onCopy={copyInspectorXml}
         />
       </div>
+
+      {newElementOpen && draft && (
+        <NewElementDialog pack={draft} api={api} onClose={() => setNewElementOpen(false)} onCreate={addElement} />
+      )}
+
+      {spellFix && spellServices && (
+        <CustomSpellModal
+          key={spellFix.finding.missingId}
+          services={spellServices}
+          characterName={draft.name}
+          pack={{ name: draft.name }}
+          initialDraft={spellDraftFromMissing(spellFix.finding)}
+          onClose={() => setSpellFix(null)}
+        />
+      )}
     </div>
   );
 });
 
 function HomebrewToolbar({
-  collections,
+  packs,
   draft,
+  characterId,
+  characterView,
   busy,
   draftSaveState,
-  onCollectionChange,
-  onNewCollection,
+  onPackChange,
+  onNewPack,
   onLoad,
   onDownload,
   onDelete,
@@ -565,46 +748,46 @@ function HomebrewToolbar({
       ? "Changes not loaded into builder"
       : "Loaded into builder";
   const saveLabel =
-    draftSaveState === "saving"
-      ? "Saving…"
-      : draftSaveState === "error"
-        ? "Save failed"
-        : "Saved locally";
+    draftSaveState === "saving" ? "Saving…" : draftSaveState === "error" ? "Save failed" : "Saved locally";
+  const value = characterView ? `${CHARACTER_PACK_PREFIX}${characterId}` : (draft?.id ?? "");
 
   return (
-    <header
-      className="fcb-panel fcb-homebrew-toolbar"
-      role="toolbar"
-      aria-label="Homebrew collection actions"
-    >
+    <header className="fcb-panel fcb-homebrew-toolbar" role="toolbar" aria-label="Homebrew pack actions">
       <label className="fcb-homebrew-collection-picker">
-        <span className="fcb-homebrew-collection-label">Collection</span>
+        <span className="fcb-homebrew-collection-label">Pack</span>
         <select
-          data-testid="hb-collection-select"
+          data-testid="hb-pack-select"
           className="fcb-select"
-          value={draft?.id ?? ""}
-          onChange={(event) => onCollectionChange(event.target.value)}
-          disabled={busy || !collections}
-          aria-label="Collection"
+          value={value}
+          onChange={(event) => onPackChange(event.target.value)}
+          disabled={busy || !packs}
+          aria-label="Pack"
         >
           <option value="" disabled>
-            {collections ? "Select a collection" : "Loading collections…"}
+            {packs ? "Select a pack" : "Loading packs…"}
           </option>
-          {(collections ?? []).map((collection) => (
-            <option key={collection.id} value={collection.id}>
-              {collection.name} ({collection.elements?.length ?? 0})
-            </option>
-          ))}
+          {characterId && (
+            <optgroup label="On this character">
+              <option value={`${CHARACTER_PACK_PREFIX}${characterId}`}>{characterId}&apos;s pack</option>
+            </optgroup>
+          )}
+          <optgroup label="Homebrew packs">
+            {(packs ?? []).map((pack) => (
+              <option key={pack.id} value={pack.id}>
+                {pack.name} ({pack.elements?.length ?? 0})
+              </option>
+            ))}
+          </optgroup>
         </select>
       </label>
       <button
         type="button"
-        data-testid="hb-new-collection"
+        data-testid="hb-new-pack"
         className="fcb-button fcb-homebrew-new-collection"
-        onClick={onNewCollection}
+        onClick={onNewPack}
         disabled={busy}
-        aria-label="Create new collection"
-        title="Create new collection"
+        aria-label="Create new pack"
+        title="Create new pack"
       >
         <span className="fcb-homebrew-new-symbol" aria-hidden="true">
           +
@@ -617,16 +800,9 @@ function HomebrewToolbar({
         aria-live="polite"
         aria-label={`${saveLabel}${draft ? `. ${builderState}` : ""}`}
       >
-        <span
-          className={`fcb-homebrew-status-dot ${
-            draftSaveState === "error" ? "is-error" : ""
-          }`}
-          aria-hidden="true"
-        />
+        <span className={`fcb-homebrew-status-dot ${draftSaveState === "error" ? "is-error" : ""}`} aria-hidden="true" />
         <span className="fcb-homebrew-save-label">{saveLabel}</span>
-        {draft && (
-          <span className="fcb-homebrew-builder-state">{builderState}</span>
-        )}
+        {draft && <span className="fcb-homebrew-builder-state">{builderState}</span>}
       </div>
       <div className="fcb-homebrew-toolbar-actions">
         <button
@@ -636,11 +812,7 @@ function HomebrewToolbar({
           onClick={onLoad}
           disabled={busy || !draft}
         >
-          {busy
-            ? "Working…"
-            : draft?.ingestedAt
-              ? "Update builder"
-              : "Load into builder"}
+          {busy ? "Working…" : draft?.ingestedAt ? "Update builder" : "Load into builder"}
         </button>
         <button
           type="button"
@@ -648,14 +820,10 @@ function HomebrewToolbar({
           className="fcb-button fcb-homebrew-download-button"
           onClick={onDownload}
           disabled={busy || !draft}
-          aria-label="Download collection XML"
-          title="Download collection XML"
+          aria-label="Download pack XML"
+          title="Download pack XML"
         >
-          <svg
-            className="fcb-homebrew-download-icon"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
+          <svg className="fcb-homebrew-download-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3v12m0 0 5-5m-5 5-5-5" />
             <path d="M5 20h14" />
           </svg>
@@ -666,8 +834,8 @@ function HomebrewToolbar({
           className="fcb-icon-button fcb-homebrew-delete-collection"
           onClick={onDelete}
           disabled={busy || !draft}
-          aria-label="Delete collection"
-          title="Delete collection"
+          aria-label="Delete pack"
+          title="Delete pack"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 7h16" />
@@ -711,7 +879,7 @@ function IngestResult({ result }) {
       {result && !result.ok && (
         <div className="fcb-alert" role="alert">
           <p className="font-semibold">
-            Could not load this collection — fix these and retry:
+            Could not load this pack — fix these and retry:
           </p>
           <ul className="mt-1 list-disc pl-5">
             {(result.errors ?? []).map((error, index) => (
@@ -739,42 +907,47 @@ function IngestResult({ result }) {
 
 function HomebrewNavigator({
   draft,
+  characterView,
+  characterEntries,
+  characterName,
   busy,
+  problemCount,
+  healthStatus,
   selectedElementId,
   elementSearch,
   visibleElements,
-  newType,
-  onCollectionDetails,
+  onPackDetails,
   onElementSearch,
-  onElementType,
   onAddElement,
   onSelectElement,
   onRemoveElement,
 }) {
   return (
     <aside className="fcb-panel fcb-homebrew-library">
-      <nav aria-label="Elements in collection">
+      <nav aria-label="Elements in pack">
         <button
           type="button"
-          className={`fcb-homebrew-nav-row ${
-            draft && !selectedElementId ? "is-active" : ""
-          }`}
-          onClick={onCollectionDetails}
+          className={`fcb-homebrew-nav-row ${draft && !selectedElementId ? "is-active" : ""}`}
+          onClick={onPackDetails}
           disabled={!draft}
           aria-current={draft && !selectedElementId ? "page" : undefined}
           aria-controls="hb-main-editor"
         >
-          <span>Edit collection details</span>
-          <small>Name, description and source settings</small>
+          <span>Pack details and health</span>
+          <small>
+            {draft && healthStatus === "ready" && problemCount > 0
+              ? `${problemCount} to fix`
+              : "Name, source settings and checks"}
+          </small>
         </button>
         <div className="fcb-homebrew-library-heading">
           <div>
             <h2>Elements</h2>
-            <span>{draft?.elements.length ?? 0}</span>
+            <span>{characterView ? characterEntries.length : (draft?.elements.length ?? 0)}</span>
           </div>
           {draft && (
             <label className="fcb-homebrew-search-field">
-              <span>Search collection elements</span>
+              <span>Search pack elements</span>
               <input
                 type="search"
                 className="fcb-input normal-case"
@@ -787,42 +960,32 @@ function HomebrewNavigator({
           )}
         </div>
 
-        <div
-          id="hb-element-list"
-          data-testid="hb-element-list"
-          className="fcb-homebrew-element-list"
-        >
-          {!draft && (
-            <p className="fcb-empty-copy">
-              Select a collection to browse its elements.
-            </p>
+        <div id="hb-element-list" data-testid="hb-element-list" className="fcb-homebrew-element-list">
+          {!draft && !characterView && <p className="fcb-empty-copy">Select a pack to browse its elements.</p>}
+          {characterView && characterEntries.length === 0 && <p className="fcb-empty-copy">{characterName}&apos;s pack is empty.</p>}
+          {characterView &&
+            characterEntries.map((entry) => (
+              <div className="fcb-homebrew-element-row" key={entry.elementId}>
+                <span className="fcb-homebrew-nav-row">
+                  <span>{entry.draft.name}</span>
+                  <small>{characterEntryMeta(entry)}</small>
+                </span>
+              </div>
+            ))}
+          {draft?.elements.length === 0 && <p className="fcb-empty-copy">No elements yet. Use + Element to add one.</p>}
+          {draft && draft.elements.length > 0 && visibleElements.length === 0 && (
+            <p className="fcb-empty-copy">No elements match this search.</p>
           )}
-          {draft?.elements.length === 0 && (
-            <p className="fcb-empty-copy">
-              No elements yet. Choose a type below to add one.
-            </p>
-          )}
-          {draft &&
-            draft.elements.length > 0 &&
-            visibleElements.length === 0 && (
-              <p className="fcb-empty-copy">
-                No elements match this search.
-              </p>
-            )}
           {visibleElements.map((element) => (
             <div className="fcb-homebrew-element-row" key={element.localId}>
               <button
                 type="button"
-                className={`fcb-homebrew-nav-row ${
-                  selectedElementId === element.localId ? "is-active" : ""
-                }`}
+                className={`fcb-homebrew-nav-row ${selectedElementId === element.localId ? "is-active" : ""}`}
                 onClick={() => onSelectElement(element)}
-                aria-current={
-                  selectedElementId === element.localId ? "page" : undefined
-                }
+                aria-current={selectedElementId === element.localId ? "page" : undefined}
               >
                 <span>{element.name || `New ${element.type}`}</span>
-                <small>{element.type}</small>
+                <small>{elementMeta(element)}</small>
               </button>
               <button
                 type="button"
@@ -845,24 +1008,6 @@ function HomebrewNavigator({
       </nav>
 
       <div className="fcb-homebrew-add-element">
-        <select
-          data-testid="hb-element-type"
-          className="fcb-select"
-          value={newType}
-          onChange={(event) => onElementType(event.target.value)}
-          disabled={busy || !draft}
-          aria-label="New element type"
-        >
-          {ELEMENT_TYPE_GROUPS.map((group) => (
-            <optgroup key={group.label} label={group.label}>
-              {group.types.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
         <button
           type="button"
           data-testid="hb-add-element"
@@ -875,100 +1020,6 @@ function HomebrewNavigator({
         </button>
       </div>
     </aside>
-  );
-}
-
-function CollectionDetails({ draft, busy, onFieldChange }) {
-  return (
-    <section className="fcb-panel">
-      <header className="fcb-panel-header">
-        <div>
-          <h2 className="fcb-panel-title">Collection details</h2>
-          <p className="fcb-panel-subtitle">
-            Edit the source information shared by every element.
-          </p>
-        </div>
-      </header>
-      <div className="fcb-panel-body space-y-4">
-        <label className="fcb-field-label">
-          Name
-          <input
-            data-testid="hb-collection-name"
-            className="fcb-input normal-case"
-            value={draft.name}
-            onChange={(event) => onFieldChange("name", event.target.value)}
-            disabled={busy}
-          />
-        </label>
-        <label className="fcb-field-label">
-          Description
-          <textarea
-            rows={8}
-            className="fcb-textarea normal-case"
-            value={draft.description}
-            onChange={(event) =>
-              onFieldChange("description", event.target.value)
-            }
-            disabled={busy}
-            placeholder="What this collection contains (shown on its Source element)"
-          />
-        </label>
-        <label className="fcb-field-label">
-          Rules version
-          <select
-            data-testid="hb-collection-ruleset"
-            className="fcb-select"
-            value={normalizeCollectionRuleset(draft.ruleset)}
-            onChange={(event) =>
-              onFieldChange("ruleset", event.target.value)
-            }
-            disabled={busy}
-          >
-            {RULESET_OPTIONS.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs normal-case tracking-normal text-[var(--fcb-text-faint)]">
-            Sets the default rules version for entries in this collection.
-          </span>
-        </label>
-        <details className="fcb-homebrew-advanced">
-          <summary>Advanced source settings</summary>
-          <div className="fcb-homebrew-advanced-grid">
-            <label className="fcb-field-label">
-              Abbreviation
-              <input
-                className="fcb-input"
-                value={draft.abbreviation}
-                onChange={(event) =>
-                  onFieldChange("abbreviation", event.target.value)
-                }
-                disabled={busy}
-              />
-            </label>
-            <label className="fcb-field-label">
-              File slug
-              <input
-                className="fcb-input"
-                value={draft.slug}
-                onChange={(event) => onFieldChange("slug", event.target.value)}
-                disabled={busy || Boolean(draft.ingestedAt)}
-                title={
-                  draft.ingestedAt
-                    ? "Locked after the first load: the slug is the upload path."
-                    : undefined
-                }
-              />
-            </label>
-          </div>
-        </details>
-        <p className="fcb-homebrew-file-path">
-          Download file: <code>{collectionFileName(draft)}</code>
-        </p>
-      </div>
-    </section>
   );
 }
 
@@ -1026,7 +1077,7 @@ function HomebrewInspector({
               disabled={!selectedElement}
             >
               <option value="element">Current element</option>
-              <option value="collection">Entire collection</option>
+              <option value="collection">Entire pack</option>
             </select>
           </label>
         )}
@@ -1034,7 +1085,7 @@ function HomebrewInspector({
       <div className="fcb-homebrew-inspector-body">
         {!draft && (
           <p className="fcb-empty-copy">
-            Select a collection to inspect its generated XML.
+            Select a pack to inspect its generated XML.
           </p>
         )}
         {draft && inspectorView === "preview" && previewElement && (

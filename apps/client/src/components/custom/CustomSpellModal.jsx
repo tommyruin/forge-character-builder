@@ -556,7 +556,7 @@ export default function CustomSpellModal({
         )}
 
         <div className="fcb-toolbar justify-end">
-          {editing && (
+          {editing && pack === null && (
             <button type="button" className="fcb-button fcb-button-danger mr-auto" disabled={saving} onClick={() => setConfirmRemove(true)}>
               Delete spell
             </button>

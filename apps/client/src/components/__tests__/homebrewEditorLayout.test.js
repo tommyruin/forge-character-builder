@@ -5,10 +5,10 @@ const editorSource = readFileSync(
   new URL('../homebrew/HomebrewEditor.jsx', import.meta.url),
   'utf8',
 );
-const elementFormSource = readFileSync(
-  new URL('../homebrew/ElementForm.jsx', import.meta.url),
-  'utf8',
-);
+const source = (name) => readFileSync(new URL(`../homebrew/${name}`, import.meta.url), 'utf8');
+const elementEditorSource = source('ElementEditor.jsx');
+const packDetailsSource = source('PackDetails.jsx');
+const newElementSource = source('NewElementDialog.jsx');
 const xmlBuilderSource = readFileSync(
   new URL('../homebrew/xmlBuilder.js', import.meta.url),
   'utf8',
@@ -19,16 +19,14 @@ const styles = readFileSync(
 );
 
 const existingTestIds = [
-  'hb-new-collection',
-  'hb-collection-name',
-  'hb-collection-ruleset',
+  'hb-new-pack',
+  'hb-pack-name',
+  'hb-pack-ruleset',
   'hb-save-ingest',
   'hb-download',
   'hb-ingest-result',
-  'hb-element-type',
   'hb-add-element',
   'hb-element-list',
-  'hb-element-name',
   'hb-element-ruleset',
 ];
 
@@ -70,7 +68,7 @@ describe('Homebrew Editor workspace layout', () => {
     );
   });
 
-  it('keeps collection actions on one row at the reported medium viewport', () => {
+  it('keeps pack actions on one row at the reported medium viewport', () => {
     const mediumStyles = styles.match(
       /@media \(max-width:\s*1100px\)\s*\{([\s\S]*?)\n\}/,
     )?.[1];
@@ -94,15 +92,11 @@ describe('Homebrew Editor workspace layout', () => {
   });
 
   it('uses compact accessible toolbar controls below 1000px', () => {
-    expect(editorSource).toContain('aria-label="Collection"');
-    expect(editorSource).toContain('aria-label="Create new collection"');
-    expect(editorSource).toContain(
-      'aria-label="Download collection XML"',
-    );
-    expect(editorSource).toContain('aria-label="Delete collection"');
-    expect(editorSource).not.toContain(
-      'aria-label="More collection actions"',
-    );
+    expect(editorSource).toContain('aria-label="Pack"');
+    expect(editorSource).toContain('aria-label="Create new pack"');
+    expect(editorSource).toContain('aria-label="Download pack XML"');
+    expect(editorSource).toContain('aria-label="Delete pack"');
+    expect(editorSource).not.toContain('aria-label="More pack actions"');
     expect(editorSource).toContain('fcb-homebrew-download-label');
 
     const compactStyles = styles.match(
@@ -144,22 +138,26 @@ describe('Homebrew Editor workspace layout', () => {
     );
   });
 
-  it('makes collection navigation and search-oriented fields explicit', () => {
-    expect(editorSource).toContain('Edit collection details');
-    expect(editorSource).toContain('Search collection elements');
-    expect(elementFormSource).toContain('Stat name');
-    expect(elementFormSource).toContain('Bonus value');
-    expect(elementFormSource).toContain('Search loaded elements');
+  it('makes pack navigation and search-oriented fields explicit', () => {
+    expect(editorSource).toContain('Pack details and health');
+    expect(editorSource).toContain('Search pack elements');
+    expect(elementEditorSource).toContain('made with the earlier editor');
+    expect(newElementSource).toContain('Find a book element');
   });
 
-  it('exposes collection defaults and advanced entry ruleset overrides', () => {
-    expect(editorSource).toContain('Rules version');
-    expect(editorSource).toContain('RULESET_OPTIONS');
+  it('calls the editor a pack, not a collection, wherever the author reads it', () => {
+    for (const text of [editorSource, packDetailsSource, elementEditorSource, newElementSource]) {
+      expect(text).not.toMatch(/>\s*[^<{]*\bcollection\b[^<{]*</i);
+    }
+    expect(xmlBuilderSource).not.toContain('Use collection setting');
+  });
+
+  it('exposes pack defaults and advanced entry ruleset overrides', () => {
+    expect(packDetailsSource).toContain('Rules version');
+    expect(packDetailsSource).toContain('RULESET_OPTIONS');
     expect(xmlBuilderSource).toContain('Both 2014 and 2024');
-    expect(elementFormSource).toContain('Rules version override');
-    expect(elementFormSource).toContain(
-      'Rules-version overrides must be edited in raw XML',
-    );
+    expect(elementEditorSource).toContain('Rules version');
+    expect(elementEditorSource).toContain('ELEMENT_RULESET_OPTIONS');
   });
 
   it('renders a live draft preview without waiting for ingestion', () => {
@@ -182,7 +180,7 @@ describe('Homebrew Editor workspace layout', () => {
   });
 
   it('preserves the existing Homebrew Editor test IDs', () => {
-    const homebrewSources = `${editorSource}\n${elementFormSource}`;
+    const homebrewSources = `${editorSource}\n${packDetailsSource}\n${elementEditorSource}`;
 
     for (const testId of existingTestIds) {
       expect(homebrewSources).toContain(`data-testid="${testId}"`);

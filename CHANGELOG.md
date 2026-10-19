@@ -90,6 +90,34 @@ project uses [Semantic Versioning](https://semver.org/).
   (1d6 at level 1, 2d6 at level 5). A bonus or a limited use can follow a
   count, and the sheet text prints either with {{scale:name}}.
 
+- Homebrew collections are now packs. A pack has a name, text, abbreviation,
+  author, release date, playtest flag and rules version, and the packs list
+  includes the open character's own pack beside My homebrew and your other
+  packs. Packs saved before this open as they were, with nothing lost.
+- New element is a template picker: boon or blessing, curse or injury,
+  transformation, feature, feat, spell, weapon, armor or shield, magic weapon
+  or armor, wondrous or worn item, gear, language, proficiency, sense or damage
+  type, deity, optional rule, alignment and weapon property. Advanced covers
+  changing a book element, adding to one, reflavouring one, and a custom type
+  written as XML. Species, subspecies, class, subclass, background and
+  companion are listed as coming next and start as XML.
+- A pack element is edited with the same blocks as a character's custom
+  feature: ability scores, bonuses, grants (which can be tied to a switch),
+  player picks, requirements, tags, sheet text, limited uses and scale values.
+  Spells and items use their own forms. An element made with the earlier editor
+  opens as its XML with a notice.
+- Pack health lists grants to things that are not in your library, ids defined
+  twice, Background Features nothing can attach, additions to elements that are
+  not loaded and requirements the builder cannot read, each with the element
+  that carries it. A missing spell can be created from the card, and an
+  unattachable Background Feature can be converted to a feature.
+- Editing a choice in a pack element that characters have picked under shows
+  which picks would be cleared, and Update builder asks before clearing them.
+- A pack can hold languages, proficiencies, senses, deities, optional rules,
+  alignments, weapon properties, new base weapons and armor, additions to book
+  elements and replacements of them.
+- A grant in a custom feature can be gated on a switch, like a bonus.
+
 ### Changed
 
 - The 2024 and Hybrid character pages are redesigned: one Armor Class box holds
@@ -121,6 +149,13 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A homebrew pack's languages, proficiencies, feats and ability score
+  improvements now appear in Manage's Additional items; before, only the
+  builder's own books had them.
+- A rule gated on a level and an element is removed when the element is
+  removed.
+- A new base weapon and a new base armor no longer share an id with the magic
+  item templates, so a magic item is no longer read as the wrong kind.
 - Add a spell now adds the spell to the caster you pick. Before, every spell
   landed in Additional Spells whatever the dialog said; it now appears among
   that caster's spells, ready without preparing, and casts with that caster's
