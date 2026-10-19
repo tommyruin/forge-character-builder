@@ -1,7 +1,7 @@
 import type { SpellResourceDto } from "@forge-cb/api";
 import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection, SheetSpellListSection } from "./model.js";
 import type { LayoutRun } from "./card-layout.js";
-import { measuredTextWidth, winAnsiText } from "./text.js";
+import { READABLE_MIN_FONT_SIZE, measuredTextWidth, winAnsiText } from "./text.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote } from "./attack-notes.js";
 import { decodeBase64 } from "../platform.js";
 import {
@@ -1708,7 +1708,7 @@ function spellTextWidth(text: string, font: PDFFont, size: number): number {
 function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: number): string {
   // The tolerance absorbs rounding when `size` was scaled to fit `width` exactly.
   if (spellTextWidth(text, font, size) <= width + 0.01) return text;
-  let used = spellTextWidth("...", font, size);
+  let used = spellTextWidth("\u2026", font, size);
   if (used > width) return "";
   let prefix = "";
   for (const character of text) {
@@ -1716,15 +1716,15 @@ function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: nu
     if (used > width) break;
     prefix += character;
   }
-  return `${prefix}...`;
+  return `${prefix}\u2026`;
 }
 
 /**
- * A spell cell's name and free-cast marker sizes. The name prints at 7pt with
- * the marker after it at 5.5pt when both fit the cell. Otherwise the marker
- * first shrinks into the width the name leaves (to 4.5pt), then the name gives
- * up size (to 5pt); only when neither fits at its minimum is the marker cut,
- * keeping at least half the cell, and the name ellipsized into the rest.
+ * A spell cell's name and free-cast marker. The name prints at 7pt with the
+ * marker after it at 5.5pt when both fit the cell. Otherwise the name gives
+ * up size, down to the readable floor, to make room; only when neither fits
+ * there is the marker cut (keeping at least half the cell) and then the name,
+ * each with an ellipsis. The spell's card carries the full name.
  */
 function fitSpellCell(
   name: string,
@@ -1733,25 +1733,19 @@ function fitSpellCell(
   cellWidth: number,
 ): { name: string; size: number; marker: string; markerSize: number; markerGap: number } {
   const markerGap = 2.5;
+  const markerSize = 5.5;
   // Clear of the cell's right border.
   const width = cellWidth - 1;
   const nameFull = spellTextWidth(name, font, 7);
   let marker = rawMarker;
-  let markerSize = 5.5;
   if (marker !== "") {
-    const markerFull = spellTextWidth(marker, font, 5.5);
-    const free = width - nameFull - markerGap;
-    if (free < markerFull) {
-      markerSize = Math.max(4.5, 5.5 * free / markerFull);
-      const markerMin = markerFull * markerSize / 5.5;
-      const nameMin = nameFull * 5 / 7;
-      if (width - markerGap - markerMin < nameMin) {
-        marker = ellipsizeSpellText(marker, font, markerSize, Math.max(width - markerGap - nameMin, width / 2 - markerGap));
-      }
+    const nameMin = nameFull * READABLE_MIN_FONT_SIZE / 7;
+    if (width - markerGap - spellTextWidth(marker, font, markerSize) < nameMin) {
+      marker = ellipsizeSpellText(marker, font, markerSize, Math.max(width - markerGap - nameMin, width / 2 - markerGap));
     }
   }
   const room = width - (marker === "" ? 0 : markerGap + spellTextWidth(marker, font, markerSize));
-  const size = nameFull <= room ? 7 : Math.max(5, 7 * room / nameFull);
+  const size = nameFull <= room ? 7 : Math.max(READABLE_MIN_FONT_SIZE, 7 * room / nameFull);
   return { name: ellipsizeSpellText(name, font, size, room), size, marker, markerSize, markerGap };
 }
 

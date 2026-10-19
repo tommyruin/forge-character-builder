@@ -282,18 +282,22 @@ describe("spell cells", () => {
     expect(texts.mock.calls.some(([text]) => text === "•")).toBe(false);
   });
 
-  it("gives a free-cast marker the width the name leaves before cutting it", async () => {
+  it("gives a free-cast marker the width the name leaves, cutting it only at the readable floor", async () => {
     const pdf = await writeCharacterSheetPdfWithTemplateBundle(page([
-      // Bless in the band's first cell; the long name in the next row's first cell.
+      // Bless in the band's first cell; the long names in the next row's cells.
       { name: "Bless", prepared: true, alwaysPrepared: false, usage: "[Magic Initiate (Cleric) - 1/Long Rest]" },
       { name: "Command", prepared: true, alwaysPrepared: false },
+      { name: "Protection from Poison", prepared: true, alwaysPrepared: false, usage: "[Magic Initiate (Cleric) - 1/Long Rest]" },
       { name: "Protection from Evil and Good", prepared: true, alwaysPrepared: false, usage: "[Magic Initiate (Cleric) - 1/Long Rest]" },
     ]), localTemplateBundle("2024"));
     const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
     const content = await (await doc.getPage(1)).getTextContent();
-    const strings = content.items.flatMap((item) => ("str" in item ? [item.str] : []));
-    expect(strings.filter((text) => text === "[Magic Initiate (Cleric) - 1 free cast/LR]")).toHaveLength(2);
-    expect(strings).toContain("Bless");
-    expect(strings).toContain("Protection from Evil and Good");
+    const text = content.items.flatMap((item) => ("str" in item ? [item.str] : [])).join("|");
+    // Room enough: the name shrinks (no lower than 5.5pt) and the marker prints whole.
+    expect(text).toContain("Bless");
+    expect(text.match(/\[Magic Initiate \(Cleric\) - 1 free cast\/LR\]/g)).toHaveLength(2);
+    expect(text).toContain("Protection from Poison");
+    // Not even at the floor: the whole name stays and the marker is cut.
+    expect(text).toMatch(/Protection from Evil and Good.{0,3}\[Magic Initiate[^|]*\u2026/);
   });
 });

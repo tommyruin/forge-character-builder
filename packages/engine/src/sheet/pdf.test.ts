@@ -70,16 +70,16 @@ describe("character sheet PDF writer", () => {
     const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
     const content = await (await doc.getPage(1)).getTextContent();
     const items = content.items.filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item);
-    const markers = items.filter((item) => item.str === "1 free cast/LR");
-    expect(markers).toHaveLength(5);
+    // A name cut to the readable floor shares the marker's size, so a viewer
+    // reads the pair as one run: "<name>… 1 free cast/LR".
+    const cells = items.filter((item) => /^\d Wondrous/.test(item.str));
+    expect(cells).toHaveLength(5);
     for (let i = 0; i < 5; i++) {
       const column = i < 2 ? i + 1 : (i - 2) % 3;
-      const name = items.find((item) => item.str.startsWith(`${i} Wondrous`))!;
-      expect(name.str).toMatch(/\.\.\.$/);
-      const marker = markers.find((item) => Math.abs(item.transform[5] - name.transform[5]) < 2 &&
-        item.transform[4] >= name.transform[4] + name.width - 0.01 && item.transform[4] - name.transform[4] - name.width < 4)!;
-      expect(marker, JSON.stringify({ name, markers })).toBeDefined();
-      expect(marker.transform[4] + marker.width).toBeLessThanOrEqual([228, 417, 582][column]! + 0.01);
+      const cell = cells.find((item) => item.str.startsWith(`${i} Wondrous`))!;
+      expect(cell.str).toMatch(/\u2026 1 free cast\/LR$/);
+      expect(cell.height).toBeGreaterThanOrEqual(5.5 - 0.01);
+      expect(cell.transform[4] + cell.width).toBeLessThanOrEqual([228, 417, 582][column]! + 0.01);
     }
   }, 120_000);
 
