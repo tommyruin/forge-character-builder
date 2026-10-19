@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { compileCustomElement, customEntryIssues } from '@forge-cb/engine/custom';
 import CustomItemModal from '../CustomItemModal';
 import { makeCustomServices } from '../customServices';
+import { makeItemDraft } from '../draftModel';
 import { $, allByLabel, buttonByText, byLabel, choose, click, group, mount, option, radio, settle, type } from './harness';
 
 const CHARACTER = 'ilyana';
@@ -215,12 +216,29 @@ describe('the custom item dialog: other templates', () => {
     expect($('[data-testid="item-attack-preview"]')).toBeNull();
     await type(byLabel('Name'), 'Hearth Pendant');
     await choose(byLabel('Worn on'), 'ring');
-    await type(byLabel('Limited uses or charges'), '3 charges, regains all at dawn');
+    await click(buttonByText('+ Charges or limited uses'));
+    const charges = group('Charges');
+    await type(charges.querySelector('[aria-label="Uses"]'), '3');
+    await choose(charges.querySelector('[aria-label="Recharges on"]'), 'dawn');
     expect(document.body.textContent).toContain('While worn, also');
     await click(buttonByText('Add to inventory'));
     await settle();
-    expect(savedDraft(api)).toMatchObject({ template: 'worn', slot: 'ring', uses: '3 charges, regains all at dawn' });
+    const saved = savedDraft(api);
+    expect(saved).toMatchObject({ template: 'worn', slot: 'ring' });
+    expect(saved.trackers).toEqual([
+      expect.objectContaining({ label: 'Charges', unit: 'charges', max: { kind: 'number', value: 3 }, recharge: 'dawn' }),
+    ]);
+    expect(saved.uses).toBeUndefined();
     expect(api.characters.previewCustomItem).not.toHaveBeenCalled();
+  });
+
+  it('keeps the text of an item made before charges were tracked, until the author tracks them', async () => {
+    const api = fakeApi();
+    const draft = { ...makeItemDraft('worn'), name: 'Old Pendant', slot: 'neck', uses: '3 charges, regains all at dawn' };
+    await open(api, { entry: { kind: 'item', draft, elementId: draft.id, type: 'Magic Item', section: 'other', granted: true, installed: true } });
+    expect(byLabel('Limited uses or charges').value).toBe('3 charges, regains all at dawn');
+    await click(buttonByText('+ Charges or limited uses'));
+    expect(byLabel('Limited uses or charges')).toBeNull();
   });
 
   it('takes plain gear on one line: a quantity, a weight and notes', async () => {

@@ -1388,6 +1388,15 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     setSpellAlias: (id: string, spellId: string, alias: { name?: string; note?: string }) =>
       mutateDetail(id, "setSpellAlias", [id, spellId, alias]),
     missingGrants: (id: string) => invoke(getClient(), "getMissingGrants", id),
+    // Trackers and switches. A spend or a rest is an ordinary undoable edit that reaches storage.
+    resources: (id: string) => invoke(getClient(), "getResources", id),
+    setTrackerUsed: (id: string, trackerId: string, used: number) =>
+      mutateDetail(id, "setTrackerUsed", [id, { trackerId, used }]),
+    setResourceSwitch: (id: string, name: string, on: boolean) =>
+      mutateDetail(id, "setResourceSwitch", [id, { name, on }]),
+    rest: (id: string, kind: "short" | "long") => mutateDetail(id, "restCharacter", [id, { kind }]),
+    saveManualTracker: (id: string, tracker: AnyRecord) => mutateDetail(id, "saveManualTracker", [id, { tracker }]),
+    deleteManualTracker: (id: string, trackerId: string) => mutateDetail(id, "deleteManualTracker", [id, { trackerId }]),
     removeSpell: (id: string, spellId: string) => mutateDetail(id, "removeGrantedSpell", [id, { spellId }]),
     addFeat: (id: string, featId: string) => mutateDetail(id, "addGrantedFeat", [id, { featId }]),
     removeFeat: (id: string, featId: string) => mutateDetail(id, "removeGrantedFeat", [id, { featId }]),

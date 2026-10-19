@@ -50,6 +50,7 @@ function fakeClient() {
     "setCompanionPortrait", "removeCompanionPortrait",
     "getDmGrants", "getCustomContent", "saveCustomDraft", "deleteCustomDraft", "promoteCustomDraft",
     "getChoiceIdentityImpact", "previewCustomItem", "previewCustomSpell", "getMissingGrants", "setSpellAlias", "setItemDetails",
+    "getResources", "setTrackerUsed", "setResourceSwitch", "restCharacter", "saveManualTracker", "deleteManualTracker",
     "getInventory", "getItemBaseOptions", "addItem", "removeItem", "setItemAmount", "extractItem", "equipItem",
     "setItemStorage", "attuneItem", "setItemPresentation", "setItemCards", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
     "setAttackVisibility", "moveAttack", "deleteAttack", "generateSheet",
@@ -547,6 +548,28 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["setSpellAlias", "Ada", "ID_SPELL_ONE", { name: "Moonlit Ward", note: "Silver." }]);
     await api.characters.missingGrants("Ada");
     expect(calls).toContainEqual(["getMissingGrants", "Ada"]);
+    expect(api.characters.canUndo("Ada")).toBe(true);
+  });
+
+  it("reads resources and spends, switches, rests and keeps trackers as undoable edits", async () => {
+    const { client, calls } = fakeClient();
+    const store = fakeStore();
+    const api = createEngineApi({ client, store });
+    await api.characters.create("Ada");
+
+    await api.characters.resources("Ada");
+    expect(calls).toContainEqual(["getResources", "Ada"]);
+    await api.characters.setTrackerUsed("Ada", "moonbeam", 1);
+    expect(calls).toContainEqual(["setTrackerUsed", "Ada", { trackerId: "moonbeam", used: 1 }]);
+    await api.characters.setResourceSwitch("Ada", "Moonlit Form", true);
+    expect(calls).toContainEqual(["setResourceSwitch", "Ada", { name: "Moonlit Form", on: true }]);
+    await api.characters.rest("Ada", "long");
+    expect(calls).toContainEqual(["restCharacter", "Ada", { kind: "long" }]);
+    const tracker = { id: "boots", label: "Winged Boots", max: { kind: "number", value: 30 }, unit: "minutes", recharge: "day" };
+    await api.characters.saveManualTracker("Ada", tracker);
+    expect(calls).toContainEqual(["saveManualTracker", "Ada", { tracker }]);
+    await api.characters.deleteManualTracker("Ada", "boots");
+    expect(calls).toContainEqual(["deleteManualTracker", "Ada", { trackerId: "boots" }]);
     expect(api.characters.canUndo("Ada")).toBe(true);
   });
 

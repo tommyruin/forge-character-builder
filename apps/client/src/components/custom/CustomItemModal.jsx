@@ -13,6 +13,8 @@ import { customEntryIssues } from '@forge-cb/engine/custom';
 import Modal from '../Modal';
 import GrantBlock, { GRANT_TYPE_OPTIONS } from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
+import TrackerBlock from './TrackerBlock';
+import { makeTracker } from './trackerModel';
 import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
 import {
   DAMAGE_TYPE_OPTIONS,
@@ -56,6 +58,7 @@ function tidy(draft) {
     if (value === undefined || value === '' || (typeof value === 'string' && value.trim() === '')) delete next[key];
   }
   if (next.bonus === 0) delete next.bonus;
+  if (Array.isArray(next.trackers) && next.trackers.length === 0) delete next.trackers;
   if (next.attunement !== true) delete next.attunement;
   if (next.stackable !== true) delete next.stackable;
   if (next.weapon) {
@@ -244,7 +247,7 @@ export default function CustomItemModal({
   const issues = useMemo(() => [...customEntryIssues(tidied), ...castAbilityIssues(tidied)], [tidied]);
   const castDefault = defaultCastAbility(tidied, characterAbility);
   const blockIssues = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`blocks[${index}]`)) : []);
-  const topIssues = attempted ? issues.filter((issue) => !issue.path.startsWith('blocks[')) : [];
+  const topIssues = attempted ? issues.filter((issue) => !issue.path.startsWith('blocks[') && !issue.path.startsWith('trackers[')) : [];
   const summary = summarizeItem(tidied);
 
   // The attack row waits for the author to pause, and only runs for a draft the engine accepts.
@@ -290,6 +293,9 @@ export default function CustomItemModal({
     }
     patch({ base: { id: option.id, name: option.name, ...(isShieldOption(option) ? { shield: true } : {}) } });
   };
+
+  const trackers = draft.trackers ?? [];
+  const setTrackers = (next) => patch({ trackers: next.length > 0 ? next : undefined });
 
   const chips = [
     { id: 'bonus', label: 'Bonus', add: () => addBlock(makeModifier({ target: 'ac:misc' })) },
@@ -572,18 +578,41 @@ export default function CustomItemModal({
                 </button>
               ))}
             </div>
-            <Field label="Limited uses or charges" className="mt-3">
-              <input
-                className="fcb-input"
-                aria-label="Limited uses or charges"
-                placeholder="7 charges, regains 1d6+1 at dawn"
-                value={draft.uses ?? ''}
-                onChange={(event) => patch({ uses: event.target.value })}
-              />
-            </Field>
-            {draft.uses?.trim() && (
-              <p className="fcb-muted-copy text-xs">Printed with the item's text. Tracking the uses comes later.</p>
-            )}
+            <div className="mt-3 space-y-3">
+              {trackers.map((tracker, index) => (
+                <TrackerBlock
+                  key={tracker.id}
+                  tracker={tracker}
+                  literalOnly
+                  ariaLabel={trackers.length > 1 ? `Charges ${index + 1}` : 'Charges'}
+                  issues={attempted ? issues.filter((issue) => issue.path.startsWith(`trackers[${index}]`)) : []}
+                  onChange={(next) => setTrackers(trackers.map((entry, at) => (at === index ? next : entry)))}
+                  onRemove={() => setTrackers(trackers.filter((_, at) => at !== index))}
+                />
+              ))}
+              <button
+                type="button"
+                className="fcb-mode-button"
+                onClick={() =>
+                  setTrackers([
+                    ...trackers,
+                    makeTracker({ label: trackers.length === 0 ? 'Charges' : '', unit: 'charges', max: { kind: 'number', value: 7 }, recharge: 'dawn' }),
+                  ])
+                }
+              >
+                + Charges or limited uses
+              </button>
+              {trackers.length === 0 && draft.uses?.trim() && (
+                <Field label="Limited uses or charges (text only)">
+                  <input
+                    className="fcb-input"
+                    aria-label="Limited uses or charges"
+                    value={draft.uses ?? ''}
+                    onChange={(event) => patch({ uses: event.target.value })}
+                  />
+                </Field>
+              )}
+            </div>
           </div>
         )}
 

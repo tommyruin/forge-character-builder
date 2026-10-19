@@ -8597,6 +8597,134 @@ html.fcb-busy-cursor * {
   list-style: none;
 }
 
+/* Manage > Resources: tracker cards, their pips and counters, and the switches row. */
+.fcb-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fcb-resource-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 70%, transparent);
+}
+
+.fcb-resource-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.fcb-resource-source {
+  color: var(--fcb-text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.fcb-resource-actions {
+  display: flex;
+  flex: 1 1 100%;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fcb-resource-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fcb-resource-pip {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--fcb-primary);
+  border-radius: 50%;
+  background: var(--fcb-primary);
+  cursor: pointer;
+}
+
+.fcb-resource-pip.is-spent {
+  border-color: var(--fcb-border);
+  background: transparent;
+}
+
+.fcb-resource-pip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.fcb-resource-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fcb-resource-counter strong {
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+.fcb-resource-switches {
+  padding-top: 4px;
+  border-top: 1px solid var(--fcb-border-soft);
+}
+
+.fcb-resource-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fcb-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--fcb-border);
+  border-radius: 999px;
+  background: var(--fcb-bg);
+  cursor: pointer;
+}
+
+.fcb-switch.is-on {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 35%, var(--fcb-bg));
+}
+
+.fcb-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fcb-text-muted);
+  transition: transform var(--fcb-transition);
+}
+
+.fcb-switch.is-on .fcb-switch-knob {
+  background: var(--fcb-primary);
+  transform: translateX(22px);
+}
+
+.fcb-switch:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .fcb-custom-readout {
   margin-top: 6px;
   color: var(--fcb-text-muted);

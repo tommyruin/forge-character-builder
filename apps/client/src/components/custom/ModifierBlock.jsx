@@ -28,17 +28,21 @@ const VALUE_KINDS = [
 
 // A number, or a value the engine reads off the finished character (proficiency bonus,
 // an ability modifier, a level ...).
-export function ValueEditor({ value, onChange, label, numberOnly = false }) {
+export function ValueEditor({ value, onChange, label, numberOnly = false, scales = [] }) {
   const kind = value.kind;
+  // A die cannot be added to a bonus: only the draft's count-valued scale values are offered.
+  const counts = scales.filter((scale) => scale.kind === 'number');
+  const kinds = counts.length > 0 ? [...VALUE_KINDS, { id: 'scale', label: 'A scale value' }] : VALUE_KINDS;
   const setKind = (next) => {
     if (next === 'number') onChange({ kind: 'number', value: 1 });
     else if (next === 'reference') onChange({ kind: 'reference', ref: referenceOptions[0].id });
+    else if (next === 'scale') onChange({ kind: 'scale', scale: counts[0].id });
     else onChange({ kind: 'classLevel', className: '' });
   };
   return (
     <div className="fcb-custom-value" role="group" aria-label={label}>
       {!numberOnly && (
-        <SelectInput label={`${label} is`} value={kind} onChange={setKind} options={VALUE_KINDS} />
+        <SelectInput label={`${label} is`} value={kind} onChange={setKind} options={kinds} />
       )}
       {kind === 'number' && (
         <NumberInput
@@ -56,6 +60,24 @@ export function ValueEditor({ value, onChange, label, numberOnly = false }) {
             value={value.ref}
             onChange={(ref) => onChange(compact({ ...value, ref }))}
             options={referenceOptions}
+          />
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={value.negate === true}
+              onChange={(event) => onChange(compact({ ...value, negate: event.target.checked ? true : undefined }))}
+            />
+            Subtract it
+          </label>
+        </>
+      )}
+      {kind === 'scale' && (
+        <>
+          <SelectInput
+            label={`${label} scale value`}
+            value={value.scale}
+            onChange={(scale) => onChange(compact({ ...value, scale }))}
+            options={counts.map((scale) => ({ id: scale.id, label: scale.name || 'Unnamed scale value' }))}
           />
           <label className="flex items-center gap-2 text-xs">
             <input
@@ -138,6 +160,8 @@ export default function ModifierBlock({
   allowedGroups,
   issues,
   ariaLabel = 'Bonus',
+  scales = [],
+  switches = [],
 }) {
   const target = modifierTarget(block.target);
   const groups = targetGroups(allowedGroups);
@@ -203,6 +227,7 @@ export default function ModifierBlock({
           <ValueEditor
             label="Amount"
             numberOnly={calculation}
+            scales={scales}
             value={block.value}
             onChange={(value) => emit({ value })}
           />
@@ -250,7 +275,7 @@ export default function ModifierBlock({
           {block.cap !== undefined && (
             <div className="mt-2">
               <span className="fcb-field-label">At most</span>
-              <ValueEditor label="Limit" value={block.cap} onChange={(cap) => emit({ cap })} />
+              <ValueEditor label="Limit" scales={scales} value={block.cap} onChange={(cap) => emit({ cap })} />
             </div>
           )}
         </div>
@@ -286,9 +311,17 @@ export default function ModifierBlock({
               className="fcb-input"
               aria-label="Switch name"
               placeholder="No switch"
+              list={switches.length > 0 ? `switch-names-${block.id}` : undefined}
               value={block.gates?.switch ?? ''}
               onChange={(event) => setGates({ switch: event.target.value })}
             />
+            {switches.length > 0 && (
+              <datalist id={`switch-names-${block.id}`}>
+                {switches.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            )}
           </Field>
         </div>
       </details>

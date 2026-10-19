@@ -15,6 +15,7 @@ import AttackComputationDetails from './manage/AttackComputationDetails';
 import Icon from '../Icon';
 import { isExplicitDevelopmentMode } from '../clientMode.js';
 import SheetSettingsPanel from './manage/SheetSettingsPanel';
+import ResourcesPanel from './manage/ResourcesPanel';
 
 const SUB_TABS = [
   ['character', 'Character'],
@@ -25,6 +26,7 @@ const SUB_TABS = [
   ['notes', 'Notes'],
   ['allies', 'Allies & Organizations'],
   ['attacks', 'Attacks'],
+  ['resources', 'Resources'],
   ['sheet', 'Sheet options'],
 ];
 
@@ -520,6 +522,8 @@ export default function ManageTab() {
               </div>
             </section>
           )}
+          {subTab === 'resources' && <ResourcesPanel />}
+
           {subTab === 'sheet' && <SheetSettingsPanel />}
 
           {subTab === 'attacks' && (
@@ -538,6 +542,7 @@ export default function ManageTab() {
             subTab !== 'optional-rules' &&
             subTab !== 'features' &&
             subTab !== 'sources' &&
+            subTab !== 'resources' &&
             subTab !== 'sheet' && (
             <div className="mt-6">
               <button

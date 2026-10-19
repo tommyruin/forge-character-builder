@@ -4,6 +4,7 @@
 // defined once. Authors never see a stat key or an expression, so every id that reaches the
 // screen goes through a label from the engine's catalogue.
 
+import { describeScale, describeTracker, trackerPreviewText } from './trackerModel.js';
 import {
   CUSTOM_ABILITIES,
   CUSTOM_MODIFIER_TARGETS,
@@ -170,17 +171,18 @@ export function parseUsage(text) {
 
 const signed = (value) => (value < 0 ? `-${Math.abs(value)}` : `+${value}`);
 
-export function describeValue(value) {
+export function describeValue(value, scales = []) {
   if (!value) return '';
   if (value.kind === 'number') return String(value.value);
   const sign = value.negate ? '-' : '';
   if (value.kind === 'classLevel') return `${sign}${value.className} level`;
+  if (value.kind === 'scale') return `${sign}${scales.find((scale) => scale.id === value.scale)?.name || 'a scale value'}`;
   return `${sign}${valueReference(value.ref)?.label ?? value.ref}`;
 }
 
-const signedValue = (value) => {
+const signedValue = (value, scales) => {
   if (value.kind === 'number') return signed(value.value);
-  return value.negate ? `- ${describeValue({ ...value, negate: false })}` : `+ ${describeValue(value)}`;
+  return value.negate ? `- ${describeValue({ ...value, negate: false }, scales)}` : `+ ${describeValue(value, scales)}`;
 };
 
 function describeGates(gates) {
@@ -197,23 +199,23 @@ function describeGates(gates) {
   return parts.length > 0 ? ` (${parts.join(', ')})` : '';
 }
 
-export function describeModifier(block) {
+export function describeModifier(block, scales = []) {
   const target = modifierTarget(block.target);
   const label = target?.label ?? block.target;
-  const cap = block.cap ? `, at most ${describeValue(block.cap)}` : '';
+  const cap = block.cap ? `, at most ${describeValue(block.cap, scales)}` : '';
   let line;
   switch (block.mode) {
     case 'setBase':
-      line = `${label}: base becomes ${describeValue(block.value)}`;
+      line = `${label}: base becomes ${describeValue(block.value, scales)}`;
       break;
     case 'bestOf':
-      line = `${label} ${signedValue(block.value)}${cap} (does not stack with other bonuses in its group)`;
+      line = `${label} ${signedValue(block.value, scales)}${cap} (does not stack with other bonuses in its group)`;
       break;
     case 'raiseMax':
-      line = `${label} raised by ${describeValue(block.value)}`;
+      line = `${label} raised by ${describeValue(block.value, scales)}`;
       break;
     default:
-      line = `${label} ${signedValue(block.value)}${cap}`;
+      line = `${label} ${signedValue(block.value, scales)}${cap}`;
   }
   if (block.addAbilities?.length) {
     line += ` plus ${block.addAbilities.map((ability) => ABILITY_LABELS[ability]).join(' and ')} modifier`;
@@ -255,15 +257,18 @@ export function describeChoice(block) {
   return `Player picks ${block.count} ${what}${filter}${options}${block.name ? ` for "${block.name}"` : ''}${optional}${describeGates({ level: block.level, requirements: block.requirements })}`;
 }
 
-export function describeBlock(block) {
-  if (block.kind === 'modifier') return describeModifier(block);
+export function describeBlock(block, scales = []) {
+  if (block.kind === 'modifier') return describeModifier(block, scales);
   if (block.kind === 'grant') return describeGrant(block);
   return describeChoice(block);
 }
 
 // The lines of the "in plain words" panel: every block, then the sheet-only extras.
 export function summarizeDraft(draft) {
-  const lines = draft.blocks.map(describeBlock);
+  const scales = draft.scales ?? [];
+  const lines = draft.blocks.map((block) => describeBlock(block, scales));
+  for (const scale of scales) lines.push(describeScale(scale));
+  for (const tracker of draft.trackers ?? []) lines.push(`Limited uses — ${describeTracker(tracker, scales)}`);
   if (draft.sheet?.usage) lines.push(`Limited uses: ${draft.sheet.usage}`);
   if (draft.requirements) lines.push(`Needs: ${describeRequirements(draft.requirements)}`);
   return lines;
@@ -279,7 +284,9 @@ export function sheetPreview(draft) {
   const sheet = draft.sheet ?? {};
   const action = SHEET_ACTION_OPTIONS.find((option) => option.id === (sheet.action ?? 'none'))?.text ?? '';
   const spellUsage = draft.blocks.find((block) => block.kind === 'grant' && block.spell?.usage)?.spell.usage;
-  const usage = sheet.usage?.trim() || spellUsage || '';
+  const scales = draft.scales ?? [];
+  const trackerUsage = (draft.trackers ?? []).map((tracker) => trackerPreviewText(tracker, scales)).join('; ');
+  const usage = sheet.usage?.trim() || trackerUsage || spellUsage || '';
   const text = (sheet.text?.trim() ? sheet.text : draft.description).trim().replace(/\s*\n+\s*/g, ' ');
   return {
     hidden: sheet.show === false,
@@ -416,7 +423,8 @@ export function summarizeItem(draft) {
   }
   if (draft.template === 'armor' && draft.bonus) lines.push(`Armor class +${draft.bonus}`);
   if (draft.attunement) lines.push('Requires attunement');
-  if (draft.uses?.trim()) lines.push(`Limited uses: ${draft.uses.trim()}`);
+  for (const tracker of draft.trackers ?? []) lines.push(`Charges — ${describeTracker(tracker)}`);
+  if (draft.uses?.trim() && !(draft.trackers ?? []).length) lines.push(`Limited uses: ${draft.uses.trim()}`);
   const when = draft.attunement ? 'while attuned' : draft.template === 'worn' ? 'while worn' : 'while wielded';
   for (const block of draft.blocks) lines.push(`${describeBlock(block)} (${when})`);
   return lines;

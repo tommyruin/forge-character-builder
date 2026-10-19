@@ -20,12 +20,13 @@ import ChoiceBlock from './ChoiceBlock';
 import GrantBlock from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
 import RequirementsBuilder from './RequirementsBuilder';
+import ScaleBlock from './ScaleBlock';
 import SheetPresentation from './SheetPresentation';
 import TagPicker from './TagPicker';
-import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
+import TrackerBlock from './TrackerBlock';
+import { Field, Issues, RemoveButton, Segmented } from './fields';
 import {
   ABILITY_TARGET_GROUPS,
-  RECHARGES,
   castAbilityIssues,
   compactGates,
   defaultCastAbility,
@@ -38,8 +39,8 @@ import {
   summarizeDraft,
   targetGroups,
   typeLabel,
-  usageText,
 } from './draftModel';
+import { makeScale, makeTracker, switchNamesIn, trackerFromUsage } from './trackerModel';
 
 const SHOWS_UNDER_OPTIONS = CUSTOM_SHOWS_UNDER.map((option) => ({ id: option.id, label: option.label }));
 
@@ -71,6 +72,19 @@ function withSwitch(blocks, name) {
   });
 }
 
+// An entry made before limited uses were tracked holds them as a sheet usage line ("2/Short Rest").
+// Opening it moves that line into a tracker, which writes the same line back when it is saved.
+function withTrackedUsage(draft) {
+  const parsed = parseUsage(draft.sheet?.usage);
+  if (!parsed || (draft.trackers ?? []).length > 0) return draft;
+  const { usage: _usage, ...sheet } = draft.sheet;
+  return {
+    ...draft,
+    trackers: [trackerFromUsage(parsed, draft.name)],
+    ...(Object.keys(sheet).length > 0 ? { sheet } : { sheet: undefined }),
+  };
+}
+
 function identityMessage(change) {
   const what = change.change === 'removed' ? 'is being removed' : `changes its ${change.fields.join(', ')}`;
   const picks = change.picks.map((pick) => pick.elementName).join(', ');
@@ -87,7 +101,7 @@ export default function CustomFeatureModal({
 }) {
   const editing = entry !== null;
   const [draft, setDraft] = useState(() => {
-    if (entry) return structuredClone(entry.draft);
+    if (entry) return withTrackedUsage(structuredClone(entry.draft));
     const fresh = createCustomDraft('feature', '');
     return { ...fresh, showsUnder: initialShowsUnder };
   });
@@ -102,7 +116,9 @@ export default function CustomFeatureModal({
   const [partial, setPartial] = useState(null);
   const [switchName, setSwitchName] = useState(() => sharedSwitch(entry?.draft.blocks ?? []) ?? '');
   const [switchOn, setSwitchOn] = useState(() => sharedSwitch(entry?.draft.blocks ?? []) !== undefined);
-  const [usesOn, setUsesOn] = useState(() => Boolean(entry?.draft.sheet?.usage));
+  // The switches the character's other entries already use, so a second feature reuses a name
+  // instead of misspelling it.
+  const [knownSwitches, setKnownSwitches] = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -110,6 +126,18 @@ export default function CustomFeatureModal({
       .casters()
       .then((names) => {
         if (alive) setCasters(names ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [services]);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve(services.list?.())
+      .then((content) => {
+        if (alive) setKnownSwitches(switchNamesIn(content?.entries));
       })
       .catch(() => {});
     return () => {
@@ -132,9 +160,14 @@ export default function CustomFeatureModal({
   const issues = useMemo(() => [...customDraftIssues(draft), ...castAbilityIssues(draft)], [draft]);
   const castDefault = defaultCastAbility(draft, characterAbility);
   const blockIssues = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`blocks[${index}]`)) : []);
-  const topIssues = attempted ? issues.filter((issue) => !issue.path.startsWith('blocks[')) : [];
-  const usage = draft.sheet?.usage ?? '';
-  const parsedUsage = parseUsage(usage);
+  const topIssues = attempted
+    ? issues.filter((issue) => !issue.path.startsWith('blocks[') && !issue.path.startsWith('trackers[') && !issue.path.startsWith('scales['))
+    : [];
+  const trackers = draft.trackers ?? [];
+  const scales = draft.scales ?? [];
+  const switchChoices = [...new Set([...knownSwitches, ...(switchOn && switchName.trim() ? [switchName.trim()] : [])])];
+  const trackerIssuesAt = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`trackers[${index}]`)) : []);
+  const scaleIssuesAt = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`scales[${index}]`)) : []);
 
   const patch = (next) => setDraft((current) => ({ ...current, ...next }));
   const setBlocks = (blocks) => patch({ blocks });
@@ -149,12 +182,8 @@ export default function CustomFeatureModal({
   };
 
   const setSheet = (sheet) => patch({ sheet });
-  const setUsage = (text) => {
-    const sheet = { ...draft.sheet };
-    if (text.trim() === '') delete sheet.usage;
-    else sheet.usage = text;
-    setSheet(Object.keys(sheet).length > 0 ? sheet : undefined);
-  };
+  const setTrackers = (next) => patch({ trackers: next.length > 0 ? next : undefined });
+  const setScales = (next) => patch({ scales: next.length > 0 ? next : undefined });
 
   const chips = [
     { id: 'ability', label: 'Ability score', add: () => addBlock(makeModifier()) },
@@ -167,9 +196,12 @@ export default function CustomFeatureModal({
     { id: 'language', label: 'Language', add: () => addBlock(makeGrant('Language')) },
     { id: 'choice', label: 'Player picks', add: () => addBlock(makeChoice()) },
     { id: 'bonus', label: 'Other bonus', add: () => addBlock(makeModifier({ target: 'ac:misc' })) },
-    ...(usesOn
-      ? []
-      : [{ id: 'uses', label: 'Limited uses', add: () => { setUsesOn(true); setUsage(usageText(1, 'Long Rest')); } }]),
+    {
+      id: 'uses',
+      label: 'Limited uses',
+      add: () => setTrackers([...trackers, makeTracker({ label: trackers.length === 0 ? draft.name.trim() : '' })]),
+    },
+    { id: 'scale', label: 'Scale value', add: () => setScales([...scales, makeScale()]) },
     ...(switchOn
       ? []
       : [{
@@ -316,6 +348,8 @@ export default function CustomFeatureModal({
                     key={block.id}
                     {...shared}
                     allowedGroups={isAbilityTarget(block.target) ? ABILITY_TARGET_GROUPS : OTHER_GROUPS}
+                    scales={scales}
+                    switches={switchChoices}
                   />
                 );
               }
@@ -325,45 +359,28 @@ export default function CustomFeatureModal({
               return <ChoiceBlock key={block.id} {...shared} casters={casters} defaultCastAbility={castDefault} />;
             })}
 
-            {usesOn && (
-              <div className="fcb-custom-block" role="group" aria-label="Limited uses">
-                <div className="fcb-custom-row">
-                  {parsedUsage ? (
-                    <>
-                      <Field label="Uses">
-                        <NumberInput
-                          label="Uses"
-                          min={1}
-                          max={99}
-                          value={parsedUsage.count}
-                          onChange={(count) => setUsage(usageText(count ?? 1, parsedUsage.recharge))}
-                        />
-                      </Field>
-                      <Field label="Recharges on">
-                        <SelectInput
-                          label="Recharges on"
-                          value={parsedUsage.recharge}
-                          options={RECHARGES}
-                          onChange={(recharge) => setUsage(usageText(parsedUsage.count, recharge))}
-                        />
-                      </Field>
-                    </>
-                  ) : (
-                    <Field label="Usage text">
-                      <input className="fcb-input" aria-label="Usage text" value={usage} onChange={(event) => setUsage(event.target.value)} />
-                    </Field>
-                  )}
-                  <RemoveButton
-                    label="Remove limited uses"
-                    onClick={() => {
-                      setUsesOn(false);
-                      setUsage('');
-                    }}
-                  />
-                </div>
-                <p className="fcb-muted-copy text-xs">Printed on the sheet as the usage line. Tracking the uses comes later.</p>
-              </div>
-            )}
+            {scales.map((scale, index) => (
+              <ScaleBlock
+                key={scale.id}
+                scale={scale}
+                issues={scaleIssuesAt(index)}
+                onChange={(next) => setScales(scales.map((entryScale, at) => (at === index ? next : entryScale)))}
+                onRemove={() => setScales(scales.filter((_, at) => at !== index))}
+              />
+            ))}
+
+            {trackers.map((tracker, index) => (
+              <TrackerBlock
+                key={tracker.id}
+                tracker={tracker}
+                scales={scales}
+                switches={switchOn && switchName.trim() ? [switchName.trim()] : []}
+                issues={trackerIssuesAt(index)}
+                ariaLabel={trackers.length > 1 ? `Limited uses ${index + 1}` : 'Limited uses'}
+                onChange={(next) => setTrackers(trackers.map((entryTracker, at) => (at === index ? next : entryTracker)))}
+                onRemove={() => setTrackers(trackers.filter((_, at) => at !== index))}
+              />
+            ))}
 
             {switchOn && (
               <div className="fcb-custom-block" role="group" aria-label="Only while active">
@@ -372,12 +389,18 @@ export default function CustomFeatureModal({
                     <input
                       className="fcb-input"
                       aria-label="Switch name"
+                      list="custom-switch-names"
                       value={switchName}
                       onChange={(event) => {
                         setSwitchName(event.target.value);
                         setBlocks(withSwitch(draft.blocks, event.target.value));
                       }}
                     />
+                    <datalist id="custom-switch-names">
+                      {knownSwitches.map((name) => (
+                        <option key={name} value={name} />
+                      ))}
+                    </datalist>
                   </Field>
                   <RemoveButton
                     label="Remove only while active"
@@ -388,7 +411,8 @@ export default function CustomFeatureModal({
                   />
                 </div>
                 <p className="fcb-muted-copy text-xs">
-                  The bonuses above apply only while this switch is on. Switches arrive with the Resources page; until then they stay off.
+                  The bonuses above apply only while this switch is on. It starts off; turn it on from Manage › Resources.
+                  {knownSwitches.length > 0 ? ' Pick a switch another entry uses, or name a new one.' : ''}
                 </p>
               </div>
             )}

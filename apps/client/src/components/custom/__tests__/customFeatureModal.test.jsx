@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { useMemo, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { compileCustomElement, customDraftIssues } from '@forge-cb/engine/custom';
+import { compileCustomElement, createCustomDraft, customDraftIssues } from '@forge-cb/engine/custom';
 import CustomFeatureModal from '../CustomFeatureModal';
 import { CustomEntryList, useCustomContent } from '../CustomEntries';
 import { MY_HOMEBREW_NAME, makeCustomServices, writePromotedElement } from '../customServices';
@@ -268,23 +268,133 @@ describe('the custom feature dialog: creating', () => {
     expect(savedDraft(api)).toMatchObject({ name: 'Stag Mark', showsUnder: 'race', template: 'feature' });
   });
 
-  it('writes limited uses as the sheet usage line and an active switch onto its bonuses', async () => {
+  it('writes limited uses as a tracker and an active switch onto its bonuses', async () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Moonlit Form');
     await click(buttonByText('+ Ability score'));
     await click(buttonByText('+ Limited uses'));
-    await type(byLabel('Uses'), '2');
-    await choose(byLabel('Recharges on'), 'Short Rest');
+    const uses = group('Limited uses');
+    await type(uses.querySelector('[aria-label="Uses"]'), '2');
+    await choose(uses.querySelector('[aria-label="Recharges on"]'), 'shortRest');
     await click(buttonByText('+ Only while active'));
+    // More than one limited use can live on an entry, so the chip stays.
+    expect(buttonByText('+ Limited uses')).toBeDefined();
     await click(buttonByText('Add to Ilyana'));
     await settle();
     const draft = savedDraft(api);
-    expect(draft.sheet).toEqual({ usage: '2/Short Rest' });
+    expect(draft.trackers).toEqual([
+      { id: expect.any(String), label: 'Moonlit Form', max: { kind: 'number', value: 2 }, unit: 'uses', recharge: 'shortRest' },
+    ]);
+    expect(draft.sheet).toBeUndefined();
     expect(draft.blocks[0].gates).toEqual({ switch: 'Moonlit Form' });
     expect(customDraftIssues(draft)).toEqual([]);
-    // Both rows leave the chip bar once they are on.
-    expect(buttonByText('+ Limited uses')).toBeUndefined();
+    expect(compileCustomElement(draft)).toContain('usage="2/Short Rest"');
+  });
+
+  it('offers every recharge, a dice-roll regain, a shared pool and a switch that spends a use', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Moonlit Form');
+    await click(buttonByText('+ Ability score'));
+    await click(buttonByText('+ Only while active'));
+    await click(buttonByText('+ Limited uses'));
+    const uses = group('Limited uses');
+    expect([...uses.querySelector('[aria-label="Recharges on"]').options].map((entry) => entry.textContent)).toEqual([
+      'Short Rest', 'Long Rest', 'Dawn', 'Day', 'Never', 'Dice roll',
+    ]);
+    expect(byLabel('Regains')).toBeNull();
+    await choose(uses.querySelector('[aria-label="Recharges on"]'), 'diceRoll');
+    await type(byLabel('Regains'), '1d6+1 at dawn');
+    await type(byLabel('Shared pool'), 'Moon points');
+    await choose(byLabel('Spent by switch'), 'Moonlit Form');
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    const draft = savedDraft(api);
+    expect(draft.trackers[0]).toMatchObject({ recharge: 'diceRoll', regain: '1d6+1 at dawn', pool: 'Moon points', spendOnSwitch: 'Moonlit Form' });
+    expect(customDraftIssues(draft)).toEqual([]);
+  });
+
+  it('follows the proficiency bonus, and a scale value, for how many', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Moonlight');
+    await click(buttonByText('+ Scale value'));
+    const scale = group('Scale value');
+    await type(byLabel('Scale name'), 'Gaze count');
+    await choose(byLabel('Scale kind'), 'number');
+    await type(byLabel('Scale value 1'), '1');
+    await click(buttonByText('+ Level'));
+    await type(byLabel('Scale level 2'), '5');
+    await type(byLabel('Scale value 2'), '3');
+    expect(scale.textContent).toContain('{{scale:gaze count}}');
+
+    await click(buttonByText('+ Limited uses'));
+    const uses = group('Limited uses');
+    await choose(uses.querySelector('[aria-label="Moonlight follows"]'), 'scale');
+    await click(buttonByText('+ Limited uses'));
+    const second = group('Limited uses 2');
+    await type(second.querySelector('[aria-label="Limited use name"]'), 'Ward');
+    await choose(second.querySelector('[aria-label="Ward follows"]'), 'reference');
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    const draft = savedDraft(api);
+    expect(draft.scales).toEqual([
+      { id: expect.any(String), name: 'Gaze count', kind: 'number', steps: [{ level: 1, value: 1 }, { level: 5, value: 3 }] },
+    ]);
+    expect(draft.trackers[0].max).toEqual({ kind: 'scale', scale: draft.scales[0].id });
+    expect(draft.trackers[1].max).toMatchObject({ kind: 'reference', ref: 'proficiency' });
+    expect(customDraftIssues(draft)).toEqual([]);
+  });
+
+  it('lets a bonus follow a count scale value but not a die', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Moonlight');
+    await click(buttonByText('+ Other bonus'));
+    expect([...byLabel('Amount is').options].map((entry) => entry.value)).not.toContain('scale');
+    await click(buttonByText('+ Scale value'));
+    expect([...byLabel('Amount is').options].map((entry) => entry.value)).not.toContain('scale');
+    await choose(byLabel('Scale kind'), 'number');
+    expect([...byLabel('Amount is').options].map((entry) => entry.value)).toContain('scale');
+    await type(byLabel('Scale name'), 'Ward bonus');
+    await choose(byLabel('Amount is'), 'scale');
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    const draft = savedDraft(api);
+    expect(draft.blocks[0].value).toEqual({ kind: 'scale', scale: draft.scales[0].id });
+    expect(customDraftIssues(draft)).toEqual([]);
+  });
+
+  it('suggests the switches the character already uses', async () => {
+    const api = fakeApi();
+    const rage = {
+      ...createCustomDraft('boon', 'Rage Echo'),
+      blocks: [{ kind: 'modifier', id: 'm1', target: 'ac:misc', mode: 'add', value: { kind: 'number', value: 1 }, gates: { switch: 'Moonlit Form' } }],
+    };
+    await api.characters.saveCustomDraft(CHARACTER, rage);
+    await open(api);
+    await type(byLabel('Name'), 'Second');
+    await click(buttonByText('+ Only while active'));
+    expect([...document.querySelectorAll('#custom-switch-names option')].map((entry) => entry.value)).toEqual(['Moonlit Form']);
+  });
+
+  it('opens an entry made with a usage line as a tracker, and writes the same line back', async () => {
+    const api = fakeApi();
+    const old = { ...createCustomDraft('boon', 'Old Gift'), description: 'Text.', sheet: { usage: '2/Short Rest', action: 'bonusAction' } };
+    await api.characters.saveCustomDraft(CHARACTER, old);
+    await open(api);
+    await click(buttonByText('Edit'));
+    await settle();
+    const uses = group('Limited uses');
+    expect(uses.querySelector('[aria-label="Uses"]').value).toBe('2');
+    expect(uses.querySelector('[aria-label="Recharges on"]').value).toBe('shortRest');
+    await click(buttonByText('Save changes'));
+    await settle();
+    const draft = savedDraft(api);
+    expect(draft.sheet).toEqual({ action: 'bonusAction' });
+    expect(draft.trackers[0]).toMatchObject({ label: 'Old Gift', max: { kind: 'number', value: 2 }, recharge: 'shortRest' });
+    expect(compileCustomElement(draft)).toContain('usage="2/Short Rest"');
   });
 
   it('adds a choice, a language and a proficiency block that validate', async () => {
