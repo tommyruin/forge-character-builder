@@ -7677,6 +7677,49 @@ button:disabled {
   position: relative;
 }
 
+/* The search band: the search box takes the width, the Custom item button sits beside it. */
+.fcb-equipment-search {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.fcb-equipment-search > .fcb-global-equipment-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fcb-equipment-custom-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* The quick "Add custom gear" line above the inventory table. */
+.fcb-inventory-quick-gear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px dashed color-mix(in srgb, var(--fcb-primary) 45%, var(--fcb-border-soft));
+  border-radius: var(--fcb-radius);
+}
+
+.fcb-inventory-quick-gear > .fcb-input {
+  flex: 1 1 10rem;
+  width: auto;
+  min-width: 0;
+}
+
+.fcb-inventory-quick-gear > .fcb-inventory-quick-gear-amount {
+  flex: 0 0 5rem;
+}
+
+.fcb-inventory-record-names {
+  margin-top: 2px;
+}
+
 .fcb-global-equipment-results {
   position: absolute;
   z-index: 20;

@@ -59,7 +59,28 @@ export function makeCustomServices({ api, store, id, run, ruleset }) {
     },
     list: () => characters.customContent(id),
     impact: (draft) => characters.choiceIdentityImpact(id, draft),
-    save: (draft) => run(() => characters.saveCustomDraft(id, draft)),
+    save: (draft, options) => run(() => characters.saveCustomDraft(id, draft, options)),
+    // Every library weapon (or armor) a custom item can sit on, for the base menu.
+    itemBases: async (kind) => {
+      const page = await api.content.elements({
+        type: kind === 'armor' ? 'Armor' : 'Weapon',
+        ruleset: ruleset ?? 'all',
+        characterId: id,
+        take: 400,
+      });
+      return (page.items ?? [])
+        .map((item) => ({
+          id: item.id,
+          name: item.name,
+          source: item.source,
+          equipmentKind: item.equipmentKind ?? item.category ?? '',
+          displayPrice: item.displayPrice ?? '',
+        }))
+        .sort((left, right) => left.name.localeCompare(right.name) || left.source.localeCompare(right.source));
+    },
+    // The weapon's attack row as the engine would print it, for the live preview.
+    previewItem: (draft) => characters.previewCustomItem(id, draft),
+    setItemDetails: (identifier, details) => run(() => characters.setItemDetails(id, identifier, details)),
     remove: (draftId) => run(() => characters.deleteCustomDraft(id, draftId)),
     promote: async (draft) => {
       const promoted = await characters.promoteCustomDraft(id, draft.id, MY_HOMEBREW_NAME);

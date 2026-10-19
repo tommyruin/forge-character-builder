@@ -1391,12 +1391,21 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     // The character's own pack. A save stores the draft in the character file,
     // so it goes through the same dirty-mark and persist path as any edit.
     customContent: (id: string) => invoke(getClient(), "getCustomContent", id),
-    saveCustomDraft: (id: string, draft: AnyRecord, options: { grant?: boolean } = {}) =>
-      mutateDetail(id, "saveCustomDraft", [id, { draft, ...(options.grant === false ? { grant: false } : {}) }]),
+    saveCustomDraft: (id: string, draft: AnyRecord, options: { grant?: boolean; amount?: number; notes?: string } = {}) =>
+      mutateDetail(id, "saveCustomDraft", [
+        id,
+        {
+          draft,
+          ...(options.grant === false ? { grant: false } : {}),
+          ...(typeof options.amount === "number" ? { amount: options.amount } : {}),
+          ...(typeof options.notes === "string" && options.notes !== "" ? { notes: options.notes } : {}),
+        },
+      ]),
     deleteCustomDraft: (id: string, draftId: string) => mutateDetail(id, "deleteCustomDraft", [id, { draftId }]),
     promoteCustomDraft: (id: string, draftId: string, source: string) =>
       invoke(getClient(), "promoteCustomDraft", id, { draftId, source }),
     choiceIdentityImpact: (id: string, draft: AnyRecord) => invoke(getClient(), "getChoiceIdentityImpact", id, { draft }),
+    previewCustomItem: (id: string, draft: AnyRecord) => invoke(getClient(), "previewCustomItem", id, { draft }),
     companion: (id: string) => invoke(getClient(), "getCompanion", id),
     setCompanionName: (id: string, name: string) => mutateDetailAndPersist(id, "setCompanionName", [id, { name }]),
     setCompanionPortrait: (id: string, base64: string) =>
@@ -1438,6 +1447,16 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         },
       ]),
     setItemCards: (id: string, policy: "all" | "significant" | "none") => mutateDetail(id, "setItemCards", [id, { policy }]),
+    // A record's own name and notes; a field left out is left alone.
+    setItemDetails: (id: string, identifier: string, details: { name?: string; notes?: string }) =>
+      mutateDetail(id, "setItemDetails", [
+        id,
+        identifier,
+        {
+          ...(typeof details.name === "string" ? { name: details.name } : {}),
+          ...(typeof details.notes === "string" ? { notes: details.notes } : {}),
+        },
+      ]),
     setCoins: (id: string, coins: AnyRecord) => mutateDetail(id, "setCoins", [id, coins]),
     attacks: (id: string) => invoke(getClient(), "getAttacks", id),
     attackOptions: (id: string) => invoke(getClient(), "getAttackOptions", id),

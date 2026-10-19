@@ -7,6 +7,11 @@
 import {
   CUSTOM_ABILITIES,
   CUSTOM_MODIFIER_TARGETS,
+  DAMAGE_TYPES,
+  ITEM_RARITIES,
+  WEAPON_PROPERTY_IDS,
+  WORN_SLOTS,
+  createCustomItemDraft,
   CUSTOM_SHOWS_UNDER,
   CUSTOM_VALUE_REFERENCES,
   SHEET_ACTION_OPTIONS,
@@ -342,4 +347,85 @@ export function castAbilityIssues(draft) {
     }
   });
   return issues;
+}
+
+// ---- items -------------------------------------------------------------------
+
+export const ITEM_TEMPLATE_OPTIONS = [
+  { id: 'weapon', label: 'Weapon' },
+  { id: 'armor', label: 'Armor or shield' },
+  { id: 'worn', label: 'Worn item' },
+  { id: 'gear', label: 'Plain gear' },
+];
+
+const titleCase = (word) => word.charAt(0).toUpperCase() + word.slice(1);
+
+export const RARITY_OPTIONS = ITEM_RARITIES.map((rarity) => ({ id: rarity, label: rarity }));
+export const DAMAGE_TYPE_OPTIONS = DAMAGE_TYPES.map((type) => ({ id: type, label: titleCase(type) }));
+export const WORN_SLOT_OPTIONS = WORN_SLOTS.map((slot) => ({
+  id: slot,
+  label: slot === 'misc' ? 'Anywhere else' : titleCase(slot),
+}));
+
+const PROPERTY_LABELS = {
+  ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION: 'Ammunition',
+  ID_INTERNAL_WEAPON_PROPERTY_FINESSE: 'Finesse',
+  ID_INTERNAL_WEAPON_PROPERTY_HEAVY: 'Heavy',
+  ID_INTERNAL_WEAPON_PROPERTY_LIGHT: 'Light',
+  ID_INTERNAL_WEAPON_PROPERTY_LOADING: 'Loading',
+  ID_INTERNAL_WEAPON_PROPERTY_REACH: 'Reach',
+  ID_INTERNAL_WEAPON_PROPERTY_THROWN: 'Thrown',
+  ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED: 'Two-handed',
+  ID_INTERNAL_WEAPON_PROPERTY_VERSATILE: 'Versatile',
+};
+
+export const WEAPON_PROPERTY_OPTIONS = WEAPON_PROPERTY_IDS.map((id) => ({ id, label: PROPERTY_LABELS[id] }));
+
+// A blank item draft for a template. A worn item starts at the neck so the slot is never empty;
+// everything else the author adds.
+export function makeItemDraft(template) {
+  const draft = createCustomItemDraft(template, '');
+  return template === 'worn' ? { ...draft, slot: 'neck' } : draft;
+}
+
+export const itemTemplateLabel = (template) =>
+  ITEM_TEMPLATE_OPTIONS.find((option) => option.id === template)?.label ?? template;
+
+const damageText = (term) => `${term.dice} ${term.type}`;
+
+// The lines of an item's "in plain words" panel: what it is, what it changes, then its effects.
+export function summarizeItem(draft) {
+  const lines = [];
+  if (draft.base) {
+    const bonus = draft.bonus ? ` +${draft.bonus}` : '';
+    lines.push(`${draft.name.trim() || 'Untitled'} is a ${draft.base.name}${bonus}`);
+  } else if (draft.template === 'worn') {
+    const slot = WORN_SLOT_OPTIONS.find((option) => option.id === draft.slot)?.label.toLowerCase();
+    lines.push(`Worn item${slot ? ` (${slot})` : ''}`);
+  }
+  const weapon = draft.weapon ?? {};
+  for (const term of weapon.extraDamage ?? []) lines.push(`Extra damage: ${damageText(term)}`);
+  if (weapon.attackAbility) lines.push(`Attacks and damage use ${ABILITY_LABELS[weapon.attackAbility]}`);
+  if (weapon.damage) lines.push(`Damage becomes ${damageText(weapon.damage)}`);
+  if (weapon.versatile) lines.push(`Two-handed damage ${weapon.versatile}`);
+  if (weapon.range) lines.push(`Range ${weapon.range}`);
+  if (weapon.properties) {
+    lines.push(`Properties: ${weapon.properties.map((id) => PROPERTY_LABELS[id] ?? id).join(', ') || 'none'}`);
+  }
+  if (draft.template === 'armor' && draft.bonus) lines.push(`Armor class +${draft.bonus}`);
+  if (draft.attunement) lines.push('Requires attunement');
+  if (draft.uses?.trim()) lines.push(`Limited uses: ${draft.uses.trim()}`);
+  const when = draft.attunement ? 'while attuned' : draft.template === 'worn' ? 'while worn' : 'while wielded';
+  for (const block of draft.blocks) lines.push(`${describeBlock(block)} (${when})`);
+  return lines;
+}
+
+// Whether a base option from the library is a shield (a shield sits in the off hand and adds to
+// the shield bonus), by the label the catalog already gives it.
+export const isShieldOption = (option) => /^shield$/i.test(option?.equipmentKind ?? '');
+
+// "Longsword" alone, or "Longsword (Player's Handbook)" when two editions share the name.
+export function baseLabel(option, options) {
+  const shared = options.filter((other) => other.name === option.name).length > 1;
+  return shared && option.source ? `${option.name} (${option.source})` : option.name;
 }

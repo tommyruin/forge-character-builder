@@ -49,7 +49,7 @@ function fakeClient() {
     "addGrantedAbilityScore", "removeGrantedAbilityScore", "getCompanion", "setCompanionName",
     "setCompanionPortrait", "removeCompanionPortrait",
     "getDmGrants", "getCustomContent", "saveCustomDraft", "deleteCustomDraft", "promoteCustomDraft",
-    "getChoiceIdentityImpact",
+    "getChoiceIdentityImpact", "previewCustomItem", "setItemDetails",
     "getInventory", "getItemBaseOptions", "addItem", "removeItem", "setItemAmount", "extractItem", "equipItem",
     "setItemStorage", "attuneItem", "setItemPresentation", "setItemCards", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
     "setAttackVisibility", "moveAttack", "deleteAttack", "generateSheet",
@@ -507,6 +507,10 @@ describe("typed FCB nested adapter", () => {
 
     expect(calls).toContainEqual(["setItemPresentation", "Ada", { identifier: "rope-1", card: false }]);
     expect(calls).toContainEqual(["setItemPresentation", "Ada", { identifier: "rope-1", sidebar: true }]);
+    await api.characters.setItemDetails("Ada", "rope-1", { name: "Climbing line", notes: "" });
+    await api.characters.setItemDetails("Ada", "rope-1", { notes: "Knotted." });
+    expect(calls).toContainEqual(["setItemDetails", "Ada", "rope-1", { name: "Climbing line", notes: "" }]);
+    expect(calls).toContainEqual(["setItemDetails", "Ada", "rope-1", { notes: "Knotted." }]);
     expect(calls).toContainEqual(["setItemCards", "Ada", { policy: "significant" }]);
     // Without a policy the request is exactly the one the builder always sent.
     expect(calls).toContainEqual(["addItem", "Ada", { itemId: "ID_ROPE", amount: 1, baseElementId: null }]);
@@ -539,6 +543,8 @@ describe("typed FCB nested adapter", () => {
     await api.characters.customContent("Ada");
     await api.characters.promoteCustomDraft("Ada", draft.id, "My homebrew");
     await api.characters.choiceIdentityImpact("Ada", draft);
+    await api.characters.saveCustomDraft("Ada", draft, { amount: 3, notes: "Carved." });
+    await api.characters.previewCustomItem("Ada", draft);
 
     expect(calls).toContainEqual(["saveCustomDraft", "Ada", { draft }]);
     expect(calls).toContainEqual(["saveCustomDraft", "Ada", { draft, grant: false }]);
@@ -546,6 +552,8 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["getCustomContent", "Ada"]);
     expect(calls).toContainEqual(["promoteCustomDraft", "Ada", { draftId: draft.id, source: "My homebrew" }]);
     expect(calls).toContainEqual(["getChoiceIdentityImpact", "Ada", { draft }]);
+    expect(calls).toContainEqual(["saveCustomDraft", "Ada", { draft, amount: 3, notes: "Carved." }]);
+    expect(calls).toContainEqual(["previewCustomItem", "Ada", { draft }]);
     // A save is an ordinary character edit: undoable, and written to the stored copy with it.
     expect(api.characters.canUndo("Ada")).toBe(true);
     await api.characters.saveCharacter("Ada");

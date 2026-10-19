@@ -9,7 +9,8 @@ import { showsUnderLabel, typeLabel } from './draftModel';
 
 // The entries refetch whenever the character detail changes, the same moment the DM-grant list
 // does, so an add, edit, remove or undo is reflected without a manual refresh.
-export function useCustomContent(services, detail) {
+// `kind` picks which entries the caller lists: Build shows features, Equipment shows items.
+export function useCustomContent(services, detail, kind = 'feature') {
   const [content, setContent] = useState({ entries: [], problems: [] });
   useEffect(() => {
     if (!services) return undefined;
@@ -17,13 +18,16 @@ export function useCustomContent(services, detail) {
     services
       .list()
       .then((next) => {
-        if (alive) setContent({ entries: next?.entries ?? [], problems: next?.problems ?? [] });
+        if (alive) {
+          const entries = (next?.entries ?? []).filter((entry) => (entry.kind ?? 'feature') === kind);
+          setContent({ entries, problems: next?.problems ?? [] });
+        }
       })
       .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [services, detail]);
+  }, [services, detail, kind]);
   return content;
 }
 

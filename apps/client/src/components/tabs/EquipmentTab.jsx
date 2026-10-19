@@ -23,6 +23,16 @@ import {
   newItemCardOptions,
   sheetLayoutOptionsSettingStore,
 } from "../../sheetLayoutOptionsSetting.js";
+import { createCustomItemDraft } from "@forge-cb/engine/custom";
+import CustomItemModal from "../custom/CustomItemModal";
+import ItemDetailsModal from "../custom/ItemDetailsModal";
+import { CustomBadge, useCustomContent } from "../custom/CustomEntries";
+import { makeCustomServices } from "../custom/customServices";
+import { localStore } from "../../transport/localStore";
+
+// Custom items are the same capability as custom features: the engine stores them in the character.
+const canCustom = typeof api.characters.saveCustomDraft === "function";
+const canRename = typeof api.characters.setItemDetails === "function";
 
 // Engine-provided equip-slot tokens -> button labels. The engine classifies by the
 // item's real equipment slots, so magic armor yields ['armor'] and shows "Equip"
@@ -87,6 +97,7 @@ function equipLocationsFor(item) {
 export default function EquipmentTab() {
   const {
     id,
+    detail,
     busy,
     run,
     notify,
@@ -96,6 +107,11 @@ export default function EquipmentTab() {
   } = useWorkspace();
   const [subTab, setSubTab] = useState("catalog");
   const [inventory, setInventory] = useState(null);
+  // The custom item dialog (null when closed; `entry` null makes a new item) and the
+  // rename / notes dialog for one record.
+  const [customDialog, setCustomDialog] = useState(null);
+  const [detailsDialog, setDetailsDialog] = useState(null);
+  const mutateRef = useRef(null);
   const [inspected, setInspected] = useState(null);
   const [extracting, setExtracting] = useState(null);
   const [stowing, setStowing] = useState(null);
@@ -133,6 +149,80 @@ export default function EquipmentTab() {
       setInventory(result);
     } else refreshInventory();
     return result;
+  };
+  mutateRef.current = mutate;
+
+  const rulesetMode = detail?.rulesetMode;
+  // Every change the custom item dialog makes goes through the tab's own mutate, then reads the
+  // inventory again: a save answers with the character, not the inventory.
+  const customServices = useMemo(
+    () =>
+      canCustom
+        ? makeCustomServices({
+            api,
+            store: localStore,
+            id,
+            run: async (operation) => {
+              const result = await mutateRef.current(operation);
+              refreshInventory(true);
+              return result;
+            },
+            ruleset: rulesetMode,
+          })
+        : null,
+    [id, rulesetMode, refreshInventory],
+  );
+  const { entries: customItems } = useCustomContent(customServices, inventory, "item");
+  const customItemsById = useMemo(
+    () => new Map(customItems.map((entry) => [entry.elementId, entry])),
+    [customItems],
+  );
+
+  // The custom entry behind a record: its adorner when it is laid over a base, else the record itself.
+  const customEntryOf = (item) =>
+    customItemsById.get(item.displayElementId) ?? customItemsById.get(item.itemId) ?? null;
+
+  const saveDetails = async (item, details) => {
+    try {
+      await mutate(() => api.characters.setItemDetails(id, item.identifier, details));
+      setDetailsDialog(null);
+      notify(
+        <>
+          Saved <strong>{details.name || item.defaultName}</strong>
+        </>,
+      );
+    } catch {
+      // run() already surfaced the failure in the workspace error banner.
+    }
+  };
+
+  // A line of plain gear: reuse the custom gear of the same name this character already has, so
+  // adding five torches over five days is one stack, not five items.
+  const addCustomGear = async (name, amount) => {
+    const draftName = name.trim();
+    if (draftName === "" || !customServices) return;
+    const existing = customItems.find(
+      (entry) =>
+        entry.draft.template === "gear" &&
+        entry.draft.name.trim().toLowerCase() === draftName.toLowerCase(),
+    );
+    try {
+      if (existing) {
+        await mutate(() => api.characters.addItem(id, existing.elementId, amount, null));
+      } else {
+        await customServices.save(
+          { ...createCustomItemDraft("gear", draftName), stackable: true },
+          { amount },
+        );
+      }
+      notify(
+        <>
+          Added <strong>{draftName}</strong> to your inventory
+        </>,
+      );
+    } catch {
+      // run() already surfaced the failure in the workspace error banner.
+    }
   };
 
   // Flash rows whose entry is new or whose stack grew, so an Add is visibly confirmed.
@@ -297,6 +387,35 @@ export default function EquipmentTab() {
         onClose={() => setStowing(null)}
         onConfirm={stowItem}
       />
+      {customDialog && customServices && (
+        <CustomItemModal
+          key={customDialog.entry?.elementId ?? "new"}
+          services={customServices}
+          characterName={detail?.name ?? "this character"}
+          entry={customDialog.entry}
+          initialTemplate={customDialog.template}
+          onClose={() => setCustomDialog(null)}
+          onSaved={(saved) => {
+            if (saved) {
+              notify(
+                <>
+                  Saved <strong>{saved.draft.name}</strong>
+                </>,
+              );
+            }
+          }}
+        />
+      )}
+      {detailsDialog && (
+        <ItemDetailsModal
+          key={`${detailsDialog.item.identifier}:${detailsDialog.focus}`}
+          item={detailsDialog.item}
+          focus={detailsDialog.focus}
+          busy={busy}
+          onClose={() => setDetailsDialog(null)}
+          onSave={saveDetails}
+        />
+      )}
     </>
   );
 
@@ -340,6 +459,18 @@ export default function EquipmentTab() {
         onRemove={(identifier) =>
           mutate(() => api.characters.removeItem(id, identifier))
         }
+        customEntryOf={canCustom ? customEntryOf : undefined}
+        onEditCustom={
+          canCustom
+            ? (entry) => setCustomDialog({ entry, template: entry.draft.template })
+            : undefined
+        }
+        onRename={
+          canRename
+            ? (item, focus) => setDetailsDialog({ item, focus })
+            : undefined
+        }
+        onAddGear={canCustom ? addCustomGear : undefined}
         onAddAttack={async (identifier) => {
           // Equipping a weapon adds its row automatically; this is the way in
           // for one that is carried rather than wielded.
@@ -369,6 +500,10 @@ export default function EquipmentTab() {
       onInspect={setInspected}
       onAdd={addItem}
       inspected={inspected}
+      customItemIds={new Set(customItems.map((entry) => entry.elementId))}
+      onCustomItem={
+        canCustom ? () => setCustomDialog({ entry: null, template: "weapon" }) : undefined
+      }
     />
   );
 }
@@ -393,6 +528,8 @@ function Catalog({
   onAdd,
   onInspect,
   inspected,
+  customItemIds,
+  onCustomItem,
 }) {
   const {
     id,
@@ -945,6 +1082,17 @@ function Catalog({
                     />
                   )}
                 </div>
+                {onCustomItem && (
+                  <button
+                    type="button"
+                    className="fcb-button fcb-equipment-custom-button"
+                    onClick={onCustomItem}
+                    title="Make an item of your own, starting from something in the book"
+                  >
+                    <Icon name="add" />
+                    Custom item
+                  </button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-2 mb-3 lg:grid-cols-4">
                 <label className="fcb-field-label">Type
@@ -1000,6 +1148,7 @@ function Catalog({
                             className="block w-full text-left"
                           >
                             <EquipmentName item={item} />
+                            {customItemIds?.has(item.id) && <CustomBadge />}
                             {ownedCounts.has(item.id) && (
                               <span className="fcb-owned-badge">
                                 ×{ownedCounts.get(item.id)} owned
@@ -1285,9 +1434,15 @@ function Inventory({
   onSetCoins,
   onInspect,
   inspected,
+  customEntryOf,
+  onEditCustom,
+  onRename,
+  onAddGear,
 }) {
   const { registerPrimaryScroll, registerDetailsScroll } = useWorkspace();
   const [coinDraft, setCoinDraft] = useState({});
+  const [gearName, setGearName] = useState("");
+  const [gearAmount, setGearAmount] = useState(1);
   const coins = { ...inventory.coins, ...coinDraft };
   const { inspect: inspectItem, descriptionPanelProps } =
     useMobileDescriptionNavigation({
@@ -1326,6 +1481,50 @@ function Inventory({
           {/* The scroll region is inset by the body's padding, so its
               scrollbar never reaches the panel's rounded corners. */}
           <div className="fcb-inventory-scroll" ref={registerPrimaryScroll}>
+          {onAddGear && (
+            <form
+              className="fcb-inventory-quick-gear"
+              aria-label="Add custom gear"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (gearName.trim() === "") return;
+                void Promise.resolve(onAddGear(gearName, gearAmount)).then(() => {
+                  setGearName("");
+                  setGearAmount(1);
+                });
+              }}
+            >
+              <span className="fcb-field-label">Add custom gear</span>
+              <input
+                className="fcb-input"
+                aria-label="Gear name"
+                placeholder="Signal whistle"
+                value={gearName}
+                onChange={(event) => setGearName(event.target.value)}
+              />
+              <input
+                type="number"
+                min={1}
+                max={MAX_ITEM_AMOUNT}
+                className="fcb-input fcb-inventory-quick-gear-amount"
+                aria-label="Gear quantity"
+                value={gearAmount}
+                onChange={(event) =>
+                  setGearAmount(
+                    Math.min(MAX_ITEM_AMOUNT, Math.max(1, parseInt(event.target.value, 10) || 1)),
+                  )
+                }
+              />
+              <button
+                type="submit"
+                className="fcb-button"
+                disabled={busy || gearName.trim() === ""}
+              >
+                <Icon name="add" />
+                Add
+              </button>
+            </form>
+          )}
           <div className="rounded border border-[var(--fcb-border-soft)]">
             <table className="fcb-table fcb-inventory-table">
               <thead>
@@ -1351,6 +1550,7 @@ function Inventory({
                           className="fcb-inventory-item-name text-left"
                         >
                           <EquipmentName item={item} />
+                          {item.isCustom && <CustomBadge />}
                           <span className="fcb-inventory-item-type ml-2 text-xs text-[var(--fcb-text-faint)]">
                             {item.type}
                           </span>
@@ -1378,10 +1578,14 @@ function Inventory({
                             onExtract={onExtract}
                             onRemove={onRemove}
                             onAddAttack={onAddAttack}
+                            customEntry={customEntryOf?.(item) ?? null}
+                            onEditCustom={onEditCustom}
+                            onRename={onRename}
                             variant="mobile"
                           />
                         </span>
                       </div>
+                      <RecordNames item={item} />
                       <EquipmentSummary item={item} />
                       {/* The narrow layout's header row has no room for two
                           more actions, so the sheet choices get a row of
@@ -1454,6 +1658,9 @@ function Inventory({
                         onExtract={onExtract}
                         onRemove={onRemove}
                         onAddAttack={onAddAttack}
+                        customEntry={customEntryOf?.(item) ?? null}
+                        onEditCustom={onEditCustom}
+                        onRename={onRename}
                         variant="desktop"
                       />
                     </td>
@@ -1578,6 +1785,9 @@ export function InventoryActionButtons({
   onExtract,
   onRemove,
   onAddAttack,
+  customEntry = null,
+  onEditCustom,
+  onRename,
   variant,
 }) {
   return (
@@ -1636,6 +1846,33 @@ export function InventoryActionButtons({
           onClick={() => onAddAttack(item.identifier)}
         />
       )}
+      {customEntry && onEditCustom && (
+        <ActionButton
+          label="Edit"
+          ariaLabel={`Edit ${item.name}`}
+          icon="edit"
+          disabled={busy}
+          onClick={() => onEditCustom(customEntry)}
+        />
+      )}
+      {onRename && (
+        <>
+          <ActionButton
+            label="Rename"
+            ariaLabel={`Rename ${item.name}`}
+            icon="edit"
+            disabled={busy}
+            onClick={() => onRename(item, "name")}
+          />
+          <ActionButton
+            label="Notes"
+            ariaLabel={`Notes for ${item.name}`}
+            icon="notes"
+            disabled={busy}
+            onClick={() => onRename(item, "notes")}
+          />
+        </>
+      )}
       <ActionButton
         label="Delete"
         icon="delete"
@@ -1643,6 +1880,22 @@ export function InventoryActionButtons({
         onClick={() => onRemove(item.identifier)}
       />
     </span>
+  );
+}
+
+// The names a record answers to besides the one it prints: the item's own name under a custom
+// one, and the base a magic layer sits on ("Frostbite" over "Longsword").
+export function RecordNames({ item }) {
+  const names = [];
+  if (item.customName) names.push(item.defaultName);
+  if (item.baseName && item.baseName !== item.name && item.baseName !== item.defaultName) {
+    names.push(item.baseName);
+  }
+  if (names.length === 0) return null;
+  return (
+    <div className="fcb-inventory-record-names text-xs text-[var(--fcb-text-muted)]">
+      {names.join(" · ")}
+    </div>
   );
 }
 
