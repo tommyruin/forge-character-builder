@@ -21,14 +21,20 @@
  * it again, leaving the original bytes.
  */
 
-import { child, childElements, textContent, type Dnd5eDocument, type Dnd5eNode } from "../dnd5e/document.js";
-import { removeNodeEdit, type RawEdit } from "../selection/selection.js";
+import type { Dnd5eDocument } from "../dnd5e/document.js";
+import {
+  BUILDER_BLOCK,
+  BUILDER_BLOCK_VERSION,
+  builderChildText,
+  cdata,
+  planBuilderChildEdits,
+} from "../dnd5e/builder-block.js";
+import type { RawEdit } from "../selection/selection.js";
 import { CUSTOM_DRAFT_SCHEMA_VERSION, type CustomEntryDraft } from "./schema.js";
 import { readCustomEntry } from "./validate.js";
 
-export const BUILDER_BLOCK = "forge-builder";
+export { BUILDER_BLOCK, BUILDER_BLOCK_VERSION };
 export const CUSTOM_PACK_NODE = "custom-pack";
-export const BUILDER_BLOCK_VERSION = 1;
 
 export interface CustomPackRead {
   /**
@@ -42,18 +48,10 @@ export interface CustomPackRead {
   problems: Array<{ index: number; message: string }>;
 }
 
-function packNode(document: Dnd5eDocument): { block: Dnd5eNode; pack: Dnd5eNode | null } | null {
-  const block = child(document.root.node, BUILDER_BLOCK);
-  if (block === null) return null;
-  return { block, pack: child(block, CUSTOM_PACK_NODE) };
-}
-
 /** The drafts a document carries; an absent block reads as none. */
 export function readCustomPack(document: Dnd5eDocument): CustomPackRead {
-  const found = packNode(document);
-  if (found === null || found.pack === null) return { entries: [], drafts: [], problems: [] };
-  const text = textContent(found.pack);
-  if (text === "") return { entries: [], drafts: [], problems: [] };
+  const text = builderChildText(document, CUSTOM_PACK_NODE);
+  if (text === null || text === "") return { entries: [], drafts: [], problems: [] };
   let list: unknown;
   try {
     list = JSON.parse(text);
@@ -103,41 +101,11 @@ export function entriesWithoutDraft(read: CustomPackRead, draftId: string): unkn
   return read.entries.filter((entry) => entryId(entry) !== draftId);
 }
 
-/** CDATA cannot contain its own terminator; split it across two sections. */
-function cdata(text: string): string {
-  return `<![CDATA[${text.replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
-}
-
 function packElement(entries: readonly unknown[]): string {
   return `<${CUSTOM_PACK_NODE} schema="${CUSTOM_DRAFT_SCHEMA_VERSION}">${cdata(JSON.stringify(entries))}</${CUSTOM_PACK_NODE}>`;
 }
 
 /** Byte edits that make the document carry exactly these stored entries. */
 export function planCustomPackEdits(document: Dnd5eDocument, drafts: readonly unknown[]): RawEdit[] {
-  const found = packNode(document);
-  const eol = document.raw.includes("\r\n") ? "\r\n" : "\n";
-  if (drafts.length === 0) {
-    if (found === null) return [];
-    const others = childElements(found.block).filter((node) => node !== found.pack);
-    if (others.length === 0) return [removeNodeEdit(document.raw, found.block)];
-    return found.pack === null ? [] : [removeNodeEdit(document.raw, found.pack)];
-  }
-  if (found !== null && found.pack !== null) {
-    return [{ start: found.pack.start, end: found.pack.end, replacement: packElement(drafts) }];
-  }
-  if (found !== null) {
-    const close = found.block.closeStart;
-    if (close === null) {
-      return [{
-        start: found.block.start,
-        end: found.block.end,
-        replacement: `<${BUILDER_BLOCK} version="${BUILDER_BLOCK_VERSION}">${eol}\t\t${packElement(drafts)}${eol}\t</${BUILDER_BLOCK}>`,
-      }];
-    }
-    return [{ start: close, end: close, replacement: `\t${packElement(drafts)}${eol}\t` }];
-  }
-  const root = document.root.node;
-  const close = root.closeStart ?? root.end;
-  const block = `\t<${BUILDER_BLOCK} version="${BUILDER_BLOCK_VERSION}">${eol}\t\t${packElement(drafts)}${eol}\t</${BUILDER_BLOCK}>${eol}`;
-  return [{ start: close, end: close, replacement: block }];
+  return planBuilderChildEdits(document, CUSTOM_PACK_NODE, drafts.length === 0 ? null : packElement(drafts));
 }
