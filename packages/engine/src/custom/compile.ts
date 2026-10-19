@@ -16,14 +16,18 @@ import { SHEET_ACTION_OPTIONS, elementTypeFor, modifierTarget } from "./catalogu
 import { compileFilter, compileRequirements, describeRequirements } from "./conditions.js";
 import {
   CUSTOM_SOURCE_NAME,
+  isCustomItemDraft,
   type ChoiceBlock,
+  type CustomBlock,
   type CustomDraft,
+  type CustomEntryDraft,
+  type CustomItemDraft,
   type CustomValue,
   type GrantBlock,
   type ModifierBlock,
   type ModifierGates,
 } from "./schema.js";
-import { customDraftIssues } from "./validate.js";
+import { customEntryIssues } from "./validate.js";
 
 export interface CompileOptions {
   /**
@@ -191,8 +195,8 @@ function sheetBlock(draft: CustomDraft, usageFromSpells: string | undefined): st
  * first problem (all of them are in `details.issues`) when the draft is
  * invalid.
  */
-export function compileCustomElement(draft: CustomDraft, options: CompileOptions = {}): string {
-  const issues = customDraftIssues(draft);
+export function compileCustomElement(draft: CustomEntryDraft, options: CompileOptions = {}): string {
+  const issues = customEntryIssues(draft);
   if (issues.length > 0) {
     throw engineError(
       "invalid-argument",
@@ -201,7 +205,7 @@ export function compileCustomElement(draft: CustomDraft, options: CompileOptions
     );
   }
   try {
-    return compileValidated(draft, options);
+    return isCustomItemDraft(draft) ? compileValidatedItem(draft, options) : compileValidated(draft, options);
   } catch (cause) {
     // A draft that passed validation but still cannot be written (an expression
     // the engine's own syntax check refuses) is the author's to fix, like any other.
@@ -253,8 +257,107 @@ function compileValidated(draft: CustomDraft, options: CompileOptions): string {
   return [open, ...children.map((line) => `  ${line}`), "</element>"].join("\n");
 }
 
+/** The rules a list of blocks compiles to, and the casting ability its spells share. */
+function blockRules(blocks: readonly CustomBlock[]): { rules: string[]; castAbility: string | undefined } {
+  const rules: string[] = [];
+  let castAbility: string | undefined;
+  for (const block of blocks) {
+    if (block.kind === "modifier") rules.push(...modifierRules(block));
+    else if (block.kind === "grant") {
+      rules.push(grantRule(block));
+      castAbility ??= block.spell?.castAbility;
+    } else {
+      rules.push(choiceRule(block));
+      castAbility ??= block.castAbility;
+    }
+  }
+  return { rules, castAbility };
+}
+
+/** `<set name="damage" type="…">` style setter. */
+function setter(name: string, value: string | number, extra: Array<readonly [string, string | undefined]> = []): string {
+  return `<set${attributes([["name", name], ...extra])}>${escapeText(String(value))}</set>`;
+}
+
+const ITEM_CATEGORY: Record<CustomItemDraft["template"], string> = {
+  weapon: "Magic Weapons",
+  armor: "Magic Armor",
+  worn: "Wondrous Items",
+  gear: "Adventuring Gear",
+};
+
+/** A number as pounds or coins would be written: no trailing zeros. */
+const plainNumber = (value: number): string => String(Math.round(value * 1000) / 1000);
+
+/**
+ * An item draft: a weapon or armor draft is a Magic Item laid over its base
+ * (`weapon` / `armor` setter naming the base by element id), a worn draft is a
+ * Magic Item worn on its own, a gear draft is an Item. Everything the engine
+ * reads about an item is an ordinary setter or rule, so inventory, equipping,
+ * attunement, attack rows and the sheet treat it like any book item.
+ */
+function compileValidatedItem(draft: CustomItemDraft, options: CompileOptions): string {
+  const id = options.id ?? draft.id;
+  const source = options.source ?? CUSTOM_SOURCE_NAME;
+  const { rules, castAbility } = blockRules(draft.blocks);
+  const setters: string[] = [];
+  const isGear = draft.template === "gear";
+  const slotWord = draft.template === "armor" ? "armor" : "weapon";
+
+  setters.push(setter("category", draft.template === "worn" && draft.slot === "ring" ? "Rings" : ITEM_CATEGORY[draft.template]));
+  if (draft.template === "weapon") {
+    setters.push(setter("type", "Weapon", [["addition", draft.base!.name]]));
+  } else if (draft.template === "armor") {
+    setters.push(setter("type", "Armor", [["addition", draft.base!.name]]));
+    // Body armor has a slot; a shield is held and has none.
+    if (draft.base!.shield !== true) setters.push(setter("slot", "body"));
+  } else if (draft.template === "worn") {
+    setters.push(setter("type", draft.slot === "ring" ? "Ring" : "Wondrous Item"));
+    setters.push(setter("slot", draft.slot!));
+  }
+  if (draft.rarity !== undefined) setters.push(setter("rarity", draft.rarity));
+  if (draft.attunement === true) setters.push(setter("attunement", "true"));
+  if (draft.template === "weapon" || draft.template === "armor") setters.push(setter(slotWord, draft.base!.id));
+  if (draft.template === "weapon") {
+    if ((draft.bonus ?? 0) > 0) setters.push(setter("enhancement", draft.bonus!));
+    const weapon = draft.weapon ?? {};
+    for (const term of weapon.extraDamage ?? []) setters.push(setter("extra damage", term.dice, [["type", term.type]]));
+    if (weapon.attackAbility !== undefined) setters.push(setter("attack ability", ABILITY_TITLE[weapon.attackAbility]!));
+    if (weapon.damage !== undefined) setters.push(setter("damage", weapon.damage.dice, [["type", weapon.damage.type]]));
+    if (weapon.versatile !== undefined) setters.push(setter("versatile", weapon.versatile));
+    if (weapon.range !== undefined) setters.push(setter("range", weapon.range));
+    if (weapon.properties !== undefined) setters.push(setter("weapon properties", weapon.properties.join(", ")));
+  }
+  if (draft.template === "armor" && (draft.bonus ?? 0) > 0) {
+    // The armor class bonus is the corpus's own enhancement rule: shields add to
+    // the shield bonus, body armor to the armored total, and equal bonuses do not stack.
+    const key = draft.base!.shield === true ? "ac:shield" : "ac:armored:enhancement";
+    rules.unshift(statLine(key, String(draft.bonus), [["bonus", "enhancement"]]));
+  }
+  if (draft.weight !== undefined) {
+    const pounds = plainNumber(draft.weight);
+    setters.push(setter("weight", `${pounds} lb.`, [["lb", pounds]]));
+  }
+  if (draft.cost !== undefined) setters.push(setter("cost", plainNumber(draft.cost.amount), [["currency", draft.cost.currency]]));
+  if (isGear && draft.stackable === true) setters.push(setter("stackable", "true"));
+  if (castAbility !== undefined) setters.push(setter("spellcasting ability", ABILITY_TITLE[castAbility]!));
+  if (draft.ruleset !== undefined) setters.push(setter("ruleset", draft.ruleset));
+
+  const uses = draft.uses?.trim();
+  const description = `${paragraphs(draft.description)}${uses ? `<p>Uses: ${escapeText(uses)}</p>` : ""}`;
+  const children = [`<description>${description}</description>`, `<setters>${setters.join("")}</setters>`];
+  if (rules.length > 0) children.push(`<rules>${rules.join("")}</rules>`);
+  const open = `<element${attributes([
+    ["name", draft.name.trim()],
+    ["type", isGear ? "Item" : "Magic Item"],
+    ["source", source],
+    ["id", id],
+  ])}>`;
+  return [open, ...children.map((line) => `  ${line}`), "</element>"].join("\n");
+}
+
 /** One content file holding every draft; the engine ingests it like any pack. */
-export function compileCustomPack(drafts: readonly CustomDraft[], options: Pick<CompileOptions, "source"> = {}): string {
+export function compileCustomPack(drafts: readonly CustomEntryDraft[], options: Pick<CompileOptions, "source"> = {}): string {
   const elements = drafts.map((draft) =>
     compileCustomElement(draft, options.source === undefined ? {} : { source: options.source }),
   );

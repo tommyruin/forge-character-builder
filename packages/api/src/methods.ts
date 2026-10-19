@@ -1,7 +1,7 @@
 import type {
   ChoiceIdentityReportDto,
   CustomContentDto,
-  CustomDraft,
+  CustomEntryDraft,
   CustomDraftMutationDto,
   DmGrantDto,
   PromotedCustomElementDto,
@@ -389,8 +389,24 @@ export interface EngineMethodMap {
    * grants it. Editing a granted draft re-registers it and keeps the picks
    * whose choice identity did not change.
    */
-  saveCustomDraft: MethodContract<[id: string, request: { draft: CustomDraft; grant?: boolean }], CustomDraftMutationDto>;
-  /** Removes the draft's grant, its stored copy and its installed element. */
+  saveCustomDraft: MethodContract<
+    [
+      id: string,
+      request: {
+        draft: CustomEntryDraft;
+        grant?: boolean;
+        /** A new item draft: how many copies the inventory record holds (default 1). */
+        amount?: number;
+        /** A new item draft: the record's notes. */
+        notes?: string;
+      },
+    ],
+    CustomDraftMutationDto
+  >;
+  /**
+   * Removes the draft's grant (a feature) or every inventory record of it (an
+   * item), its stored copy and its installed element.
+   */
   deleteCustomDraft: MethodContract<[id: string, request: { draftId: string }], CustomDraftMutationDto>;
   /**
    * What the client needs to copy a draft into a homebrew collection, keeping
@@ -402,7 +418,7 @@ export interface EngineMethodMap {
    * Which choices of `draft` would change identity against the stored draft of
    * the same id, and whether any loaded character has picks under them.
    */
-  getChoiceIdentityImpact: MethodContract<[id: string, request: { draft: CustomDraft }], ChoiceIdentityReportDto>;
+  getChoiceIdentityImpact: MethodContract<[id: string, request: { draft: CustomEntryDraft }], ChoiceIdentityReportDto>;
   getCompanion: MethodContract<[id: string], WireObject | null>;
   setCompanionName: MethodContract<[id: string, request: { name: string }], WireObject>;
   setCompanionPortrait: MethodContract<[id: string, base64: string], WireObject>;

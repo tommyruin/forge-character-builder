@@ -1381,6 +1381,38 @@ export function planSetItemDetailsEdits(
 }
 
 /**
+ * Plans the stored names of a custom item's records: the `<item name>` of a
+ * record the item is the base of (worn items, gear) and the `<adorner name>` of
+ * a record it is laid over. These are labels the file keeps beside the element
+ * id, so an edited item's new name is written to the records that carry it.
+ */
+export function planItemNameSyncEdits(
+  document: Dnd5eDocument,
+  state: CharacterState,
+  elementId: string,
+  name: string,
+): RawEdit[] {
+  const edits: RawEdit[] = [];
+  const raw = document.raw;
+  const retag = (node: Dnd5eNode): void => {
+    const range = attrValueRange(raw, node, "name");
+    if (range !== null && raw.slice(range.start, range.end) !== escapeXml(name)) {
+      edits.push({ start: range.start, end: range.end, replacement: escapeXml(name) });
+    }
+  };
+  for (const record of state.items) {
+    const itemNode = itemNodeOf(document, record.identifier);
+    if (record.itemId === elementId) retag(itemNode);
+    for (const group of childElements(itemNode, "items")) {
+      for (const adorner of childElements(group, "adorner")) {
+        if (getAttr(adorner, "id") === elementId) retag(adorner);
+      }
+    }
+  }
+  return edits;
+}
+
+/**
  * Plans one card choice for every carried record: `all` cards them all,
  * `none` removes every card, and `significant` keeps cards for magic items,
  * tools and useful gear only. Control records (optional class features and

@@ -7,7 +7,14 @@
  * collection and re-importing never re-id the element.
  */
 
-import { CUSTOM_DRAFT_SCHEMA_VERSION, type CustomDraft, type CustomTemplate, type ShowsUnder } from "@forge-cb/api";
+import {
+  CUSTOM_DRAFT_SCHEMA_VERSION,
+  type CustomDraft,
+  type CustomItemDraft,
+  type CustomItemTemplate,
+  type CustomTemplate,
+  type ShowsUnder,
+} from "@forge-cb/api";
 import { randomUuid } from "../platform.js";
 
 export {
@@ -18,6 +25,12 @@ export {
   MODIFIER_MODES,
   CUSTOM_ABILITIES,
   CUSTOM_RULESETS,
+  CUSTOM_ITEM_TEMPLATES,
+  ITEM_RARITIES,
+  WORN_SLOTS,
+  DAMAGE_TYPES,
+  WEAPON_PROPERTY_IDS,
+  isCustomItemDraft,
 } from "@forge-cb/api";
 export type {
   CustomTemplate,
@@ -39,6 +52,15 @@ export type {
   CustomBlock,
   CustomSheet,
   CustomDraft,
+  CustomItemTemplate,
+  ItemRarity,
+  WornSlot,
+  DamageType,
+  ItemDamage,
+  CustomItemCost,
+  CustomItemWeapon,
+  CustomItemDraft,
+  CustomEntryDraft,
   BuildSectionKey,
   ContentOrigin,
   DmGrantDto,
@@ -82,6 +104,18 @@ export function createCustomDraft(template: CustomTemplate, name = ""): CustomDr
     template,
     name,
     showsUnder: defaultShowsUnder(template),
+    description: "",
+    blocks: [],
+  };
+}
+
+/** A blank item draft for a template, ready for the form to fill in. */
+export function createCustomItemDraft(template: CustomItemTemplate, name = ""): CustomItemDraft {
+  return {
+    schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION,
+    id: newCustomElementId(),
+    template,
+    name,
     description: "",
     blocks: [],
   };

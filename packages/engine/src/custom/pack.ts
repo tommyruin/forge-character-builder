@@ -23,8 +23,8 @@
 
 import { child, childElements, textContent, type Dnd5eDocument, type Dnd5eNode } from "../dnd5e/document.js";
 import { removeNodeEdit, type RawEdit } from "../selection/selection.js";
-import { CUSTOM_DRAFT_SCHEMA_VERSION, type CustomDraft } from "./schema.js";
-import { readCustomDraft } from "./validate.js";
+import { CUSTOM_DRAFT_SCHEMA_VERSION, type CustomEntryDraft } from "./schema.js";
+import { readCustomEntry } from "./validate.js";
 
 export const BUILDER_BLOCK = "forge-builder";
 export const CUSTOM_PACK_NODE = "custom-pack";
@@ -37,7 +37,7 @@ export interface CustomPackRead {
    * through untouched instead of being dropped.
    */
   entries: unknown[];
-  drafts: CustomDraft[];
+  drafts: CustomEntryDraft[];
   /** Entries the file holds that could not be read, so the caller can say so instead of dropping them silently. */
   problems: Array<{ index: number; message: string }>;
 }
@@ -67,12 +67,12 @@ export function readCustomPack(document: Dnd5eDocument): CustomPackRead {
   if (!Array.isArray(list)) {
     return { entries: [], drafts: [], problems: [{ index: -1, message: "the custom content block is not a list" }] };
   }
-  const drafts: CustomDraft[] = [];
+  const drafts: CustomEntryDraft[] = [];
   const problems: CustomPackRead["problems"] = [];
   const seen = new Set<string>();
   list.forEach((raw: unknown, index: number) => {
     try {
-      const draft = readCustomDraft(raw);
+      const draft = readCustomEntry(raw);
       if (seen.has(draft.id)) {
         problems.push({ index, message: `'${draft.name}' repeats the id of an earlier entry` });
         return;
@@ -92,7 +92,7 @@ const entryId = (entry: unknown): string | undefined =>
     : undefined;
 
 /** The stored entries with this draft in place of the one sharing its id, or appended. */
-export function entriesWithDraft(read: CustomPackRead, draft: CustomDraft): unknown[] {
+export function entriesWithDraft(read: CustomPackRead, draft: CustomEntryDraft): unknown[] {
   const at = read.entries.findIndex((entry) => entryId(entry) === draft.id);
   if (at < 0) return [...read.entries, draft];
   return read.entries.map((entry, index) => (index === at ? draft : entry));

@@ -10,13 +10,38 @@
  * the element can be opened in the form again.
  */
 
-import type { CustomDraft, PromotedCustomElementDto } from "@forge-cb/api";
+import { isCustomItemDraft, type CustomEntryDraft, type PromotedCustomElementDto } from "@forge-cb/api";
 import { randomUuid } from "../platform.js";
 import { elementTypeFor } from "./catalogue.js";
 import { compileCustomElement } from "./compile.js";
 
-export function promoteCustomDraft(draft: CustomDraft, source: string): PromotedCustomElementDto {
+export function promoteCustomDraft(draft: CustomEntryDraft, source: string): PromotedCustomElementDto {
   const xml = compileCustomElement(draft, { source });
+  if (isCustomItemDraft(draft)) {
+    return {
+      id: draft.id,
+      xml,
+      element: {
+        localId: randomUuid(),
+        type: draft.template === "gear" ? "Item" : "Magic Item",
+        name: draft.name,
+        description: draft.description,
+        sheetText: "",
+        prerequisite: "",
+        requirements: "",
+        requirementRows: [],
+        supports: [],
+        ruleset: draft.ruleset ?? "inherit",
+        setters: {},
+        stats: [],
+        grants: [],
+        rawXml: xml,
+        id: draft.id,
+        idLocked: true,
+        customDraft: draft,
+      },
+    };
+  }
   return {
     id: draft.id,
     xml,

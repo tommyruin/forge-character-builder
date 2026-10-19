@@ -203,6 +203,12 @@ export function planItemRegistrationSweep(
   document: Dnd5eDocument,
   state: CharacterState,
   library: ElementLibrary,
+  /**
+   * Element ids to treat as conveying nothing, whatever their records say. An
+   * edited item's registration was built from its old definition; stripping it
+   * with this and then sweeping again registers the new one.
+   */
+  suppressed: ReadonlySet<string> = new Set(),
 ): ItemRegistrationPlan {
   const elementsNode = document.root.build.elements?.node;
   const sumView = document.root.build.sum;
@@ -214,7 +220,7 @@ export function planItemRegistrationSweep(
     if (content === undefined) continue;
     const id = content.identity.id;
     const target = targets.get(id) ?? { element: content, wanted: false, baseOwned: 0 };
-    if (itemBenefitsActive(library, item)) target.wanted = true;
+    if (itemBenefitsActive(library, item) && !suppressed.has(id)) target.wanted = true;
     // The equip planners write the adorner's id beside its base, or, for a
     // weapon or armor that is its own content, the base's own entry.
     const baseWrites = item.adorners.length > 0 || content === elementById(library, item.itemId);

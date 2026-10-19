@@ -16,6 +16,8 @@ import type {
   CustomDiagnosticDto,
   CustomDraft,
   CustomDraftEntryDto,
+  CustomEntryDraft,
+  CustomItemDraft,
   PromotedCustomElementDto,
 } from "@forge-cb/api";
 import {
@@ -37,7 +39,9 @@ import { diffChoiceIdentity } from "./identity.js";
 import { buildSectionOfType } from "./placement.js";
 import { entriesWithDraft, entriesWithoutDraft, planCustomPackEdits, readCustomPack } from "./pack.js";
 import { promoteCustomDraft } from "./promote.js";
-import { readCustomDraft } from "./validate.js";
+import { isCustomItemDraft } from "./schema.js";
+import { readCustomEntry } from "./validate.js";
+import type { AddItemOptions, ItemDetails } from "../inventory/inventory.js";
 
 /** What the content operations need from the character service. */
 export interface CustomContentHost {
@@ -49,6 +53,15 @@ export interface CustomContentHost {
   addGrantedElement(id: string, request: { elementId: string }): CharacterState;
   removeGrantedElement(id: string, request: { elementId: string }): CharacterState;
   setSelection(id: string, ruleIdentifier: string, selectionId: string): CharacterState;
+  addItem(id: string, options: AddItemOptions): unknown;
+  removeItem(id: string, identifier: string, amount?: number): unknown;
+  setItemDetails(id: string, identifier: string, details: ItemDetails): unknown;
+  /**
+   * Brings the records of an edited custom item up to date: their stored names,
+   * the registrations the old definition left behind, and attack rows that
+   * still carry the old generated name.
+   */
+  refreshItemRecords(id: string, elementId: string, previousName: string): void;
 }
 
 export interface SaveResult {
@@ -85,6 +98,10 @@ function choiceWrappers(owner: RegisteredElement): RegisteredElement[] {
 const isTopLevelGranted = (state: CharacterState, elementId: string): boolean =>
   state.elements.some((node) => node.id === elementId);
 
+/** The inventory records built on a custom item: it is the record's element or its adorner. */
+const recordsOf = (state: CharacterState, elementId: string): CharacterState["items"] =>
+  state.items.filter((item) => item.itemId === elementId || item.adorners.includes(elementId));
+
 export class CharacterCustomContent {
   constructor(private readonly host: CustomContentHost) {}
 
@@ -105,7 +122,7 @@ export class CharacterCustomContent {
     if (library === undefined) return { report: undefined, failures: [] };
     const read = readCustomPack(document);
     const failures: CustomDiagnosticDto[] = read.problems.map((problem) => ({ kind: "unreadable", message: problem.message }));
-    const installable: CustomDraft[] = [];
+    const installable: CustomEntryDraft[] = [];
     for (const draft of read.drafts) {
       try {
         compileCustomElement(draft);
@@ -126,16 +143,29 @@ export class CharacterCustomContent {
     if (this.host.library !== undefined) removeCharacterPack(this.host.library, id);
   }
 
-  private entryFor(characterId: string, state: CharacterState, draft: CustomDraft): CustomDraftEntryDto {
+  private entryFor(characterId: string, state: CharacterState, draft: CustomEntryDraft): CustomDraftEntryDto {
+    const installed =
+      this.host.library === undefined ? false : characterPackOwners(this.host.library, draft.id)?.has(characterId) === true;
+    if (isCustomItemDraft(draft)) {
+      return {
+        kind: "item",
+        draft,
+        elementId: draft.id,
+        type: draft.template === "gear" ? "Item" : "Magic Item",
+        section: "other",
+        granted: recordsOf(state, draft.id).length > 0,
+        installed,
+      };
+    }
     const type = elementTypeFor(draft.showsUnder);
     return {
+      kind: "feature",
       draft,
       elementId: draft.id,
       type,
       section: buildSectionOfType(type),
       granted: isTopLevelGranted(state, draft.id),
-      installed:
-        this.host.library === undefined ? false : characterPackOwners(this.host.library, draft.id)?.has(characterId) === true,
+      installed,
     };
   }
 
@@ -183,14 +213,18 @@ export class CharacterCustomContent {
    * definition, and the picks whose choice identity is unchanged are made
    * again, so editing a description or a bonus never costs a player a choice.
    */
-  save(id: string, request: { draft: unknown; grant?: boolean }): SaveResult {
+  save(id: string, request: { draft: unknown; grant?: boolean; amount?: number; notes?: string }): SaveResult {
     this.requireLibrary();
-    const draft = readCustomDraft(request.draft);
+    const draft = readCustomEntry(request.draft);
     compileCustomElement(draft);
+    if (isCustomItemDraft(draft)) return this.saveItem(id, draft, request);
     const first = this.host.snapshot(id);
     const read = readCustomPack(first.document);
     this.requireReadableBlock(read);
     const existing = read.drafts.find((candidate) => candidate.id === draft.id);
+    if (existing !== undefined && isCustomItemDraft(existing)) {
+      throw engineError("conflict", `'${draft.name}' is an item; its id cannot be reused for a feature`);
+    }
     const wasGranted = isTopLevelGranted(first.state, draft.id);
     const picks = new Map<string, string>();
     if (existing !== undefined && wasGranted) {
@@ -209,6 +243,57 @@ export class CharacterCustomContent {
     if (grantNow) {
       this.host.addGrantedElement(id, { elementId: draft.id });
       if (picks.size > 0) this.restorePicks(id, draft.id, picks);
+    }
+    const state = this.host.snapshot(id).state;
+    return { entry: this.entryFor(id, state, draft), diagnostics: this.diagnosticsFor(id, draft.id, report) };
+  }
+
+  /**
+   * Creates or updates a custom item. A new item is stored, installed and added
+   * to the inventory through the ordinary add path (`grant: false` keeps it in
+   * the pack alone). Editing one that is carried keeps its records: they are
+   * brought up to date in place, so equipped and attuned state survive.
+   */
+  private saveItem(
+    id: string,
+    draft: CustomItemDraft,
+    request: { grant?: boolean; amount?: number; notes?: string },
+  ): SaveResult {
+    const first = this.host.snapshot(id);
+    const read = readCustomPack(first.document);
+    this.requireReadableBlock(read);
+    const existing = read.drafts.find((candidate) => candidate.id === draft.id);
+    if (existing !== undefined) {
+      if (!isCustomItemDraft(existing)) {
+        throw engineError("conflict", `'${draft.name}' is a feature; its id cannot be reused for an item`);
+      }
+      if (existing.template !== draft.template) {
+        throw engineError("conflict", `'${existing.name}' is a ${existing.template} item; a different template needs a new item`);
+      }
+    }
+    const carried = recordsOf(first.state, draft.id);
+    if (existing !== undefined && carried.length > 0 && (existing.base?.id ?? "") !== (draft.base?.id ?? "")) {
+      throw engineError(
+        "conflict",
+        `'${existing.name}' is carried on ${existing.base?.name ?? "its base"}; remove it from the inventory before changing its base`,
+      );
+    }
+    const current = this.host.snapshot(id);
+    this.host.applyRegionEdits(id, planCustomPackEdits(current.document, entriesWithDraft(read, draft)));
+    const { report } = this.syncPack(id, this.host.snapshot(id).document);
+    if (existing !== undefined && carried.length > 0) this.host.refreshItemRecords(id, draft.id, existing.name);
+
+    const addNow = existing === undefined ? request.grant !== false : request.grant === true && carried.length === 0;
+    if (addNow) {
+      const before = new Set(this.host.snapshot(id).state.items.map((item) => item.identifier));
+      this.host.addItem(id, {
+        itemId: draft.id,
+        amount: Math.max(1, Math.trunc(request.amount ?? 1)),
+        baseElementId: draft.base?.id ?? null,
+      });
+      const created = this.host.snapshot(id).state.items.find((item) => !before.has(item.identifier));
+      const notes = request.notes?.trim() ?? "";
+      if (created !== undefined && notes !== "") this.host.setItemDetails(id, created.identifier, { notes });
     }
     const state = this.host.snapshot(id).state;
     return { entry: this.entryFor(id, state, draft), diagnostics: this.diagnosticsFor(id, draft.id, report) };
@@ -245,7 +330,14 @@ export class CharacterCustomContent {
     if (!read.entries.some((entry) => (entry as { id?: unknown } | null)?.id === request.draftId)) {
       throw engineError("not-found", `custom content '${request.draftId}' not found`);
     }
-    if (isTopLevelGranted(state, request.draftId)) {
+    const stored = read.drafts.find((candidate) => candidate.id === request.draftId);
+    if (stored !== undefined && isCustomItemDraft(stored)) {
+      // An item is carried, not granted: every record of it leaves the inventory.
+      // (A worn item's registration also sits in the element tree, which is not a grant.)
+      for (const record of recordsOf(this.host.snapshot(id).state, request.draftId)) {
+        this.host.removeItem(id, record.identifier);
+      }
+    } else if (isTopLevelGranted(state, request.draftId)) {
       this.host.removeGrantedElement(id, { elementId: request.draftId });
     }
     const current = this.host.snapshot(id);
@@ -264,10 +356,11 @@ export class CharacterCustomContent {
 
   /** Which choices of the proposed draft change identity, and which loaded characters have picks under them. */
   impact(id: string, request: { draft: unknown }): ChoiceIdentityReportDto {
-    const proposed = readCustomDraft(request.draft);
+    const proposed = readCustomEntry(request.draft);
     const { document } = this.host.snapshot(id);
     const stored = readCustomPack(document).drafts.find((candidate) => candidate.id === proposed.id);
-    if (stored === undefined) return { changes: [], hasPicks: false };
+    // An item offers no choices, so changing one never costs a pick.
+    if (stored === undefined || isCustomItemDraft(stored) || isCustomItemDraft(proposed)) return { changes: [], hasPicks: false };
     const library = this.host.library;
     const changes = diffChoiceIdentity(stored, proposed).map((change) => {
       const picks: ChoiceIdentityReportDto["changes"][number]["picks"] = [];

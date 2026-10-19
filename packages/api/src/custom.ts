@@ -176,6 +176,115 @@ export interface CustomDraft {
   ruleset?: CustomRuleset;
 }
 
+// ---- items -------------------------------------------------------------------
+
+/**
+ * Item templates. `weapon` and `armor` lay a magic item over a real base from the
+ * library; `worn` is a magic item that is worn; `gear` is a plain item with no
+ * rules. An item draft lives in the same character pack as a feature draft and
+ * is told apart by its template.
+ */
+export const CUSTOM_ITEM_TEMPLATES = ["weapon", "armor", "worn", "gear"] as const;
+export type CustomItemTemplate = (typeof CUSTOM_ITEM_TEMPLATES)[number];
+
+export const ITEM_RARITIES = ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"] as const;
+export type ItemRarity = (typeof ITEM_RARITIES)[number];
+
+/** Where a worn item sits; the engine files `ring` items under Rings and the rest under Wondrous Items. */
+export const WORN_SLOTS = ["head", "neck", "ring", "shoulders", "arms", "hands", "waist", "legs", "feet", "body", "misc"] as const;
+export type WornSlot = (typeof WORN_SLOTS)[number];
+
+export const DAMAGE_TYPES = [
+  "acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison",
+  "psychic", "radiant", "slashing", "thunder",
+] as const;
+export type DamageType = (typeof DAMAGE_TYPES)[number];
+
+/** The weapon properties an item may give its base weapon (ids of the engine's own property elements). */
+export const WEAPON_PROPERTY_IDS = [
+  "ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION",
+  "ID_INTERNAL_WEAPON_PROPERTY_FINESSE",
+  "ID_INTERNAL_WEAPON_PROPERTY_HEAVY",
+  "ID_INTERNAL_WEAPON_PROPERTY_LIGHT",
+  "ID_INTERNAL_WEAPON_PROPERTY_LOADING",
+  "ID_INTERNAL_WEAPON_PROPERTY_REACH",
+  "ID_INTERNAL_WEAPON_PROPERTY_THROWN",
+  "ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED",
+  "ID_INTERNAL_WEAPON_PROPERTY_VERSATILE",
+] as const;
+
+/** Damage dice and a damage type: "1d6 cold". */
+export interface ItemDamage {
+  dice: string;
+  type: DamageType;
+}
+
+export interface CustomItemCost {
+  amount: number;
+  currency: "cp" | "sp" | "gp";
+}
+
+/** What a magic weapon changes about its base weapon's attacks. */
+export interface CustomItemWeapon {
+  /** Dice added after the weapon's own damage ("1d8+3 slashing + 1d6 cold"). */
+  extraDamage?: ItemDamage[];
+  /** The ability attack and damage rolls with this weapon use by default. */
+  attackAbility?: CustomAbility;
+  /** Replaces the base weapon's damage die and type. */
+  damage?: ItemDamage;
+  /** The two-handed damage die of a versatile weapon. */
+  versatile?: string;
+  /** Replaces the base weapon's range ("20/60"). */
+  range?: string;
+  /** Replaces the base weapon's properties (ids from `WEAPON_PROPERTY_IDS`). */
+  properties?: string[];
+}
+
+/**
+ * A custom item. It compiles to an ordinary Magic Item laid over `base`
+ * (weapon, armor), a Magic Item worn on its own (worn) or an Item (gear), so
+ * adding it to a character, equipping, attuning and the sheet are the engine's
+ * existing paths.
+ */
+export interface CustomItemDraft {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  /** The element id the draft compiles to. */
+  id: string;
+  template: CustomItemTemplate;
+  name: string;
+  /** Plain text; blank lines separate paragraphs. */
+  description: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  /** `weapon` and `armor`: the library element the item sits on. `shield` marks a shield base. */
+  base?: { id: string; name: string; shield?: boolean };
+  /** `weapon`: the enhancement bonus to attack and damage; `armor`: the bonus to armor class. */
+  bonus?: number;
+  weapon?: CustomItemWeapon;
+  rarity?: ItemRarity;
+  /** The item conveys nothing until the wearer attunes to it. */
+  attunement?: boolean;
+  /** `worn`: where it is worn. */
+  slot?: WornSlot;
+  /** Sheet text about limited uses or charges ("7 charges; regains 1d6+1 at dawn"). Not tracked. */
+  uses?: string;
+  /** Pounds. */
+  weight?: number;
+  cost?: CustomItemCost;
+  /** `gear`: copies share a record, counted by quantity. */
+  stackable?: boolean;
+  /** What the item does while it is worn (and attuned, when it asks): modifiers, grants and choices. */
+  blocks: CustomBlock[];
+}
+
+/** Anything the character pack stores. */
+export type CustomEntryDraft = CustomDraft | CustomItemDraft;
+
+/** True for a draft of the item kind. */
+export function isCustomItemDraft(draft: { template?: unknown }): draft is CustomItemDraft {
+  return (CUSTOM_ITEM_TEMPLATES as readonly unknown[]).includes(draft.template);
+}
+
 // ---- RPC payloads ------------------------------------------------------------
 
 /** The Build tab sections an entry can land in (the client's `BUILD_SECTIONS` keys, plus Other). */
@@ -221,13 +330,19 @@ export interface CustomDiagnosticDto extends WireObject {
 
 /** One custom draft on a character, with what the engine knows about it. */
 export interface CustomDraftEntryDto extends WireObject {
-  draft: CustomDraft;
+  /** A feature draft is granted in Build; an item draft is carried in the inventory. */
+  kind: "feature" | "item";
+  draft: CustomEntryDraft;
   /** The element id (`draft.id`). */
   elementId: string;
   /** The element type the draft compiles to. */
   type: string;
+  /** The Build section a feature lands in; `other` for an item, which Build never lists. */
   section: BuildSectionKey;
-  /** The element is registered on the character (granted at the top level). */
+  /**
+   * A feature is registered on the character (granted at the top level); an
+   * item is in the inventory.
+   */
   granted: boolean;
   /** The compiled element resolves in the library. False when its id collides with book content. */
   installed: boolean;

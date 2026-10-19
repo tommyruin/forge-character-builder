@@ -98,6 +98,7 @@ import {
   planSetItemCardsEdits,
   planSetItemPresentationEdits,
   planSetItemDetailsEdits,
+  planItemNameSyncEdits,
   planSetItemStorageEdits,
   type AddItemOptions,
   type ExtractItemOptions,
@@ -641,6 +642,10 @@ export class CharacterService {
       addGrantedElement: (id, request) => this.addGrantedElement(id, request),
       removeGrantedElement: (id, request) => this.removeGrantedElement(id, request),
       setSelection: (id, ruleIdentifier, selectionId) => this.setSelection(id, ruleIdentifier, selectionId),
+      addItem: (id, options) => this.addItem(id, options),
+      removeItem: (id, identifier, amount) => this.removeItem(id, identifier, amount),
+      setItemDetails: (id, identifier, details) => this.setItemDetails(id, identifier, details),
+      refreshItemRecords: (id, elementId, previousName) => this.refreshItemRecords(id, elementId, previousName),
     });
   }
 
@@ -2062,6 +2067,41 @@ export class CharacterService {
     return this.inventoryDto(this.applyInventoryPlan(id, state, document, [combined]), this.library);
   }
 
+  /**
+   * Brings the records of an edited custom item up to date, in one stored step.
+   * The old definition's registrations are stripped and registered again from
+   * the new one (equipped and attuned state are untouched), the names the file
+   * stores beside the element id follow the new name, and an automatic attack
+   * row that still carries the old generated name takes the new one.
+   */
+  private refreshItemRecords(id: string, elementId: string, previousName: string): void {
+    const { state, document } = this.require(id);
+    const library = this.library;
+    if (library === undefined) return;
+    const element = library.byId.get(elementId);
+    if (element === undefined) return;
+    let current = document;
+    let next = state;
+    const apply = (edits: RawEdit[]): void => {
+      if (edits.length === 0) return;
+      current = parseDnd5e(applyRawEdits(current.raw, edits));
+      next = this.remap(current, next, id);
+    };
+    apply(planItemRegistrationSweep(current, next, library, new Set([elementId])).edits);
+    apply(planItemNameSyncEdits(current, next, elementId, element.identity.name));
+    const named = next.attacks.filter((row) => {
+      if (row.kind !== "weapon") return false;
+      const record = next.items.find((item) => item.identifier === row.identifier);
+      return record !== undefined && record.adorners.includes(elementId) && (row.name === "" || row.name === previousName);
+    });
+    for (const row of named) {
+      row.name = "";
+      apply(planRewriteAttackEdits(next, current, library, row));
+    }
+    const combined = { start: 0, end: document.raw.length, replacement: current.raw };
+    this.applyInventoryPlan(id, state, document, [combined]);
+  }
+
   /** Applies one item-card choice to every carried record (see `planSetItemCardsEdits`). */
   setItemCards(id: string, request: { policy: ItemCardsPolicy }): InventoryDto {
     const { state, document } = this.require(id);
@@ -2282,7 +2322,7 @@ export class CharacterService {
   /** Creates or updates a custom draft: stored in the file, compiled, installed and granted. */
   saveCustomDraft(
     id: string,
-    request: { draft: unknown; grant?: boolean },
+    request: { draft: unknown; grant?: boolean; amount?: number; notes?: string },
   ): { entry: CustomDraftEntryDto; diagnostics: CustomDiagnosticDto[] } {
     return this.custom.save(id, request);
   }

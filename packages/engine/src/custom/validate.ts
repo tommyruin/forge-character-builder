@@ -17,13 +17,20 @@ import { filterIssues, requirementIssues, type ConditionIssue } from "./conditio
 import {
   CUSTOM_ABILITIES,
   CUSTOM_DRAFT_SCHEMA_VERSION,
+  CUSTOM_ITEM_TEMPLATES,
   CUSTOM_OTHER_TYPE,
   CUSTOM_RULESETS,
   CUSTOM_TEMPLATES,
+  DAMAGE_TYPES,
+  ITEM_RARITIES,
   SHEET_ACTIONS,
   SHOWS_UNDER,
+  WEAPON_PROPERTY_IDS,
+  WORN_SLOTS,
   type CustomAbility,
   type CustomDraft,
+  type CustomEntryDraft,
+  type CustomItemDraft,
 } from "./schema.js";
 
 export interface CustomDraftIssue {
@@ -329,15 +336,25 @@ export function customDraftIssues(draft: unknown): CustomDraftIssue[] {
   if (draft.requirements !== undefined) issues.push(...withPrefix("requirements", requirementIssues(draft.requirements)));
   if (draft.sheet !== undefined) issues.push(...sheetIssues(draft.sheet));
 
-  if (!Array.isArray(draft.blocks)) {
-    issues.push({ path: "blocks", message: "blocks must be a list" });
-    return issues;
+  issues.push(...blocksIssues(draft.blocks));
+  return issues;
+}
+
+/**
+ * Every problem in a list of blocks (modifiers, grants and choices), shared by
+ * feature drafts and item drafts: a list of at most `MAX_BLOCKS` blocks with
+ * unique ids, and spells that agree on one cast ability and one allowance.
+ */
+function blocksIssues(blocks: unknown): CustomDraftIssue[] {
+  const issues: CustomDraftIssue[] = [];
+  if (!Array.isArray(blocks)) {
+    return [{ path: "blocks", message: "blocks must be a list" }];
   }
-  if (draft.blocks.length > MAX_BLOCKS) issues.push({ path: "blocks", message: `a draft holds at most ${MAX_BLOCKS} blocks` });
+  if (blocks.length > MAX_BLOCKS) issues.push({ path: "blocks", message: `a draft holds at most ${MAX_BLOCKS} blocks` });
   const ids = new Set<string>();
   const abilities = new Set<string>();
   const usages = new Set<string>();
-  draft.blocks.forEach((raw: unknown, index: number) => {
+  blocks.forEach((raw: unknown, index: number) => {
     const path = `blocks[${index}]`;
     if (!isRecord(raw)) {
       issues.push({ path, message: "a block must be an object" });
@@ -391,3 +408,184 @@ export function readCustomDraft(raw: unknown): CustomDraft {
   }
   return candidate as CustomDraft;
 }
+
+// ---- items -------------------------------------------------------------------
+
+const DICE = /^[1-9][0-9]?d[1-9][0-9]{0,2}$/;
+const RANGE = /^[0-9]{1,3}(\/[0-9]{1,4})?( ?ft\.?)?$/;
+const CURRENCIES = ["cp", "sp", "gp"];
+
+function diceIssues(value: unknown, path: string): CustomDraftIssue[] {
+  return typeof value === "string" && DICE.test(value) ? [] : [{ path, message: "write dice like 1d6 or 2d8" }];
+}
+
+function damageIssues(value: unknown, path: string): CustomDraftIssue[] {
+  if (!isRecord(value)) return [{ path, message: "give the dice and the damage type" }];
+  const issues = diceIssues(value.dice, `${path}.dice`);
+  if (typeof value.type !== "string" || !DAMAGE_TYPES.includes(value.type as never)) {
+    issues.push({ path: `${path}.type`, message: "pick a damage type from the menu" });
+  }
+  return issues;
+}
+
+function weaponIssues(weapon: unknown): CustomDraftIssue[] {
+  if (!isRecord(weapon)) return [{ path: "weapon", message: "weapon settings must be an object" }];
+  const issues: CustomDraftIssue[] = [];
+  if (weapon.extraDamage !== undefined) {
+    if (!Array.isArray(weapon.extraDamage) || weapon.extraDamage.length > 4) {
+      issues.push({ path: "weapon.extraDamage", message: "extra damage is a list of at most 4 dice" });
+    } else {
+      weapon.extraDamage.forEach((term: unknown, index: number) => {
+        issues.push(...damageIssues(term, `weapon.extraDamage[${index}]`));
+      });
+    }
+  }
+  if (weapon.attackAbility !== undefined && !CUSTOM_ABILITIES.includes(weapon.attackAbility as CustomAbility)) {
+    issues.push({ path: "weapon.attackAbility", message: "pick one of the six abilities" });
+  }
+  if (weapon.damage !== undefined) issues.push(...damageIssues(weapon.damage, "weapon.damage"));
+  if (weapon.versatile !== undefined) issues.push(...diceIssues(weapon.versatile, "weapon.versatile"));
+  if (weapon.range !== undefined && !(typeof weapon.range === "string" && RANGE.test(weapon.range))) {
+    issues.push({ path: "weapon.range", message: "write a range like 20/60 or 5 ft" });
+  }
+  if (weapon.properties !== undefined) {
+    const list = weapon.properties;
+    if (
+      !Array.isArray(list) ||
+      list.some((id) => !WEAPON_PROPERTY_IDS.includes(id as never)) ||
+      new Set(list).size !== list.length
+    ) {
+      issues.push({ path: "weapon.properties", message: "pick each weapon property at most once from the menu" });
+    }
+  }
+  return issues;
+}
+
+/** Every problem in an item draft, each naming its field. An empty list means the draft compiles. */
+export function customItemDraftIssues(draft: unknown): CustomDraftIssue[] {
+  if (!isRecord(draft)) return [{ path: "", message: "a draft must be an object" }];
+  const issues: CustomDraftIssue[] = [];
+  if (draft.schemaVersion !== undefined && draft.schemaVersion !== CUSTOM_DRAFT_SCHEMA_VERSION) {
+    issues.push({
+      path: "schemaVersion",
+      message: `this draft was written by a newer version of the builder (schema ${String(draft.schemaVersion)})`,
+    });
+  }
+  if (typeof draft.id !== "string" || !ELEMENT_ID.test(draft.id)) {
+    issues.push({ path: "id", message: "the draft needs the stable element id it was created with" });
+  }
+  const template = CUSTOM_ITEM_TEMPLATES.includes(draft.template as never) ? (draft.template as CustomItemDraft["template"]) : undefined;
+  if (template === undefined) issues.push({ path: "template", message: "pick weapon, armor, worn item or plain gear" });
+  if (!isName(draft.name, 120)) issues.push({ path: "name", message: "give it a name (at most 120 characters)" });
+  if (typeof draft.description !== "string" || draft.description.length > 20000) {
+    issues.push({ path: "description", message: "the description is text of at most 20000 characters" });
+  }
+  if (draft.cameFrom !== undefined && !isText(draft.cameFrom, 120)) {
+    issues.push({ path: "cameFrom", message: "where it came from is text of at most 120 characters" });
+  }
+  if (draft.ruleset !== undefined && !CUSTOM_RULESETS.includes(draft.ruleset as never)) {
+    issues.push({ path: "ruleset", message: "pick both rulesets, 2014 or 2024" });
+  }
+
+  const onBase = template === "weapon" || template === "armor";
+  if (onBase) {
+    const base = draft.base;
+    if (!isRecord(base) || typeof base.id !== "string" || !/^ID_[A-Za-z0-9_-]+$/.test(base.id)) {
+      issues.push({ path: "base", message: template === "weapon" ? "pick the weapon it is made from" : "pick the armor or shield it is made from" });
+    } else {
+      if (!isName(base.name, 120)) issues.push({ path: "base.name", message: "name the base" });
+      if (base.shield !== undefined && (typeof base.shield !== "boolean" || template !== "armor")) {
+        issues.push({ path: "base.shield", message: "only an armor base can be a shield" });
+      }
+    }
+    if (draft.bonus !== undefined && !(isWholeNumber(draft.bonus) && draft.bonus >= 0 && draft.bonus <= 10)) {
+      issues.push({ path: "bonus", message: "the bonus is a whole number from 0 to 10" });
+    }
+  } else {
+    if (draft.base !== undefined) issues.push({ path: "base", message: "only a weapon or armor sits on a base" });
+    if (draft.bonus !== undefined) issues.push({ path: "bonus", message: "only a weapon or armor has a bonus" });
+  }
+  if (draft.weapon !== undefined) {
+    if (template !== "weapon") issues.push({ path: "weapon", message: "weapon settings only apply to a weapon" });
+    else issues.push(...weaponIssues(draft.weapon));
+  }
+
+  const magic = template !== "gear";
+  if (draft.rarity !== undefined && !(magic && ITEM_RARITIES.includes(draft.rarity as never))) {
+    issues.push({ path: "rarity", message: magic ? "pick a rarity from the menu" : "plain gear has no rarity" });
+  }
+  if (draft.attunement !== undefined && !(magic && typeof draft.attunement === "boolean")) {
+    issues.push({ path: "attunement", message: magic ? "attunement is on or off" : "plain gear cannot need attunement" });
+  }
+  if (draft.slot !== undefined && !(template === "worn" && WORN_SLOTS.includes(draft.slot as never))) {
+    issues.push({ path: "slot", message: template === "worn" ? "pick where it is worn from the menu" : "only a worn item has a slot" });
+  }
+  if (template === "worn" && draft.slot === undefined) {
+    issues.push({ path: "slot", message: "pick where it is worn" });
+  }
+  if (draft.uses !== undefined && !isText(draft.uses, 120)) {
+    issues.push({ path: "uses", message: "uses is text of at most 120 characters" });
+  }
+  // A weapon or armor weighs what its base weighs, and is priced as that base.
+  if (onBase && (draft.weight !== undefined || draft.cost !== undefined)) {
+    issues.push({ path: draft.weight !== undefined ? "weight" : "cost", message: "a weapon or armor keeps its base's weight and price" });
+  }
+  if (draft.weight !== undefined && !(typeof draft.weight === "number" && Number.isFinite(draft.weight) && draft.weight >= 0 && draft.weight <= 10000)) {
+    issues.push({ path: "weight", message: "weight is a number of pounds, 0 or more" });
+  }
+  if (draft.cost !== undefined) {
+    const cost = draft.cost;
+    if (!isRecord(cost) || !(typeof cost.amount === "number" && Number.isFinite(cost.amount) && cost.amount >= 0 && cost.amount <= 1_000_000_000)) {
+      issues.push({ path: "cost.amount", message: "cost is a number, 0 or more" });
+    } else if (typeof cost.currency !== "string" || !CURRENCIES.includes(cost.currency)) {
+      issues.push({ path: "cost.currency", message: "pick copper, silver or gold" });
+    }
+  }
+  if (draft.stackable !== undefined && !(template === "gear" && typeof draft.stackable === "boolean")) {
+    issues.push({ path: "stackable", message: template === "gear" ? "stackable is on or off" : "only plain gear stacks" });
+  }
+  issues.push(...blocksIssues(draft.blocks));
+  if (Array.isArray(draft.blocks)) {
+    draft.blocks.forEach((block: unknown, index: number) => {
+      if (isRecord(block) && block.kind === "choice") {
+        issues.push({
+          path: `blocks[${index}]`,
+          message: "an item cannot offer a choice; grant a custom feature that holds it",
+        });
+      }
+    });
+  }
+  if (template === "gear" && Array.isArray(draft.blocks) && draft.blocks.length > 0) {
+    issues.push({ path: "blocks", message: "plain gear has no rules; use a worn item for effects" });
+  }
+  return issues;
+}
+
+/** Every problem in whatever a character pack stores, feature or item. */
+export function customEntryIssues(draft: unknown): CustomDraftIssue[] {
+  return isRecord(draft) && CUSTOM_ITEM_TEMPLATES.includes(draft.template as never)
+    ? customItemDraftIssues(draft)
+    : customDraftIssues(draft);
+}
+
+/**
+ * Reads a stored entry: an item draft by its template, anything else as a
+ * feature draft. The same version rules as `readCustomDraft` apply.
+ */
+export function readCustomEntry(raw: unknown): CustomEntryDraft {
+  if (isRecord(raw) && CUSTOM_ITEM_TEMPLATES.includes(raw.template as never)) return readCustomItemDraft(raw);
+  return readCustomDraft(raw);
+}
+
+/** Reads an item draft from JSON; throws an `invalid-argument` error naming every problem. */
+export function readCustomItemDraft(raw: unknown): CustomItemDraft {
+  const candidate = isRecord(raw) && raw.schemaVersion === undefined
+    ? { ...raw, schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION }
+    : raw;
+  const issues = customItemDraftIssues(candidate);
+  if (issues.length > 0) {
+    throw engineError("invalid-argument", `invalid custom item: ${issues[0]!.path === "" ? "" : `${issues[0]!.path}: `}${issues[0]!.message}`, { issues });
+  }
+  return candidate as CustomItemDraft;
+}
+
