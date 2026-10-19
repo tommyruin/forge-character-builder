@@ -177,6 +177,14 @@ function ItemCardSettings({ workspace }) {
             type="button"
             className="fcb-button"
             disabled={workspace.busy}
+            onClick={() => applyToEveryItem('all', 'Item cards added to every item')}
+          >
+            All item cards
+          </button>
+          <button
+            type="button"
+            className="fcb-button"
+            disabled={workspace.busy}
             onClick={() =>
               applyToEveryItem('significant', 'Item cards kept for magic items, tools and useful gear')
             }

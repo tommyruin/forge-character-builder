@@ -48,6 +48,14 @@ const switchLabelled = (text) =>
 const buttonNamed = (text) => [...host.querySelectorAll('button')].find((button) => button.textContent === text);
 
 describe('sheet settings item cards', () => {
+  it('gives every item a card in one character edit', async () => {
+    await renderPanel();
+    await act(async () => buttonNamed('All item cards').click());
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(characters.setItemCards).toHaveBeenCalledWith('Ada', 'all');
+    expect(notify).toHaveBeenCalledWith('Item cards added to every item');
+  });
+
   it('limits every item card to significant items in one character edit', async () => {
     await renderPanel();
     await act(async () => buttonNamed('Cards for magic & useful items only').click());
