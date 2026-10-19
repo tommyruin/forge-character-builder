@@ -342,7 +342,24 @@ export function contentElementOf(
 ): ParsedElement | undefined {
   if (item.adorners.length > 0) return elementById(library, item.adorners[0]!);
   const element = elementById(library, item.itemId);
+  if (hasOwnContent(element)) return element;
   return isWearableElement(element) ? element : undefined;
+}
+
+/**
+ * A physical Weapon or Armor that offers a choice or grants something beyond
+ * a marker (a sense, a spell, a language). Its base registration only lists
+ * the element and its direct grants flat, which is enough for a stat or a
+ * marker but leaves a choice, or a sense the sheet reads from the element
+ * tree, unseen. Such an element is its own record content: registered as a
+ * node while it conveys its benefits, like a worn magic item.
+ */
+export function hasOwnContent(element: ParsedElement | undefined): boolean {
+  if (element === undefined) return false;
+  if (element.identity.type !== "Weapon" && element.identity.type !== "Armor") return false;
+  return element.rules.some(
+    (rule) => rule.kind === "select" || (rule.kind === "grant" && (rule.type ?? "").trim().toLowerCase() !== "grants"),
+  );
 }
 
 /**
@@ -803,6 +820,8 @@ function planTreeAppendEdits(
   base: ParsedElement,
 ): RawEdit[] {
   if (base.identity.type !== "Armor") return [];
+  // Armor with content of its own is registered in full by the item-registration sweep.
+  if (hasOwnContent(base)) return [];
   const elementsNode = document.root.build.elements?.node;
   if (!elementsNode) return [];
   const existing = childElements(elementsNode, "element").find((node) => getAttr(node, "id") === base.identity.id);

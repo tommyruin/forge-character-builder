@@ -47,7 +47,7 @@ import {
   type RawEdit,
   type TreeNode,
 } from "../selection/selection.js";
-import { baseRegistrationPresent, contentElementOf, isAdornerElement, itemBenefitsActive } from "./inventory.js";
+import { baseRegistrationPresent, contentElementOf, hasOwnContent, isAdornerElement, itemBenefitsActive } from "./inventory.js";
 
 export interface ItemRegistrationPlan {
   edits: RawEdit[];
@@ -82,8 +82,20 @@ interface RegistrationTarget {
  */
 export function isItemContentElement(element: ParsedElement | undefined): boolean {
   if (element === undefined) return false;
-  if (element.identity.type === "Weapon" || element.identity.type === "Armor") return false;
+  if (element.identity.type === "Weapon" || element.identity.type === "Armor") return hasOwnContent(element);
   return isPhysicalEquipment(element);
+}
+
+/**
+ * Whether the sweep owns the registered count for this content element. A
+ * worn slotless item counts once, and only the sweep says so. An adorner is
+ * tallied by its base, and a plain Weapon or Armor is its own base: the equip
+ * planners already count it.
+ */
+function sweepCountsRegistration(element: ParsedElement | undefined): boolean {
+  if (element === undefined) return true;
+  if (element.identity.type === "Weapon" || element.identity.type === "Armor") return false;
+  return !isAdornerElement(element);
 }
 
 /** The element ids a grant rule of `element` names directly. */
@@ -203,7 +215,10 @@ export function planItemRegistrationSweep(
     const id = content.identity.id;
     const target = targets.get(id) ?? { element: content, wanted: false, baseOwned: 0 };
     if (itemBenefitsActive(library, item)) target.wanted = true;
-    if (item.adorners.length > 0 && baseRegistrationPresent(library, item)) target.baseOwned += 1;
+    // The equip planners write the adorner's id beside its base, or, for a
+    // weapon or armor that is its own content, the base's own entry.
+    const baseWrites = item.adorners.length > 0 || content === elementById(library, item.itemId);
+    if (baseWrites && baseRegistrationPresent(library, item)) target.baseOwned += 1;
     targets.set(id, target);
   }
 
@@ -244,7 +259,7 @@ export function planItemRegistrationSweep(
       removeInstance(subId);
     }
     // The record may be gone entirely, so the element decides, not the target.
-    if (!isAdornerElement(elementById(library, id))) countDelta -= 1;
+    if (sweepCountsRegistration(elementById(library, id))) countDelta -= 1;
   }
 
   // The same for registrations carried as sum entries alone (an item with
@@ -265,7 +280,7 @@ export function planItemRegistrationSweep(
     const run = flatRunAfter(sum, anchor, element);
     for (const runId of run) removeInstance(runId);
     if ((target?.baseOwned ?? 0) === 0) removeInstance(id);
-    if (!isAdornerElement(element)) countDelta -= 1;
+    if (sweepCountsRegistration(element)) countDelta -= 1;
   }
 
   // Registrations that are wanted and absent, or present only in the flat
@@ -297,7 +312,7 @@ export function planItemRegistrationSweep(
     }
     if (registersAsNode(element)) nodeAdditions.push(renderRegistrationNode(element, nodes));
     // A flat registration the older writer left behind already counted once.
-    if (!isAdornerElement(element) && anchor < 0) countDelta += 1;
+    if (sweepCountsRegistration(element) && anchor < 0) countDelta += 1;
   }
 
   const edits: RawEdit[] = [];
