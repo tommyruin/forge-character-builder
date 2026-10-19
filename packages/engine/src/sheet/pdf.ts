@@ -1693,7 +1693,8 @@ function spellTextWidth(text: string, font: PDFFont, size: number): number {
 
 /** Keep even custom names/allowances inside their cell at the minimum size. */
 function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: number): string {
-  if (spellTextWidth(text, font, size) <= width) return text;
+  // The tolerance absorbs rounding when `size` was scaled to fit `width` exactly.
+  if (spellTextWidth(text, font, size) <= width + 0.01) return text;
   let used = spellTextWidth("...", font, size);
   if (used > width) return "";
   let prefix = "";
@@ -1703,6 +1704,42 @@ function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: nu
     prefix += character;
   }
   return `${prefix}...`;
+}
+
+/**
+ * A spell cell's name and free-cast marker sizes. The name prints at 7pt with
+ * the marker after it at 5.5pt when both fit the cell. Otherwise the marker
+ * first shrinks into the width the name leaves (to 4.5pt), then the name gives
+ * up size (to 5pt); only when neither fits at its minimum is the marker cut,
+ * keeping at least half the cell, and the name ellipsized into the rest.
+ */
+function fitSpellCell(
+  name: string,
+  rawMarker: string,
+  font: PDFFont,
+  cellWidth: number,
+): { name: string; size: number; marker: string; markerSize: number; markerGap: number } {
+  const markerGap = 2.5;
+  // Clear of the cell's right border.
+  const width = cellWidth - 1;
+  const nameFull = spellTextWidth(name, font, 7);
+  let marker = rawMarker;
+  let markerSize = 5.5;
+  if (marker !== "") {
+    const markerFull = spellTextWidth(marker, font, 5.5);
+    const free = width - nameFull - markerGap;
+    if (free < markerFull) {
+      markerSize = Math.max(4.5, 5.5 * free / markerFull);
+      const markerMin = markerFull * markerSize / 5.5;
+      const nameMin = nameFull * 5 / 7;
+      if (width - markerGap - markerMin < nameMin) {
+        marker = ellipsizeSpellText(marker, font, markerSize, Math.max(width - markerGap - nameMin, width / 2 - markerGap));
+      }
+    }
+  }
+  const room = width - (marker === "" ? 0 : markerGap + spellTextWidth(marker, font, markerSize));
+  const size = nameFull <= room ? 7 : Math.max(5, 7 * room / nameFull);
+  return { name: ellipsizeSpellText(name, font, size, room), size, marker, markerSize, markerGap };
 }
 
 /** Clarify recognized free casts while retaining unrecognized authored allowances. */
@@ -1785,25 +1822,23 @@ async function addSpellListPage(
         const row = firstRow ? 0 : 1 + Math.floor((index - 2) / 3);
         const x = columns[column]!;
         const y = topY + textBaseline - row * rowHeight;
-        const name = winAnsiText(spell.name);
         const rawMarker = spell.usage === undefined || spell.usage === "" ? "" : winAnsiText(compactUsage(spell.usage));
-        const marker = ellipsizeSpellText(rawMarker, fonts.regular, 5.5, (SPELL_CELL_RIGHTS[column]! - x) / 2);
-        // A free cast's marker follows the name in the small slot-label size; a
-        // name too long to leave it room inside the cell gives up size rather
-        // than run the marker into the next cell's prepared dot.
-        const markerGap = 2.5;
-        const markerWidth = marker === "" ? 0 : markerGap + spellTextWidth(marker, fonts.regular, 5.5);
-        const room = SPELL_CELL_RIGHTS[column]! - x - markerWidth;
-        const fullWidth = spellTextWidth(name, fonts.regular, 7);
-        const size = fullWidth <= room ? 7 : Math.max(5, 7 * room / fullWidth);
-        const fittedName = ellipsizeSpellText(name, fonts.regular, size, room);
-        page.drawText(fittedName, { x, y, size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
-        if (marker !== "") {
-          const markerX = x + spellTextWidth(fittedName, fonts.regular, size) + markerGap;
-          page.drawText(marker, { x: markerX, y, size: 5.5, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
+        // A free cast's marker follows the name in the small slot-label size,
+        // inside the cell so it never runs into the next cell's bubble.
+        const cell = fitSpellCell(winAnsiText(spell.name), rawMarker, fonts.regular, SPELL_CELL_RIGHTS[column]! - x);
+        page.drawText(cell.name, { x, y, size: cell.size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+        if (cell.marker !== "") {
+          const markerX = x + spellTextWidth(cell.name, fonts.regular, cell.size) + cell.markerGap;
+          page.drawText(cell.marker, { x: markerX, y, size: cell.markerSize, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
         }
         if (spell.prepared || spell.alwaysPrepared) {
-          page.drawText("•", { x: x - 13, y: y - 0.2, size: 5, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
+          // Fills the cell's template bubble (the same contract offsets draw it).
+          page.drawCircle({
+            x: x + SPELL_LIST.preparedMark.dx,
+            y: y + SPELL_LIST.preparedMark.dy,
+            size: SPELL_LIST.preparedMark.radius,
+            color: rgb(0.18, 0.18, 0.18),
+          });
         }
       });
       sectionTop -= topHeight + rows * rowHeight + endHeight;

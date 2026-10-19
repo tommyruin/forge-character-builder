@@ -381,6 +381,8 @@ export const SHEET_TEMPLATE_CONTRACT = {
     cellRights: [228, 417, 582],
     slotTextX: 82,
     textBaseline: 3.5,
+    /** Each cell's prepared bubble, from its column's text x and baseline; the writer fills it for a ready spell. */
+    preparedMark: { dx: -11.6, dy: 1.7, radius: 2.8 },
   },
   /** Description cards: a 3x3 grid of 180x240 cards. */
   cards: {

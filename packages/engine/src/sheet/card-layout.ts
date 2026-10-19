@@ -215,6 +215,40 @@ function clippedText(text: string, width: number, fontSize: number): string {
   return kept.join(" ");
 }
 
+const METADATA_WIDTH = 120.5;
+const METADATA_SIZE = 6;
+/** Not below the card body's own size, so a shrunk value stays readable. */
+const METADATA_MIN_SIZE = 5;
+
+function escapeHtml(text: string): string {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+/**
+ * A spell card metadata row's value. It shrinks to fit its line; a value too
+ * long even at the body size (a costly material component, a reaction's
+ * trigger) prints its head with "(see below)", and the whole value follows
+ * the description as a labelled paragraph, so no word is dropped.
+ */
+function fittedMetadata(label: string, value: string): { text: string; fontSize: number; note?: string } {
+  const fit = (text: string): number => {
+    const width = measuredWidth(text, METADATA_SIZE);
+    return width <= METADATA_WIDTH ? METADATA_SIZE : METADATA_SIZE * METADATA_WIDTH / width;
+  };
+  const size = fit(value);
+  if (size >= METADATA_MIN_SIZE) return { text: value, fontSize: size };
+  // "V, S, M (a pearl ...)" keeps "V, S, M"; "1 reaction, which you take ..." keeps "1 reaction".
+  const head = value.includes(" (") ? value.slice(0, value.indexOf(" (")) : /^(.+?),\s/.exec(value)?.[1];
+  if (head === undefined) return { text: clippedText(value, METADATA_WIDTH, METADATA_MIN_SIZE), fontSize: METADATA_MIN_SIZE };
+  const text = `${head} (see below)`;
+  const name = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+  return {
+    text,
+    fontSize: Math.max(METADATA_MIN_SIZE, fit(text)),
+    note: `<p><strong><em>${escapeHtml(name)}.</em></strong> ${escapeHtml(value)}</p>`,
+  };
+}
+
 function overlapsFixedLabel(run: LayoutRun): boolean {
   if (run.role === "metadata-value") return false;
   if ((run.card ?? 3) >= 3) return false;
@@ -357,30 +391,34 @@ export function descriptionCardRuns(
 
     if (card.kind === "spell") {
       let metadataY = top - 39;
+      const notes: string[] = [];
       for (const [label, value] of card.metadata) {
         add(label, metadataY, "metadata", 6, "bold");
-        add(clippedText(value, 120.5, 6), metadataY, "metadata-value", 6, "regular", 53.5);
+        const fitted = fittedMetadata(label, value);
+        add(fitted.text, metadataY, "metadata-value", fitted.fontSize, "regular", 53.5);
+        if (fitted.note !== undefined) notes.push(fitted.note);
         metadataY -= 11;
       }
+      const bodyCard = notes.length > 0 ? { ...card, body: `${card.body}${notes.join("")}` } : card;
       const bodyTop = top - 83;
       const bodyBottom = top - 225;
       const normalSize = 5;
-      const normalRuns = cardBodyRuns(card, localCardIndex, normalSize, SPELL_BODY_WIDTH, bodyTop);
+      const normalRuns = cardBodyRuns(bodyCard, localCardIndex, normalSize, SPELL_BODY_WIDTH, bodyTop);
       let chosenSize = normalSize;
       let chosenRuns = normalRuns;
       if (!bodyFits(normalRuns, bodyBottom)) {
-        const minimumRuns = cardBodyRuns(card, localCardIndex, CARD_BODY_MIN_FONT_SIZE, SPELL_BODY_WIDTH, bodyTop);
+        const minimumRuns = cardBodyRuns(bodyCard, localCardIndex, CARD_BODY_MIN_FONT_SIZE, SPELL_BODY_WIDTH, bodyTop);
         if (bodyFits(minimumRuns, bodyBottom)) {
           let low = CARD_BODY_MIN_FONT_SIZE;
           let high = normalSize;
           for (let pass = 0; pass < 8; pass += 1) {
             const candidate = (low + high) / 2;
-            const candidateRuns = cardBodyRuns(card, localCardIndex, candidate, SPELL_BODY_WIDTH, bodyTop);
+            const candidateRuns = cardBodyRuns(bodyCard, localCardIndex, candidate, SPELL_BODY_WIDTH, bodyTop);
             if (bodyFits(candidateRuns, bodyBottom)) low = candidate;
             else high = candidate;
           }
           chosenSize = low;
-          chosenRuns = cardBodyRuns(card, localCardIndex, chosenSize, SPELL_BODY_WIDTH, bodyTop);
+          chosenRuns = cardBodyRuns(bodyCard, localCardIndex, chosenSize, SPELL_BODY_WIDTH, bodyTop);
         } else {
           chosenSize = CARD_BODY_MIN_FONT_SIZE;
           chosenRuns = minimumRuns;

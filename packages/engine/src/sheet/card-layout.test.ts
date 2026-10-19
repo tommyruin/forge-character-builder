@@ -9,7 +9,7 @@ import {
   type DescriptionCard,
   type LayoutRun,
 } from "./card-layout.js";
-import { winAnsiText } from "./text.js";
+import { measuredTextWidth, winAnsiText } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 const spell = (title: string, body: string): DescriptionCard => ({
@@ -338,3 +338,35 @@ describe("drawn text stays inside its box", () => {
     expect((await drawnBounds(runs)).filter((word) => word.overflow > 0.001)).toEqual([]);
   });
 });
+
+describe("spell card metadata", () => {
+  const card = (metadata: DescriptionCard["metadata"]): DescriptionCard => ({ ...spell("Identify", "<p>You choose one object.</p>"), metadata });
+  const values = (runs: readonly LayoutRun[]): LayoutRun[] => runs.filter((run) => run.role === "metadata-value");
+
+  it("shrinks a value to fit its line instead of dropping words", () => {
+    const components = "V, S, M (a diamond worth at least 50 gp, held)";
+    const [, , , row] = values(descriptionCardRuns([card([
+      ["CASTING TIME", "1 action"], ["RANGE", "90 feet"], ["DURATION", "Instantaneous"], ["COMPONENTS", components],
+    ])]));
+    expect(row!.text).toBe(components);
+    expect(row!.fontSize).toBeLessThan(6);
+    expect(row!.fontSize).toBeGreaterThanOrEqual(5);
+    expect(row!.fontSize! * measuredWidthAt1(components)).toBeLessThanOrEqual(120.5 + 0.01);
+  });
+
+  it("moves a value too long for its line under the description, whole", () => {
+    const components = "V, S, M (a pearl worth at least 100 gp and an owl feather, which the spell does not consume)";
+    const trigger = "1 reaction, which you take when you see a creature within 60 feet of you casting a spell";
+    const runs = descriptionCardRuns([card([
+      ["CASTING TIME", trigger], ["RANGE", "Touch"], ["DURATION", "Instantaneous"], ["COMPONENTS", components],
+    ])]);
+    expect(values(runs).map((run) => run.text)).toEqual(["1 reaction (see below)", "Touch", "Instantaneous", "V, S, M (see below)"]);
+    const body = runs.filter((run) => run.role === "body").map((run) => run.text).join(" ");
+    expect(body).toBe(`You choose one object. Casting time. ${trigger} Components. ${components}`);
+  });
+});
+
+/** Helvetica advance width at 1pt, as the card layout measures. */
+function measuredWidthAt1(text: string): number {
+  return measuredTextWidth(text, 1);
+}

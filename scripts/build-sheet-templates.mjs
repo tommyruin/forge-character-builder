@@ -1490,7 +1490,8 @@ function rowCells(s, y, height, { first = "light" } = {}) {
       return;
     }
     s.page.drawRectangle({ x: left, y, width: right - left, height, color: WHITE, borderColor: RULE, borderWidth: 0.35 });
-    s.circle(L.columns[index] - 11.6, y + L.textBaseline + 1.7, 2.8, { stroke: RULE, lineWidth: 0.4 });
+    const mark = L.preparedMark;
+    s.circle(L.columns[index] + mark.dx, y + L.textBaseline + mark.dy, mark.radius, { stroke: RULE, lineWidth: 0.4 });
   });
 }
 
