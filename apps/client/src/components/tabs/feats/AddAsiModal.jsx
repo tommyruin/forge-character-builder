@@ -3,18 +3,10 @@ import { api } from '../../../api';
 import Modal from '../../Modal';
 import { useWorkspace } from '../../WorkspaceContext';
 import Icon from '../../Icon';
+import { ASI_ABILITIES } from './asiAbilities';
 
-// The six PHB "Ability Score Improvement" elements (+1 each). Core content, always ingested at
-// boot; a +2-to-one ASI is the same id twice. Granting these is exactly what a normal ASI does,
-// so the increase shows up identically in the Ability Scores breakdown and on the sheet.
-const ABILITIES = [
-  { key: 'Strength', id: 'ID_PHB_FEAT_ASI_STRENGTH' },
-  { key: 'Dexterity', id: 'ID_PHB_FEAT_ASI_DEXTERITY' },
-  { key: 'Constitution', id: 'ID_PHB_FEAT_ASI_CONSTITUTION' },
-  { key: 'Intelligence', id: 'ID_PHB_FEAT_ASI_INTELLIGENCE' },
-  { key: 'Wisdom', id: 'ID_PHB_FEAT_ASI_WISDOM' },
-  { key: 'Charisma', id: 'ID_PHB_FEAT_ASI_CHARISMA' },
-];
+// The ids are in asiAbilities.js: core content, always ingested at boot.
+const ABILITIES = ASI_ABILITIES;
 
 const ASI_POINTS = 2; // a standard ASI: +2 to one ability, or +1 to two.
 

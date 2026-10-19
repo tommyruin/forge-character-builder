@@ -11,6 +11,7 @@ const manage = read('../tabs/ManageTab.jsx');
 const levelUp = read('../LevelUpFlyout.jsx');
 const selectionCard = read('../SelectionRuleCard.jsx');
 const asiModal = read('../tabs/feats/AddAsiModal.jsx');
+const asiAbilities = read('../tabs/feats/asiAbilities.js');
 const featModal = read('../tabs/feats/AddFeatModal.jsx');
 const spellModal = read('../tabs/magic/AddSpellModal.jsx');
 const app = read('../../App.jsx');
@@ -76,12 +77,12 @@ describe('frozen residual behavior decisions', () => {
   });
 
   it('records D-07 grant limitations without inventing replacement semantics', () => {
-    expect(asiModal).toContain(
-      "{ key: 'Intelligence', id: 'ID_PHB_FEAT_ASI_INTELLIGENCE' },",
+    expect(asiAbilities).toContain(
+      "{ key: 'Intelligence', id: 'ID_INTERNAL_ASI_INTELLIGENCE' },",
     );
     expect(
-      asiModal.match(/ID_[A-Z0-9_]*ASI_INTELLIGENCE/g),
-    ).toEqual(['ID_PHB_FEAT_ASI_INTELLIGENCE']);
+      asiAbilities.match(/ID_[A-Z0-9_]*ASI_INTELLIGENCE/g),
+    ).toEqual(['ID_INTERNAL_ASI_INTELLIGENCE']);
     expect(asiModal).toContain('ids.push(ability.id)');
     expect(asiModal).toContain('api.characters.addAbilityScore(id, ids)');
     expect(featModal).toContain('api.characters.addFeat');
