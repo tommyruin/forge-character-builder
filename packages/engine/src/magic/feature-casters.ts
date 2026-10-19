@@ -73,7 +73,10 @@ export function declaredUsage(element: ParsedElement | undefined): string | null
  * slot but never mentions a rest, so it stays at-will and unmarked.
  */
 export function promisesFreeCastPerLongRest(element: ParsedElement | undefined): boolean {
-  const text = (element?.descriptionXml ?? "").replace(/<[^>]*>/g, " ").toLowerCase();
+  const text = (element?.descriptionXml ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").toLowerCase();
+  // The 2014 Magic Initiate options word it without slots: "Once you cast it,
+  // you must finish a long rest before you can cast it again."
+  if (/once you cast it, you must finish a long rest before you can cast it again/.test(text)) return true;
   if (!/without (expending )?a spell slot/.test(text)) return false;
   return text.includes("long rest");
 }

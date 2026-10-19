@@ -178,6 +178,7 @@ describe.each(EDITIONS)("Druid 5 / Sorcerer 3 with Magic Initiate (Wizard), $rul
     expect(initiate.ability).toBe("Intelligence");
     expect(initiate.sections.map((section) => section.level)).toEqual([0, 1]);
     expect(initiate.sections.every((section) => section.slots === 0)).toBe(true);
+    expect(initiate.sections[1]!.spells.map((spell) => [spell.name, spell.usage])).toEqual([["Magic Missile", "1/Long Rest"]]);
 
     const circles = vi.spyOn(PDFPage.prototype, "drawCircle");
     const texts = vi.spyOn(PDFPage.prototype, "drawText");
