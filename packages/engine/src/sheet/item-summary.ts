@@ -46,7 +46,7 @@ const SENTENCE_BREAK = /(?<=[.!?])\s+(?=[A-Z“‘("])/;
 const DANGLING = /\b(?:detailed|described|listed|shown|given|explained)\s+(?:below|above)\b/i;
 const HEADING = /^\s*<(strong|b)>\s*<(em|i)>([\s\S]*?)<\/\2>\s*<\/\1>([\s\S]*)$/i;
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 

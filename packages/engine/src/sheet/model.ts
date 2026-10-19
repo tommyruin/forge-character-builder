@@ -27,7 +27,7 @@ import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
 import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type InventoryItemDto } from "../inventory/inventory.js";
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
 import { inventoryItemSignificance } from "../content/equipment/significance.js";
-import { itemNote } from "./item-summary.js";
+import { escapeHtml, itemNote } from "./item-summary.js";
 import { createRegistrationContext } from "../selection/selection.js";
 import { evaluateRequirements } from "../selection/expr.js";
 import {
@@ -692,37 +692,10 @@ function buildFormValues(
   set("equipment_page_vehicle_2_name", state.storages[1] ?? "");
   set("equipment_page_additional_treasure", state.treasureNote);
   set("equipment_page_quest_items", state.quest);
-  // Equipment tables: adventuring gear (40 rows), magic items (20 rows), and
-  // valuables (10 rows — the Treasure category: gems, art objects). Magic and
-  // valuable overflow continues in the gear table under a labeled separator
-  // row instead of being silently dropped at the table cap.
-  const GEAR_ROWS = 40;
-  const MAGIC_ROWS = 20;
-  const VALUABLE_ROWS = 10;
-  interface EquipmentRow { name: string; count: number | string; weight: string }
-  const gearRowsOut: EquipmentRow[] = [];
-  const magicRowsOut: EquipmentRow[] = [];
-  const valuableRowsOut: EquipmentRow[] = [];
-  inventory.items.forEach((item, index) => {
-    if (isHiddenInventoryItem(state.items[index], library)) return;
-    const record = state.items[index]!;
-    const displayName = itemDisplayName(record, library);
-    const row: EquipmentRow = {
-      name: item.isEquipped ? `[${displayName}]` : displayName,
-      count: item.amount,
-      weight: item.weight?.replace(/\s*lbs?\.?.*$/i, "").trim() || "—",
-    };
-    if (isMagicItem(record, library)) magicRowsOut.push(row);
-    else if (itemCategory(record, library) === "Treasure") valuableRowsOut.push(row);
-    else gearRowsOut.push(row);
-  });
-  const spillIntoGear = (label: string, rows: EquipmentRow[]): void => {
-    if (rows.length === 0 || gearRowsOut.length >= GEAR_ROWS) return;
-    gearRowsOut.push({ name: label, count: "", weight: "" });
-    gearRowsOut.push(...rows);
-  };
-  spillIntoGear("MAGIC ITEMS — CONTINUED", magicRowsOut.splice(MAGIC_ROWS));
-  spillIntoGear("VALUABLES — CONTINUED", valuableRowsOut.splice(VALUABLE_ROWS));
+  // Equipment tables and the two containers' cargo, as far as the sheet's rows
+  // go; what does not fit is printed in the notes column (see
+  // `equipmentTables`), so nothing a character owns drops off the page.
+  const tables = equipmentTables(state, library, inventory);
   const fillTable = (prefix: string, rows: EquipmentRow[]): void => {
     rows.forEach((row, slot) => {
       set(`${prefix}_name.${slot}`, row.name);
@@ -730,30 +703,16 @@ function buildFormValues(
       set(`${prefix}_weight.${slot}`, row.weight);
     });
   };
-  fillTable("equipment_page_gear", gearRowsOut);
-  fillTable("equipment_page_magic_gear", magicRowsOut);
-  fillTable("equipment_page_valuable", valuableRowsOut);
-  // Cargo rows for the two vehicle/container storage slots: the items stowed
-  // in each (state.items whose storage matches that container's name), up to
-  // the sheet's 10-row cap. Weight uses the item's own encumbrance logic
-  // WITHOUT the stowed-exclusion (the row shows what the item itself weighs).
-  const CARGO_ROWS = 10;
-  state.storages.slice(0, 2).forEach((containerName, index) => {
-    if (containerName === "") return; // an unnamed container can't own stowed items
-    const cargoRows: EquipmentRow[] = state.items
-      .filter((record) => (record.storage ?? "") === containerName && !isHiddenInventoryItem(record, library))
-      .slice(0, CARGO_ROWS)
-      .map((record) => ({
-        name: itemDisplayName(record, library),
-        count: record.amount,
-        weight: `${Math.round(itemWeightPounds(library, record) * 10) / 10}`,
-      }));
-    fillTable(`equipment_page_vehicle_${index + 1}_cargo`, cargoRows);
-  });
+  fillTable("equipment_page_gear", tables.gear);
+  fillTable("equipment_page_magic_gear", tables.magic);
+  fillTable("equipment_page_valuable", tables.valuables);
+  tables.cargo.forEach((rows, index) => fillTable(`equipment_page_vehicle_${index + 1}_cargo`, rows));
   // The notes column's entries; the positioned column on the equipment page
   // is built from the same list, so the two cannot disagree.
-  const sidebars = inventoryColumnEntries(state, library, { notes: inventoryNotes })
-    .map((entry) => `${entry.title}. ${entry.text}`);
+  const sidebars = [
+    ...inventoryColumnEntries(state, library, { notes: inventoryNotes }),
+    ...tables.overflow,
+  ].map((entry) => `${entry.title}. ${entry.text}`);
   set("equipment_page_magic_items", sidebars.join("\n\n"));
 
   // Every template has four attack rows. Later attacks lead the free-text
@@ -1947,7 +1906,10 @@ function buildInventoryPage(
   });
   const sidebarRows: SheetRow[] = [];
   const sidebars: Array<{ title: string; html: string }> = [];
-  for (const entry of inventoryColumnEntries(state, library, { notes: inventoryNotes })) {
+  for (const entry of [
+    ...inventoryColumnEntries(state, library, { notes: inventoryNotes }),
+    ...equipmentTables(state, library, inventory).overflow,
+  ]) {
     sidebars.push({ title: entry.title, html: entry.html });
     sidebarRows.push({
       kind: "tokens",
@@ -1995,6 +1957,115 @@ export interface InventoryColumnEntry {
   html: string;
   /** The same description as plain text (the notes field and the row tokens). */
   text: string;
+}
+
+/** One row of the equipment page's gear, magic item, valuables or cargo tables. */
+interface EquipmentRow { name: string; count: number | string; weight: string }
+
+const GEAR_ROWS = 40;
+const MAGIC_ROWS = 20;
+const VALUABLE_ROWS = 10;
+const CARGO_ROWS = 10;
+const CARGO_CONTAINERS = 2;
+
+/** A group of rows the tables had no room for, printed in the notes column instead. */
+function overflowEntry(title: string, rows: readonly EquipmentRow[]): InventoryColumnEntry {
+  const text = rows
+    .map((row) => {
+      const detail = [row.count !== "" && row.count !== 1 ? `×${row.count}` : "", row.weight !== "" && row.weight !== "—" ? `${row.weight} lb` : ""]
+        .filter((part) => part !== "")
+        .join(", ");
+      return detail === "" ? row.name : `${row.name} (${detail})`;
+    })
+    .join("; ");
+  return { title, html: `<p>${escapeHtml(text)}.</p>`, text: `${text}.` };
+}
+
+/**
+ * The rows of the equipment page's tables: adventuring gear (40 rows), magic
+ * items (20) and valuables (10, the Treasure category: gems, art objects), plus
+ * the cargo of the two named containers (10 rows each).
+ *
+ * Magic and valuable overflow continues in the gear table under a labeled
+ * separator row while it has room. Whatever no table can hold (gear past row
+ * 40, magic items and valuables once the gear table is full, a third container
+ * and the items past a container's tenth) is returned as `overflow`, entries
+ * for the notes column, which flows onto continuation pages. A character's
+ * things never drop off the sheet at a table's cap.
+ *
+ * Cargo weight is what the item itself weighs, without the stowed exclusion
+ * the carried-weight total applies.
+ */
+function equipmentTables(
+  state: CharacterState,
+  library: ElementLibrary,
+  inventory: ReturnType<typeof buildInventoryDto>,
+): {
+  gear: EquipmentRow[];
+  magic: EquipmentRow[];
+  valuables: EquipmentRow[];
+  cargo: EquipmentRow[][];
+  overflow: InventoryColumnEntry[];
+} {
+  const gear: EquipmentRow[] = [];
+  const magic: EquipmentRow[] = [];
+  const valuables: EquipmentRow[] = [];
+  inventory.items.forEach((item, index) => {
+    if (isHiddenInventoryItem(state.items[index], library)) return;
+    const record = state.items[index]!;
+    const displayName = itemDisplayName(record, library);
+    const row: EquipmentRow = {
+      name: item.isEquipped ? `[${displayName}]` : displayName,
+      count: item.amount,
+      weight: item.weight?.replace(/\s*lbs?\.?.*$/i, "").trim() || "—",
+    };
+    if (isMagicItem(record, library)) magic.push(row);
+    else if (itemCategory(record, library) === "Treasure") valuables.push(row);
+    else gear.push(row);
+  });
+  const overflow: InventoryColumnEntry[] = [];
+  const gearPast = gear.splice(GEAR_ROWS);
+  if (gearPast.length > 0) overflow.push(overflowEntry("Adventuring gear (continued)", gearPast));
+  const spill = (label: string, title: string, rows: EquipmentRow[]): void => {
+    if (rows.length === 0) return;
+    const room = GEAR_ROWS - gear.length - 1;
+    if (room > 0) {
+      gear.push({ name: label, count: "", weight: "" }, ...rows.slice(0, room));
+    }
+    const past = rows.slice(Math.max(room, 0));
+    if (past.length > 0) overflow.push(overflowEntry(title, past));
+  };
+  spill("MAGIC ITEMS — CONTINUED", "Magic items (continued)", magic.splice(MAGIC_ROWS));
+  spill("VALUABLES — CONTINUED", "Valuables (continued)", valuables.splice(VALUABLE_ROWS));
+  // Cargo: the items stowed in a container (those whose storage is its name).
+  // Only the first two containers have rows; any container's items beyond its
+  // rows, and every item stowed in a container the sheet has no rows for, are
+  // listed in the notes column under the container's name.
+  const stowed = new Map<string, EquipmentRow[]>();
+  for (const record of state.items) {
+    const container = record.storage ?? "";
+    if (container === "" || isHiddenInventoryItem(record, library)) continue;
+    const rows = stowed.get(container) ?? [];
+    rows.push({
+      name: itemDisplayName(record, library),
+      count: record.amount,
+      weight: `${Math.round(itemWeightPounds(library, record) * 10) / 10}`,
+    });
+    stowed.set(container, rows);
+  }
+  const cargo: EquipmentRow[][] = [];
+  const named = new Set<string>();
+  state.storages.slice(0, CARGO_CONTAINERS).forEach((container, index) => {
+    // An unnamed container can't own stowed items.
+    const rows = container === "" ? [] : (stowed.get(container) ?? []);
+    if (container !== "") named.add(container);
+    cargo[index] = rows.slice(0, CARGO_ROWS);
+    if (rows.length > CARGO_ROWS) overflow.push(overflowEntry(`${container}, stowed (continued)`, rows.slice(CARGO_ROWS)));
+  });
+  for (const [container, rows] of stowed) {
+    if (!named.has(container)) overflow.push(overflowEntry(`${container}, stowed`, rows));
+  }
+  return { gear, magic, valuables, cargo, overflow };
 }
 
 /**

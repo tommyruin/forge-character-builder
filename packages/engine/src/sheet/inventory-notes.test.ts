@@ -173,6 +173,95 @@ describe("the item notes switch on the sheet model", () => {
   });
 });
 
+describe("what the equipment tables cannot hold", () => {
+  const isGear = (element: ElementLibrary["byId"] extends Map<string, infer E> ? E : never): boolean =>
+    element.identity.id.startsWith("ID_WOTC_PHB_ITEM_") && isPhysicalEquipment(element);
+
+  /** A fighter carrying `gear` distinct mundane items and `magic` distinct magic items. */
+  function loaded(gear: number, magic: number, name: string) {
+    const { service, id } = buildFighter3(library, name);
+    const gearIds = (library.byType.get("Item") ?? []).filter(isGear).map((element) => element.identity.id);
+    const magicIds = (library.byType.get("Magic Item") ?? [])
+      .filter((element) => element.identity.id.startsWith("ID_WOTC_DMG_MAGIC_ITEM_") && isPhysicalEquipment(element))
+      .map((element) => element.identity.id);
+    for (const itemId of [...gearIds.slice(0, gear), ...magicIds.slice(0, magic)]) {
+      service.addItem(id, { itemId, amount: 1, baseElementId: null });
+    }
+    return structuredClone(service.getCharacter(id));
+  }
+
+  const tableNames = (model: CharacterSheetModel, prefix: string): string[] =>
+    Object.entries(model.formValues ?? {})
+      .filter(([key, value]) => key.startsWith(`${prefix}_name.`) && value !== "")
+      .map(([, value]) => String(value));
+  const overflowItems = (model: CharacterSheetModel, title: RegExp): number =>
+    String(model.formValues?.["equipment_page_magic_items"] ?? "")
+      .split("\n\n")
+      .filter((entry) => title.test(entry))
+      .reduce((sum, entry) => sum + entry.split("; ").length, 0);
+
+  it("prints nothing extra for an inventory the tables hold", () => {
+    const state = loaded(10, 3, "Fits");
+    expect(inventoryColumnEntries(state, library, { notes: false })).toEqual([]);
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    expect(model.formValues?.["equipment_page_magic_items"]).toBe("");
+  });
+
+  it("lists gear past the table's 40 rows in the notes column, with or without the notes switch", () => {
+    const state = loaded(46, 0, "Gear");
+    for (const inventoryNotes of [false, true]) {
+      const model = buildCharacterSheetModel(state, library, { mode: "full", inventoryNotes });
+      expect(tableNames(model, "equipment_page_gear")).toHaveLength(40);
+      expect(overflowItems(model, /^Adventuring gear \(continued\)\./)).toBe(6);
+      expect(sidebarText(model)).toContain("Adventuring gear (continued).");
+    }
+  });
+
+  it("lists magic items and valuables that neither their table nor a full gear table can hold", () => {
+    const state = loaded(46, 24, "Magic");
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    expect(tableNames(model, "equipment_page_magic_gear")).toHaveLength(20);
+    expect(overflowItems(model, /^Magic items \(continued\)\./)).toBe(4);
+    // Every item sits in a table row or in an overflow list, once.
+    const placed = tableNames(model, "equipment_page_gear").length + 20
+      + overflowItems(model, /^(?:Adventuring gear|Magic items|Valuables) \(continued\)\./);
+    expect(placed).toBe(46 + 24);
+  });
+
+  it("continues magic items in the gear table while it has room, and lists only what is left", () => {
+    const state = loaded(30, 24, "Spill");
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    const gear = tableNames(model, "equipment_page_gear");
+    expect(gear).toHaveLength(35);
+    expect(gear).toContain("MAGIC ITEMS — CONTINUED");
+    expect(overflowItems(model, /^Magic items \(continued\)\./)).toBe(0);
+  });
+
+  it("lists a third container, and a container's items past its ten rows", () => {
+    const state = loaded(30, 0, "Cargo");
+    state.storages = ["Saddlebags", "#2", "Cart"];
+    state.items.slice(0, 14).forEach((record) => { record.storage = "Saddlebags"; });
+    state.items.slice(14, 17).forEach((record) => { record.storage = "Cart"; });
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    expect(tableNames(model, "equipment_page_vehicle_1_cargo")).toHaveLength(10);
+    expect(overflowItems(model, /^Saddlebags, stowed \(continued\)\./)).toBe(4);
+    expect(overflowItems(model, /^Cart, stowed\./)).toBe(3);
+  });
+
+  it("prints the overflow in the column of the rendered sheet", async () => {
+    const model = buildCharacterSheetModel(loaded(46, 0, "Render"), library, {
+      mode: "full",
+      include: { background: false },
+    });
+    expect(sidebarText(model)).toContain("Adventuring gear (continued).");
+    const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle("2014"));
+    const document = await getDocument({ data: new Uint8Array(pdf) }).promise;
+    const content = await (await document.getPage(equipmentPage(model).page)).getTextContent();
+    const text = content.items.map((item) => ("str" in item ? item.str : "")).join(" ").replace(/\s+/g, " ");
+    expect(text).toContain("Adventuring gear (continued).");
+  }, 60_000);
+});
+
 describe("with the item notes switch off", () => {
   // Digests of the equipment page and its notes field, recorded from the
   // builder before the switch existed. Off, absent or false must reproduce them.
