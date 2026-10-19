@@ -36,7 +36,7 @@ import type { GrantRule, ParsedElement, Rule, SelectRule } from "../content/pars
 import { countItemNodes } from "../character/options.js";
 import { engineError } from "../errors.js";
 import { nestedInsertEdits, planElementsCountEdits, planSumReplaceEdits } from "../progression/leveling.js";
-import { evaluateRequirements } from "./expr.js";
+import { evaluateRequirements, type RequirementContext } from "./expr.js";
 import {
   ENGINE_INTERNAL_ELEMENTS,
   createRegistrationContext,
@@ -81,15 +81,25 @@ function reconcilable(rule: Rule): rule is SelectRule | GrantRule {
 const LEVEL_ATOM = /\blevel\s*:/u;
 
 /**
- * True when a rule may be switched *off* again. Rules whose requirements test a
- * level are excluded: losing a level is the delevel planner's business, and it
- * carries a snapshot so the levels can be restored. It is also what keeps an
- * optional class feature applied after a delevel takes its class level away —
- * the feature stays until the player disables the item, rather than silently
- * evaporating while the item still reads as enabled.
+ * True when a rule may be switched *off* again. Losing a level is the delevel
+ * planner's business, and it carries a snapshot so the levels can be restored.
+ * It is also what keeps an optional class feature applied after a delevel takes
+ * its class level away: the feature stays until the player disables the item,
+ * rather than silently evaporating while the item still reads as enabled.
+ *
+ * So a rule whose requirements test a level is removed only when the rest of
+ * them fail on their own: the expression is read again with every level test
+ * treated as met, and only a rule that still fails has lost something other
+ * than a level. A rule with no level test is read as it stands.
  */
-function removable(rule: SelectRule | GrantRule): boolean {
-  return !LEVEL_ATOM.test(rule.requirements ?? "");
+function removable(rule: SelectRule | GrantRule, ctx: RequirementContext): boolean {
+  const requirements = rule.requirements ?? "";
+  if (!LEVEL_ATOM.test(requirements)) return true;
+  return !evaluateRequirements(requirements, {
+    ...ctx,
+    level: Number.POSITIVE_INFINITY,
+    classLevel: () => Number.POSITIVE_INFINITY,
+  });
 }
 
 /** The library element a tree node stands for (wrappers carry it as `registered`). */
@@ -296,7 +306,7 @@ export function reconcileRegistrationRules(
               const child = findWrapper(node, wrapper, takenWrappers);
               if (child === undefined) continue;
               takenWrappers.add(child);
-              if (eligible || !removable(rule)) continue;
+              if (eligible || !removable(rule, ctx)) continue;
               removals.push({
                 path: [...here, node.children.indexOf(child)],
                 ids: subtreeIds([child]),
@@ -305,7 +315,7 @@ export function reconcileRegistrationRules(
             }
             continue;
           }
-          if (rule.kind !== "grant" || eligible || !removable(rule)) continue;
+          if (rule.kind !== "grant" || eligible || !removable(rule, ctx)) continue;
           const target = resolveGrant(rule, library);
           if (target === undefined) continue;
           held ??= heldGrantTargets(owner, library, ctx);
