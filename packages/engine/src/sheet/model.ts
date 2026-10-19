@@ -27,6 +27,7 @@ import { buildAttacksDto, type AttackDto } from "../attacks/attacks.js";
 import { buildInventoryDto, itemBenefitsActive, itemWeightPounds, type InventoryItemDto } from "../inventory/inventory.js";
 import { isPhysicalEquipment } from "../content/equipment/categories.js";
 import { inventoryItemSignificance } from "../content/equipment/significance.js";
+import { descriptionToText } from "../content/description.js";
 import { escapeHtml, itemNote } from "./item-summary.js";
 import { createRegistrationContext } from "../selection/selection.js";
 import { evaluateRequirements } from "../selection/expr.js";
@@ -434,7 +435,7 @@ function backgroundFeatureDescription(state: CharacterState, library: ElementLib
   if (state.backgroundFeature.description.trim() !== "") return state.backgroundFeature.description;
   const registered = state.elements.find((element) => element.type === "Background Feature");
   if (registered === undefined) return "";
-  return stripXml(library.byId.get(registered.id)?.descriptionXml ?? "");
+  return descriptionToText(library.byId.get(registered.id)?.descriptionXml);
 }
 
 function buildFormValues(

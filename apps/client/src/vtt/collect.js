@@ -28,14 +28,50 @@ const byType = (elements, type) =>
 const namesOfType = (elements, type) =>
   byType(elements, type).map((e) => e.name);
 
-// Strip HTML to a plain-text fallback (used when a target has no rich-text field).
+// Strip HTML to plain text for targets with no rich-text field. Keeps the
+// shape: a blank line between paragraphs, one line per list item ("• item")
+// and per table row (cells joined by " | ").
 export function stripHtml(html) {
   if (!html) return "";
   return String(html)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<\s*(?:ul|ol|table)\b[^>]*>/gi, "\n")
+    .replace(/<\s*li\b[^>]*>/gi, "• ")
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*t[dh]\s*>\s*(?=<\s*t[dh]\b)/gi, " | ")
+    .replace(/<\/\s*(?:li|tr)\s*>/gi, "\n")
+    .replace(/<\/\s*(?:p|div|h[1-6]|ul|ol|table)\s*>/gi, "\n\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+const escapeHtml = (text) =>
+  String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// Plain multi-line text as HTML for a rich-text target: a blank line starts a
+// paragraph, a single newline is a line break.
+export function textToHtml(text) {
+  return String(text ?? "")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+// The same text for a field that takes inline HTML: every newline is a line break.
+export function textToInlineHtml(text) {
+  return escapeHtml(String(text ?? "").trim()).replace(/\n/g, "<br>");
 }
 
 export async function collectExportModel(id, { api = defaultApi } = {}) {

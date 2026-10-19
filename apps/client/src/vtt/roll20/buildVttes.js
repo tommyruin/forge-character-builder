@@ -10,7 +10,7 @@
 import { attr, repeatingRow, ROLL20_SKILL, ROLL20_ABILITY } from './attribs.js';
 import { roll20RowId } from '../ids.js';
 import { ABILITIES } from '../rules5e.js';
-import { stripHtml } from '../collect.js';
+import { stripHtml, textToInlineHtml } from '../collect.js';
 
 export function buildVttes(model) {
   const attribs = [];
@@ -134,7 +134,7 @@ export function buildVttes(model) {
   }
 
   const bio = [
-    model.biography.backstory,
+    textToInlineHtml(model.biography.backstory),
     model.identity.gender && `Gender: ${model.identity.gender}`,
     model.identity.age && `Age: ${model.identity.age}`,
     (model.identity.height || model.identity.weight) && `${model.identity.height} ${model.identity.weight}`.trim(),
