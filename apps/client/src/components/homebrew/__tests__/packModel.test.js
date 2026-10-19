@@ -115,16 +115,14 @@ describe('the New element templates', () => {
     ]);
   });
 
-  it('marks the types whose forms come next and routes them to XML', () => {
-    const soon = NEW_ELEMENT_TEMPLATES.filter((template) => template.route.soon).map((template) => [template.label, template.route.type]);
-    expect(soon).toEqual([
-      ['Species', 'Race'], ['Subspecies or variant', 'Sub Race'], ['Class', 'Class'], ['Subclass', 'Archetype'],
-      ['Background', 'Background'], ['Companion', 'Companion'],
-    ]);
-    expect(soon.every(([label]) => createTemplateDraft(NEW_ELEMENT_TEMPLATES.find((t) => t.label === label).id) === null)).toBe(true);
+  it('gives every character option a form: no template is left as raw XML but the custom type', () => {
+    const raw = NEW_ELEMENT_TEMPLATES.filter((template) => template.route.kind === 'raw').map((template) => template.label);
+    expect(raw).toEqual(['Custom type or raw XML']);
+    const options = ['species', 'subspecies', 'class', 'subclass', 'background', 'companion'];
+    expect(options.map((id) => NEW_ELEMENT_TEMPLATES.find((template) => template.id === id).route.kind)).toEqual(['build', 'parent', 'build', 'parent', 'build', 'build']);
   });
 
-  const formTemplates = NEW_ELEMENT_TEMPLATES.filter((template) => ['feature', 'catalog', 'spell', 'item'].includes(template.route.kind));
+  const formTemplates = NEW_ELEMENT_TEMPLATES.filter((template) => ['feature', 'catalog', 'spell', 'item', 'build'].includes(template.route.kind));
 
   it.each(formTemplates.map((template) => [template.label, template.id]))(
     'round-trips %s from form to XML and back to the form',
@@ -145,7 +143,7 @@ describe('the New element templates', () => {
       expect(parsed.identity).toMatchObject({ id: draft.id, name: draft.name, source: pack.name });
       expect(parsed.identity.type).toBe(reopened.type);
       expect(draftFamily(reopened.customDraft)).toBe(
-        { feature: 'feature', catalog: 'catalog', spell: 'spell', item: 'item' }[NEW_ELEMENT_TEMPLATES.find((t) => t.id === id).route.kind],
+        { feature: 'feature', catalog: 'catalog', spell: 'spell', item: 'item', build: 'build' }[NEW_ELEMENT_TEMPLATES.find((t) => t.id === id).route.kind],
       );
     },
   );

@@ -8788,15 +8788,113 @@ html.fcb-busy-cursor * {
   font-size: 0.78rem;
 }
 
-.fcb-template-soon {
-  padding: 1px 7px;
-  border: 1px solid var(--fcb-border);
-  border-radius: 999px;
+/* Homebrew character options: the level table, its cells and the detail under it. */
+.fcb-progression-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+}
+
+.fcb-progression-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.fcb-progression-table th,
+.fcb-progression-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--fcb-border-soft);
+  text-align: left;
+  vertical-align: top;
+}
+
+.fcb-progression-table thead th {
+  background: color-mix(in srgb, var(--fcb-bg-soft) 70%, transparent);
   color: var(--fcb-text-muted);
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fcb-progression-table tbody th {
+  width: 3.5rem;
+  font-weight: 800;
+}
+
+.fcb-progression-cell {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.fcb-progression-note {
+  color: var(--fcb-text-muted);
+  font-style: italic;
+}
+
+.fcb-progression-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: transparent;
+  color: var(--fcb-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fcb-progression-chip:hover,
+.fcb-progression-chip.is-open {
+  border-color: color-mix(in srgb, var(--fcb-primary) 62%, transparent);
+  background: color-mix(in srgb, var(--fcb-primary) 14%, transparent);
+}
+
+.fcb-progression-add {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.fcb-progression-add:hover {
+  color: var(--fcb-text);
+  text-decoration: underline;
+}
+
+.fcb-progression-value {
+  width: 5.5rem;
+  min-width: 0;
+  padding: 2px 6px;
+}
+
+.fcb-progression-value.is-step {
+  border-color: color-mix(in srgb, var(--fcb-primary) 55%, transparent);
+  font-weight: 700;
+}
+
+.fcb-progression-detail {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--fcb-primary) 40%, transparent);
+  border-radius: var(--fcb-radius);
+}
+
+.fcb-custom-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .fcb-pack-health-list {

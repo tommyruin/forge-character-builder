@@ -57,7 +57,10 @@ export function withSwitch(blocks, name) {
  * `draft` and `setDraft` are the draft and a state setter for it (a function of the current draft
  * or a new draft). `features` adds the chips that only make sense on a feature: spells, uses,
  * scale values and the switch. `startWithSwitch` shows the switch row open on a draft that has
- * no gated modifier yet (a transformation).
+ * no gated modifier yet (a transformation). `inheritedScales` are the value columns of the class
+ * or species a feature sits in: its bonuses and limited uses may read them, but they are edited
+ * where they belong. `only` narrows the chips to the ones named (a class' starting proficiencies
+ * offer proficiencies, languages and picks, not ability scores).
  */
 export default function EffectsEditor({
   draft,
@@ -67,6 +70,8 @@ export default function EffectsEditor({
   attempted = false,
   features = true,
   startWithSwitch = false,
+  inheritedScales = [],
+  only = null,
 }) {
   const [casters, setCasters] = useState([]);
   // The character's own spellcasting ability, offered for a new spell effect; null when it has none.
@@ -104,6 +109,7 @@ export default function EffectsEditor({
   const blockIssues = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`blocks[${index}]`)) : []);
   const trackers = draft.trackers ?? [];
   const scales = draft.scales ?? [];
+  const readable = inheritedScales.length === 0 ? scales : [...inheritedScales, ...scales];
   const switchChoices = [...new Set([...knownSwitches, ...(switchOn && switchName.trim() ? [switchName.trim()] : [])])];
   const trackerIssuesAt = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`trackers[${index}]`)) : []);
   const scaleIssuesAt = (index) => (attempted ? issues.filter((issue) => issue.path.startsWith(`scales[${index}]`)) : []);
@@ -158,6 +164,8 @@ export default function EffectsEditor({
         ]),
   ];
 
+  const shownChips = only === null ? chips : chips.filter((chip) => only.includes(chip.id));
+
   return (
     <div>
       <h4 className="fcb-field-label mb-2">What it does</h4>
@@ -177,7 +185,7 @@ export default function EffectsEditor({
                 key={block.id}
                 {...shared}
                 allowedGroups={isAbilityTarget(block.target) ? ABILITY_TARGET_GROUPS : OTHER_GROUPS}
-                scales={scales}
+                scales={readable}
                 switches={switchChoices}
               />
             );
@@ -202,7 +210,7 @@ export default function EffectsEditor({
           <TrackerBlock
             key={tracker.id}
             tracker={tracker}
-            scales={scales}
+            scales={readable}
             switches={switchOn && switchName.trim() ? [switchName.trim()] : []}
             issues={trackerIssuesAt(index)}
             ariaLabel={trackers.length > 1 ? `Limited uses ${index + 1}` : 'Limited uses'}
@@ -248,7 +256,7 @@ export default function EffectsEditor({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Add an effect">
-        {chips.map((chip) => (
+        {shownChips.map((chip) => (
           <button key={chip.id} type="button" className="fcb-mode-button" onClick={chip.add}>
             + {chip.label}
           </button>

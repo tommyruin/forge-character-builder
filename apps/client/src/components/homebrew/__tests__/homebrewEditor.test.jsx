@@ -45,6 +45,7 @@ const { default: HomebrewEditor } = await import('../HomebrewEditor.jsx');
 const { default: NewElementDialog } = await import('../NewElementDialog.jsx');
 const { buildCollectionXml, createCollection } = await import('../xmlBuilder.js');
 const { elementForDraft, rawElement, appendElement } = await import('../packModel.js');
+const { createCustomClassDraft } = await import('@forge-cb/engine/custom');
 
 const wait = (ms) => act(async () => new Promise((resolve) => setTimeout(resolve, ms)));
 
@@ -110,7 +111,7 @@ describe('the New element template picker', () => {
     return { onCreate, onClose };
   }
 
-  it('lists the five groups, marks the species-to-companion forms as coming next and offers a rules version', async () => {
+  it('lists the five groups and offers a rules version', async () => {
     await mount(<NewElementDialog pack={pack} api={h.api} onClose={() => {}} onCreate={() => {}} />);
     expect($$('[data-testid="hb-new-element"] section').map((section) => section.getAttribute('aria-label'))).toEqual([
       'Gifts and afflictions',
@@ -119,8 +120,7 @@ describe('the New element template picker', () => {
       'Companions and world',
       'Advanced',
     ]);
-    const soon = $$('.fcb-template-soon').map((tag) => tag.closest('button').getAttribute('data-testid'));
-    expect(soon).toEqual(['hb-template-species', 'hb-template-subspecies', 'hb-template-class', 'hb-template-subclass', 'hb-template-background', 'hb-template-companion']);
+    expect($$('.fcb-template-soon')).toHaveLength(0);
     expect(byLabel('Rules version for the new element').textContent).toContain('Pack default (both 2014 and 2024)');
   });
 
@@ -164,21 +164,40 @@ describe('the New element template picker', () => {
   });
 
   it.each([
-    ['species', 'Race'],
-    ['subspecies', 'Sub Race'],
-    ['class', 'Class'],
-    ['subclass', 'Archetype'],
-    ['background', 'Background'],
-    ['companion', 'Companion'],
-  ])('routes %s to raw XML of type %s with a note', async (id, type) => {
+    ['species', 'species', 'Race'],
+    ['class', 'class', 'Class'],
+    ['background', 'background', 'Background'],
+    ['companion', 'companion', 'Companion'],
+  ])('creates a %s as a character-option form', async (id, template, type) => {
     const { onCreate } = await pick(id);
-    expect($('[data-testid="hb-soon-note"]').textContent).toContain('comes next');
     await click($('[data-testid="hb-template-create"]'));
     const element = onCreate.mock.calls[0][0];
-    expect(element.customDraft).toBeUndefined();
+    expect(element.customDraft.template).toBe(template);
     expect(element.type).toBe(type);
     expect(element.rawXml).toContain(`type="${type}"`);
     expect(element.rawXml).toContain('source="Moonwell Campaign"');
+  });
+
+  it('asks which class a subclass is for, and starts it under that class\' pick list', async () => {
+    const pickPack = {
+      ...pack,
+      elements: [
+        elementForDraft({ ...createCustomClassDraft('Moonwalker'), subclass: { level: 3, label: 'Moon Path' } }, pack),
+        elementForDraft(createCustomClassDraft('Plain Class'), pack),
+      ],
+    };
+    const onCreate = vi.fn();
+    await mount(<NewElementDialog pack={pickPack} api={h.api} onClose={() => {}} onCreate={onCreate} />);
+    await click($('[data-testid="hb-template-subclass"]'));
+    await click($('[data-testid="hb-template-create"]'));
+    expect($('[data-testid="hb-parent-step"]')).toBeTruthy();
+    // A class that offers no subclass pick cannot be picked.
+    expect(buttonByText('Plain Class').disabled).toBe(true);
+    await click(buttonByText('Moonwalker'));
+    const element = onCreate.mock.calls[0][0];
+    expect(element.customDraft).toMatchObject({ template: 'subclass', parent: { name: 'Moonwalker', tag: 'Moon Path' } });
+    expect(element.type).toBe('Archetype');
+    expect(element.rawXml).toContain('<supports>Moon Path</supports>');
   });
 
   it('opens the spell form for a spell and adds the finished spell to the pack', async () => {

@@ -164,7 +164,6 @@ describe('raw XML, the earlier editor and the Advanced section', () => {
     const changes = [];
     const raw = rawElement({ type: 'Race', name: 'Selkie', pack });
     await mount(<Host initial={raw} changes={changes} />);
-    expect($('[data-testid="hb-coming-next-notice"]').textContent).toContain('Species');
     await type($('[data-testid="hb-raw-xml"]'), raw.rawXml.replace('name="Selkie"', 'name="Seal Folk"'));
     expect(last(changes)).toMatchObject({ name: 'Seal Folk', type: 'Race', id: raw.id });
   });

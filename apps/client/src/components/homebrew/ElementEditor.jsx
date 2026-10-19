@@ -16,23 +16,13 @@ import FeatureFields from '../custom/FeatureFields';
 import { Field, Issues, SelectInput } from '../custom/fields';
 import { castAbilityIssues, summarizeItem, summarizeSpell, tidySpell } from '../custom/draftModel';
 import AppendFields from './AppendFields';
+import BuildFields from './BuildFields';
 import CatalogFields from './CatalogFields';
 import OverrideFields from './OverrideFields';
 import RawXmlEditor, { readElementXml } from './RawXmlEditor';
 import { makePackFormServices } from './packServices';
 import { draftFamily, elementIdOf, elementKind, elementMeta, legacyXml, updateElementDraft } from './packModel';
 import { ELEMENT_RULESET_OPTIONS, normalizeElementRuleset } from './xmlBuilder';
-
-// Types whose forms are still to come: they are edited as XML for now.
-const COMING_NEXT = new Set(['Race', 'Sub Race', 'Class', 'Archetype', 'Background', 'Companion']);
-const COMING_NEXT_LABEL = {
-  Race: 'Species',
-  'Sub Race': 'Subspecies or variant',
-  Class: 'Class',
-  Archetype: 'Subclass',
-  Background: 'Background',
-  Companion: 'Companion',
-};
 
 function IdentityWarning({ report }) {
   const changes = (report?.changes ?? []).filter((change) => change.picks.length > 0);
@@ -179,12 +169,6 @@ export default function ElementEditor({ element, pack, api, disabled = false, sh
 
         {kind === 'raw' && (
           <>
-            {COMING_NEXT.has(element.type) && (
-              <p className="fcb-warning-note text-sm" data-testid="hb-coming-next-notice">
-                The {COMING_NEXT_LABEL[element.type]} form comes next. Until then it is edited as XML; it is a normal element and works the
-                same once the form arrives.
-              </p>
-            )}
             <RawXmlEditor value={element.rawXml} disabled={disabled} onChange={setRaw} />
           </>
         )}
@@ -195,6 +179,11 @@ export default function ElementEditor({ element, pack, api, disabled = false, sh
         {kind === 'form' && family === 'feature' && (
           <div className="fcb-custom-form">
             <FeatureFields draft={element.customDraft} setDraft={setDraft} services={services} issues={issues} attempted={showIssues} />
+          </div>
+        )}
+        {kind === 'form' && family === 'build' && (
+          <div className="fcb-custom-form">
+            <BuildFields draft={element.customDraft} setDraft={setDraft} services={services} issues={issues} attempted={showIssues} pack={pack} api={api} />
           </div>
         )}
         {kind === 'form' && family === 'catalog' && (

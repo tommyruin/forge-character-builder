@@ -9,12 +9,20 @@
 
 import {
   CUSTOM_CATALOG_OPTIONS,
+  compiledElementIds,
   createCustomAppendDraft,
+  createCustomBackgroundDraft,
   createCustomCatalogDraft,
+  createCustomClassDraft,
+  createCustomCompanionDraft,
   createCustomDraft,
   createCustomOverrideDraft,
+  createCustomSpeciesDraft,
   createCustomSpellDraft,
+  createCustomSubclassDraft,
+  createCustomSubspeciesDraft,
   isCustomAppendDraft,
+  isCustomBuildDraft,
   isCustomCatalogDraft,
   isCustomItemDraft,
   isCustomOverrideDraft,
@@ -59,6 +67,7 @@ export function elementKind(element) {
 
 /** Which form a draft is edited with. */
 export function draftFamily(draft) {
+  if (isCustomBuildDraft(draft)) return 'build';
   if (isCustomSpellDraft(draft)) return 'spell';
   if (isCustomItemDraft(draft)) return 'item';
   if (isCustomCatalogDraft(draft)) return 'catalog';
@@ -81,10 +90,23 @@ const FEATURE_KIND_LABELS = {
   classFeature: 'Class feature',
 };
 
+const BUILD_KIND_LABELS = {
+  species: 'Species',
+  subspecies: 'Subspecies',
+  class: 'Class',
+  subclass: 'Subclass',
+  background: 'Background',
+  companion: 'Companion',
+};
+
 /** The grey line under an element's name in the list ("Spell · 1st", "Magic weapon · Longsword"). */
 export function elementMeta(element) {
   const draft = element.customDraft;
   if (draft == null) return element.type;
+  if (isCustomBuildDraft(draft)) {
+    const kind = draft.template === 'subspecies' && draft.kind === 'Race Variant' ? 'Variant' : BUILD_KIND_LABELS[draft.template];
+    return draft.parent?.name ? `${kind} · ${draft.parent.name}` : kind;
+  }
   if (isCustomSpellDraft(draft)) return `Spell · ${SPELL_LEVEL_WORDS[draft.level] ?? draft.level}`;
   if (isCustomItemDraft(draft)) {
     const kind = ITEM_KIND_LABELS[draft.template] ?? 'Item';
@@ -107,6 +129,19 @@ export function elementIdOf(element, pack) {
   return resolveElementId(element, pack);
 }
 
+/**
+ * Every id an element defines in its pack's file. A class or a species writes its features, and a
+ * background its feature, as elements of their own, so a finding about one of them belongs to the
+ * element that wrote it.
+ */
+export function elementIdsOf(element, pack) {
+  const own = elementIdOf(element, pack);
+  if (element.customDraft != null && isCustomBuildDraft(element.customDraft) && element.rawXml) {
+    return [own, ...compiledElementIds(element.rawXml).filter((id) => id !== own)];
+  }
+  return [own];
+}
+
 /** The XML the editor shows for an element that was made with the earlier structured editor. */
 export function legacyXml(element, pack) {
   return buildElementXml(element, pack);
@@ -116,9 +151,9 @@ export function legacyXml(element, pack) {
 
 /**
  * What the New element dialog offers, in its five groups. `route` says what Create does:
- * `feature`, `catalog`, `spell` and `item` start a form of that kind; `append`, `override` and
- * `reflavour` first ask which book element; `raw` starts the XML of an element type. `soon`
- * marks the types whose forms are still to come: they open as XML with a note.
+ * `feature`, `catalog`, `build`, `spell` and `item` start a form of that kind; `parent` starts a
+ * form after asking which class or species it belongs to; `append`, `override` and `reflavour`
+ * first ask which book element; `raw` starts the XML of an element type.
  */
 export const NEW_ELEMENT_GROUPS = [
   {
@@ -133,11 +168,11 @@ export const NEW_ELEMENT_GROUPS = [
   {
     label: 'Character options',
     items: [
-      { id: 'species', label: 'Species', summary: 'Size, speeds, senses, languages, traits, ability choices', route: { kind: 'raw', type: 'Race', soon: true } },
-      { id: 'subspecies', label: 'Subspecies or variant', summary: 'Adds to a species; lineage or subrace', route: { kind: 'raw', type: 'Sub Race', soon: true } },
-      { id: 'class', label: 'Class', summary: 'Hit die, level table, spellcasting, multiclass rules', route: { kind: 'raw', type: 'Class', soon: true } },
-      { id: 'subclass', label: 'Subclass', summary: 'Joins a class at its subclass level', route: { kind: 'raw', type: 'Archetype', soon: true } },
-      { id: 'background', label: 'Background', summary: 'Its feature, proficiencies, gear, trait, ideal, bond and flaw lists', route: { kind: 'raw', type: 'Background', soon: true } },
+      { id: 'species', label: 'Species', summary: 'Size, speeds, senses, languages, traits, ability choices', route: { kind: 'build', template: 'species' } },
+      { id: 'subspecies', label: 'Subspecies or variant', summary: 'Adds to a species; lineage or subrace', route: { kind: 'parent', template: 'subspecies' } },
+      { id: 'class', label: 'Class', summary: 'Hit die, level table, spellcasting, multiclass rules', route: { kind: 'build', template: 'class' } },
+      { id: 'subclass', label: 'Subclass', summary: 'Joins a class at its subclass level', route: { kind: 'parent', template: 'subclass' } },
+      { id: 'background', label: 'Background', summary: 'Its feature, proficiencies, gear, trait, ideal, bond and flaw lists', route: { kind: 'build', template: 'background' } },
       { id: 'feat', label: 'Feat', summary: 'Origin, General, Fighting Style or Epic Boon; real prerequisites', route: { kind: 'feature', template: 'feat', showsUnder: 'feats' } },
     ],
   },
@@ -155,7 +190,7 @@ export const NEW_ELEMENT_GROUPS = [
   {
     label: 'Companions and world',
     items: [
-      { id: 'companion', label: 'Companion', summary: 'Familiar, beast, sidekick; stat block, traits, actions', route: { kind: 'raw', type: 'Companion', soon: true } },
+      { id: 'companion', label: 'Companion', summary: 'Familiar, beast, sidekick; stat block, traits, actions', route: { kind: 'build', template: 'companion' } },
       { id: 'language', label: 'Language', summary: 'Standard, exotic or secret; script', route: { kind: 'catalog', template: 'language' } },
       { id: 'proficiency', label: 'Proficiency', summary: 'New skill, tool, vehicle or weapon group', route: { kind: 'catalog', template: 'proficiency' } },
       { id: 'vision', label: 'Sense or damage type', summary: 'Vision types, resistances to new damage types', route: { kind: 'catalog', template: 'vision' } },
@@ -200,7 +235,31 @@ export function createTemplateDraft(templateId, { ruleset = 'inherit' } = {}) {
   if (route.kind === 'catalog') return withRuleset(createCustomCatalogDraft(route.template, ''), ruleset);
   if (route.kind === 'spell') return withRuleset(createCustomSpellDraft(''), ruleset);
   if (route.kind === 'item') return withRuleset(makeItemDraft(route.template), ruleset);
+  if (route.kind === 'build') return withRuleset(createBuildDraft(route.template, null), ruleset);
   return null;
+}
+
+/**
+ * A blank character-option draft. A subclass or subspecies is made for a parent
+ * (`{ id, name, tag }`, and `kind` for the subspecies' pick); the others take none.
+ */
+export function createBuildDraft(template, parent) {
+  switch (template) {
+    case 'species':
+      return createCustomSpeciesDraft('');
+    case 'class':
+      return createCustomClassDraft('');
+    case 'background':
+      return createCustomBackgroundDraft('');
+    case 'companion':
+      return createCustomCompanionDraft('');
+    case 'subclass':
+      return createCustomSubclassDraft({ id: parent.id, name: parent.name, tag: parent.tag }, '');
+    case 'subspecies':
+      return createCustomSubspeciesDraft({ id: parent.id, name: parent.name, tag: parent.tag }, '', parent.kind ?? 'Sub Race');
+    default:
+      return null;
+  }
 }
 
 /**
@@ -292,5 +351,5 @@ export function convertToFeature(element, pack, toType = 'Custom Feature') {
 /** The pack element a finding names, if the pack holds it. */
 export function elementForFinding(finding, pack) {
   if (!finding.elementId) return null;
-  return (pack.elements ?? []).find((element) => elementIdOf(element, pack) === finding.elementId) ?? null;
+  return (pack.elements ?? []).find((element) => elementIdsOf(element, pack).includes(finding.elementId)) ?? null;
 }

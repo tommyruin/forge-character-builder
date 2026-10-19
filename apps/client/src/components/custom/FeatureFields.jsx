@@ -13,7 +13,18 @@ import { showsUnderLabel, sheetPreview, summarizeDraft } from './draftModel';
 
 const SHOWS_UNDER_OPTIONS = CUSTOM_SHOWS_UNDER.map((option) => ({ id: option.id, label: option.label }));
 
-export default function FeatureFields({ draft, setDraft, services, issues = [], attempted = false, autoFocus = false }) {
+// `placed` fixes where the feature shows (a class feature inside a class table); `inheritedScales`
+// are the table's value columns, which the feature's bonuses may read.
+export default function FeatureFields({
+  draft,
+  setDraft,
+  services,
+  issues = [],
+  attempted = false,
+  autoFocus = false,
+  placed = false,
+  inheritedScales = [],
+}) {
   const topIssues = attempted
     ? issues.filter((issue) => !issue.path.startsWith('blocks[') && !issue.path.startsWith('trackers[') && !issue.path.startsWith('scales['))
     : [];
@@ -50,10 +61,12 @@ export default function FeatureFields({ draft, setDraft, services, issues = [], 
         </Field>
       </div>
 
-      <div>
-        <span className="fcb-field-label">Shows under</span>
-        <Segmented label="Shows under" value={draft.showsUnder} options={SHOWS_UNDER_OPTIONS} onChange={setShowsUnder} className="mt-1" />
-      </div>
+      {!placed && (
+        <div>
+          <span className="fcb-field-label">Shows under</span>
+          <Segmented label="Shows under" value={draft.showsUnder} options={SHOWS_UNDER_OPTIONS} onChange={setShowsUnder} className="mt-1" />
+        </div>
+      )}
 
       <Field label="Text">
         <textarea
@@ -72,6 +85,7 @@ export default function FeatureFields({ draft, setDraft, services, issues = [], 
         issues={issues}
         attempted={attempted}
         startWithSwitch={draft.template === 'transformation'}
+        inheritedScales={inheritedScales}
       />
 
       <details className="fcb-custom-gates">

@@ -1,7 +1,7 @@
 // The template picker behind "+ Element": what is being made decides the type, the tags that put it
 // in the right pickers and the blocks it usually needs. A template with a form starts that form; a
-// change to a book element first asks which element; types whose forms are still to come are listed
-// and start as XML with a note, so nothing a pack can hold is missing from the list.
+// subclass or subspecies first asks which class or species it is for; a change to a book element
+// first asks which element; "Custom type or raw XML" starts any other element as XML.
 
 import { useMemo, useState } from 'react';
 import Modal from '../Modal';
@@ -9,9 +9,11 @@ import CustomItemModal from '../custom/CustomItemModal';
 import CustomSpellModal from '../custom/CustomSpellModal';
 import LibraryPicker from '../custom/LibraryPicker';
 import { Field, SelectInput } from '../custom/fields';
+import ParentPicker from './ParentPicker';
 import {
   NEW_ELEMENT_GROUPS,
   appendElement,
+  createBuildDraft,
   createTemplateDraft,
   elementForDraft,
   overrideElement,
@@ -118,16 +120,22 @@ export default function NewElementDialog({ pack, api, onClose, onCreate }) {
 
   const create = () => {
     if (!route) return;
-    if (route.kind === 'feature' || route.kind === 'catalog') {
+    if (route.kind === 'feature' || route.kind === 'catalog' || route.kind === 'build') {
       const draft = { ...createTemplateDraft(templateId, { ruleset }), name: `New ${template.label.toLowerCase()}` };
       finish(elementForDraft(draft, pack));
     } else if (route.kind === 'raw' && route.type !== '') {
       finish(rawElement({ type: route.type, name: `New ${template.label.toLowerCase()}`, pack, ruleset }));
     } else {
-      setStep(route.kind === 'raw' ? 'raw' : route.kind === 'spell' || route.kind === 'item' ? 'form' : 'book');
+      setStep(route.kind === 'raw' ? 'raw' : route.kind === 'parent' ? 'parent' : route.kind === 'spell' || route.kind === 'item' ? 'form' : 'book');
     }
   };
 
+  const createForParent = (parent) => {
+    const made = { ...createBuildDraft(route.template, parent), name: `New ${template.label.toLowerCase()}` };
+    finish(elementForDraft(ruleset === 'inherit' ? made : { ...made, ruleset }, pack));
+  };
+
+  const parentLookup = useMemo(() => makePackLookup(api, pack), [api, pack]);
   const formServices = useMemo(
     () => makePackFormServices({ api, pack, kind: route?.kind === 'spell' ? 'spell' : 'item', onSave: async (draft) => finish(elementForDraft(ruleset === 'inherit' ? draft : { ...draft, ruleset }, pack)) }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- finish only calls the parent's handlers
@@ -194,10 +202,7 @@ export default function NewElementDialog({ pack, api, onClose, onCreate }) {
                       className={`fcb-template-card${templateId === item.id ? ' is-selected' : ''}`}
                       onClick={() => setTemplateId(item.id)}
                     >
-                      <span className="fcb-template-card-title">
-                        {item.label}
-                        {item.route.soon && <span className="fcb-template-soon">Coming next</span>}
-                      </span>
+                      <span className="fcb-template-card-title">{item.label}</span>
                       <span className="fcb-template-card-summary">{item.summary}</span>
                     </button>
                   ))}
@@ -205,12 +210,6 @@ export default function NewElementDialog({ pack, api, onClose, onCreate }) {
               </section>
             ))}
           </div>
-          {route?.soon && (
-            <p className="fcb-warning-note text-sm" data-testid="hb-soon-note">
-              The {template.label} form comes next. For now it starts as XML for a {route.type} element, which works the same once the
-              form arrives.
-            </p>
-          )}
           <div className="fcb-toolbar justify-end">
             <button type="button" className="fcb-button" onClick={onClose}>
               Cancel
@@ -232,6 +231,17 @@ export default function NewElementDialog({ pack, api, onClose, onCreate }) {
             else finish(overrideElement(picked, pack, { reflavour: route.kind === 'reflavour', ruleset }));
           }}
         />
+      )}
+
+      {step === 'parent' && route && (
+        <div className="space-y-3" data-testid="hb-parent-step">
+          <ParentPicker kind={route.template} pack={pack} api={api} lookup={parentLookup} value={null} onPick={createForParent} />
+          <div className="fcb-toolbar justify-end">
+            <button type="button" className="fcb-button" onClick={() => setStep('pick')}>
+              Back
+            </button>
+          </div>
+        </div>
       )}
 
       {step === 'raw' && <RawTypeStep onBack={() => setStep('pick')} onCreate={({ type, name }) => finish(rawElement({ type, name, pack, ruleset }))} />}
