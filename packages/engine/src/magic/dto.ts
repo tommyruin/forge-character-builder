@@ -31,7 +31,7 @@ import {
   type SpellInfo,
 } from "./spelllist.js";
 import { featureSpellCasters, type FeatureSpellCaster } from "./feature-casters.js";
-import { additionalSpellPool, isDmGrantSource, isGeneratedSpellProxyId } from "./granted-spells.js";
+import { additionalSpellPool, grantCasterOf, isDmGrantSource, isGeneratedSpellProxyId } from "./granted-spells.js";
 import { contentOrigin } from "../custom/placement.js";
 
 /**
@@ -232,6 +232,16 @@ function resolvedUsage(usage: string, statistics: Readonly<Record<string, number
   return unresolved ? null : text;
 }
 
+/** The ids of the DM grants that name `casterName` as the caster that casts them. */
+export function namedGrantIds(state: CharacterState, casterName: string): Set<string> {
+  const ids = new Set<string>();
+  const names = (state.magic?.casters ?? []).map((block) => block.name);
+  for (const extra of state.magic?.additional ?? []) {
+    if (grantCasterOf(extra.source, names) === casterName) ids.add(extra.id);
+  }
+  return ids;
+}
+
 /** Whether the spellcasting feature projects the full class list (`<list known="true">`). */
 function isFullListCaster(library: ElementLibrary, block: MagicCasterBlock): boolean {
   const feature = library.byId.get(block.source);
@@ -290,6 +300,10 @@ export function buildSpellcastingDto(
 
     const fullList = isFullListCaster(library, block);
     const alwaysSet = new Set(always.get(block.name) ?? []);
+    // A DM grant that names this caster is one of its spells, ready without
+    // preparation and outside the list and level limits it was granted past.
+    const named = namedGrantIds(state, block.name);
+    for (const grantId of named) alwaysSet.add(grantId);
     const flags = knownFlags(block, alwaysSet);
     let spellInfos: SpellInfo[];
     if (fullList) {
@@ -299,7 +313,7 @@ export function buildSpellcastingDto(
       const all = fullCasterList(library, block.name, maxLevel, state);
       const alwaysInfos = [...alwaysSet]
         .map((id) => spellInfo(library, id))
-        .filter((info): info is SpellInfo => info !== null && info.level <= maxLevel)
+        .filter((info): info is SpellInfo => info !== null && (info.level <= maxLevel || named.has(info.id)))
         .sort((left, right) => left.level - right.level || left.name.localeCompare(right.name) || canonicalSourceRank(left.source) - canonicalSourceRank(right.source));
       const ownCantrips = block.cantrips
         .map((entry) => spellInfo(library, entry.id))

@@ -11,7 +11,7 @@ import { ordinal, structuredSpellMechanics } from "./structured-spell.js";
 import { featureSpellCasters } from "./feature-casters.js";
 import { casterModifier } from "./caster-modifiers.js";
 import { classCasterSpellIds, grantedCasterIdentifier, partitionAdditionalGrants, GRANTED_CASTER_NAME } from "./dto.js";
-import { additionalSpellPool, isGeneratedSpellProxyId } from "./granted-spells.js";
+import { additionalSpellPool, grantCasterOf, isGeneratedSpellProxyId } from "./granted-spells.js";
 import type { MagicAdditionalSpell, MagicCasterBlock, MagicSpellEntry, MagicState } from "./state.js";
 
 /**
@@ -642,9 +642,15 @@ export function buildMagicAttackOptions(
     const grants = [...(granted.get(block.name) ?? [])].filter(
       (id) => (spellInfo(library, id)?.level ?? 0) <= maxSlotLevel,
     );
-    const additional = index === 0
-      ? magic!.additional.map((spell) => spell.id).filter((id) => onListGrantIds.has(id))
-      : [];
+    // A grant that names a caster belongs to it; the rest ride on the first.
+    const casterNames = magic!.casters.map((caster) => caster.name);
+    const additional = magic!.additional
+      .filter((spell) => {
+        const named = grantCasterOf(spell.source, casterNames);
+        return named === null ? index === 0 : named === block.name;
+      })
+      .map((spell) => spell.id)
+      .filter((id) => onListGrantIds.has(id));
     sources.push({
       identifier: casterIds.get(block.name) ?? block.name,
       name: block.name,

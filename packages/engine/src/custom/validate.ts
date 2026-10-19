@@ -20,17 +20,21 @@ import {
   CUSTOM_ITEM_TEMPLATES,
   CUSTOM_OTHER_TYPE,
   CUSTOM_RULESETS,
+  CUSTOM_SPELL_TEMPLATE,
   CUSTOM_TEMPLATES,
   DAMAGE_TYPES,
   ITEM_RARITIES,
   SHEET_ACTIONS,
   SHOWS_UNDER,
+  SPELL_ROLLS,
+  SPELL_SCHOOLS,
   WEAPON_PROPERTY_IDS,
   WORN_SLOTS,
   type CustomAbility,
   type CustomDraft,
   type CustomEntryDraft,
   type CustomItemDraft,
+  type CustomSpellDraft,
 } from "./schema.js";
 
 export interface CustomDraftIssue {
@@ -561,20 +565,193 @@ export function customItemDraftIssues(draft: unknown): CustomDraftIssue[] {
   return issues;
 }
 
-/** Every problem in whatever a character pack stores, feature or item. */
+// ---- spells ------------------------------------------------------------------
+
+/** A short phrase in the spell block: casting time, range or duration. */
+const SPELL_PHRASE_MAX = 80;
+const CLASS_NAME = /^[A-Za-z][A-Za-z '\u2019-]{0,39}$/;
+export const MAX_SPELL_DAMAGE_TERMS = 4;
+export const MAX_CANTRIP_TIERS = 6;
+
+function spellComponentIssues(components: unknown): CustomDraftIssue[] {
+  if (!isRecord(components)) return [{ path: "components", message: "components must be an object" }];
+  const issues: CustomDraftIssue[] = [];
+  for (const key of ["verbal", "somatic", "material"] as const) {
+    if (components[key] !== undefined && typeof components[key] !== "boolean") {
+      issues.push({ path: `components.${key}`, message: `${key} is on or off` });
+    }
+  }
+  if (components.materialText !== undefined && !isText(components.materialText, 200)) {
+    issues.push({ path: "components.materialText", message: "the material is text of at most 200 characters" });
+  }
+  return issues;
+}
+
+function scalingIssues(scaling: unknown, level: unknown, hasDamage: boolean, hasHealing: boolean): CustomDraftIssue[] {
+  const path = "mechanics.scaling";
+  if (!isRecord(scaling)) return [{ path, message: "scaling must be an object" }];
+  if (scaling.kind === "cantrip") {
+    const issues: CustomDraftIssue[] = [];
+    if (level !== 0) issues.push({ path, message: "only a cantrip grows with the caster's level; a spell grows with its slot" });
+    if (!hasDamage) issues.push({ path, message: "give the spell damage for the tiers to raise" });
+    const tiers = scaling.tiers;
+    if (!Array.isArray(tiers) || tiers.length === 0 || tiers.length > MAX_CANTRIP_TIERS) {
+      issues.push({ path: `${path}.tiers`, message: `list from 1 to ${MAX_CANTRIP_TIERS} level tiers` });
+      return issues;
+    }
+    const levels = new Set<number>();
+    tiers.forEach((tier: unknown, index: number) => {
+      const at = `${path}.tiers[${index}]`;
+      if (!isRecord(tier) || !(isWholeNumber(tier.level) && tier.level >= 2 && tier.level <= 20)) {
+        issues.push({ path: `${at}.level`, message: "a tier level is a whole number from 2 to 20" });
+      } else if (levels.has(tier.level)) {
+        issues.push({ path: `${at}.level`, message: `two tiers are set for level ${tier.level}` });
+      } else {
+        levels.add(tier.level);
+      }
+      issues.push(...diceIssues(isRecord(tier) ? tier.dice : undefined, `${at}.dice`));
+    });
+    return issues;
+  }
+  if (scaling.kind === "slot") {
+    const issues: CustomDraftIssue[] = [];
+    if (level === 0) issues.push({ path, message: "a cantrip has no slot to raise; give it level tiers instead" });
+    if (!hasDamage && !hasHealing) issues.push({ path, message: "give the spell damage or healing for the slot to raise" });
+    issues.push(...diceIssues(scaling.dice, `${path}.dice`));
+    return issues;
+  }
+  return [{ path: `${path}.kind`, message: "pick level tiers or slot scaling" }];
+}
+
+function mechanicsIssues(mechanics: unknown, level: unknown): CustomDraftIssue[] {
+  if (!isRecord(mechanics)) return [{ path: "mechanics", message: "mechanics must be an object" }];
+  const issues: CustomDraftIssue[] = [];
+  const roll = mechanics.roll;
+  if (!SPELL_ROLLS.includes(roll as never)) {
+    issues.push({ path: "mechanics.roll", message: "pick none, a ranged or melee spell attack, or a saving throw" });
+  }
+  if (roll === "save") {
+    if (!CUSTOM_ABILITIES.includes(mechanics.saveAbility as CustomAbility)) {
+      issues.push({ path: "mechanics.saveAbility", message: "pick the ability the target saves with" });
+    }
+  } else {
+    if (mechanics.saveAbility !== undefined) {
+      issues.push({ path: "mechanics.saveAbility", message: "only a saving throw spell names a save" });
+    }
+    if (mechanics.halfOnSave !== undefined) {
+      issues.push({ path: "mechanics.halfOnSave", message: "only a saving throw spell can take half on a success" });
+    }
+  }
+  if (mechanics.halfOnSave !== undefined && typeof mechanics.halfOnSave !== "boolean") {
+    issues.push({ path: "mechanics.halfOnSave", message: "half on a success is on or off" });
+  }
+  let damageCount = 0;
+  if (mechanics.damage !== undefined) {
+    if (!Array.isArray(mechanics.damage) || mechanics.damage.length > MAX_SPELL_DAMAGE_TERMS) {
+      issues.push({ path: "mechanics.damage", message: `damage is a list of at most ${MAX_SPELL_DAMAGE_TERMS} dice` });
+    } else {
+      damageCount = mechanics.damage.length;
+      mechanics.damage.forEach((term: unknown, index: number) => {
+        issues.push(...damageIssues(term, `mechanics.damage[${index}]`));
+      });
+    }
+  }
+  if (mechanics.healing !== undefined) issues.push(...diceIssues(mechanics.healing, "mechanics.healing"));
+  if (mechanics.addsModifier !== undefined && typeof mechanics.addsModifier !== "boolean") {
+    issues.push({ path: "mechanics.addsModifier", message: "adding the modifier is on or off" });
+  }
+  if (mechanics.scaling !== undefined) {
+    issues.push(...scalingIssues(mechanics.scaling, level, damageCount > 0, mechanics.healing !== undefined));
+  }
+  return issues;
+}
+
+/** Every problem in a spell draft, each naming its field. An empty list means the draft compiles. */
+export function customSpellDraftIssues(draft: unknown): CustomDraftIssue[] {
+  if (!isRecord(draft)) return [{ path: "", message: "a draft must be an object" }];
+  const issues: CustomDraftIssue[] = [];
+  if (draft.schemaVersion !== undefined && draft.schemaVersion !== CUSTOM_DRAFT_SCHEMA_VERSION) {
+    issues.push({
+      path: "schemaVersion",
+      message: `this draft was written by a newer version of the builder (schema ${String(draft.schemaVersion)})`,
+    });
+  }
+  if (typeof draft.id !== "string" || !ELEMENT_ID.test(draft.id)) {
+    issues.push({ path: "id", message: "the draft needs the stable element id it was created with" });
+  }
+  if (draft.template !== CUSTOM_SPELL_TEMPLATE) issues.push({ path: "template", message: "a spell draft has the template 'spell'" });
+  if (!isName(draft.name, 120)) issues.push({ path: "name", message: "give it a name (at most 120 characters)" });
+  if (typeof draft.description !== "string" || draft.description.length > 20000) {
+    issues.push({ path: "description", message: "the description is text of at most 20000 characters" });
+  }
+  if (draft.higherLevels !== undefined && !isText(draft.higherLevels, 2000)) {
+    issues.push({ path: "higherLevels", message: "the higher-level text is at most 2000 characters" });
+  }
+  if (draft.cameFrom !== undefined && !isText(draft.cameFrom, 120)) {
+    issues.push({ path: "cameFrom", message: "where it came from is text of at most 120 characters" });
+  }
+  if (draft.ruleset !== undefined && !CUSTOM_RULESETS.includes(draft.ruleset as never)) {
+    issues.push({ path: "ruleset", message: "pick both rulesets, 2014 or 2024" });
+  }
+  if (!(isWholeNumber(draft.level) && draft.level >= 0 && draft.level <= 9)) {
+    issues.push({ path: "level", message: "a spell level is a whole number from 0 (cantrip) to 9" });
+  }
+  if (!SPELL_SCHOOLS.includes(draft.school as never)) issues.push({ path: "school", message: "pick a school of magic" });
+  for (const key of ["castingTime", "range", "duration"] as const) {
+    const label = key === "castingTime" ? "casting time" : key;
+    if (!isName(draft[key], SPELL_PHRASE_MAX) || /[<>&"]/.test(draft[key] as string)) {
+      issues.push({ path: key, message: `give the ${label} (at most ${SPELL_PHRASE_MAX} characters, without < > & or quotes)` });
+    }
+  }
+  issues.push(...spellComponentIssues(draft.components));
+  for (const key of ["concentration", "ritual"] as const) {
+    if (draft[key] !== undefined && typeof draft[key] !== "boolean") {
+      issues.push({ path: key, message: `${key} is on or off` });
+    }
+  }
+  if (draft.classes !== undefined) {
+    const classes = draft.classes;
+    if (
+      !Array.isArray(classes) ||
+      classes.length > 12 ||
+      new Set(classes).size !== classes.length ||
+      classes.some((name) => typeof name !== "string" || !CLASS_NAME.test(name))
+    ) {
+      issues.push({ path: "classes", message: "class lists are class names, each once, at most 12" });
+    }
+  }
+  if (draft.mechanics !== undefined) issues.push(...mechanicsIssues(draft.mechanics, draft.level));
+  return issues;
+}
+
+/** Every problem in whatever a character pack stores: a feature, an item or a spell. */
 export function customEntryIssues(draft: unknown): CustomDraftIssue[] {
+  if (isRecord(draft) && draft.template === CUSTOM_SPELL_TEMPLATE) return customSpellDraftIssues(draft);
   return isRecord(draft) && CUSTOM_ITEM_TEMPLATES.includes(draft.template as never)
     ? customItemDraftIssues(draft)
     : customDraftIssues(draft);
 }
 
 /**
- * Reads a stored entry: an item draft by its template, anything else as a
- * feature draft. The same version rules as `readCustomDraft` apply.
+ * Reads a stored entry: a spell or an item draft by its template, anything
+ * else as a feature draft. The same version rules as `readCustomDraft` apply.
  */
 export function readCustomEntry(raw: unknown): CustomEntryDraft {
+  if (isRecord(raw) && raw.template === CUSTOM_SPELL_TEMPLATE) return readCustomSpellDraft(raw);
   if (isRecord(raw) && CUSTOM_ITEM_TEMPLATES.includes(raw.template as never)) return readCustomItemDraft(raw);
   return readCustomDraft(raw);
+}
+
+/** Reads a spell draft from JSON; throws an `invalid-argument` error naming every problem. */
+export function readCustomSpellDraft(raw: unknown): CustomSpellDraft {
+  const candidate = isRecord(raw) && raw.schemaVersion === undefined
+    ? { ...raw, schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION }
+    : raw;
+  const issues = customSpellDraftIssues(candidate);
+  if (issues.length > 0) {
+    throw engineError("invalid-argument", `invalid custom spell: ${issues[0]!.path === "" ? "" : `${issues[0]!.path}: `}${issues[0]!.message}`, { issues });
+  }
+  return candidate as CustomSpellDraft;
 }
 
 /** Reads an item draft from JSON; throws an `invalid-argument` error naming every problem. */
@@ -588,4 +765,3 @@ export function readCustomItemDraft(raw: unknown): CustomItemDraft {
   }
   return candidate as CustomItemDraft;
 }
-

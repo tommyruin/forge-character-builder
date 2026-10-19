@@ -140,7 +140,8 @@ import {
   type SpellcasterDto,
   type SpellBrowseDto,
 } from "../magic/dto.js";
-import { additionalSpellPool, isGeneratedSpellProxyId } from "../magic/granted-spells.js";
+import { additionalSpellPool, dmGrantSource, isGeneratedSpellProxyId } from "../magic/granted-spells.js";
+import { spellInfo } from "../magic/spelllist.js";
 import {
   planSetPrepared,
   planAddAdditionalSpell,
@@ -2209,7 +2210,7 @@ export class CharacterService {
   }
 
   /** Grants a spell into `<magic><additional>` (matching fixture serialization). */
-  addGrantedSpell(id: string, request: { spellId: string }): CharacterState {
+  addGrantedSpell(id: string, request: { spellId: string; caster?: string | null }): CharacterState {
     const { state, document } = this.require(id);
     if (this.library === undefined) {
       throw engineError("invalid-argument", "character service requires a content library for spellcasting");
@@ -2218,7 +2219,15 @@ export class CharacterService {
     if (existing) {
       throw engineError("conflict", `Spell '${request.spellId}' is already granted.`);
     }
-    const plan = planAddAdditionalSpell(document, state, this.library, request.spellId, null);
+    // The grant names the caster that casts it; the entry's source carries the name
+    // (see `grantCasterOf`), so the file stays a plain `<additional>` entry.
+    const caster = request.caster === undefined || request.caster === null || request.caster === "" ? null : request.caster;
+    if (caster !== null && !(state.magic?.casters ?? []).some((block) => block.name === caster)) {
+      throw engineError("invalid-argument", `This character has no '${caster}' spellcasting to cast the spell with.`);
+    }
+    const info = spellInfo(this.library, request.spellId);
+    const source = info === null || caster === null ? null : dmGrantSource(info.name, caster);
+    const plan = planAddAdditionalSpell(document, state, this.library, request.spellId, source);
     return this.applyPlan(id, state, document, plan.edits);
   }
 

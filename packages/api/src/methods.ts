@@ -368,7 +368,13 @@ export interface EngineMethodMap {
     SpellcasterDto[]
   >;
   getSpellBrowse: MethodContract<[id: string, ruleId: string], WireObject>;
-  addGrantedSpell: MethodContract<[id: string, request: { spellId: string }], WireObject>;
+  /**
+   * Grants any spell to the character, ignoring class lists and known/prepared
+   * limits. With `caster` (a class spellcasting name the character has) the
+   * spell joins that caster's spells, always prepared, and casts with its
+   * attack bonus and save DC; without one it gathers in "Additional Spells".
+   */
+  addGrantedSpell: MethodContract<[id: string, request: { spellId: string; caster?: string | null }], WireObject>;
   removeGrantedSpell: MethodContract<[id: string, request: { spellId: string }], WireObject>;
   addGrantedFeat: MethodContract<[id: string, request: { featId: string }], WireObject>;
   removeGrantedFeat: MethodContract<[id: string, request: { featId: string }], WireObject>;

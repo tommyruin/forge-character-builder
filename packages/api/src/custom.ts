@@ -277,12 +277,103 @@ export interface CustomItemDraft {
   blocks: CustomBlock[];
 }
 
-/** Anything the character pack stores. */
-export type CustomEntryDraft = CustomDraft | CustomItemDraft;
-
 /** True for a draft of the item kind. */
 export function isCustomItemDraft(draft: { template?: unknown }): draft is CustomItemDraft {
   return (CUSTOM_ITEM_TEMPLATES as readonly unknown[]).includes(draft.template);
+}
+
+// ---- spells ------------------------------------------------------------------
+
+/** The one spell template; a spell draft is told apart from the others by it. */
+export const CUSTOM_SPELL_TEMPLATE = "spell" as const;
+
+export const SPELL_SCHOOLS = [
+  "Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation",
+] as const;
+export type SpellSchool = (typeof SPELL_SCHOOLS)[number];
+
+/** What a spell asks of the caster's target or the caster: the attack roll, the save, or nothing. */
+export const SPELL_ROLLS = ["none", "attackRanged", "attackMelee", "save"] as const;
+export type SpellRoll = (typeof SPELL_ROLLS)[number];
+
+/** A damage-dice tier of a cantrip: from this character level, the first damage term rolls these dice. */
+export interface CantripTier {
+  level: number;
+  dice: string;
+}
+
+/** How a spell grows: with the caster's level (cantrips) or with the slot it is cast in. */
+export type SpellScaling =
+  | { kind: "cantrip"; tiers: CantripTier[] }
+  /** The dice each slot level above the spell's own adds. */
+  | { kind: "slot"; dice: string };
+
+/**
+ * What the spell rolls, in the author's terms. The engine reads these instead of
+ * the spell's text for its attack row, so the numbers never depend on wording.
+ */
+export interface SpellMechanics {
+  roll: SpellRoll;
+  /** `save` only: the ability the target saves with. */
+  saveAbility?: CustomAbility;
+  /** `save` only: a successful save still takes half the damage. */
+  halfOnSave?: boolean;
+  /** One or more damage terms ("1d10 cold"); the first is the one cantrip tiers raise. */
+  damage?: ItemDamage[];
+  /** Dice the spell restores ("2d8"); never an attack row. */
+  healing?: string;
+  /** The spellcasting ability modifier joins the damage (or healing). */
+  addsModifier?: boolean;
+  scaling?: SpellScaling;
+}
+
+/** The components a spell asks for. */
+export interface SpellComponents {
+  verbal?: boolean;
+  somatic?: boolean;
+  material?: boolean;
+  /** What the material component is ("a pinch of salt"). */
+  materialText?: string;
+}
+
+/**
+ * A custom spell. It compiles to an ordinary Spell element: the setters every
+ * book spell carries (level, school, time, range, duration, components), the
+ * class lists as `supports` tags, and the structured mechanics as the `spell …`
+ * setters the attack rows read.
+ */
+export interface CustomSpellDraft {
+  schemaVersion: typeof CUSTOM_DRAFT_SCHEMA_VERSION;
+  /** The element id the draft compiles to. */
+  id: string;
+  template: typeof CUSTOM_SPELL_TEMPLATE;
+  name: string;
+  /** Plain text; blank lines separate paragraphs. */
+  description: string;
+  /** The text for casting in a higher slot ("The damage increases by 1d6 ..."). */
+  higherLevels?: string;
+  cameFrom?: string;
+  ruleset?: CustomRuleset;
+  /** 0 is a cantrip. */
+  level: number;
+  school: SpellSchool;
+  castingTime: string;
+  range: string;
+  duration: string;
+  components: SpellComponents;
+  concentration?: boolean;
+  ritual?: boolean;
+  /** Class lists the spell is on: each name becomes a `supports` tag the class's list matches. */
+  classes?: string[];
+  mechanics?: SpellMechanics;
+}
+
+/** Anything the character pack stores. */
+export type CustomEntryDraft = CustomDraft | CustomItemDraft | CustomSpellDraft;
+
+/** True for a draft of the spell kind. */
+export function isCustomSpellDraft(draft: { template?: unknown }): draft is CustomSpellDraft {
+  return draft.template === CUSTOM_SPELL_TEMPLATE;
 }
 
 // ---- RPC payloads ------------------------------------------------------------
@@ -330,18 +421,19 @@ export interface CustomDiagnosticDto extends WireObject {
 
 /** One custom draft on a character, with what the engine knows about it. */
 export interface CustomDraftEntryDto extends WireObject {
-  /** A feature draft is granted in Build; an item draft is carried in the inventory. */
-  kind: "feature" | "item";
+  /** A feature draft is granted in Build; an item draft is carried in the inventory; a spell draft is known to a caster. */
+  kind: "feature" | "item" | "spell";
   draft: CustomEntryDraft;
   /** The element id (`draft.id`). */
   elementId: string;
   /** The element type the draft compiles to. */
   type: string;
-  /** The Build section a feature lands in; `other` for an item, which Build never lists. */
+  /** The Build section a feature lands in; `other` for an item or a spell, which Build never lists. */
   section: BuildSectionKey;
   /**
    * A feature is registered on the character (granted at the top level); an
-   * item is in the inventory.
+   * item is in the inventory; a spell is known to the character (granted to a
+   * caster, or picked from its list).
    */
   granted: boolean;
   /** The compiled element resolves in the library. False when its id collides with book content. */

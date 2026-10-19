@@ -17,11 +17,13 @@ import { compileFilter, compileRequirements, describeRequirements } from "./cond
 import {
   CUSTOM_SOURCE_NAME,
   isCustomItemDraft,
+  isCustomSpellDraft,
   type ChoiceBlock,
   type CustomBlock,
   type CustomDraft,
   type CustomEntryDraft,
   type CustomItemDraft,
+  type CustomSpellDraft,
   type CustomValue,
   type GrantBlock,
   type ModifierBlock,
@@ -205,6 +207,7 @@ export function compileCustomElement(draft: CustomEntryDraft, options: CompileOp
     );
   }
   try {
+    if (isCustomSpellDraft(draft)) return compileValidatedSpell(draft, options);
     return isCustomItemDraft(draft) ? compileValidatedItem(draft, options) : compileValidated(draft, options);
   } catch (cause) {
     // A draft that passed validation but still cannot be written (an expression
@@ -350,6 +353,96 @@ function compileValidatedItem(draft: CustomItemDraft, options: CompileOptions): 
   const open = `<element${attributes([
     ["name", draft.name.trim()],
     ["type", isGear ? "Item" : "Magic Item"],
+    ["source", source],
+    ["id", id],
+  ])}>`;
+  return [open, ...children.map((line) => `  ${line}`), "</element>"].join("\n");
+}
+
+const SPELL_ROLL_WORDS = {
+  attackRanged: "ranged attack",
+  attackMelee: "melee attack",
+  save: "saving throw",
+  none: "none",
+} as const;
+
+/** The structured-mechanics setters of a spell (`magic/structured-spell.ts` reads them). */
+function spellMechanicsSetters(draft: CustomSpellDraft): string[] {
+  const mechanics = draft.mechanics;
+  if (mechanics === undefined) return [];
+  const out = [setter("spell roll", SPELL_ROLL_WORDS[mechanics.roll])];
+  if (mechanics.roll === "save") {
+    out.push(setter("spell save", ABILITY_TITLE[mechanics.saveAbility!]!));
+    if (mechanics.halfOnSave === true) out.push(setter("spell save success", "half"));
+  }
+  for (const term of mechanics.damage ?? []) out.push(setter("spell damage", term.dice, [["type", term.type]]));
+  if (mechanics.healing !== undefined) out.push(setter("spell healing", mechanics.healing));
+  if (mechanics.addsModifier === true) out.push(setter("spell modifier", "true"));
+  const scaling = mechanics.scaling;
+  if (scaling?.kind === "cantrip") {
+    for (const tier of [...scaling.tiers].sort((left, right) => left.level - right.level)) {
+      out.push(setter("spell cantrip scaling", tier.dice, [["level", String(tier.level)]]));
+    }
+  } else if (scaling?.kind === "slot") {
+    out.push(setter("spell slot scaling", scaling.dice));
+  }
+  return out;
+}
+
+/** The tags a book spell of this shape carries beside its class lists. */
+function spellTags(draft: CustomSpellDraft): string[] {
+  const mechanics = draft.mechanics;
+  if (mechanics === undefined) return [];
+  const tags: string[] = [];
+  if (mechanics.roll === "attackRanged") tags.push("Spell Attack", "Ranged");
+  else if (mechanics.roll === "attackMelee") tags.push("Spell Attack", "Melee");
+  else if (mechanics.roll === "save") tags.push("Spell Saving Throw");
+  if (mechanics.healing !== undefined) tags.push("Healing Spell");
+  return tags;
+}
+
+/**
+ * A spell draft: a Spell element with the setters every book spell carries,
+ * its class lists and shape tags as `supports`, and the structured mechanics
+ * as `spell …` setters. The element is Aurora-shaped: a tool that does not know
+ * the structured setters reads the rest as it reads any spell.
+ */
+function compileValidatedSpell(draft: CustomSpellDraft, options: CompileOptions): string {
+  const id = options.id ?? draft.id;
+  const source = options.source ?? CUSTOM_SOURCE_NAME;
+  const components = draft.components;
+  const tags = [...(draft.classes ?? []).map((name) => name.trim()), ...spellTags(draft)];
+
+  const descriptions = [paragraphs(draft.description)];
+  const higher = draft.higherLevels?.trim();
+  if (higher) descriptions.push(`<p class="indent">At Higher Levels. ${escapeText(higher.replace(/\s*\n\s*/g, " "))}</p>`);
+
+  const setters = [
+    setter("level", draft.level),
+    setter("school", draft.school),
+    setter("time", draft.castingTime.trim()),
+    setter("duration", draft.duration.trim()),
+    setter("range", draft.range.trim()),
+    setter("hasVerbalComponent", String(components.verbal === true)),
+    setter("hasSomaticComponent", String(components.somatic === true)),
+    setter("hasMaterialComponent", String(components.material === true)),
+    components.material === true && components.materialText?.trim()
+      ? setter("materialComponent", components.materialText.trim())
+      : "<set name=\"materialComponent\" />",
+    setter("isConcentration", String(draft.concentration === true)),
+    setter("isRitual", String(draft.ritual === true)),
+    ...(draft.ruleset === undefined ? [] : [setter("ruleset", draft.ruleset)]),
+    ...spellMechanicsSetters(draft),
+  ];
+
+  const children = [
+    ...(tags.length > 0 ? [`<supports>${escapeText(tags.join(", "))}</supports>`] : []),
+    `<description>${descriptions.join("")}</description>`,
+    `<setters>${setters.join("")}</setters>`,
+  ];
+  const open = `<element${attributes([
+    ["name", draft.name.trim()],
+    ["type", "Spell"],
     ["source", source],
     ["id", id],
   ])}>`;

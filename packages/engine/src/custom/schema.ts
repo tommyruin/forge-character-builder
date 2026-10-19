@@ -9,9 +9,11 @@
 
 import {
   CUSTOM_DRAFT_SCHEMA_VERSION,
+  CUSTOM_SPELL_TEMPLATE,
   type CustomDraft,
   type CustomItemDraft,
   type CustomItemTemplate,
+  type CustomSpellDraft,
   type CustomTemplate,
   type ShowsUnder,
 } from "@forge-cb/api";
@@ -26,11 +28,15 @@ export {
   CUSTOM_ABILITIES,
   CUSTOM_RULESETS,
   CUSTOM_ITEM_TEMPLATES,
+  CUSTOM_SPELL_TEMPLATE,
+  SPELL_SCHOOLS,
+  SPELL_ROLLS,
   ITEM_RARITIES,
   WORN_SLOTS,
   DAMAGE_TYPES,
   WEAPON_PROPERTY_IDS,
   isCustomItemDraft,
+  isCustomSpellDraft,
 } from "@forge-cb/api";
 export type {
   CustomTemplate,
@@ -60,6 +66,13 @@ export type {
   CustomItemCost,
   CustomItemWeapon,
   CustomItemDraft,
+  CustomSpellDraft,
+  SpellSchool,
+  SpellRoll,
+  SpellScaling,
+  CantripTier,
+  SpellMechanics,
+  SpellComponents,
   CustomEntryDraft,
   BuildSectionKey,
   ContentOrigin,
@@ -118,6 +131,24 @@ export function createCustomItemDraft(template: CustomItemTemplate, name = ""): 
     name,
     description: "",
     blocks: [],
+  };
+}
+
+/** A blank spell draft: a 1st-level evocation with a casting time, range and duration to edit. */
+export function createCustomSpellDraft(name = ""): CustomSpellDraft {
+  return {
+    schemaVersion: CUSTOM_DRAFT_SCHEMA_VERSION,
+    id: newCustomElementId(),
+    template: CUSTOM_SPELL_TEMPLATE,
+    name,
+    description: "",
+    level: 1,
+    school: "Evocation",
+    castingTime: "1 action",
+    range: "60 feet",
+    duration: "Instantaneous",
+    components: { verbal: true, somatic: true },
+    mechanics: { roll: "none" },
   };
 }
 
