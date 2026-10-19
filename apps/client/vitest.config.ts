@@ -16,6 +16,7 @@ export default defineConfig({
       { find: "@forge-cb/api", replacement: fileURLToPath(new URL("../../packages/api/src/index.ts", import.meta.url)) },
       { find: "@forge-cb/engine/browser", replacement: fileURLToPath(new URL("../../packages/engine/src/browser.ts", import.meta.url)) },
       { find: "@forge-cb/engine/requirements", replacement: fileURLToPath(new URL("../../packages/engine/src/selection/expr.ts", import.meta.url)) },
+      { find: "@forge-cb/engine/custom", replacement: fileURLToPath(new URL("../../packages/engine/src/custom/index.ts", import.meta.url)) },
       { find: "@forge-cb/engine/sheet-contract", replacement: fileURLToPath(new URL("../../packages/engine/src/sheet/template-contract.ts", import.meta.url)) },
       { find: "@forge-cb/engine", replacement: fileURLToPath(new URL("../../packages/engine/src/index.ts", import.meta.url)) },
     ],

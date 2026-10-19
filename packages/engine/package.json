@@ -16,6 +16,10 @@
       "types": "./dist/selection/expr.d.ts",
       "default": "./dist/selection/expr.js"
     },
+    "./custom": {
+      "types": "./dist/custom/index.d.ts",
+      "default": "./dist/custom/index.js"
+    },
     "./sheet-contract": {
       "types": "./dist/sheet/template-contract.d.ts",
       "default": "./dist/sheet/template-contract.js"
