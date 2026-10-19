@@ -52,7 +52,11 @@ export default function SpellDetails({ spell, panelProps = {} }) {
     .join('');
   // The wrapper class styles the gap between the Duration line and the start
   // of the spell text; the line class keeps metadata rows tight and unindented.
-  const composedContent = `<div class="spell-meta"><p class="spell-meta-line"><strong>${headline}</strong></p>${metaLines}</div>${spell.description ?? ''}`;
+  // The character's own note on the spell closes the text, set apart from the rules.
+  const aliasNote = spell.alias?.note?.trim()
+    ? `<p class="spell-meta-line"><strong>Your note:</strong> ${escapeHtml(spell.alias.note.trim())}</p>`
+    : '';
+  const composedContent = `<div class="spell-meta"><p class="spell-meta-line"><strong>${headline}</strong></p>${metaLines}</div>${spell.description ?? ''}${aliasNote}`;
 
   return (
     <aside
@@ -81,7 +85,7 @@ export default function SpellDetails({ spell, panelProps = {} }) {
         )}
         <div className="fcb-panel-body">
           <ContentRenderer
-            title={spell.name}
+            title={spell.alias?.name ? `${spell.alias.name} (${spell.name})` : spell.name}
             subtitle="Spell"
             source={spell.source}
             content={composedContent}

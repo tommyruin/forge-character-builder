@@ -7,6 +7,9 @@ import { useWorkspace } from "../../WorkspaceContext";
 // list and the known/prepared caps) and grant the chosen spell to a caster. Backed by the
 // local-engine-only api.characters.addSpell, which registers it as a granted spell so it shows up
 // under the caster (always-prepared) and round-trips through .dnd5e save/load.
+//
+// A spell the library lacks can be made here: the dialog offers "Create it?" and hands the name
+// and the chosen caster to the spell form (`onCreate`), which stores the spell in the character.
 export default function AddSpellModal({
   id,
   casters,
@@ -14,20 +17,26 @@ export default function AddSpellModal({
   open,
   onClose,
   onAdded,
+  onCreate,
 }) {
   const { detail } = useWorkspace();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState(null);
+  // The query `results` answers; the "Create it?" prompt waits for it, so text typed since the
+  // last search never reads as a search that found nothing.
+  const [answered, setAnswered] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(null); // spell id currently being added
-  const casterOptions = useMemo(
-    () => (casters ?? []).map((c) => ({ value: c.name, label: c.name })),
+  // Only a class's spellcasting can cast a granted spell; a feat's or a trait's spells are not
+  // a caster the engine can add to.
+  const classCasters = useMemo(
+    () => (casters ?? []).filter((c) => c.kind === 'class').map((c) => ({ value: c.name, label: c.name })),
     [casters],
   );
   // The parent mounts a fresh modal for each open, so transient state resets without an
   // effect-driven render cascade and the launcher's active caster is selected immediately.
-  const [caster, setCaster] = useState(
-    () => defaultCaster || casterOptions[0]?.value || "",
+  const [caster, setCaster] = useState(() =>
+    classCasters.some((o) => o.value === defaultCaster) ? defaultCaster : (classCasters[0]?.value ?? ''),
   );
 
   useEffect(() => {
@@ -46,7 +55,10 @@ export default function AddSpellModal({
           },
           { signal: controller.signal },
         )
-        .then((page) => setResults(page.items ?? []))
+        .then((page) => {
+          setResults(page.items ?? []);
+          setAnswered(q);
+        })
         .catch((e) => {
           if (e.name !== "AbortError") setError(e.message);
         });
@@ -61,7 +73,7 @@ export default function AddSpellModal({
     setBusy(spell.id);
     setError(null);
     try {
-      await api.characters.addSpell(id, spell.id, caster || null, true);
+      await api.characters.addSpell(id, spell.id, caster || null);
       onAdded?.();
       onClose();
     } catch (e) {
@@ -85,19 +97,21 @@ export default function AddSpellModal({
       </p>
 
       <div className="fcb-toolbar mb-3 flex-wrap">
-        {casterOptions.length > 0 ? (
+        {classCasters.length > 0 ? (
           <label className="inline-flex items-center gap-2 text-sm">
             <span className="fcb-muted-copy">Add to</span>
             <select
               className="fcb-input"
+              aria-label="Add to"
               value={caster}
               onChange={(e) => setCaster(e.target.value)}
             >
-              {casterOptions.map((o) => (
+              {classCasters.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
+              <option value="">Additional Spells (no class caster)</option>
             </select>
           </label>
         ) : (
@@ -155,7 +169,25 @@ export default function AddSpellModal({
               {results.length === 0 && (
                 <tr>
                   <td className="text-[var(--fcb-text-faint)]">
-                    No spells match.
+                    {onCreate && search.trim() !== '' && answered === search.trim() ? (
+                      <span className="flex flex-wrap items-center gap-3">
+                        <span data-testid="create-spell-prompt">
+                          {search.trim()} isn't in your library. Create it?
+                        </span>
+                        <button
+                          type="button"
+                          className="fcb-button fcb-status-complete"
+                          onClick={() => {
+                            onCreate({ name: search.trim(), caster });
+                            onClose();
+                          }}
+                        >
+                          Create spell
+                        </button>
+                      </span>
+                    ) : (
+                      'No spells match.'
+                    )}
                   </td>
                 </tr>
               )}
