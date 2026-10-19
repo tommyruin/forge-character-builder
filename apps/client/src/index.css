@@ -8309,6 +8309,18 @@ html.fcb-busy-cursor * {
   color: var(--fcb-warning-text);
 }
 
+.fcb-secondary-tabs .fcb-tab .fcb-tab-dot {
+  display: inline-block;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.fcb-mobile-workspace-nav .fcb-tab-dot {
+  position: absolute;
+  top: 8px;
+  left: calc(50% + 10px);
+}
+
 .fcb-tab-dot-repick {
   background: var(--dmf-danger);
   box-shadow: 0 0 12px var(--fcb-danger-border);

@@ -65,3 +65,21 @@ describe('Magic tab no longer owns the companion', () => {
     );
   });
 });
+
+describe('workspace tab badges', () => {
+  const workspace = readFileSync(
+    new URL('../CharacterWorkspace.jsx', import.meta.url),
+    'utf8',
+  );
+  const nav = readFileSync(
+    new URL('../WorkspaceNavigation.jsx', import.meta.url),
+    'utf8',
+  );
+
+  it('flags the Magic tab while a required spell choice is open, on both strips', () => {
+    expect(workspace).toContain('hasIncompleteRequiredSpellChoices(');
+    expect(workspace).toMatch(/<DesktopWorkspaceNavigation[^>]*badges=\{tabBadges\}/s);
+    expect(workspace).toMatch(/<MobileWorkspaceNavigation[^>]*badges=\{tabBadges\}/s);
+    expect(nav.match(/badges\[key\] && <OpenChoicesDot \/>/g)).toHaveLength(2);
+  });
+});

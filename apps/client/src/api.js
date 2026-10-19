@@ -19,7 +19,9 @@ export const BUILD_SECTIONS = [
   {
     key: 'background',
     label: 'Background',
-    types: ['Background', 'Background Variant', 'Background Feature'],
+    // "List" picks (personality trait, ideal, bond, flaw, trinket) are authored
+    // by the background, so they sit with it rather than in Other.
+    types: ['Background', 'Background Variant', 'Background Feature', 'List'],
   },
   { key: 'abilities', label: 'Ability Scores', types: ['Ability Score Improvement'] },
   { key: 'languages', label: 'Languages', types: ['Language', 'Language Feature'] },

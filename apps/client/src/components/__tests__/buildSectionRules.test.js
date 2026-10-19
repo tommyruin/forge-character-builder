@@ -117,4 +117,17 @@ describe('rule type homes', () => {
     ];
     expect(claimed.filter((t, i) => claimed.indexOf(t) !== i)).toEqual([]);
   });
+
+  it('files background personality picks under Background, not Other', async () => {
+    const { BUILD_SECTIONS } = await import('../../api.js');
+    const background = BUILD_SECTIONS.find((s) => s.key === 'background');
+    const rules = [
+      { type: 'List', name: 'Personality Trait' },
+      { type: 'Background', name: 'Background' },
+    ];
+    expect(buildSectionRules(background, rules).map((r) => r.name)).toEqual([
+      'Personality Trait',
+      'Background',
+    ]);
+  });
 });

@@ -48,7 +48,18 @@ function WorkspaceIcon({ name }) {
   );
 }
 
-export function DesktopWorkspaceNavigation({ activeTab, onSelect }) {
+// `badges` maps a tab key to true when that tab holds a required choice still
+// open, so a choice that lives outside the tab being edited stays visible.
+function OpenChoicesDot() {
+  return (
+    <>
+      <span className="fcb-tab-dot" aria-hidden="true" />
+      <span className="sr-only"> (choices open)</span>
+    </>
+  );
+}
+
+export function DesktopWorkspaceNavigation({ activeTab, onSelect, badges = {} }) {
   return (
     <nav className="fcb-secondary-tabs" aria-label="Character workspace">
       {WORKSPACE_TABS.map(([key, label]) => (
@@ -61,13 +72,14 @@ export function DesktopWorkspaceNavigation({ activeTab, onSelect }) {
           type="button"
         >
           {label.toUpperCase()}
+          {badges[key] && <OpenChoicesDot />}
         </button>
       ))}
     </nav>
   );
 }
 
-export function MobileWorkspaceNavigation({ activeTab, onSelect }) {
+export function MobileWorkspaceNavigation({ activeTab, onSelect, badges = {} }) {
   return (
     <nav
       className="fcb-mobile-workspace-nav"
@@ -84,6 +96,7 @@ export function MobileWorkspaceNavigation({ activeTab, onSelect }) {
         >
           <WorkspaceIcon name={key} />
           <span>{label}</span>
+          {badges[key] && <OpenChoicesDot />}
         </button>
       ))}
     </nav>
