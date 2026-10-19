@@ -401,13 +401,16 @@ function sheetAttackNote(attack: AttackDto, library: ElementLibrary): string {
 /**
  * A spell as the spell page layout draws it. A caster that does not prepare
  * (Warlock, Sorcerer, a 2024 Bard) has every levelled spell it knows ready,
- * so those print marked like prepared spells.
+ * so those print marked like prepared spells. Cantrips are never prepared and
+ * always ready, for every caster, so none is marked (not even a feat's,
+ * which counts as always prepared once folded into a class list).
  */
 function layoutSpell(spell: KnownSpellDto, requiresPreparation: boolean): SheetSpellListSection["spells"][number] {
+  const levelled = spell.level > 0;
   return {
     name: spell.name,
-    prepared: spell.isPrepared || (!requiresPreparation && spell.level > 0),
-    alwaysPrepared: spell.isAlwaysPrepared,
+    prepared: levelled && (spell.isPrepared || !requiresPreparation),
+    alwaysPrepared: levelled && spell.isAlwaysPrepared,
     ...(spell.usage === undefined || spell.usage === null || spell.usage === "" ? {} : { usage: spell.usage }),
   };
 }

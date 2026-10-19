@@ -195,6 +195,31 @@ describe.each(EDITIONS)("Druid 5 / Sorcerer 3 with Magic Initiate (Wizard), $rul
   }, 120_000);
 });
 
+describe("cantrips", () => {
+  it("are never marked, even a feat's folded into a class list as always prepared", () => {
+    const service = freshService(library);
+    const id = "ClericAcolyte";
+    service.createCharacter(id);
+    service.setRulesetMode(id, "2024");
+    service.setAbilities(id, ABILITIES);
+    select(service, id, "Race", "ID_WOTC_PHB24_RACE_HUMAN");
+    select(service, id, "Class", "ID_WOTC_PHB24_CLASS_CLERIC");
+    // Acolyte grants Magic Initiate (Cleric); with Wisdom it matches the cleric.
+    select(service, id, "Background", "ID_WOTC_PHB24_BACKGROUND_ACOLYTE");
+    pickNamed(service, id, "Spellcasting Ability (Magic Initiate)", "ID_WOTC_PHB24_FEAT_FEATURE_MAGIC_INITIATE_CLERIC_WISDOM");
+    pickNamed(service, id, "Cantrip (Magic Initiate)", "ID_WOTC_PHB24_SPELL_SACRED_FLAME");
+    pickNamed(service, id, "Cantrip (Magic Initiate)", "ID_WOTC_PHB24_SPELL_GUIDANCE");
+    pickNamed(service, id, "Level 1 Spell (Magic Initiate)", "ID_WOTC_PHB24_SPELL_CURE_WOUNDS");
+
+    const layouts = spellLayouts(service, id);
+    expect(layouts.map((layout) => layout.name)).toEqual([expect.stringMatching(/^Cleric/)]);
+    const spells = layouts[0]!.sections.flatMap((section) => section.spells);
+    const guidance = spells.find((spell) => spell.name === "Guidance")!;
+    expect([guidance.prepared, guidance.alwaysPrepared]).toEqual([false, false]);
+    expect(guidance.usage).toBe("[Magic Initiate (Cleric)]");
+  }, 120_000);
+});
+
 describe("Pact Magic spell list", () => {
   it("prints a Warlock 5's 1st- and 2nd-level spells under its 3rd-level pact slots", () => {
     const service = freshService(library);
