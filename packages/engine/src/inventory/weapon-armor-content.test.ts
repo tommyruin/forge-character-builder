@@ -30,6 +30,7 @@ const PACK = `<?xml version="1.0" encoding="utf-8"?>
 \t\t</setters>
 \t\t<rules>
 \t\t\t<grant type="Vision" id="ID_VISION_BLINDSIGHT" />
+\t\t\t<grant type="Spell" id="ID_PHB_SPELL_BURNING_HANDS" />
 \t\t\t<select type="Language" name="Sentinel Tongue" />
 \t\t</rules>
 \t</element>
@@ -110,9 +111,14 @@ describe("plain weapon content", () => {
     expect(record.isEquipped).toBe(true);
     expect(pendingNames(service, id)).toContain("Sentinel Tongue");
     expect(visionTokens(service, id)).toContain("Blindsight");
+    // The spell it grants sits under the weapon's node, where the Magic tab reads granted spells.
+    const wielded = service.exportCharacterXml(id);
+    const node = wielded.slice(wielded.indexOf(`id="${WEAPON}"`));
+    expect(node.slice(0, node.indexOf("</element>"))).toContain('id="ID_PHB_SPELL_BURNING_HANDS"');
 
     service.equipItem(id, record.identifier, "none");
     expect(pendingNames(service, id)).not.toContain("Sentinel Tongue");
+    expect(sumIds(service.exportCharacterXml(id))).not.toContain("ID_PHB_SPELL_BURNING_HANDS");
     expect(visionTokens(service, id)).not.toContain("Blindsight");
     expect(sumIds(service.exportCharacterXml(id))).not.toContain("ID_VISION_BLINDSIGHT");
   });

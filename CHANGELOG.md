@@ -66,6 +66,29 @@ project uses [Semantic Versioning](https://semver.org/).
 - Save and skill numbers sit centred between their lines, and 2024 range,
   speed and armor cells no longer clip.
 - Companion Trait choices sit with their companion.
+- Stat values written as +2 work, a fraction rounds down, and a stat's maximum
+  caps the value it refers to.
+- Homebrew armor and shields set Armor Class, with the right dexterity cap for
+  light, medium and heavy armor.
+- A homebrew weapon adds your proficiency bonus when you are proficient with
+  its category, and can be versatile.
+- A homebrew magic weapon or armor can be laid over a base weapon or armor and
+  equipped to a hand or the body.
+- A weapon or armor that offers a choice or grants a sense or spell applies it
+  while equipped (and attuned, when required).
+- A ring or charm that grants a feat, language, proficiency, spell or ability
+  score increase can be added and worn like any other item.
+- A homebrew feat can require ability scores, levels or other elements, and
+  pickers only offer it to characters who meet them.
+- A homebrew feat can be tagged Origin, General, Fighting Style or Epic Boon so
+  the matching picker offers it.
+- A homebrew racial trait, feat or subclass feature written without sheet text
+  prints its name and description on the character sheet.
+- The Add ability score improvement dialog applies its grant.
+- A grant or choice default that points at content you haven't loaded is listed
+  under Content warnings with the feature that needs it.
+- Saving a homebrew collection again replaces its stored file, its warnings
+  show, and deleting it removes it; copies left by earlier saves are cleaned up.
 
 ## [2.5.0] - 2026-10-08
 
