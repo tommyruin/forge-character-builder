@@ -4,6 +4,7 @@ import type {
   CustomEntryDraft,
   CustomDraftMutationDto,
   CustomItemPreviewDto,
+  CustomSpellPreviewDto,
   DmGrantDto,
   PromotedCustomElementDto,
 } from "./custom.js";
@@ -406,6 +407,12 @@ export interface EngineMethodMap {
         amount?: number;
         /** A new item draft: the record's notes. */
         notes?: string;
+        /**
+         * A new spell draft: the class spellcasting name that casts it (see
+         * `addGrantedSpell`); without one it gathers in "Additional Spells".
+         * Ignored when `grant` is false.
+         */
+        caster?: string;
       },
     ],
     CustomDraftMutationDto
@@ -431,6 +438,12 @@ export interface EngineMethodMap {
    * nothing is saved: the weapon's attack row once it is wielded and attuned.
    */
   previewCustomItem: MethodContract<[id: string, request: { draft: CustomEntryDraft }], CustomItemPreviewDto>;
+  /**
+   * What a spell draft would give this character, computed on a scratch copy so
+   * nothing is saved: the attack or save row it projects once granted to
+   * `caster`.
+   */
+  previewCustomSpell: MethodContract<[id: string, request: { draft: CustomEntryDraft; caster?: string }], CustomSpellPreviewDto>;
   getCompanion: MethodContract<[id: string], WireObject | null>;
   setCompanionName: MethodContract<[id: string, request: { name: string }], WireObject>;
   setCompanionPortrait: MethodContract<[id: string, base64: string], WireObject>;
@@ -586,6 +599,7 @@ export const ENGINE_METHOD_NAMES = [
   "promoteCustomDraft",
   "getChoiceIdentityImpact",
   "previewCustomItem",
+  "previewCustomSpell",
   "getCompanion",
   "setCompanionName",
   "setCompanionPortrait",
@@ -699,6 +713,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   promoteCustomDraft: implemented,
   getChoiceIdentityImpact: implemented,
   previewCustomItem: implemented,
+  previewCustomSpell: implemented,
   getCompanion: implemented,
   setCompanionName: implemented,
   setCompanionPortrait: implemented,
@@ -792,6 +807,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   promoteCustomDraft: "read-only",
   getChoiceIdentityImpact: "read-only",
   previewCustomItem: "read-only",
+  previewCustomSpell: "read-only",
   getCompanion: "read-only",
   setCompanionName: "character-write",
   setCompanionPortrait: "character-write",

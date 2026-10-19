@@ -2,7 +2,7 @@ import { isContentAllowedForCharacter } from "../content/access.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
 import type { Dnd5eDocument } from "../dnd5e/document.js";
-import type { RawEdit } from "../selection/selection.js";
+import { escapeXml, type RawEdit } from "../selection/selection.js";
 import { isSpellcastingExtension } from "../content/parser.js";
 import { multiclassSlotProgression } from "../statistics/calculator.js";
 import { spellInfo, canonicalSourceRank, alwaysPreparedSets, casterSpellLevelCap } from "./spelllist.js";
@@ -947,7 +947,7 @@ function buildCasterBlocks(
       const info = spellInfo(library, id);
       const previous = priorByLevel.get(id);
       return {
-        name: info?.name ?? id,
+        name: info === null ? id : escapeXml(info.name).replaceAll('"', "&quot;"),
         level: info !== null ? String(info.level) : previous?.level ?? "0",
         id,
         prepared: previous?.prepared ?? false,

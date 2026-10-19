@@ -145,10 +145,17 @@ import { spellInfo } from "../magic/spelllist.js";
 import {
   planSetPrepared,
   planAddAdditionalSpell,
+  planRefreshSpellEntries,
   planRemoveAdditionalSpell,
   planSetCompanionName,
 } from "../magic/planners.js";
-import { buildCompanionDto, buildMagicAttackOptions, reconcileMagic, type CompanionDto } from "../magic/reconcile.js";
+import {
+  buildCompanionDto,
+  buildMagicAttackOptions,
+  reconcileMagic,
+  type CompanionDto,
+  type MagicAttackSpellOptionDto,
+} from "../magic/reconcile.js";
 import { featureSpellCasters } from "../magic/feature-casters.js";
 import {
   planGrantedElementEdits,
@@ -164,11 +171,12 @@ import type {
   CustomDiagnosticDto,
   CustomDraftEntryDto,
   CustomItemPreviewDto,
+  CustomSpellPreviewDto,
   PromotedCustomElementDto,
 } from "@forge-cb/api";
 import { CharacterCustomContent } from "../custom/character-content.js";
 import { compileCustomElement } from "../custom/compile.js";
-import { isCustomItemDraft } from "../custom/schema.js";
+import { isCustomItemDraft, isCustomSpellDraft } from "../custom/schema.js";
 import { readCustomEntry } from "../custom/validate.js";
 
 export interface CharacterStore {
@@ -657,6 +665,10 @@ export class CharacterService {
       removeItem: (id, identifier, amount) => this.removeItem(id, identifier, amount),
       setItemDetails: (id, identifier, details) => this.setItemDetails(id, identifier, details),
       refreshItemRecords: (id, elementId, previousName) => this.refreshItemRecords(id, elementId, previousName),
+      addGrantedSpell: (id, request) => this.addGrantedSpell(id, request),
+      removeGrantedSpell: (id, request) => this.removeGrantedSpell(id, request),
+      clearSpellPicks: (id, spellId) => this.clearSpellPicks(id, spellId),
+      refreshSpellEntries: (id, spellId) => this.refreshSpellEntries(id, spellId),
     });
   }
 
@@ -2175,6 +2187,40 @@ export class CharacterService {
     }
   }
 
+  /** Brings the magic region's lines for a custom spell up to date after it was renamed or re-levelled. */
+  private refreshSpellEntries(id: string, spellId: string): void {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) return;
+    const edits = planRefreshSpellEntries(document, state, this.library, spellId);
+    if (edits.length > 0) this.applyWithMagicReconcile(id, state, document, edits);
+  }
+
+  /**
+   * Takes back every pick of this spell made through a spell selection rule, so
+   * deleting a custom spell never leaves a rule registered to an element that no
+   * longer exists.
+   */
+  private clearSpellPicks(id: string, spellId: string): void {
+    for (let guard = 0; guard < 50; guard++) {
+      const { state } = this.require(id);
+      // Rule identifiers are minted on demand; asking for the pending rules mints every one.
+      pendingSelectionRules(state);
+      let found: string | undefined;
+      const walk = (nodes: readonly RegisteredElement[], path: readonly number[]): void => {
+        nodes.forEach((node, index) => {
+          const here = [...path, index];
+          if (found === undefined && node.requiredLevel !== undefined && node.type === "Spell" && node.registered === spellId) {
+            found = state.selectionRuleIds.get(here.join("."));
+          }
+          if (found === undefined) walk(node.children, here);
+        });
+      };
+      walk(state.elements, []);
+      if (found === undefined) return;
+      this.clearSelection(id, found);
+    }
+  }
+
   /** The spellcasting DTO (casters in document order). */
   getSpellcasting(id: string): SpellcasterDto[] {
     const { state } = this.require(id);
@@ -2341,7 +2387,7 @@ export class CharacterService {
   /** Creates or updates a custom draft: stored in the file, compiled, installed and granted. */
   saveCustomDraft(
     id: string,
-    request: { draft: unknown; grant?: boolean; amount?: number; notes?: string },
+    request: { draft: unknown; grant?: boolean; amount?: number; notes?: string; caster?: string },
   ): { entry: CustomDraftEntryDto; diagnostics: CustomDiagnosticDto[] } {
     return this.custom.save(id, request);
   }
@@ -2400,6 +2446,44 @@ export class CharacterService {
           attack === undefined
             ? null
             : { name: attack.name, range: attack.range, bonus: attack.bonus, damage: attack.damage, description: attack.description },
+      };
+    } finally {
+      scratch.deleteCharacter(scratchId);
+    }
+  }
+
+  /**
+   * What a spell draft would give this character, without saving it. The draft
+   * is saved to a scratch copy of the character, granted to `caster`, and its
+   * row read back from the attack options, so the numbers are the ones the real
+   * save would print. The scratch copy is discarded before this returns.
+   */
+  previewCustomSpell(id: string, request: { draft: unknown; caster?: string }): CustomSpellPreviewDto {
+    const { document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for custom content");
+    }
+    const draft = readCustomEntry(request.draft);
+    compileCustomElement(draft);
+    if (!isCustomSpellDraft(draft)) return { attack: null };
+    const scratchId = `${id}::spell-preview`;
+    const scratch = new CharacterService(undefined, this.library, { rng: this.rng });
+    try {
+      scratch.importCharacterXml(scratchId, document.raw);
+      // A stored copy of this spell is replaced, not edited, so the preview is of a fresh grant.
+      if (scratch.getCustomContent(scratchId).entries.some((entry) => entry.elementId === draft.id)) {
+        scratch.deleteCustomDraft(scratchId, { draftId: draft.id });
+      }
+      const caster = request.caster === undefined || request.caster === "" ? undefined : request.caster;
+      scratch.saveCustomDraft(scratchId, { draft, ...(caster === undefined ? {} : { caster }) });
+      const option = (scratch.getAttackOptions(scratchId).spells as MagicAttackSpellOptionDto[]).find(
+        (candidate) => candidate.spellId === draft.id,
+      );
+      return {
+        attack:
+          option === undefined
+            ? null
+            : { casterName: option.casterName, bonus: option.bonus, damage: option.damage, range: option.range, warning: option.warning },
       };
     } finally {
       scratch.deleteCharacter(scratchId);

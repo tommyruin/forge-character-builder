@@ -512,3 +512,20 @@ export interface CustomItemPreviewDto extends WireObject {
   /** The weapon's attack row once wielded and attuned; null for anything that is not a weapon. */
   attack: CustomItemAttackPreviewDto | null;
 }
+
+/** The attack or save row a custom spell would give the character, as the attack options print it. */
+export interface CustomSpellAttackPreviewDto extends WireObject {
+  casterName: string;
+  /** "+5 INT vs AC" for an attack roll, "DC 13 DEX" for a save. */
+  bonus: string;
+  damage: string;
+  range: string;
+  /** Decisions the player still has to make (casting in a higher slot). */
+  warning: string | null;
+}
+
+/** `previewCustomSpell`: what a spell draft would do for this character, without saving it. */
+export interface CustomSpellPreviewDto extends WireObject {
+  /** The spell's attack or save row; null when the spell is no attack. */
+  attack: CustomSpellAttackPreviewDto | null;
+}

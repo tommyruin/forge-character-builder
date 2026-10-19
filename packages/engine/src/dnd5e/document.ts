@@ -270,7 +270,8 @@ const ENTITIES: Record<string, string> = {
   nbsp: "\u00a0",
 };
 
-function decodeEntities(value: string): string {
+/** Plain text from an attribute value: the five XML entities and numeric references decoded. */
+export function decodeEntities(value: string): string {
   return value.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (match, body: string) => {
     if (body.startsWith("#x")) return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
     if (body.startsWith("#")) return String.fromCodePoint(Number.parseInt(body.slice(1), 10));

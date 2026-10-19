@@ -42,6 +42,7 @@ import {
 } from "../magic/dto.js";
 import { buildCompanionDto, type CompanionDto, type CompanionFeatureDto } from "../magic/reconcile.js";
 import { spellInfo } from "../magic/spelllist.js";
+import { decodeEntities } from "../dnd5e/document.js";
 import { buildProgression } from "../progression/progression.js";
 import {
   canonicalInventoryRuns,
@@ -2769,8 +2770,8 @@ function buildSpellDescriptionPages(
     }
   }
   for (const extra of state.magic?.additional ?? []) {
-    const spell = knownSpellFromLibrary(library, extra.id, extra.name, extra.level);
-    if (spell !== undefined) add(spell, null, extra.source);
+    const spell = knownSpellFromLibrary(library, extra.id, decodeEntities(extra.name), extra.level);
+    if (spell !== undefined) add(spell, null, decodeEntities(extra.source));
   }
   const entries = [...union.values()].sort(
     (left, right) =>

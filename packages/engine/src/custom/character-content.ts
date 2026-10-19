@@ -17,6 +17,7 @@ import type {
   CustomDraftEntryDto,
   CustomEntryDraft,
   CustomItemDraft,
+  CustomSpellDraft,
   PromotedCustomElementDto,
 } from "@forge-cb/api";
 import {
@@ -38,7 +39,7 @@ import { diffChoiceIdentity } from "./identity.js";
 import { buildSectionOfType } from "./placement.js";
 import { entriesWithDraft, entriesWithoutDraft, planCustomPackEdits, readCustomPack } from "./pack.js";
 import { promoteCustomDraft } from "./promote.js";
-import { isCustomItemDraft } from "./schema.js";
+import { isCustomItemDraft, isCustomSpellDraft } from "./schema.js";
 import { readCustomEntry } from "./validate.js";
 import type { AddItemOptions, ItemDetails } from "../inventory/inventory.js";
 
@@ -61,6 +62,12 @@ export interface CustomContentHost {
    * still carry the old generated name.
    */
   refreshItemRecords(id: string, elementId: string, previousName: string): void;
+  addGrantedSpell(id: string, request: { spellId: string; caster?: string | null }): CharacterState;
+  removeGrantedSpell(id: string, request: { spellId: string }): CharacterState;
+  /** Takes back every pick of the spell made through a spell selection rule. */
+  clearSpellPicks(id: string, spellId: string): void;
+  /** Brings the stored name and level of the spell's magic-region entries up to date. */
+  refreshSpellEntries(id: string, spellId: string): void;
 }
 
 export interface SaveResult {
@@ -96,6 +103,15 @@ function choiceWrappers(owner: RegisteredElement): RegisteredElement[] {
 
 const isTopLevelGranted = (state: CharacterState, elementId: string): boolean =>
   state.elements.some((node) => node.id === elementId);
+
+/**
+ * Whether the character has the spell: granted (DM or caster) or picked through
+ * a spell selection. A spell merely on a full-list caster's projected list does
+ * not count, since the player has not taken it.
+ */
+const isSpellKnown = (state: CharacterState, spellId: string): boolean =>
+  (state.magic?.additional ?? []).some((spell) => spell.id === spellId) ||
+  state.sum.elements.some((entry) => entry.type === "Spell" && entry.id === spellId);
 
 /** The inventory records built on a custom item: it is the record's element or its adorner. */
 const recordsOf = (state: CharacterState, elementId: string): CharacterState["items"] =>
@@ -145,6 +161,17 @@ export class CharacterCustomContent {
   private entryFor(characterId: string, state: CharacterState, draft: CustomEntryDraft): CustomDraftEntryDto {
     const installed =
       this.host.library === undefined ? false : characterPackOwners(this.host.library, draft.id)?.has(characterId) === true;
+    if (isCustomSpellDraft(draft)) {
+      return {
+        kind: "spell",
+        draft,
+        elementId: draft.id,
+        type: "Spell",
+        section: "other",
+        granted: isSpellKnown(state, draft.id),
+        installed,
+      };
+    }
     if (isCustomItemDraft(draft)) {
       return {
         kind: "item",
@@ -212,10 +239,11 @@ export class CharacterCustomContent {
    * definition, and the picks whose choice identity is unchanged are made
    * again, so editing a description or a bonus never costs a player a choice.
    */
-  save(id: string, request: { draft: unknown; grant?: boolean; amount?: number; notes?: string }): SaveResult {
+  save(id: string, request: { draft: unknown; grant?: boolean; amount?: number; notes?: string; caster?: string }): SaveResult {
     this.requireLibrary();
     const draft = readCustomEntry(request.draft);
     compileCustomElement(draft);
+    if (isCustomSpellDraft(draft)) return this.saveSpell(id, draft, request);
     if (isCustomItemDraft(draft)) return this.saveItem(id, draft, request);
     const first = this.host.snapshot(id);
     const read = readCustomPack(first.document);
@@ -223,6 +251,9 @@ export class CharacterCustomContent {
     const existing = read.drafts.find((candidate) => candidate.id === draft.id);
     if (existing !== undefined && isCustomItemDraft(existing)) {
       throw engineError("conflict", `'${draft.name}' is an item; its id cannot be reused for a feature`);
+    }
+    if (existing !== undefined && isCustomSpellDraft(existing)) {
+      throw engineError("conflict", `'${draft.name}' is a spell; its id cannot be reused for a feature`);
     }
     const wasGranted = isTopLevelGranted(first.state, draft.id);
     const picks = new Map<string, string>();
@@ -264,7 +295,10 @@ export class CharacterCustomContent {
     const existing = read.drafts.find((candidate) => candidate.id === draft.id);
     if (existing !== undefined) {
       if (!isCustomItemDraft(existing)) {
-        throw engineError("conflict", `'${draft.name}' is a feature; its id cannot be reused for an item`);
+        throw engineError(
+          "conflict",
+          `'${draft.name}' is ${isCustomSpellDraft(existing) ? "a spell" : "a feature"}; its id cannot be reused for an item`,
+        );
       }
       if (existing.template !== draft.template) {
         throw engineError("conflict", `'${existing.name}' is a ${existing.template} item; a different template needs a new item`);
@@ -293,6 +327,42 @@ export class CharacterCustomContent {
       const created = this.host.snapshot(id).state.items.find((item) => !before.has(item.identifier));
       const notes = request.notes?.trim() ?? "";
       if (created !== undefined && notes !== "") this.host.setItemDetails(id, created.identifier, { notes });
+    }
+    const state = this.host.snapshot(id).state;
+    return { entry: this.entryFor(id, state, draft), diagnostics: this.diagnosticsFor(id, draft.id, report) };
+  }
+
+  /**
+   * Creates or updates a custom spell. A new spell is stored, installed and
+   * granted to the named class caster (or gathered under "Additional Spells"
+   * without one); `grant: false` keeps it in the pack alone, for a spell that
+   * is only on a class list. Editing one keeps whoever knows it knowing it: the
+   * element is replaced in the library and the name and level stored beside the
+   * character's spells follow the edit.
+   */
+  private saveSpell(
+    id: string,
+    draft: CustomSpellDraft,
+    request: { grant?: boolean; caster?: string },
+  ): SaveResult {
+    const first = this.host.snapshot(id);
+    const read = readCustomPack(first.document);
+    this.requireReadableBlock(read);
+    const existing = read.drafts.find((candidate) => candidate.id === draft.id);
+    if (existing !== undefined && !isCustomSpellDraft(existing)) {
+      throw engineError("conflict", `'${existing.name}' is not a spell; its id cannot be reused for a spell`);
+    }
+    const caster = request.caster === undefined || request.caster === "" ? null : request.caster;
+    // Checked before anything is stored, so a refused caster leaves the pack as it was.
+    if (caster !== null && !(first.state.magic?.casters ?? []).some((block) => block.name === caster)) {
+      throw engineError("invalid-argument", `This character has no '${caster}' spellcasting to cast the spell with.`);
+    }
+    this.host.applyRegionEdits(id, planCustomPackEdits(first.document, entriesWithDraft(read, draft)));
+    const { report } = this.syncPack(id, this.host.snapshot(id).document);
+    if (existing !== undefined) this.host.refreshSpellEntries(id, draft.id);
+    const known = isSpellKnown(this.host.snapshot(id).state, draft.id);
+    if (!known && (existing === undefined ? request.grant !== false : request.grant === true)) {
+      this.host.addGrantedSpell(id, { spellId: draft.id, caster });
     }
     const state = this.host.snapshot(id).state;
     return { entry: this.entryFor(id, state, draft), diagnostics: this.diagnosticsFor(id, draft.id, report) };
@@ -330,7 +400,13 @@ export class CharacterCustomContent {
       throw engineError("not-found", `custom content '${request.draftId}' not found`);
     }
     const stored = read.drafts.find((candidate) => candidate.id === request.draftId);
-    if (stored !== undefined && isCustomItemDraft(stored)) {
+    if (stored !== undefined && isCustomSpellDraft(stored)) {
+      // Picks first, while the element still resolves; then a DM or caster grant.
+      this.host.clearSpellPicks(id, request.draftId);
+      if ((this.host.snapshot(id).state.magic?.additional ?? []).some((spell) => spell.id === request.draftId)) {
+        this.host.removeGrantedSpell(id, { spellId: request.draftId });
+      }
+    } else if (stored !== undefined && isCustomItemDraft(stored)) {
       // An item is carried, not granted: every record of it leaves the inventory.
       // (A worn item's registration also sits in the element tree, which is not a grant.)
       for (const record of recordsOf(this.host.snapshot(id).state, request.draftId)) {
@@ -358,8 +434,14 @@ export class CharacterCustomContent {
     const proposed = readCustomEntry(request.draft);
     const { document } = this.host.snapshot(id);
     const stored = readCustomPack(document).drafts.find((candidate) => candidate.id === proposed.id);
-    // An item offers no choices, so changing one never costs a pick.
-    if (stored === undefined || isCustomItemDraft(stored) || isCustomItemDraft(proposed)) return { changes: [], hasPicks: false };
+    // An item or a spell offers no choices, so changing one never costs a pick.
+    if (
+      stored === undefined ||
+      isCustomItemDraft(stored) || isCustomSpellDraft(stored) ||
+      isCustomItemDraft(proposed) || isCustomSpellDraft(proposed)
+    ) {
+      return { changes: [], hasPicks: false };
+    }
     const library = this.host.library;
     const changes = diffChoiceIdentity(stored, proposed).map((change) => {
       const picks: ChoiceIdentityReportDto["changes"][number]["picks"] = [];

@@ -2,9 +2,10 @@ import { isContentAllowedForCharacter } from "../content/access.js";
 import type { Dnd5eDocument, Dnd5eNode } from "../dnd5e/document.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
-import type { RawEdit } from "../selection/selection.js";
+import { attrValueRange, type RawEdit } from "../selection/selection.js";
 import { engineError } from "../errors.js";
 import { alwaysPreparedSets, casterSpellLevelCap, fullCasterList, spellInfo, canonicalSourceRank } from "./spelllist.js";
+import { dmGrantSource, grantCasterOf, isDmGrantSource } from "./granted-spells.js";
 import type { MagicCasterBlock, MagicSpellEntry } from "./state.js";
 
 /**
@@ -58,9 +59,11 @@ export function renderSpellsLines(input: RebuildInput): MagicSpellEntry[] {
     alwaysPrepared: false,
     known: false,
   };
+  // The library's name is plain text and the entry's is attribute text, so a name
+  // with & < > or a quote is escaped on its way into the file.
   const nameOf = (id: string): string => {
     const info = spellInfo(library, id);
-    return info?.name ?? existing(id).name;
+    return info === null ? existing(id).name : escapeXml(info.name);
   };
   const levelOf = (id: string): number => {
     const info = spellInfo(library, id);
@@ -317,10 +320,71 @@ export function planRemoveAdditionalSpell(
     const attrs = new Map(child.attrs);
     return child.name === "spell" && attrs.get("id") === spellId;
   });
+  const lastOne = additional.children.filter((child) => child.name === "spell").length === 1;
+  // Taking the last grant away takes the block it created away with it, so a
+  // character that never had a grant reads as it did before the first one.
   const edits: RawEdit[] = target === undefined
     ? []
-    : [{ start: target.start, end: target.end, replacement: "" }];
+    : lastOne && additional.children.length === 1
+      ? [removeBlockEdit(document.raw, additional)]
+      : [{ start: target.start, end: target.end, replacement: "" }];
   return { edits, spell: { ...entry } };
+}
+
+/**
+ * Edits that bring every `<spell>` line of the magic region that names this
+ * spell up to date with the library: the stored name and level, and the name
+ * inside a DM grant's source ("Additional Spell, Frost Lance (Wizard)"). A
+ * custom spell can be renamed or re-levelled after it was granted; the lines
+ * written when it was granted would otherwise keep the old values forever.
+ */
+export function planRefreshSpellEntries(
+  document: Dnd5eDocument,
+  state: CharacterState,
+  library: ElementLibrary,
+  spellId: string,
+): RawEdit[] {
+  const magicNode = document.root.build.magic;
+  const info = spellInfo(library, spellId);
+  if (magicNode === null || info === null) return [];
+  const name = escapeXml(info.name);
+  const level = String(info.level);
+  const casterNames = (state.magic?.casters ?? []).map((block) => block.name);
+  const edits: RawEdit[] = [];
+  const set = (node: Dnd5eNode, attribute: string, value: string): void => {
+    const range = attrValueRange(document.raw, node, attribute);
+    if (range !== null && document.raw.slice(range.start, range.end) !== value) {
+      edits.push({ start: range.start, end: range.end, replacement: value });
+    }
+  };
+  const walk = (node: Dnd5eNode, inAdditional: boolean): void => {
+    for (const entry of node.children) {
+      if (entry.name === "spell" && new Map(entry.attrs).get("id") === spellId) {
+        set(entry, "name", name);
+        set(entry, "level", level);
+        const source = new Map(entry.attrs).get("source");
+        if (inAdditional && source !== undefined) {
+          const decoded = source.replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", '"');
+          if (isDmGrantSource(decoded)) {
+            set(entry, "source", escapeXml(dmGrantSource(info.name, grantCasterOf(decoded, casterNames))));
+          }
+        }
+      } else {
+        walk(entry, inAdditional || entry.name === "additional");
+      }
+    }
+  };
+  walk(magicNode, false);
+  return edits;
+}
+
+/** Removes a node with the whitespace that indents it and the line break before it. */
+function removeBlockEdit(raw: string, node: Dnd5eNode): RawEdit {
+  let start = node.start;
+  while (start > 0 && (raw[start - 1] === "\t" || raw[start - 1] === " ")) start--;
+  if (start > 0 && raw[start - 1] === "\n") start--;
+  if (start > 0 && raw[start - 1] === "\r") start--;
+  return { start, end: node.end, replacement: "" };
 }
 
 export interface CompanionNamePlan {

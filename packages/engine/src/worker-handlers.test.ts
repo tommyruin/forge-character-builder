@@ -624,7 +624,8 @@ describe("engine worker handlers", () => {
     // 81: added setItemPresentation / setItemCards (item cards and inventory notes).
     // 89: added setItemDetails (a record's own name and notes).
     // 90: added previewCustomItem (an item draft's attack row on a scratch copy).
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 90, engineVersion: ENGINE_VERSION } }]);
+    // 91: added previewCustomSpell (a spell draft's attack row on a scratch copy).
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 91, engineVersion: ENGINE_VERSION } }]);
   });
 });
 
