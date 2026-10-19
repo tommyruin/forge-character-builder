@@ -489,6 +489,14 @@ describe("the readable body", () => {
     }
   });
 
+  // A three-class build ("12d10/4d8/4d6", a class line with archetypes) has to
+  // fit at the writer's 5.5pt floor, so those cells are wider than a tidy one.
+  it.each(DETAILS_PAGES.filter(([set]) => set === "2014"))("leaves room for three classes in the hit dice and class line on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    expect(page.rect("details_build").width).toBeGreaterThanOrEqual(280);
+    expect(page.rect("details_hd").width).toBeGreaterThanOrEqual(file.includes("~top") ? 44 : 70);
+  });
+
   it.each(DETAILS_PAGES.filter(([set]) => set === "2014"))("has no actions box on %s/%s", async (set, file) => {
     const labels = JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
     expect((await fieldsOf(set, file)).has("details_encounter_box")).toBe(false);
