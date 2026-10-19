@@ -15,5 +15,5 @@ export * from "./validate.js";
 export * from "./compile.js";
 export { compileBuildDraft, compiledElementIds, subclassTagOf } from "./compile-build.js";
 export * from "./spellcasting.js";
-export { customBuildDraftIssues, embeddedFeatureIssues } from "./validate-build.js";
+export { customBuildDraftIssues, embeddedFeatureIssues, pickTags } from "./validate-build.js";
 export * from "./promote.js";

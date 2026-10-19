@@ -25,6 +25,7 @@ import {
 import { randomUuid } from "../platform.js";
 import { catalogElementType, elementTypeFor } from "./catalogue.js";
 import { compileCustomElement } from "./compile.js";
+import { pickTags } from "./validate-build.js";
 
 /** The element type each character option compiles to (a subspecies is a Sub Race or a Race Variant, by its kind). */
 const BUILD_ELEMENT_TYPES: Partial<Record<CustomBuildDraft["template"], string>> = {
@@ -50,7 +51,7 @@ function packElementSupports(draft: CustomPackDraft): string[] {
   if (isCustomSpellDraft(draft)) return draft.classes ?? [];
   if (isCustomItemDraft(draft) || isCustomOverrideDraft(draft)) return [];
   if (isCustomBuildDraft(draft)) {
-    if (draft.template === "subspecies" || draft.template === "subclass") return [draft.parent.tag];
+    if (draft.template === "subspecies" || draft.template === "subclass") return pickTags(draft.parent.tag) ?? [draft.parent.tag];
     return draft.template === "companion" ? (draft.tags ?? []) : [];
   }
   return draft.tags ?? [];

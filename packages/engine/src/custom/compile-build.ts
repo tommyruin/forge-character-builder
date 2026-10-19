@@ -58,6 +58,7 @@ import {
 } from "./compile.js";
 import { CUSTOM_SOURCE_NAME } from "./schema.js";
 import { compileSpellcasting, firstCastingLevel } from "./spellcasting.js";
+import { pickTags } from "./validate-build.js";
 import { attributes, escapeAttribute, escapeText, paragraphs } from "./xml-text.js";
 
 const ASI_IDS: Readonly<Record<string, string>> = {
@@ -261,7 +262,7 @@ function compileSubspecies(draft: CustomSubspeciesDraft, id: string, source: str
   rules.push(...blockRulesText(draft.blocks, draft.scales));
   rules.push(...inLevelOrder([...choiceRules, ...featureGrants("Racial Trait", draft.features, true)]));
   const children = [
-    `<supports>${escapeText(draft.parent.tag.trim())}</supports>`,
+    `<supports>${escapeText((pickTags(draft.parent.tag) ?? [draft.parent.tag.trim()]).join(", "))}</supports>`,
     `<description>${paragraphs(draft.description)}${references(draft.features.map((entry) => entry.draft.id))}</description>`,
     '<sheet display="false" />',
     setters(rulesetSetter(draft), ...appearanceSetters(draft)),
@@ -421,7 +422,7 @@ function compileSubclass(draft: CustomSubclassDraft, id: string, source: string)
   rules.push(...inLevelOrder(grants));
 
   const children = [
-    `<supports>${escapeText(draft.parent.tag.trim())}</supports>`,
+    `<supports>${escapeText((pickTags(draft.parent.tag) ?? [draft.parent.tag.trim()]).join(", "))}</supports>`,
     `<description>${paragraphs(draft.description)}${references(featureIds)}</description>`,
     '<sheet display="false" />',
     setters(rulesetSetter(draft)),

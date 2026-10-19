@@ -46,6 +46,12 @@ export const SKILL_NAMES = [
 
 const titleCase = (text: string): string => text.replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
 
+/** The skill proficiency elements a class or background offers a choice among, by the engine's ids. */
+export const CUSTOM_SKILL_PROFICIENCIES: ReadonlyArray<{ id: string; label: string }> = SKILL_NAMES.map((skill) => ({
+  id: `ID_PROFICIENCY_SKILL_${skill.replaceAll(" ", "").toUpperCase()}`,
+  label: titleCase(skill),
+}));
+
 const abilityTargets: ModifierTarget[] = CUSTOM_ABILITIES.map((ability) => ({
   id: ability,
   label: `${ABILITY_LABEL[ability]} score`,

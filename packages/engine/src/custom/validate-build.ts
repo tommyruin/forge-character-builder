@@ -36,6 +36,15 @@ const HEIGHT_BASE = /^\d+'\d+"?$/;
 const WEIGHT_BASE = /^\d+\s*lb\.?$/;
 const DICE_OR_NUMBER = /^(?:\d+|\d+d\d+)$/;
 
+/**
+ * The tags a pick list answers to: one tag, or several alternatives joined by `||` (a class' pick may
+ * accept the tag of either ruleset). Null when any of them is empty or holds an operator.
+ */
+export function pickTags(tag: string): string[] | null {
+  const tags = tag.split("||").map((part) => part.trim());
+  return tags.every((part) => part !== "" && TAG_SAFE.test(part)) ? tags : null;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const isWholeNumber = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value);
@@ -254,8 +263,8 @@ function parentIssues(parent: unknown, what: string): CustomDraftIssue[] {
   const issues: CustomDraftIssue[] = [];
   if (typeof parent.id !== "string" || !ANY_ELEMENT_ID.test(parent.id)) issues.push({ path: "parent.id", message: `pick the ${what} this belongs to` });
   if (!isName(parent.name, 120)) issues.push({ path: "parent.name", message: `name the ${what}` });
-  if (!(typeof parent.tag === "string" && TAG_SAFE.test(parent.tag.trim()))) {
-    issues.push({ path: "parent.tag", message: `the ${what}'s pick list needs a tag without , & | ( ) or !` });
+  if (!(typeof parent.tag === "string" && pickTags(parent.tag) !== null)) {
+    issues.push({ path: "parent.tag", message: `the ${what}'s pick list needs a tag, or tags joined by ||, without , & | ( ) or !` });
   }
   return issues;
 }

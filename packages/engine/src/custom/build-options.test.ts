@@ -34,6 +34,7 @@ import {
   type CustomSpellcasting,
   type GrantBlock,
 } from "./schema.js";
+import { CUSTOM_SKILL_PROFICIENCIES } from "./catalogue.js";
 import { slotTotals } from "./spellcasting.js";
 import { customPackDraftIssues, readCustomPackDraft } from "./validate.js";
 
@@ -277,6 +278,14 @@ describe("a caster's rules follow the bundled progressions", () => {
   });
 });
 
+describe("the skills a form offers", () => {
+  it("are all proficiencies the library defines", async () => {
+    const corpus = await sharedLibrary();
+    for (const skill of CUSTOM_SKILL_PROFICIENCIES) expect(corpus.byId.get(skill.id)?.identity.type, skill.id).toBe("Proficiency");
+    expect(CUSTOM_SKILL_PROFICIENCIES).toHaveLength(18);
+  });
+});
+
 describe("a subclass", () => {
   it("is an Archetype under the class' tag that grants Archetype Features at class levels", () => {
     const draft = {
@@ -300,6 +309,15 @@ describe("a subclass", () => {
     expect(others.map((entry) => entry.identity.type)).toEqual(["Archetype Feature", "Archetype Feature"]);
     const appends = parseAppendsFile(`<elements>${compileCustomElement(draft, { source: "Test Pack" })}</elements>`, "test.xml");
     expect(appends).toEqual([expect.objectContaining({ id: "ID_BOOK_SPELL_THREE", supports: ["Druid"] })]);
+  });
+
+  it("answers to every alternative a class' pick accepts, so it shows in the pick of either ruleset", () => {
+    const draft = createCustomSubclassDraft({ id: "ID_BOOK_CLASS", name: "Wizard", tag: "Arcane Tradition||Wizard Subclass" }, "Tidecaller");
+    expect(compiled(draft)[0]!.supports).toEqual(["Arcane Tradition", "Wizard Subclass"]);
+    expect(customPackDraftIssues(draft)).toEqual([]);
+    expect(customPackDraftIssues({ ...draft, parent: { ...draft.parent, tag: "A&&B" } })).toContainEqual(expect.objectContaining({ path: "parent.tag" }));
+    expect(customPackDraftIssues({ ...draft, parent: { ...draft.parent, tag: "A||" } })).toContainEqual(expect.objectContaining({ path: "parent.tag" }));
+    expect(packElementFor(draft, "Test Pack").supports).toEqual(["Arcane Tradition", "Wizard Subclass"]);
   });
 
   it("can cast on its own, reading its class' level", () => {
