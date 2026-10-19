@@ -623,6 +623,8 @@ function buildFormValues(
   // Bonus-AC sources outside the base calculation (a held Staff of Power, a
   // ring of protection) list beneath the shield box with their contribution.
   set("details_armor_conditional", acContributionLines(state, library, values).join("\n"));
+  // The 2024 pages' armor box lists those sources over the resistances, in one box.
+  set("details_armor_resistances", [fields["details_armor_conditional"], fields["details_resistances"]].filter((text) => text !== undefined && text !== "").join("\n"));
   const stealthDisadvantage = [equippedArmor, equippedShield].some((item) => {
     if (item === undefined) return false;
     const element = library.byId.get(item.itemId);

@@ -154,14 +154,16 @@ describe("character sheet PDF writer", () => {
     expect(text.join(" ").replace(/\s+/g, " ")).toBe(tokens.join(" "));
   });
 
-  it.each(["spectral", "helvetica", "alegreyaSans"] as const)("fits both armor contributions in the 2024 strip using %s", async (body) => {
-    const bundle = localTemplateBundle("2024", { ...DEFAULT_SHEET_FONTS, body });
+  // The 2024 armor box lists the other armor class sources over the
+  // resistances, beside the AC on either top band.
+  it.each((["spectral", "helvetica", "alegreyaSans"] as const).flatMap((body) => [{ body, top: true }, { body, top: false }]))("fits both armor contributions in the 2024 armor box using $body, top $top", async ({ body, top }) => {
+    const bundle = localTemplateBundle("2024", { ...DEFAULT_SHEET_FONTS, body }, { top });
     const form = (await PDFDocument.load(bundle.details)).getForm();
-    const field = form.getTextField("details_armor_conditional");
+    const field = form.getTextField("details_armor_resistances");
     expect(field.isMultiline()).toBe(true);
     const rect = field.acroField.getWidgets()[0]!.getRectangle();
     const model = { characterId: "Armor", mode: "lite" as const, pageCount: 1,
-      formValues: { details_armor_conditional: "Ring of Protection +1\nCloak of Protection +1" },
+      formValues: { details_armor_resistances: "Ring of Protection +1\nCloak of Protection +1" },
       pages: [{ page: 1, templateKind: "details" as const, sections: [] }] };
     const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(model, bundle)) }).promise;
     const content = await (await doc.getPage(1)).getTextContent();
@@ -794,13 +796,14 @@ describe("character sheet PDF writer", () => {
       mode: "full" as const,
       pageCount: 1,
       pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
-      formValues: { details_resistances: value },
+      // The 2024 pages print the resistances in the armor box, under any other AC sources.
+      formValues: { details_resistances: value, details_armor_resistances: value },
     };
 
     for (const ruleset of ["2014", "2024"] as const) {
       const bundle = localTemplateBundle(ruleset);
       const source = await PDFDocument.load(bundle.details);
-      const rect = source.getForm().getTextField("details_resistances").acroField
+      const rect = source.getForm().getTextField(ruleset === "2014" ? "details_resistances" : "details_armor_resistances").acroField
         .getWidgets()[0]!.getRectangle();
 
       const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
@@ -837,14 +840,14 @@ describe("character sheet PDF writer", () => {
       mode: "full" as const,
       pageCount: 1,
       pages: [{ page: 1, templateKind: "details" as const, sections: [] }],
-      formValues: { details_resistances: value },
+      formValues: { details_resistances: value, details_armor_resistances: value },
     };
 
     for (const ruleset of ["2014", "2024"] as const) {
       const bundle = localTemplateBundle(ruleset);
       // The template's own widget rectangle is the authority for the box.
       const source = await PDFDocument.load(bundle.details);
-      const rect = source.getForm().getTextField("details_resistances").acroField
+      const rect = source.getForm().getTextField(ruleset === "2014" ? "details_resistances" : "details_armor_resistances").acroField
         .getWidgets()[0]!.getRectangle();
 
       const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, bundle);
@@ -1168,6 +1171,8 @@ describe("character sheet PDF writer", () => {
     expect(values["details_equipped_armor"]).toMatch(/^Unarmored \(\d+\)$/);
     // The staff's +2 AC lists beneath the shield box with its contribution.
     expect(values["details_armor_conditional"]).toContain("Staff of Power (2)");
+    // The 2024 armor box lists it over the resistances.
+    expect(values["details_armor_resistances"]?.split("\n")[0]).toBe(values["details_armor_conditional"]?.split("\n")[0]);
     // Attunement alone puts the item's description in the magic-items panel.
     expect(values["equipment_page_magic_items"]).toContain("Staff of Power.");
     expect(values["equipment_page_magic_items"]).toContain("20 charges");

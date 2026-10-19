@@ -4,37 +4,39 @@
 // resets the choices for everyone who made them.
 //
 //  - top: a compact top row on the character page. On the 2024 layouts,
-//    armor class, hit points, hit dice and death saves share one row, with a
-//    shield tick box and separate species, class and level fields; on the
-//    2014 layout, initiative sits beside the proficiency bonus and the hit
-//    dice split into maximum and spent.
-//  - split: separate boxes for class features, subclass features and feats
-//    on the character page. null means "the layout's own default" (off for
-//    2014 and 2024, on for 2024 Hybrid); true or false overrides it.
-//  - readable: a more readable character page. On the 2024 layouts the armor
-//    sits beside armor class, species traits and conditions move beside the
-//    abilities, the feature boxes are taller and the attack notes larger (the
-//    2024 ability panels also show the modifier as the large number); on the
-//    2014 layout the captions are larger, the skills roomier and there are
-//    six attack rows.
+//    armor class shares a box with the armor and resistances beside hit
+//    points and hit dice, over smaller vitals with the death saves, and the
+//    identity is separate species, class and level fields; on the 2014
+//    layout, initiative sits beside the proficiency bonus and the hit dice
+//    split into maximum and spent. null means "the layout's own default" (on
+//    for 2024 and 2024 Hybrid, off for 2014); true or false overrides it.
+//  - split: class features, subclass features and feats apart on the
+//    character page. null means "the layout's own default" (off for 2014 and
+//    2024, on for 2024 Hybrid); true or false overrides it.
+//  - readable: a more readable character page. On the 2024 layouts the
+//    captions are larger and the attack notes print at 7pt; on the 2014
+//    layout the captions are larger, the skills roomier and there are six
+//    attack rows.
 //  - inventoryNotes: the equipment page's notes column also describes the
 //    other magic items in full and the tools and useful gear in brief.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card
 //    only when they are magic items, tools or useful gear. Items already in
 //    the inventory never change.
 //
-// Every option defaults to off (or, for split, to the layout's own default),
-// so a browser that has never touched this setting keeps the sheet and the
-// item cards it has always had.
+// Every option defaults to off (or, for top and split, to the layout's own
+// default), so a browser that has never touched this setting gets each
+// layout's own sheet and the item cards it has always had.
 
 import { resolveSheetLayout, sheetLayoutKey } from '@forge-cb/engine/sheet-contract';
 
 export const SHEET_LAYOUT_OPTIONS_STORAGE_KEY = 'fcb-sheet-layout-options';
 
-const BOOLEAN_OPTIONS = ['top', 'readable', 'inventoryNotes', 'smartCards'];
+const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards'];
+/** Options that may also be null, for the layout's own default. */
+const DEFAULTABLE_OPTIONS = ['top', 'split'];
 
 export const DEFAULT_SHEET_LAYOUT_OPTIONS = Object.freeze({
-  top: false,
+  top: null,
   split: null,
   readable: false,
   inventoryNotes: false,
@@ -52,8 +54,8 @@ function mergeOptions(base, wanted) {
   for (const name of BOOLEAN_OPTIONS) {
     if (typeof source[name] === 'boolean') resolved[name] = source[name];
   }
-  if ('split' in source) {
-    resolved.split = typeof source.split === 'boolean' ? source.split : null;
+  for (const name of DEFAULTABLE_OPTIONS) {
+    if (name in source) resolved[name] = typeof source[name] === 'boolean' ? source[name] : null;
   }
   return resolved;
 }
@@ -67,10 +69,17 @@ function optionsKey(options) {
   return JSON.stringify(resolveSheetLayoutOptions(options));
 }
 
+// Stored options carry this version. Before it, top was a plain boolean that
+// was saved as false with any other choice, so an older false only ever meant
+// "the default" and now reads as null.
+const STORED_VERSION = 2;
+
 export function readStoredSheetLayoutOptions(storage = globalThis.localStorage) {
   try {
     const raw = storage?.getItem(SHEET_LAYOUT_OPTIONS_STORAGE_KEY);
-    return resolveSheetLayoutOptions(raw ? JSON.parse(raw) : null);
+    const stored = raw ? JSON.parse(raw) : null;
+    if (stored?.version !== STORED_VERSION && stored?.top === false) delete stored.top;
+    return resolveSheetLayoutOptions(stored);
   } catch {
     return { ...DEFAULT_SHEET_LAYOUT_OPTIONS };
   }
@@ -81,7 +90,7 @@ export function storeSheetLayoutOptions(
   storage = globalThis.localStorage,
 ) {
   try {
-    storage?.setItem(SHEET_LAYOUT_OPTIONS_STORAGE_KEY, JSON.stringify(value));
+    storage?.setItem(SHEET_LAYOUT_OPTIONS_STORAGE_KEY, JSON.stringify({ ...value, version: STORED_VERSION }));
   } catch {
     // Best effort only; the running session still honours the choice.
   }
@@ -89,7 +98,7 @@ export function storeSheetLayoutOptions(
 
 /**
  * The character page layout `options` print on `templateSet`: every switch
- * decided, a split left at null taking the layout's own default. This is what
+ * decided, a top or split left at null taking the layout's own default. This is what
  * the renders ask for and what the settings switch shows.
  */
 export function effectiveSheetLayout(templateSet, options) {

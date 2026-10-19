@@ -80,26 +80,29 @@ describe("2024 Hybrid features", () => {
     return { inside, hasField: (name: string) => rect(name) !== undefined };
   }
 
-  it("prints class features, subclass features and feats in their own boxes", async () => {
+  // Split, the Hybrid page keeps its features in one box, which the writer
+  // heads by origin.
+  it("prints class features, subclass features and feats in its one features box", async () => {
     const hybrid = await placements("2024-hybrid");
-    expect(hybrid.inside("Spellcasting.", "details_features")).toBe(true);
-    expect(hybrid.inside("Wild Shape.", "details_subclass_features")).toBe(true);
-    expect(hybrid.inside("Alert.", "details_feats")).toBe(true);
+    expect(hybrid.hasField("details_subclass_features")).toBe(false);
+    for (const text of ["Spellcasting.", "Wild Shape.", "Alert."]) expect(hybrid.inside(text, "details_features"), text).toBe(true);
   });
 
-  it("continues overflowing subclass features in full on a labelled page", async () => {
-    const long = Array.from({ length: 400 }, (_, index) => `word${index}`).join(" ");
-    const overflowing = { ...model, pages: [{ ...model.pages[0]!, featureGroups: { ...model.pages[0]!.featureGroups, "subclass-features": [line(`Starry Form. ${long}`)] } }] };
+  it("continues overflowing subclass features in full", async () => {
+    const long = Array.from({ length: 800 }, (_, index) => `word${index}`).join(" ");
+    const overflowing = { ...model, pages: [{
+      ...model.pages[0]!,
+      sections: [{ title: "features", rows: [line("Spellcasting. Class prose."), line(`Starry Form. ${long}`), line("Alert. Feat prose.")] }],
+      featureGroups: { ...model.pages[0]!.featureGroups, "subclass-features": [line(`Starry Form. ${long}`)] },
+    }] };
     const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(overflowing, localTemplateBundle("2024-hybrid"))) }).promise;
     const pages: string[] = [];
     for (let index = 1; index <= doc.numPages; index++) {
       pages.push((await (await doc.getPage(index)).getTextContent()).items.map((item) => "str" in item ? item.str : "").join(" "));
     }
-    expect(pages).toHaveLength(2);
-    expect(pages[1]).toContain("FEATURES (CONTINUED)");
-    expect(pages[1]).toContain("Subclass Features (continued)");
+    expect(pages.length).toBeGreaterThan(1);
     const words = pages.join(" ").match(/word\d+/g) ?? [];
-    expect(new Set(words).size).toBe(400);
+    expect(new Set(words).size).toBe(800);
   });
 
   it("keeps every feature in the single 2024 box", async () => {

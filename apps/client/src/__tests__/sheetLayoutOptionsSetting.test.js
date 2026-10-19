@@ -28,10 +28,10 @@ const throwingStorage = {
 };
 
 describe('sheet layout options setting', () => {
-  it('persists under its own key with every option off by default', () => {
+  it('persists under its own key with every option off or at the layout default', () => {
     expect(SHEET_LAYOUT_OPTIONS_STORAGE_KEY).toBe('fcb-sheet-layout-options');
     expect(DEFAULT_SHEET_LAYOUT_OPTIONS).toEqual({
-      top: false,
+      top: null,
       split: null,
       readable: false,
       inventoryNotes: false,
@@ -58,12 +58,26 @@ describe('sheet layout options setting', () => {
     expect(readStoredSheetLayoutOptions(partial)).toEqual({ ...DEFAULT_SHEET_LAYOUT_OPTIONS, smartCards: true });
   });
 
-  it('keeps split as an explicit on or off, else the layout default', () => {
-    expect(resolveSheetLayoutOptions({ split: true }).split).toBe(true);
-    expect(resolveSheetLayoutOptions({ split: false }).split).toBe(false);
-    for (const split of [undefined, null, Number.NaN, Infinity, '', {}, 0.6, 'wide', 'true']) {
-      expect(resolveSheetLayoutOptions({ split }).split).toBeNull();
+  it('keeps top and split as an explicit on or off, else the layout default', () => {
+    for (const name of ['top', 'split']) {
+      expect(resolveSheetLayoutOptions({ [name]: true })[name], name).toBe(true);
+      expect(resolveSheetLayoutOptions({ [name]: false })[name], name).toBe(false);
+      for (const value of [undefined, null, Number.NaN, Infinity, '', {}, 0.6, 'wide', 'true']) {
+        expect(resolveSheetLayoutOptions({ [name]: value })[name], `${name} ${String(value)}`).toBeNull();
+      }
     }
+  });
+
+  // Before top followed the layout's default, every saved choice carried
+  // top: false, so an unversioned false means "the default".
+  it('reads an older saved top: false as the layout default', () => {
+    const older = memoryStorage({ [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ top: false, smartCards: true }) });
+    expect(readStoredSheetLayoutOptions(older)).toEqual({ ...DEFAULT_SHEET_LAYOUT_OPTIONS, smartCards: true });
+    const olderOn = memoryStorage({ [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ top: true }) });
+    expect(readStoredSheetLayoutOptions(olderOn).top).toBe(true);
+    const storage = memoryStorage();
+    createSheetLayoutOptionsSettingStore({ storage }).set({ top: false });
+    expect(readStoredSheetLayoutOptions(storage).top).toBe(false);
   });
 
   it('stores a split override and returns to the layout default', () => {
@@ -78,8 +92,8 @@ describe('sheet layout options setting', () => {
 
   it('splits the feature boxes by default only on the layout that always has', () => {
     expect(effectiveSheetLayout('2014', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: false, split: false, readable: false });
-    expect(effectiveSheetLayout('2024', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: false, split: false, readable: false });
-    expect(effectiveSheetLayout('2024-hybrid', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: false, split: true, readable: false });
+    expect(effectiveSheetLayout('2024', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: true, split: false, readable: false });
+    expect(effectiveSheetLayout('2024-hybrid', DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ top: true, split: true, readable: false });
     expect(effectiveSheetLayout('2014', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, split: true }).split).toBe(true);
     expect(effectiveSheetLayout('2024-hybrid', { ...DEFAULT_SHEET_LAYOUT_OPTIONS, split: false }).split).toBe(false);
     expect(effectiveSheetLayout('2014', undefined)).toEqual({ top: false, split: false, readable: false });
@@ -94,11 +108,14 @@ describe('sheet layout options setting', () => {
     expect(readStoredSheetLayoutOptions(storage)).toEqual({ ...DEFAULT_SHEET_LAYOUT_OPTIONS, top: true });
     for (const set of ['2014', '2024', '2024-hybrid']) {
       expect(effectiveSheetLayout(set, store.getSnapshot()).top, set).toBe(true);
-      expect(effectiveSheetLayout(set, DEFAULT_SHEET_LAYOUT_OPTIONS).top, set).toBe(false);
     }
+    // The compact top row is the 2024 layouts' own.
+    expect(effectiveSheetLayout('2014', DEFAULT_SHEET_LAYOUT_OPTIONS).top).toBe(false);
+    expect(effectiveSheetLayout('2024', DEFAULT_SHEET_LAYOUT_OPTIONS).top).toBe(true);
     expect(effectiveSheetLayout('2024-hybrid', store.getSnapshot())).toEqual({ top: true, split: true, readable: false });
     store.set({ top: false });
     expect(readStoredSheetLayoutOptions(storage).top).toBe(false);
+    expect(effectiveSheetLayout('2024', store.getSnapshot()).top).toBe(false);
   });
 
   it('stores and reads the readable body switch', () => {
@@ -112,7 +129,7 @@ describe('sheet layout options setting', () => {
       expect(effectiveSheetLayout(set, store.getSnapshot()).readable, set).toBe(true);
       expect(effectiveSheetLayout(set, DEFAULT_SHEET_LAYOUT_OPTIONS).readable, set).toBe(false);
     }
-    expect(effectiveSheetLayout('2024-hybrid', store.getSnapshot())).toEqual({ top: false, split: true, readable: true });
+    expect(effectiveSheetLayout('2024-hybrid', store.getSnapshot())).toEqual({ top: true, split: true, readable: true });
     store.set({ readable: false });
     expect(readStoredSheetLayoutOptions(storage).readable).toBe(false);
   });
@@ -132,6 +149,7 @@ describe('sheet layout options setting', () => {
     expect(JSON.parse(storage.map.get(SHEET_LAYOUT_OPTIONS_STORAGE_KEY))).toEqual({
       ...DEFAULT_SHEET_LAYOUT_OPTIONS,
       smartCards: true,
+      version: 2,
     });
 
     store.set({ smartCards: false });

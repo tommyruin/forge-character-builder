@@ -499,6 +499,17 @@ function isNumbersField(name: string): boolean {
     /^(details|companion)_(armor_class|hp_current|hp_max|hp_temp|initiative|proficiency_bonus|passive_perception_total|inspiration|hd|speed_walking|xp|level)$/.test(name);
 }
 
+/**
+ * An ability score printed smaller than its modifier, as the 2024 pages'
+ * score box beside the modifier roundel. It takes the body face's regular
+ * weight, so the bold modifier reads first.
+ */
+function isSecondaryScore(name: string, fields: ReadonlyMap<string, TemplateField>): boolean {
+  const ability = name.match(/^details_(str|dex|con|int|wis|cha)_score$/)?.[1];
+  if (ability === undefined) return false;
+  return (fields.get(name)?.base ?? 0) < (fields.get(`details_${ability}_modifier`)?.base ?? 0);
+}
+
 function bundleIsComplete(bundle: CharacterSheetTemplateBundle | null): bundle is CharacterSheetTemplateBundle {
   return bundle !== null &&
     bundle.spellcastingSectionTops.length === 10 &&
@@ -822,7 +833,7 @@ async function addFilledTemplatePage(
       continue;
     }
     if (field.kind !== "text" || value === "") continue;
-    const font = isNumbersField(name) ? outputFonts.numbers : outputFonts.regular;
+    const font = isNumbersField(name) && !isSecondaryScore(name, art.fields) ? outputFonts.numbers : outputFonts.regular;
     if (!field.multiline) {
       // A single line sits optically centred in its box whatever face the
       // reader chose, because it is drawn rather than filled through the form.
