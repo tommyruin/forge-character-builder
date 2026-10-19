@@ -14,6 +14,7 @@
  * are never shared with top-level entries in this corpus.
  */
 
+import { withoutCharacterPacks } from "../content/character-packs.js";
 import { classifyRuleset, rulesetSourcesByName, type ElementLibrary, type RulesetCounts, type RulesetTag } from "../content/library.js";
 import type {
   AppendRule,
@@ -89,7 +90,16 @@ function setDecodedOptional<T extends object>(
     : decode(value, `${context}.${key}`);
 }
 
+/**
+ * Serializes the shared content. A loaded character's own pack is an overlay
+ * on the library and never part of a snapshot: the digest a character snapshot
+ * checks must not change when a character with custom content is opened.
+ */
 export function serializeContentLibrary(library: ElementLibrary): ContentLibraryPayload {
+  return withoutCharacterPacks(library, () => serializeSharedContent(library));
+}
+
+function serializeSharedContent(library: ElementLibrary): ContentLibraryPayload {
   const table: ParsedElement[] = [];
   const indexOf = new Map<ParsedElement, number>();
 

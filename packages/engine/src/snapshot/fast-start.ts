@@ -16,6 +16,7 @@ import { FAST_START_MANIFEST, FAST_START_LIBRARY_KIND, FAST_START_SCHEMA_VERSION
 import { engineError } from "../errors.js";
 import { ENGINE_VERSION } from "../index.js";
 import type { ElementLibrary } from "../content/library.js";
+import { reapplyCharacterPacks } from "../content/character-packs.js";
 import type { BootFromSnapshotRequestDto, BootFromSnapshotResultDto, FastStartSnapshotPreparedDto, ManifestIdentityDto } from "@forge-cb/api";
 
 export interface FastStartController {
@@ -194,6 +195,8 @@ class FastStartControllerImpl implements FastStartController {
     // instead of treating the installed set as empty.
     this.library.fileContents = undefined;
     this.library.revision = (this.library.revision ?? 0) + 1;
+    // The hydrated maps hold shared content only; loaded characters' packs go back on top.
+    reapplyCharacterPacks(this.library);
     const hydrationMs = Math.max(0, performance.now() - hydrationStart);
     const totalMs = Math.max(0, performance.now() - totalStart);
 

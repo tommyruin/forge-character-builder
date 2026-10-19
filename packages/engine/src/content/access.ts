@@ -7,6 +7,7 @@
  * cannot drift apart.
  */
 
+import { characterPackOwners } from "./character-packs.js";
 import { rulesetOf, type ElementLibrary } from "./library.js";
 import { isSourceNameRestricted } from "./sourceIdentity.js";
 import type { CharacterState } from "../character/state.js";
@@ -35,15 +36,19 @@ export function isSourceRestricted(state: CharacterState, library: ElementLibrar
 
 /**
  * True when the element can never be offered to this character: it belongs
- * to the other ruleset (2014 vs 2024 mode) or comes from a restricted
- * source. Such elements are pruned from offering and browse lists entirely
- * rather than shown as unavailable.
+ * to the other ruleset (2014 vs 2024 mode), comes from a restricted
+ * source, or is custom content another character carries. Such elements are
+ * pruned from offering and browse lists entirely rather than shown as
+ * unavailable.
  */
 export function isRestrictedForCharacter(
   state: CharacterState,
   library: ElementLibrary,
   element: ParsedElement,
 ): boolean {
+  // A character's own custom content is offered to that character alone.
+  const owners = characterPackOwners(library, element.identity.id);
+  if (owners !== undefined && !owners.has(state.id)) return true;
   if (state.rulesetMode === "2014" && rulesetOf(library, element.identity.id) === "2024") return true;
   if (state.rulesetMode === "2024" && rulesetOf(library, element.identity.id) === "2014") return true;
   return isSourceRestricted(state, library, element.identity.source);

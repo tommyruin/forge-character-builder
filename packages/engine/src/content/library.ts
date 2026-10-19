@@ -10,6 +10,7 @@
 import { parseAppendsFile, parseElementsFile, type AppendBlock, type ExtractEntry, type PackExtras, type ParsedElement } from "./parser.js";
 import { generateItemProxies } from "./proxies.js";
 import { normalizeSourceName } from "./sourceIdentity.js";
+import { reapplyCharacterPacks } from "./character-packs.js";
 
 /** Engine-baked grant appended to every class element. */
 export const GRANT_MULTICLASSING_PREREQUISITE = "ID_INTERNAL_GRANTS_MULTICLASSING_PREREQUISITE";
@@ -634,6 +635,8 @@ export function replaceLibraryFiles(
   library.fileContents = fileContents;
   library.diagnostics = diagnostics;
   library.revision = (library.revision ?? 0) + (incrementRevision ? 1 : 0);
+  // The maps above were replaced wholesale; the characters' own packs go back on top.
+  reapplyCharacterPacks(library);
 }
 
 /** The ruleset tag of an element id (shared for unknown ids). */
