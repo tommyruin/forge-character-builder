@@ -67,6 +67,29 @@ project uses [Semantic Versioning](https://semver.org/).
   missing id resolves the grant; from Content warnings it is written into the
   pack that granted it.
 
+- Manage has a Resources page. It lists every limited use the character has:
+  book features that state a count and a rest (Rage, Bardic Inspiration, Wild
+  Shape, Second Wind), custom features and items, the free cast of a spell a
+  custom feature grants, and trackers you add by hand (a minutes budget on a
+  pair of boots). A few uses are pips to tap; many are a counter with - and +.
+  Short rest and Long rest buttons refill what recharges on them, and a long
+  rest also refills Dawn and Day trackers. Spent counts are saved in the
+  character file and undoable.
+- Custom features and items can carry real limited uses: a number or a value that
+  follows the character (proficiency bonus, an ability modifier with a minimum,
+  a level), counted in uses, charges, minutes or points, recharging on a short
+  rest, long rest, dawn, day, never or a dice roll. Several features can share
+  one pool, and an item's charges are tracked while you carry it. The sheet's
+  usage line is written from them, and the sheet closes its features text with
+  a Resources line of boxes to tick off.
+- "Only while active" is a real switch. Custom bonuses gated by one apply only
+  while it is on, from a Switches row on the Resources page; turning one on can
+  spend a use of a linked tracker. The form suggests the switches your other
+  entries already use.
+- Custom features can have scale values: a die or a count that grows by level
+  (1d6 at level 1, 2d6 at level 5). A bonus or a limited use can follow a
+  count, and the sheet text prints either with {{scale:name}}.
+
 ### Changed
 
 - The 2024 and Hybrid character pages are redesigned: one Armor Class box holds
