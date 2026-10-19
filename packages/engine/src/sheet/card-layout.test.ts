@@ -443,3 +443,47 @@ describe("card body sizes", () => {
     expect(capTop(smaller)).toBeCloseTo(capTop(normal), 6);
   });
 });
+
+describe("continuation slots", () => {
+  const long = `<p>${Array.from({ length: 900 }, (_, index) => `rune${index}`).join(" ")}</p>`;
+  const slotKey = (run: LayoutRun) => `${run.page ?? 0}:${run.card}`;
+
+  it("read as a continuation: marked title, no metadata, the body from the top, a footer", () => {
+    const runs = descriptionCardRuns([{ ...spell("Symbol", long), footer: "Additional Spell, Symbol" }, spell("Bless", "<p>Short.</p>")]);
+    const symbol = runs.filter((run) => run.cardIndex === 0);
+    const slots = [...new Set(symbol.map(slotKey))];
+    expect(slots.length).toBeGreaterThan(1);
+    for (const [index, slot] of slots.entries()) {
+      const inSlot = symbol.filter((run) => slotKey(run) === slot);
+      const continued = index > 0;
+      expect(inSlot.every((run) => (run.continued === true) === continued)).toBe(true);
+      expect(inSlot.find((run) => run.role === "title")!.text).toBe(continued ? "Symbol (continued)" : "Symbol");
+      expect(inSlot.some((run) => run.role === "metadata" || run.role === "metadata-value")).toBe(!continued);
+      expect(inSlot.filter((run) => run.role === "footer").map((run) => run.text)).toEqual(["Additional Spell, Symbol", "Player’s Handbook"]);
+      if (continued) {
+        // The body takes the space the metadata held: it starts where a plain card's does.
+        const top = SHEET_TEMPLATE_CONTRACT.cards.rowTops[Math.floor((inSlot[0]!.card ?? 0) / 3)]!;
+        const first = inSlot.filter((run) => run.role === "body")[0]!;
+        expect(top - first.y).toBeLessThan(SHEET_TEMPLATE_CONTRACT.cards.spell.bodyTop - 30);
+      }
+    }
+    // The next card is a primary slot again.
+    expect(runs.filter((run) => run.cardIndex === 1).every((run) => run.continued !== true)).toBe(true);
+  });
+
+  it("fit long titles and footers inside the card", () => {
+    const runs = descriptionCardRuns([{
+      ...spell("Tasha's Hideous Laughter", long),
+      footer: "Additional Spell, Tasha's Hideous Laughter, from the Wizard's own spellbook",
+    }]);
+    for (const slot of new Set(runs.map(slotKey))) {
+      const inSlot = runs.filter((run) => slotKey(run) === slot);
+      const title = inSlot.find((run) => run.role === "title")!;
+      expect(measuredTextWidth(title.text, title.fontSize!)).toBeLessThanOrEqual(168 + 0.01);
+      const [left, right] = inSlot.filter((run) => run.role === "footer");
+      const used = measuredTextWidth(left!.text, left!.fontSize!) + measuredTextWidth(right!.text, right!.fontSize!);
+      expect(used).toBeLessThanOrEqual(180 - 12 - 6 + 0.01);
+      expect(left!.fontSize).toBeGreaterThanOrEqual(5.5);
+    }
+  });
+});

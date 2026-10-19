@@ -73,7 +73,7 @@ describe("spell and item cards", () => {
     expect(sheetCanonical(model).pageCount).toBe(model.pageCount);
   });
 
-  it("paginates spell cards nine to a page without dropping any", () => {
+  it("fills every spell card page's nine slots before starting the next, dropping none", () => {
     const { service, id } = buildFullSheetCharacter(library, "CardPagination");
     const spellIds = (library.byType.get("Spell") ?? [])
       .map((element) => element.identity.id)
@@ -89,19 +89,25 @@ describe("spell and item cards", () => {
 
     const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
     const cardPages = model.pages.filter((page) => page.templateKind === "spell-cards");
-    expect(cardPages.length).toBeGreaterThan(1);
-
-    // Every page but the last is full; none is empty or over-filled.
-    for (const [index, page] of cardPages.entries()) {
-      expect(page.sections.length).toBeGreaterThan(0);
-      expect(page.sections.length).toBeLessThanOrEqual(9);
-      if (index < cardPages.length - 1) expect(page.sections).toHaveLength(9);
+    // One card page in the model; its slots run on across PDF pages.
+    expect(cardPages).toHaveLength(1);
+    const runs = cardPages[0]!.sections.flatMap((section) => section.positionedRuns ?? []);
+    const slotsByPage = new Map<number, Set<number>>();
+    for (const run of runs) {
+      slotsByPage.set(run.page ?? 0, (slotsByPage.get(run.page ?? 0) ?? new Set()).add(run.card ?? 0));
+    }
+    const pdfPages = [...slotsByPage.keys()].sort((left, right) => left - right);
+    expect(pdfPages.length).toBeGreaterThan(1);
+    // Every PDF card page but the last holds nine cards; none is empty.
+    for (const [index, page] of pdfPages.entries()) {
+      expect(page).toBe(index);
+      if (index < pdfPages.length - 1) expect(slotsByPage.get(page)!.size).toBe(9);
     }
 
     // The cards account for every granted spell exactly once.
     const carded = sectionTitles(model, "spell-description");
     expect(new Set(carded).size).toBe(carded.length);
-    expect(carded.length).toBe(cardPages.reduce((total, page) => total + page.sections.length, 0));
+    expect(new Set(runs.map((run) => run.cardIndex)).size).toBe(carded.length);
   });
 });
 

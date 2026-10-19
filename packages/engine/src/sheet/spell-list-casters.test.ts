@@ -20,6 +20,7 @@ import { pendingSelectionRules } from "../selection/selection.js";
 import { freshService, ID, select, sharedLibrary, STANDARD_ARRAY } from "../testing/character-factory.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import { buildCharacterSheetModel, type SheetSpellcasterLayout } from "./model.js";
+import { descriptionCardRuns } from "./card-layout.js";
 import { writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
@@ -299,5 +300,28 @@ describe("spell cells", () => {
     expect(text).toContain("Protection from Poison");
     // Not even at the floor: the whole name stays and the marker is cut.
     expect(text).toMatch(/Protection from Evil and Good.{0,3}\[Magic Initiate[^|]*\u2026/);
+  });
+});
+
+describe("card frames", () => {
+  it.each(["2014", "2024"] as const)("frame a continuation slot as a plain card on %s", async (set) => {
+    const long = `<p>${Array.from({ length: 900 }, (_, index) => `rune${index}`).join(" ")}</p>`;
+    const card = (title: string, body: string) => ({
+      kind: "spell" as const, title, subtitle: "7th-level abjuration", body, footer: `Additional Spell, ${title}`, footerRight: "Player's Handbook",
+      metadata: [["CASTING TIME", "1 minute"], ["RANGE", "Touch"], ["DURATION", "Until dispelled"], ["COMPONENTS", "V, S, M"]] as const,
+    });
+    const runs = descriptionCardRuns([card("Symbol", long), card("Bless", "<p>Short.</p>")]);
+    const slots = new Set(runs.map((run) => `${run.page ?? 0}:${run.card}`)).size;
+    const continued = new Set(runs.filter((run) => run.continued === true).map((run) => `${run.page ?? 0}:${run.card}`)).size;
+    expect(continued).toBeGreaterThan(0);
+    const texts = vi.spyOn(PDFPage.prototype, "drawText");
+    await writeCharacterSheetPdfWithTemplateBundle({
+      characterId: "Frames", mode: "full", pageCount: 1,
+      pages: [{ page: 1, templateKind: "spell-cards", sections: [0, 1].map((index) => ({
+        title: "spell-description", rows: [], positionedRuns: runs.filter((run) => run.cardIndex === index),
+      })) }],
+    }, localTemplateBundle(set));
+    // The spell frame's metadata labels print once per primary slot, never on a continuation.
+    expect(texts.mock.calls.filter(([text]) => text === "CASTING TIME")).toHaveLength(slots - continued);
   });
 });

@@ -1360,8 +1360,8 @@ describe("character sheet PDF writer", () => {
   it("keeps continuation and card pagination complete", async () => {
     const library = await libraryPromise;
 
-    // Enough granted spells to fill several card pages: cards paginate nine to
-    // a page, and every page the model declares must survive into the PDF.
+    // Enough granted spells to fill several card pages: cards fill nine slots
+    // to a PDF page, and every page the model declares must survive into it.
     const { service, id } = buildFullSheetCharacter(library, "Pagination");
     const spellIds = (library.byType.get("Spell") ?? [])
       .map((element) => element.identity.id)
@@ -1377,8 +1377,16 @@ describe("character sheet PDF writer", () => {
     const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
     const cardPages = model.pages.filter((page) => page.templateKind.endsWith("cards"));
     expect(cardPages.length).toBeGreaterThan(1);
-    expect(cardPages.every((page) => page.sections.length <= 9)).toBe(true);
     expect(cardPages.every((page) => page.sections.length > 0)).toBe(true);
+    // No card page slot holds more than one card's text.
+    for (const page of cardPages) {
+      const owners = new Map<string, Set<number | undefined>>();
+      for (const run of page.sections.flatMap((section) => section.positionedRuns ?? [])) {
+        const slot = `${run.page ?? 0}:${run.card}`;
+        owners.set(slot, (owners.get(slot) ?? new Set()).add(run.cardIndex));
+      }
+      expect([...owners.values()].every((cards) => cards.size === 1)).toBe(true);
+    }
 
     const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, fullTemplateBundle());
     // Every declared page survives into the PDF; overflowing prose may add

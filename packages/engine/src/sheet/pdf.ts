@@ -1748,27 +1748,35 @@ function addAttackNotePages(
   }
 }
 
+/** A card frame: the template artwork and the labels drawn on it. */
+interface CardFrame { template: Uint8Array; labels: SheetTemplateLabels[string] | undefined }
+
+/**
+ * A card page with one frame per filled slot, in reading order. A slot that
+ * continues a card begun earlier takes `continued` (the plain card: no spell
+ * metadata labels waiting for values); every other slot takes `primary`.
+ */
 async function addCardPage(
   output: PDFDocument,
-  template: Uint8Array,
-  text: SheetTemplateLabels[string] | undefined,
+  primary: CardFrame,
+  continued: CardFrame,
   fragments: FragmentCache,
-  count: number,
+  slots: readonly boolean[],
   fonts: SheetFonts,
   colours: SheetLabelColours,
 ): Promise<PDFPage> {
-  const card = await embedFragment(output, template, fragments);
   const page = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   const grid = SHEET_TEMPLATE_CONTRACT.cards;
-  for (let index = 0; index < count; index += 1) {
+  for (const [index, isContinued] of slots.entries()) {
     const column = index % grid.columns;
     const row = Math.floor(index / grid.columns);
     const top = grid.rowTops[row];
     if (top === undefined) break;
     const x = grid.originX + column * (grid.width + grid.gutter);
     const y = top - grid.height;
-    page.drawPage(card, { x, y, width: grid.width, height: grid.height });
-    drawTemplateText(page, text, fonts, colours, x, y);
+    const frame = isContinued ? continued : primary;
+    page.drawPage(await embedFragment(output, frame.template, fragments), { x, y, width: grid.width, height: grid.height });
+    drawTemplateText(page, frame.labels, fonts, colours, x, y);
   }
   return page;
 }
@@ -2353,24 +2361,25 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       const lastPage = positionedRuns.reduce((highest, run) => Math.max(highest, run.page ?? 0), 0);
       for (let cardPage = 0; cardPage <= lastPage; cardPage += 1) {
         await yieldToEventLoop();
+        // The slots the layout filled on this page (a continuation takes a
+        // slot of its own, so the count is not the page's section count), and
+        // which of them continue a card.
+        const pageRuns = positionedRuns.filter((run) => (run.page ?? 0) === cardPage);
+        const slots: boolean[] = Array.from({ length: Math.max(1, ...pageRuns.map((run) => (run.card ?? 0) + 1)) }, () => false);
+        for (const run of pageRuns) if (run.continued === true) slots[run.card ?? 0] = true;
+        const genericFrame = { template: bundle.genericCard, labels: bundle.labels[files.genericCard] };
         const page = await timed("cards:page", () => addCardPage(
           output,
-          modelPage.templateKind === "spell-cards" ? bundle.spellCard : bundle.genericCard,
-          bundle.labels[modelPage.templateKind === "spell-cards" ? files.spellCard : files.genericCard],
+          modelPage.templateKind === "spell-cards"
+            ? { template: bundle.spellCard, labels: bundle.labels[files.spellCard] }
+            : genericFrame,
+          genericFrame,
           fragments,
-          // The slots the layout filled on this page (a continuation takes a
-          // slot of its own, so the count is not the page's section count).
-          Math.max(1, ...positionedRuns
-            .filter((run) => (run.page ?? 0) === cardPage)
-            .map((run) => (run.card ?? 0) + 1)),
+          slots,
           fonts,
           labelInk,
         ));
-        timed("cards:runs", () => drawPositionedRuns(
-          page,
-          positionedRuns.filter((run) => (run.page ?? 0) === cardPage),
-          fonts,
-        ));
+        timed("cards:runs", () => drawPositionedRuns(page, pageRuns, fonts));
       }
       continue;
     }
