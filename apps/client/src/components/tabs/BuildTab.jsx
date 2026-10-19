@@ -23,6 +23,7 @@ import {
 } from '../InspectableItemControls';
 import AddFeatModal from './feats/AddFeatModal';
 import AddAsiModal from './feats/AddAsiModal';
+import CompanionSection from './CompanionSection';
 
 // DM/homebrew grants are a local-engine-only capability.
 const canGrant = typeof api.characters.addFeat === 'function';
@@ -65,7 +66,10 @@ export default function BuildTab() {
       ...COMPANION_RULE_TYPES,
     ]);
     const other = detail.selectionRules.filter((r) => !known.has(r.type));
-    return { other };
+    const companion = detail.selectionRules.filter((r) =>
+      COMPANION_RULE_TYPES.includes(r.type),
+    );
+    return { other, companion };
   }, [detail]);
 
   const sections = useMemo(() => {
@@ -73,6 +77,18 @@ export default function BuildTab() {
       ...s,
       rules: buildSectionRules(s, detail.selectionRules),
     }));
+    // Familiar & Companion sits after the named sections, and only appears for
+    // a character whose features grant a companion or who already has one.
+    if (
+      groups.companion.length > 0 ||
+      detail.registeredElements.some((e) => e.type === 'Companion')
+    )
+      list.push({
+        key: 'companion',
+        label: 'Familiar & Companion',
+        types: COMPANION_RULE_TYPES,
+        rules: groups.companion,
+      });
     if (groups.other.length > 0)
       list.push({
         key: 'other',
@@ -278,7 +294,13 @@ export default function BuildTab() {
             )}
 
             <div className="fcb-rule-list">
-              {active.rules.map((rule) => (
+              {active.key === 'companion' && (
+                <CompanionSection
+                  rules={active.rules}
+                  onInspect={inspectItem}
+                />
+              )}
+              {(active.key === 'companion' ? [] : active.rules).map((rule) => (
                 <SelectionRuleCard
                   key={`${rule.identifier}:${libraryRevision}`}
                   characterId={id}
@@ -310,6 +332,7 @@ export default function BuildTab() {
                 />
               ))}
               {active.rules.length === 0 &&
+                active.key !== 'companion' &&
                 active.key !== 'abilities' &&
                 active.key !== 'feats' && (
                   <p className="fcb-empty-copy">

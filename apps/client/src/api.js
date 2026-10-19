@@ -19,7 +19,9 @@ export const BUILD_SECTIONS = [
   {
     key: 'background',
     label: 'Background',
-    types: ['Background', 'Background Variant', 'Background Feature'],
+    // "List" picks (personality trait, ideal, bond, flaw, trinket) are authored
+    // by the background, so they sit with it rather than in Other.
+    types: ['Background', 'Background Variant', 'Background Feature', 'List'],
   },
   { key: 'abilities', label: 'Ability Scores', types: ['Ability Score Improvement'] },
   { key: 'languages', label: 'Languages', types: ['Language', 'Language Feature'] },
@@ -34,4 +36,8 @@ export { isImprovementOptionRule } from './components/buildSectionRules.js';
 
 export const MANAGE_RULE_TYPES = ['Alignment', 'Deity'];
 export const MAGIC_RULE_TYPES = ['Spell'];
-export const COMPANION_RULE_TYPES = ['Companion', 'Companion Feature'];
+export const COMPANION_RULE_TYPES = [
+  'Companion',
+  'Companion Feature',
+  'Companion Trait',
+];

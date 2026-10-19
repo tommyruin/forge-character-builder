@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { api } from "../api";
+import { api, MAGIC_RULE_TYPES } from "../api";
 import { applyLibraryRevision } from "../libraryLifecycle.js";
 import { WorkspaceContext } from "./WorkspaceContext";
 import BuildTab from "./tabs/BuildTab";
@@ -22,6 +22,7 @@ import {
   storeResourceIfCurrent,
 } from "./workspaceData";
 import { splitViewPreference } from "./workspacePreferences";
+import { hasIncompleteRequiredSpellChoices } from "./tabs/magic/magicTabNavigation";
 import {
   DesktopWorkspaceNavigation,
   MobileWorkspaceNavigation,
@@ -596,6 +597,15 @@ export default function CharacterWorkspace({
   // The SHEET tab already fills the page with the PDF, so split view applies elsewhere;
   // it only activates when the measured workspace is at least the split threshold.
   const splitActive = active && splitView && splitFits && tab !== "sheet";
+  // Spell choices live on the Magic tab even when a race or feat grants them,
+  // so an open required one is flagged on the tab strip, not only inside Magic.
+  const tabBadges = {
+    magic: hasIncompleteRequiredSpellChoices(
+      (detail?.selectionRules ?? []).filter((rule) =>
+        MAGIC_RULE_TYPES.includes(rule.type),
+      ),
+    ),
+  };
   const currentLoadState =
     loadState.id === id ? loadState : DEFAULT_CHARACTER_LOAD_STATE;
   const loadingMessage =
@@ -738,7 +748,11 @@ export default function CharacterWorkspace({
           )}
         <div className="fcb-subbar" ref={subbarRef}>
           <div className="fcb-subbar-inner">
-            <DesktopWorkspaceNavigation activeTab={tab} onSelect={selectTab} />
+            <DesktopWorkspaceNavigation
+              activeTab={tab}
+              onSelect={selectTab}
+              badges={tabBadges}
+            />
             {detail && (
               <WorkspaceStatPills detail={detail} hp={statValue("hp")} />
             )}
@@ -837,7 +851,11 @@ export default function CharacterWorkspace({
           )}
         </main>
 
-        <MobileWorkspaceNavigation activeTab={tab} onSelect={selectTab} />
+        <MobileWorkspaceNavigation
+          activeTab={tab}
+          onSelect={selectTab}
+          badges={tabBadges}
+        />
 
         {active && levelUpOpen && (
           <Suspense fallback={null}>

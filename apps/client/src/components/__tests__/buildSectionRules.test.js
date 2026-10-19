@@ -101,3 +101,33 @@ describe('build section routing', () => {
     expect(routedTo(ABILITIES, [chooser])).toEqual([]);
   });
 });
+
+describe('rule type homes', () => {
+  it('gives every selection rule type exactly one tab', async () => {
+    // Build, Magic, Manage and Companion each claim rule types; a type listed
+    // twice would be reachable from two places and one listed nowhere falls
+    // into Build > Other.
+    const { BUILD_SECTIONS, MANAGE_RULE_TYPES, MAGIC_RULE_TYPES, COMPANION_RULE_TYPES } =
+      await import('../../api.js');
+    const claimed = [
+      ...BUILD_SECTIONS.flatMap((s) => s.types),
+      ...MANAGE_RULE_TYPES,
+      ...MAGIC_RULE_TYPES,
+      ...COMPANION_RULE_TYPES,
+    ];
+    expect(claimed.filter((t, i) => claimed.indexOf(t) !== i)).toEqual([]);
+  });
+
+  it('files background personality picks under Background, not Other', async () => {
+    const { BUILD_SECTIONS } = await import('../../api.js');
+    const background = BUILD_SECTIONS.find((s) => s.key === 'background');
+    const rules = [
+      { type: 'List', name: 'Personality Trait' },
+      { type: 'Background', name: 'Background' },
+    ];
+    expect(buildSectionRules(background, rules).map((r) => r.name)).toEqual([
+      'Personality Trait',
+      'Background',
+    ]);
+  });
+});

@@ -20,7 +20,7 @@ describe('Magic tab navigation', () => {
   it('starts an unfinished prepared caster in Choose spells', () => {
     const casters = [caster()];
     const spellRules = [spellRule()];
-    const tabs = buildMagicTabs({ spellRules, casters, hasCompanion: false });
+    const tabs = buildMagicTabs({ spellRules, casters });
 
     expect(tabs).toEqual([
       {
@@ -46,7 +46,7 @@ describe('Magic tab navigation', () => {
         selectedElementIds: ['spell-1', 'spell-2', 'spell-3'],
       }),
     ];
-    const tabs = buildMagicTabs({ spellRules, casters, hasCompanion: false });
+    const tabs = buildMagicTabs({ spellRules, casters });
 
     expect(resolveMagicTabKey({ tabs, spellRules, casters })).toBe(
       'caster-cleric',
@@ -58,7 +58,6 @@ describe('Magic tab navigation', () => {
     const tabs = buildMagicTabs({
       spellRules: [],
       casters,
-      hasCompanion: false,
     });
 
     expect(tabs).toEqual([
@@ -86,14 +85,12 @@ describe('Magic tab navigation', () => {
     const tabs = buildMagicTabs({
       spellRules: [spellRule()],
       casters,
-      hasCompanion: true,
     });
 
     expect(tabs.map(({ key, label }) => ({ key, label }))).toEqual([
       { key: 'choose', label: 'Choose spells' },
       { key: 'caster-cleric', label: 'Prepare: Cleric' },
       { key: 'caster-bard', label: 'Known: Bard' },
-      { key: 'companion', label: 'Familiar & Companion' },
     ]);
   });
 
@@ -104,7 +101,7 @@ describe('Magic tab navigation', () => {
         selectedElementIds: ['spell-1', 'spell-2', 'spell-3'],
       }),
     ];
-    const tabs = buildMagicTabs({ spellRules, casters, hasCompanion: false });
+    const tabs = buildMagicTabs({ spellRules, casters });
 
     expect(
       resolveMagicTabKey({

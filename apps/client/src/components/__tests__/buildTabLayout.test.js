@@ -29,4 +29,57 @@ describe('BuildTab panel header actions', () => {
     expect(source).not.toContain('isAbilityScoreImprovementChoice');
     expect(source).not.toContain('ASI selected — go to Ability Scores');
   });
+
+  it('offers Familiar & Companion only for characters with companion rules or a Companion', () => {
+    expect(source).toContain("key: 'companion'");
+    expect(source).toContain("label: 'Familiar & Companion'");
+    expect(source).toMatch(
+      /groups\.companion\.length > 0 \|\|\s*detail\.registeredElements\.some\(\(e\) => e\.type === 'Companion'\)/,
+    );
+    expect(source).toContain(
+      '<CompanionSection\n                  rules={active.rules}',
+    );
+  });
+});
+
+describe('companion rule types', () => {
+  const api = readFileSync(new URL('../../api.js', import.meta.url), 'utf8');
+
+  it('routes every companion-granted choice to the companion section, not Other', () => {
+    // A rule type missing from this list falls into Build > Other: the Ancient
+    // Companion spirit pick is authored as type "Companion Trait".
+    const list = api.match(/COMPANION_RULE_TYPES = \[([^\]]*)\]/s)?.[1] ?? '';
+    for (const type of ['Companion', 'Companion Feature', 'Companion Trait']) {
+      expect(list).toContain(`'${type}'`);
+    }
+  });
+});
+
+describe('Magic tab no longer owns the companion', () => {
+  const magic = readFileSync(new URL('../tabs/MagicTab.jsx', import.meta.url), 'utf8');
+
+  it('does not count a companion as spellcasting content', () => {
+    expect(magic).not.toMatch(/ompanion/);
+    expect(magic).toContain(
+      'const hasAnything = (casters?.length ?? 0) > 0 || spellRules.length > 0;',
+    );
+  });
+});
+
+describe('workspace tab badges', () => {
+  const workspace = readFileSync(
+    new URL('../CharacterWorkspace.jsx', import.meta.url),
+    'utf8',
+  );
+  const nav = readFileSync(
+    new URL('../WorkspaceNavigation.jsx', import.meta.url),
+    'utf8',
+  );
+
+  it('flags the Magic tab while a required spell choice is open, on both strips', () => {
+    expect(workspace).toContain('hasIncompleteRequiredSpellChoices(');
+    expect(workspace).toMatch(/<DesktopWorkspaceNavigation[^>]*badges=\{tabBadges\}/s);
+    expect(workspace).toMatch(/<MobileWorkspaceNavigation[^>]*badges=\{tabBadges\}/s);
+    expect(nav.match(/badges\[key\] && <OpenChoicesDot \/>/g)).toHaveLength(2);
+  });
 });
