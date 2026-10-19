@@ -10,6 +10,7 @@ import {
   SHEET_PALETTE,
   SHEET_TEMPLATE_CONTRACT,
   type SheetColours,
+  type SheetLayout,
   type SheetTemplateLabels,
 } from "./template-contract.js";
 import {
@@ -365,6 +366,12 @@ export interface CharacterSheetTemplateBundle {
    * set's own page.
    */
   detailsFile?: string;
+  /**
+   * The layout `details` prints. Absent, the writer reads the layout from the
+   * page's own boxes: separate subclass and feat boxes are split, one features
+   * box is not.
+   */
+  layout?: SheetLayout;
   /** The set's titles, captions and ribbons, keyed by template file. */
   labels: SheetTemplateLabels;
   /** The typefaces to draw them and the values in. */
@@ -505,7 +512,7 @@ function bundleIsComplete(bundle: CharacterSheetTemplateBundle | null): bundle i
     typeof bundle.labels === "object" && bundle.labels !== null &&
     typeof bundle.faces === "object" && bundle.faces !== null &&
     Object.entries(bundle).every(([key, value]) =>
-      key === "labels" || key === "faces" || key === "detailsFile" ||
+      key === "labels" || key === "faces" || key === "detailsFile" || key === "layout" ||
       (Array.isArray(value)
         ? value.every((bytes) => bytes.byteLength > 0)
         : (value as Uint8Array).byteLength > 0)
@@ -1020,25 +1027,43 @@ function featureWords(line: string): StyledWord[][] {
 }
 
 /** The break that follows a flowed line: none, a paragraph break inside one
- * feature, or the end of a whole feature. */
-type FeatureFlowGap = "paragraph" | "feature" | null;
+ * feature, the end of a whole feature, the rule under a group heading, or the
+ * end of a group before the next group's heading. */
+type FeatureFlowGap = "paragraph" | "feature" | "heading" | "group" | null;
+
+/**
+ * One unwrapped paragraph of a feature box. A `heading` names a group of
+ * features (a split layout's class features, subclass features and feats in
+ * one box) and is ruled underneath; a `part` names the box a continuation
+ * page carries on. Neither is left as the last line of a box.
+ */
+interface FeatureParagraph {
+  words: readonly StyledWord[];
+  indent: number;
+  gapAfter: FeatureFlowGap;
+  kind?: "heading" | "part";
+}
 
 interface FeatureFlowLine {
   words: readonly StyledWord[];
   indent: number;
   gapAfter: FeatureFlowGap;
+  kind?: FeatureParagraph["kind"];
+  /** The paragraph the line was wrapped from, and its first word there. */
+  paragraph: number;
+  start: number;
 }
 
+/**
+ * The part of a box that did not fit: its paragraphs from the first word not
+ * drawn, unwrapped, so a continuation page can wrap them at its own width.
+ */
 interface FeatureContinuation {
-  lines: readonly FeatureFlowLine[];
-  x: number;
-  top: number;
-  width: number;
-  bottom: number;
+  paragraphs: readonly FeatureParagraph[];
   fontSize: number;
   lineHeight: number;
-  /** The feature box a split layout continues, as its printed heading. */
-  heading?: string;
+  /** The box this continues, as its printed name. */
+  heading: string;
 }
 
 const DEFAULT_FEATURE_FONT_SIZE = 8;
@@ -1052,49 +1077,97 @@ const FEATURE_PARAGRAPH_GAP = 1.2;
 // space that fit just bought.
 const FEATURE_GAP_RATIO = 0.45;
 
+// A group heading's rule sits this far below its baseline, clear of
+// descenders, and the first feature under it starts a feature gap below that.
+const FEATURE_RULE_DROP_RATIO = 0.3;
+// Above a heading, the last group ends with a full line's breath, so the
+// heading reads as the start of something new rather than another feature.
+const FEATURE_GROUP_GAP_RATIO = 0.9;
+// Between the parts of a continuation page.
+const CONTINUATION_PART_GAP = 6;
+
 function featureGapFor(gap: FeatureFlowGap, fontSize: number): number {
-  if (gap === "feature") return fontSize * FEATURE_GAP_RATIO;
+  if (gap === "feature" || gap === "heading") return fontSize * FEATURE_GAP_RATIO;
+  if (gap === "group") return fontSize * FEATURE_GROUP_GAP_RATIO;
   if (gap === "paragraph") return FEATURE_PARAGRAPH_GAP;
   return 0;
 }
 
-function featureFlowLines(
-  section: SheetSection,
-  width: number,
-  fontSize: number,
-  measure: TextMeasure,
-  featureGap = true,
-): FeatureFlowLine[] {
-  const output: FeatureFlowLine[] = [];
-  const rows = (section.renderRows ?? section.rows)
-    .flatMap((row) => row.kind === "tokens" ? [row.tokens.join(" ")] : [...row.lines]);
-  for (const row of rows) {
+function featureParagraphs(rows: readonly SheetRow[], featureGap = true): FeatureParagraph[] {
+  const output: FeatureParagraph[] = [];
+  const lines = rows.flatMap((row) => row.kind === "tokens" ? [row.tokens.join(" ")] : [...row.lines]);
+  for (const row of lines) {
     const paragraphs = featureWords(row);
     for (const [paragraphIndex, words] of paragraphs.entries()) {
-      const indent = paragraphIndex > 0 ? 8 : 0;
       // One row is one feature (model.ts collectFeatures), so its last
       // paragraph is where a feature ends.
       const endsFeature = featureGap && paragraphIndex === paragraphs.length - 1;
-      const availableWidth = width - indent;
-      const spaceWidth = measure(" ", fontSize);
-      let line: StyledWord[] = [];
-      let lineWidth = 0;
-      const wrapped: FeatureFlowLine[] = [];
-      for (const word of words) {
-        const wordWidth = measure(word.text, fontSize, word.style ?? "regular");
-        const candidateWidth = line.length === 0 ? wordWidth : lineWidth + spaceWidth + wordWidth;
-        if (line.length > 0 && candidateWidth > availableWidth) {
-          wrapped.push({ words: line, indent, gapAfter: null });
-          line = [];
-          lineWidth = 0;
-        }
-        line.push(word);
-        lineWidth = line.length === 1 ? wordWidth : lineWidth + spaceWidth + wordWidth;
-      }
-      if (line.length > 0) wrapped.push({ words: line, indent, gapAfter: null });
-      if (wrapped.length > 0) wrapped[wrapped.length - 1]!.gapAfter = endsFeature ? "feature" : "paragraph";
-      output.push(...wrapped);
+      output.push({ words, indent: paragraphIndex > 0 ? 8 : 0, gapAfter: endsFeature ? "feature" : "paragraph" });
     }
+  }
+  return output;
+}
+
+function sectionParagraphs(section: SheetSection, featureGap = true): FeatureParagraph[] {
+  return featureParagraphs(section.renderRows ?? section.rows, featureGap);
+}
+
+/** A heading or part line, in the body's bold face; a heading is ruled beneath. */
+function headingParagraph(text: string, kind: "heading" | "part"): FeatureParagraph {
+  return {
+    words: text.split(" ").map((word) => ({ text: word, style: "bold" as const })),
+    indent: 0,
+    gapAfter: kind === "heading" ? "heading" : "feature",
+    kind,
+  };
+}
+
+/**
+ * The split layout's single features box: each non-empty group under its own
+ * ruled heading, the groups set apart by a wider gap.
+ */
+function groupedFeatureParagraphs(groups: ReadonlyArray<readonly [string, readonly SheetRow[]]>): FeatureParagraph[] {
+  const output: FeatureParagraph[] = [];
+  for (const [heading, rows] of groups) {
+    if (rows.length === 0) continue;
+    if (output.length > 0) output[output.length - 1] = { ...output[output.length - 1]!, gapAfter: "group" };
+    output.push(headingParagraph(heading, "heading"), ...featureParagraphs(rows));
+  }
+  return output;
+}
+
+function featureFlowLines(
+  paragraphs: readonly FeatureParagraph[],
+  width: number,
+  fontSize: number,
+  measure: TextMeasure,
+): FeatureFlowLine[] {
+  const output: FeatureFlowLine[] = [];
+  const spaceWidth = measure(" ", fontSize);
+  for (const [paragraphIndex, { words, indent, gapAfter, kind }] of paragraphs.entries()) {
+    const availableWidth = width - indent;
+    let line: StyledWord[] = [];
+    let start = 0;
+    let lineWidth = 0;
+    const wrapped: FeatureFlowLine[] = [];
+    const push = (): void => {
+      wrapped.push({ words: line, indent, gapAfter: null, paragraph: paragraphIndex, start, ...(kind === undefined ? {} : { kind }) });
+    };
+    for (const [wordIndex, word] of words.entries()) {
+      const wordWidth = measure(word.text, fontSize, word.style ?? "regular");
+      const candidateWidth = line.length === 0 ? wordWidth : lineWidth + spaceWidth + wordWidth;
+      if (line.length > 0 && candidateWidth > availableWidth) {
+        push();
+        line = [];
+        start = wordIndex;
+        lineWidth = 0;
+      }
+      line.push(word);
+      lineWidth = line.length === 1 ? wordWidth : lineWidth + spaceWidth + wordWidth;
+    }
+    if (line.length > 0) push();
+    if (wrapped.length > 0) wrapped[wrapped.length - 1]!.gapAfter = gapAfter;
+    output.push(...wrapped);
   }
   return output;
 }
@@ -1114,8 +1187,18 @@ function featureFlowFits(
   return true;
 }
 
+interface FeatureFlowResult {
+  /** The paragraphs left over from the first line not drawn, if any. */
+  rest?: FeatureParagraph[];
+  /** The baseline the next line would have taken. */
+  y: number;
+}
+
+const FEATURE_RULE_COLOUR: PdfColor = [0.45, 0.45, 0.45];
+
 function drawFeatureFlow(
   page: PDFPage,
+  paragraphs: readonly FeatureParagraph[],
   lines: readonly FeatureFlowLine[],
   fonts: SheetFonts,
   x: number,
@@ -1124,7 +1207,8 @@ function drawFeatureFlow(
   bottom: number,
   fontSize: number,
   lineHeight: number,
-): FeatureContinuation | undefined {
+  ruleColour: PdfColor = FEATURE_RULE_COLOUR,
+): FeatureFlowResult {
   let y = top;
   let lineIndex = 0;
   // The space between words is the body face's at this size whatever face the
@@ -1134,6 +1218,9 @@ function drawFeatureFlow(
   for (; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex]!;
     if (y < bottom) break;
+    // A heading goes with the line under it, to the next page if need be.
+    const next = y - lineHeight - featureGapFor(line.gapAfter, fontSize);
+    if (line.kind !== undefined && lineIndex + 1 < lines.length && next < bottom) break;
     let cursor = x + line.indent;
     // Consecutive words in the body face are drawn as one string. pdf-lib sums
     // glyph advances without kerning, and the space that joins them is the body
@@ -1160,15 +1247,24 @@ function drawFeatureFlow(
       cursor += font.widthOfTextAtSize(value, fontSize) + spaceWidth;
     }
     flush();
+    if (line.kind === "heading") {
+      const ruleY = y - fontSize * FEATURE_RULE_DROP_RATIO;
+      page.drawLine({ start: { x, y: ruleY }, end: { x: x + width, y: ruleY }, thickness: 0.5, color: rgb(...ruleColour) });
+    }
     y -= lineHeight + featureGapFor(line.gapAfter, fontSize);
   }
-  if (lineIndex >= lines.length) return undefined;
-  return { lines: lines.slice(lineIndex), x, top, width, bottom, fontSize, lineHeight };
+  if (lineIndex >= lines.length) return { y };
+  const first = lines[lineIndex]!;
+  const cut = paragraphs[first.paragraph]!;
+  return {
+    rest: [{ ...cut, words: cut.words.slice(first.start) }, ...paragraphs.slice(first.paragraph + 1)],
+    y,
+  };
 }
 
 function drawRichFeatureSection(
   page: PDFPage,
-  section: SheetSection | undefined,
+  paragraphs: readonly FeatureParagraph[],
   fonts: SheetFonts,
   x: number,
   top: number,
@@ -1176,20 +1272,16 @@ function drawRichFeatureSection(
   bottom: number,
   fontSize = DEFAULT_FEATURE_FONT_SIZE,
   lineHeight = fontSize,
-  options: { featureGap?: boolean } = {},
-): FeatureContinuation | undefined {
-  if (section === undefined) return undefined;
-  // A list box — proficiencies and languages — is one run of like items, not a
-  // sequence of features, so it keeps the plain paragraph rhythm.
-  const featureGap = options.featureGap ?? true;
+  ruleColour?: PdfColor,
+): FeatureParagraph[] | undefined {
   const lineHeightAt = (size: number): number => lineHeight * size / fontSize;
   const measure = fontMeasure(fonts);
-  const normalLines = featureFlowLines(section, width, fontSize, measure, featureGap);
+  const normalLines = featureFlowLines(paragraphs, width, fontSize, measure);
   let chosenFontSize = fontSize;
   let chosenLines = normalLines;
   let chosenLineHeight = lineHeightAt(chosenFontSize);
   if (!featureFlowFits(normalLines, top, bottom, chosenLineHeight, chosenFontSize)) {
-    const floorLines = featureFlowLines(section, width, MIN_FEATURE_FONT_SIZE, measure, featureGap);
+    const floorLines = featureFlowLines(paragraphs, width, MIN_FEATURE_FONT_SIZE, measure);
     const floorLineHeight = lineHeightAt(MIN_FEATURE_FONT_SIZE);
     if (featureFlowFits(floorLines, top, bottom, floorLineHeight, MIN_FEATURE_FONT_SIZE)) {
       // Take the largest size that still fits, so the text shrinks only as far
@@ -1198,12 +1290,12 @@ function drawRichFeatureSection(
       let high = fontSize;
       for (let pass = 0; pass < 10; pass += 1) {
         const candidate = (low + high) / 2;
-        const candidateLines = featureFlowLines(section, width, candidate, measure, featureGap);
+        const candidateLines = featureFlowLines(paragraphs, width, candidate, measure);
         if (featureFlowFits(candidateLines, top, bottom, lineHeightAt(candidate), candidate)) low = candidate;
         else high = candidate;
       }
       chosenFontSize = low;
-      chosenLines = featureFlowLines(section, width, chosenFontSize, measure, featureGap);
+      chosenLines = featureFlowLines(paragraphs, width, chosenFontSize, measure);
       chosenLineHeight = lineHeightAt(chosenFontSize);
     } else {
       // Prose that cannot fit even at the smallest legible size is continued
@@ -1214,7 +1306,7 @@ function drawRichFeatureSection(
       chosenLineHeight = lineHeightAt(chosenFontSize);
     }
   }
-  return drawFeatureFlow(page, chosenLines, fonts, x, top, width, bottom, chosenFontSize, chosenLineHeight);
+  return drawFeatureFlow(page, paragraphs, chosenLines, fonts, x, top, width, bottom, chosenFontSize, chosenLineHeight, ruleColour).rest;
 }
 
 interface RichTextBox {
@@ -1246,32 +1338,70 @@ function richTextBox(
   };
 }
 
+const CONTINUATION_TEXT_X = 44;
+const CONTINUATION_TEXT_WIDTH = 524;
+const CONTINUATION_TEXT_TOP = 716;
+const CONTINUATION_TEXT_BOTTOM = 48;
+
 /**
- * A split layout's feature boxes are small, so their overflow continues on
- * plain pages in the attack-note style, each part under its box's
- * "(continued)" heading, rather than in the same small boxes on copies of the
- * character page. Overflow always keeps the normal size, so the parts share
- * one font size and wrapping width.
+ * Whatever the character page's boxes could not hold continues on plain pages
+ * in the attack-note style, each box's part under a bold "<box> (continued)"
+ * line, rewrapped at the page's full width rather than repeating the
+ * character page to fill the same small boxes again. Each part keeps its
+ * box's normal type size.
  */
 function addFeatureContinuationPages(
   output: PDFDocument, parts: readonly FeatureContinuation[], fonts: SheetFonts,
   colours: SheetLabelColours, footerText: string,
 ): void {
-  if (parts.length === 0) return;
-  let rest: FeatureContinuation | undefined = {
-    ...parts[0]!,
-    lines: parts.flatMap((part): FeatureFlowLine[] => [
-      { words: `${part.heading} (continued)`.split(" ").map((text) => ({ text, style: "bold" as const })), indent: 0, gapAfter: "feature" },
-      ...part.lines,
-    ]),
+  const measure = fontMeasure(fonts);
+  let page: PDFPage | undefined;
+  let y = 0;
+  const newPage = (): PDFPage => {
+    const next = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    next.drawRectangle({ x: 32, y: 738, width: 548, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
+    next.drawText("FEATURES & TRAITS (CONTINUED)", { x: 44, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
+    drawSheetFooter(next, fonts, footerText);
+    y = CONTINUATION_TEXT_TOP;
+    return next;
   };
-  while (rest !== undefined) {
-    const page = output.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    page.drawRectangle({ x: 32, y: 738, width: 548, height: 30, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
-    page.drawText("FEATURES (CONTINUED)", { x: 44, y: 748, size: 12, font: fonts.titles, color: rgb(...colours.cream) });
-    drawSheetFooter(page, fonts, footerText);
-    rest = drawFeatureFlow(page, rest.lines, fonts, 44, 716, rest.width, 48, rest.fontSize, rest.lineHeight);
+  for (const part of parts) {
+    // A part that opens on a group heading is named for that group already, so
+    // its part line stands in for the heading.
+    const [first, ...others] = part.paragraphs;
+    let rest: FeatureParagraph[] | undefined = [
+      headingParagraph(`${part.heading} (continued)`, "part"),
+      ...(first?.kind === "heading" ? others : part.paragraphs),
+    ];
+    if (page !== undefined) y -= CONTINUATION_PART_GAP;
+    while (rest !== undefined) {
+      if (page === undefined || y < CONTINUATION_TEXT_BOTTOM) page = newPage();
+      const lines = featureFlowLines(rest, CONTINUATION_TEXT_WIDTH, part.fontSize, measure);
+      const drawn: FeatureFlowResult = drawFeatureFlow(page, rest, lines, fonts, CONTINUATION_TEXT_X, y, CONTINUATION_TEXT_WIDTH,
+        CONTINUATION_TEXT_BOTTOM, part.fontSize, part.lineHeight, colours.lines);
+      y = drawn.y;
+      rest = drawn.rest;
+      if (rest !== undefined) page = undefined;
+    }
   }
+}
+
+/** The title a details box prints, as a continuation names it. */
+function detailsBoxName(labels: SheetTemplateLabels[string] | undefined, candidates: readonly string[], fallback: string): string {
+  const printed = new Set(labels?.labels.map((label) => label.text) ?? []);
+  const title = candidates.find((candidate) => printed.has(candidate)) ?? fallback;
+  return title.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, space: string, letter: string) => space + letter.toUpperCase());
+}
+
+/**
+ * How the details page lays out its feature rows: `split` puts class
+ * features, subclass features and feats apart, in their own boxes when the
+ * template has them and under ruled headings in one box when it does not.
+ */
+interface DetailsFeatureLayout {
+  split: boolean;
+  labels?: SheetTemplateLabels[string];
+  ruleColour?: PdfColor;
 }
 
 function drawDetailsRichText(
@@ -1279,56 +1409,62 @@ function drawDetailsRichText(
   modelPage: SheetPage,
   fonts: SheetFonts,
   fieldRects: ReadonlyMap<string, FieldRect>,
+  layout: DetailsFeatureLayout,
 ): FeatureContinuation[] {
   const find = (title: string): SheetSection | undefined =>
     modelPage.sections.find((section) => section.title === title);
   const continuations: FeatureContinuation[] = [];
-  const racialBox = richTextBox(fieldRects, "details_additional_notes", DEFAULT_FEATURE_FONT_SIZE,
-    { x: 222, top: 372, width: 169, bottom: 125 });
-  const racialContinuation = drawRichFeatureSection(
-    page, find("racial-traits"), fonts, racialBox.x, racialBox.top, racialBox.width, racialBox.bottom);
-  if (racialContinuation !== undefined) continuations.push(racialContinuation);
+  const draw = (
+    field: string, paragraphs: readonly FeatureParagraph[], heading: string, fallback: RichTextBox,
+    fontSize = DEFAULT_FEATURE_FONT_SIZE, lineHeight = fontSize,
+  ): void => {
+    const box = richTextBox(fieldRects, field, lineHeight, fallback);
+    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight, layout.ruleColour);
+    if (rest === undefined) return;
+    // Cut inside a headed group, the part continues that group, by its name.
+    const group = paragraphs.slice(0, paragraphs.length - rest.length + 1).reverse().find((paragraph) => paragraph.kind === "heading");
+    continuations.push({
+      paragraphs: rest, fontSize, lineHeight,
+      heading: group === undefined ? heading : group.words.map((word) => word.text).join(" "),
+    });
+  };
+  const racial = find("racial-traits");
+  if (racial !== undefined) {
+    draw("details_additional_notes", sectionParagraphs(racial),
+      detailsBoxName(layout.labels, ["RACIAL TRAITS", "SPECIES TRAITS"], "Traits"),
+      { x: 222, top: 372, width: 169, bottom: 125 });
+  }
   // A layout with its own subclass and feat boxes (2024 Hybrid, and the split
-  // layout of the others) splits the feature rows by origin; the others keep
+  // layout of the others) splits the feature rows by origin; a split layout
+  // with one features box heads each origin's rows inside it; the others keep
   // one combined box. A model without the groups prints the combined rows in
   // the class box rather than leaving the three boxes empty.
   const groups = modelPage.featureGroups;
-  const featureFields: ReadonlyArray<readonly [string, SheetSection | undefined, string?]> = !fieldRects.has("details_subclass_features")
-    ? [["details_features", find("features")]]
-    : groups === undefined
-      ? [["details_features", find("features"), "Features"]]
-      : [
-        ["details_features", { title: "class-features", rows: groups["class-features"] ?? [] }, "Class Features"],
-        ["details_subclass_features", { title: "subclass-features", rows: groups["subclass-features"] ?? [] }, "Subclass Features"],
-        ["details_feats", { title: "feats", rows: groups.feats ?? [] }, "Feats"],
-      ];
-  for (const [field, section, heading] of featureFields) {
-    const featureBox = richTextBox(fieldRects, field, DEFAULT_FEATURE_FONT_SIZE,
-      { x: 409, top: 653, width: 169, bottom: 132 });
-    const featureContinuation = drawRichFeatureSection(
-      page, section, fonts, featureBox.x, featureBox.top, featureBox.width, featureBox.bottom);
-    if (featureContinuation !== undefined) continuations.push(heading === undefined ? featureContinuation : { ...featureContinuation, heading });
+  const featureBox = { x: 409, top: 653, width: 169, bottom: 132 };
+  const features = find("features");
+  const combinedName = detailsBoxName(layout.labels, ["FEATURES & TRAITS", "FEATURES", "CLASS FEATURES"], "Features");
+  const grouped: ReadonlyArray<readonly [string, string, readonly SheetRow[]]> = groups === undefined ? [] : [
+    ["details_features", "Class Features", groups["class-features"] ?? []],
+    ["details_subclass_features", "Subclass Features", groups["subclass-features"] ?? []],
+    ["details_feats", "Feats", groups.feats ?? []],
+  ];
+  if (fieldRects.has("details_subclass_features") && groups !== undefined) {
+    for (const [field, heading, rows] of grouped) draw(field, featureParagraphs(rows), heading, featureBox);
+  } else if (layout.split && groups !== undefined) {
+    draw("details_features", groupedFeatureParagraphs(grouped.map(([, heading, rows]) => [heading, rows] as const)), combinedName, featureBox);
+  } else if (features !== undefined) {
+    draw("details_features", sectionParagraphs(features), combinedName, featureBox);
   }
 
   const proficiencyRows = [
     ...(find("proficiencies")?.rows ?? []),
     ...(find("languages")?.rows ?? []),
   ];
-  const proficiencyBox = richTextBox(fieldRects, "details_proficiencies_languages", 9.2,
-    { x: 409, top: 119, width: 169, bottom: 33 });
-  const proficiencyContinuation = drawRichFeatureSection(
-    page,
-    { title: "proficiencies-languages", rows: proficiencyRows },
-    fonts,
-    proficiencyBox.x,
-    proficiencyBox.top,
-    proficiencyBox.width,
-    proficiencyBox.bottom,
-    7.4,
-    9.2,
-    { featureGap: false },
-  );
-  if (proficiencyContinuation !== undefined) continuations.push(proficiencyContinuation);
+  // A list box — proficiencies and languages — is one run of like items, not a
+  // sequence of features, so it keeps the plain paragraph rhythm.
+  draw("details_proficiencies_languages", featureParagraphs(proficiencyRows, false),
+    detailsBoxName(layout.labels, ["PROFICIENCIES & LANGUAGES", "PROFICIENCIES, TRAINING & LANGUAGES"], "Proficiencies & Languages"),
+    { x: 409, top: 119, width: 169, bottom: 33 }, 7.4, 9.2);
   return continuations;
 }
 
@@ -1351,7 +1487,7 @@ function drawCompanionRichText(
     width: 250,
     bottom: 40,
   });
-  drawRichFeatureSection(page, section, fonts, box.x, box.top, box.width, box.bottom);
+  drawRichFeatureSection(page, sectionParagraphs(section), fonts, box.x, box.top, box.width, box.bottom);
 }
 
 function equipmentSidebarRuns(modelPage: SheetPage): LayoutRun[] {
@@ -1918,34 +2054,12 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       drawTemplateText(page, detailsLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       drawSheetFooter(page, fonts, footerText);
-      // Every box that overflowed continues in its own place on one further
-      // copy of the page, rather than each box taking a page of its own.
-      const overflow = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects));
-      let continuations = overflow.filter((continuation) => continuation.heading === undefined);
-      while (continuations.length > 0) {
-        const { page: continuationPage, fieldRects: continuationRects } = await fill("details-continuation", bundle.details, {
-          ...values,
-          details_features: "",
-          details_subclass_features: "",
-          details_feats: "",
-          details_proficiencies_languages: "",
-        });
-        drawTemplateText(continuationPage, detailsLabels, fonts, labelInk);
-        await timed("brandImage", () => drawBrandImage(output, continuationPage, continuationRects, brandImage, colours));
-        drawSheetFooter(continuationPage, fonts, footerText);
-        continuations = timed("richText:details", () => continuations.flatMap((continuation) => drawFeatureFlow(
-          continuationPage,
-          continuation.lines,
-          fonts,
-          continuation.x,
-          continuation.top,
-          continuation.width,
-          continuation.bottom,
-          continuation.fontSize,
-          continuation.lineHeight,
-        ) ?? []));
-      }
-      addFeatureContinuationPages(output, overflow.filter((continuation) => continuation.heading !== undefined), fonts, labelInk, footerText);
+      const overflow = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects, {
+        split: bundle.layout?.split ?? fieldRects.has("details_subclass_features"),
+        labels: detailsLabels,
+        ruleColour: labelInk.lines,
+      }));
+      addFeatureContinuationPages(output, overflow, fonts, labelInk, footerText);
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
       continue;
     }

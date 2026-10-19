@@ -1464,15 +1464,22 @@ function collectFeatures(
       kind: "lines",
       lines: [featureLine(item.title, item.parenthetical, item.description)],
     }));
+  // Every row of the features box lands in exactly one group, senses included,
+  // so a split layout prints everything the combined box does.
+  const inBox = (item: CollectedFeature): boolean => item.class === "senses" || item.class === "features";
+  const group = (item: CollectedFeature): "class-features" | "subclass-features" | "feats" =>
+    ["Archetype", "Archetype Feature"].includes(item.type) ? "subclass-features"
+      : ["Feat", "Feat Feature"].includes(item.type) ? "feats"
+        : "class-features";
   return {
     senses: rows((item) => item.class === "senses"),
     features: rows((item) => item.class === "features"),
     racial: rows((item) => item.class === "racial"),
-    orderedFeatures: rows((item) => item.class === "senses" || item.class === "features"),
+    orderedFeatures: rows(inBox),
     groups: {
-      "class-features": rows(item => (item.class === "features" || item.class === "senses") && !["Archetype", "Archetype Feature", "Feat", "Feat Feature"].includes(item.type)),
-      "subclass-features": rows(item => item.class === "features" && ["Archetype", "Archetype Feature"].includes(item.type)),
-      feats: rows(item => item.class === "features" && ["Feat", "Feat Feature"].includes(item.type)),
+      "class-features": rows((item) => inBox(item) && group(item) === "class-features"),
+      "subclass-features": rows((item) => inBox(item) && group(item) === "subclass-features"),
+      feats: rows((item) => inBox(item) && group(item) === "feats"),
     },
   };
 }

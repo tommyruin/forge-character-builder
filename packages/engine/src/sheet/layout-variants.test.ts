@@ -17,7 +17,7 @@ import { CharacterService } from "../character/service.js";
 import { buildCharacterSheetModel, type CharacterSheetModel } from "./model.js";
 import { writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
 import { fetchCharacterSheetTemplateBundle } from "./templates.js";
-import { seededRng, sharedLibrary } from "../testing/character-factory.js";
+import { buildFullSheetCharacter, buildRangerRogue8, buildWizard4, seededRng, sharedLibrary } from "../testing/character-factory.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import {
   DEFAULT_SHEET_FONTS,
@@ -251,13 +251,131 @@ describe("writing a layout variant", () => {
     return { inside, hasField: (name: string) => rect(name) !== undefined, text, pages: doc.numPages };
   }
 
-  it.each(["2014", "2024"] as const)("prints class features, subclass features and feats in their own boxes on %s split", async (set) => {
+  // A split page either has a box per origin or one features box with a
+  // ruled heading per origin; the writer fills whichever the template has.
+  it.each(["2014", "2024"] as const)("prints class features, subclass features and feats apart on %s split", async (set) => {
     const split = await placements(set, { split: true });
-    expect(split.inside("Spellcasting.", "details_features")).toBe(true);
-    expect(split.inside("Wild Shape.", "details_subclass_features")).toBe(true);
-    expect(split.inside("Alert.", "details_feats")).toBe(true);
-    for (const title of ["CLASS FEATURES", "SUBCLASS FEATURES", "FEATS"]) expect(split.text).toContain(title);
+    if (split.hasField("details_subclass_features")) {
+      expect(split.inside("Spellcasting.", "details_features")).toBe(true);
+      expect(split.inside("Wild Shape.", "details_subclass_features")).toBe(true);
+      expect(split.inside("Alert.", "details_feats")).toBe(true);
+      for (const title of ["CLASS FEATURES", "SUBCLASS FEATURES", "FEATS"]) expect(split.text).toContain(title);
+    } else {
+      for (const text of ["Class", "Spellcasting.", "Subclass", "Wild Shape.", "Feats", "Alert."]) expect(split.inside(text, "details_features"), text).toBe(true);
+    }
     expect(split.pages).toBe(1);
+  });
+
+  describe("one features box on a split layout", () => {
+    /** `set`'s own single-box page, written as the split layout. */
+    async function inline(set: SheetTemplateSet, written: CharacterSheetModel) {
+      const base = localTemplateBundle(set);
+      const bundle = { ...base, layout: { ...base.layout!, split: true } };
+      const form = (await PDFDocument.load(bundle.details)).getForm();
+      expect(form.getFields().some((field) => field.getName() === "details_subclass_features")).toBe(false);
+      const box = form.getTextField("details_features").acroField.getWidgets()[0]!.getRectangle();
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(written, bundle);
+      const doc = await getDocument({ data: new Uint8Array(pdf.slice(0)) }).promise;
+      const pages = [];
+      for (let index = 1; index <= doc.numPages; index++) {
+        pages.push((await (await doc.getPage(index)).getTextContent()).items
+          .flatMap((item) => ("str" in item && item.str.trim() !== "" ? [{ str: item.str, x: item.transform[4] as number, y: item.transform[5] as number, font: item.fontName }] : [])));
+      }
+      const loaded = await PDFDocument.load(pdf);
+      const contents = loaded.getPages()[0]!.node.Contents();
+      const streams = contents instanceof PDFArray
+        ? contents.asArray().map((ref) => loaded.context.lookup(ref, PDFStream))
+        : [contents as PDFStream];
+      const operators = streams.map((stream) => new TextDecoder("latin1").decode(decodePDFRawStream(stream as never).decode())).join("\n");
+      // The heading rules: lines across the box's drawable width.
+      const rules = [...operators.matchAll(/([\d.]+) ([\d.]+) m\s+([\d.]+) \2 l\s+S/g)]
+        .filter((match) => Math.abs(Number(match[3]) - Number(match[1]) - (box.width - 6)) < 0.01 && Number(match[1]) > box.x)
+        .map((match) => Number(match[2]));
+      const first = pages[0]!;
+      const at = (text: string) => first.find((item) => item.str === text || item.str.startsWith(`${text} `));
+      return { box, pages, first, at, rules };
+    }
+
+    it.each(["2014", "2024"] as const)("heads each origin's features in the %s box, a rule under each heading", async (set) => {
+      const page = await inline(set, model);
+      expect(page.pages).toHaveLength(1);
+      const order = ["Class", "Spellcasting.", "Subclass", "Wild", "Feats", "Alert."].map((text) => {
+        const item = page.at(text);
+        expect(item, text).toBeDefined();
+        expect(item!.x).toBeGreaterThanOrEqual(page.box.x);
+        expect(item!.y).toBeGreaterThanOrEqual(page.box.y);
+        expect(item!.y).toBeLessThanOrEqual(page.box.y + page.box.height);
+        return item!.y;
+      });
+      expect([...order].sort((a, b) => b - a)).toEqual(order);
+      // A heading is a heading in the body's bold face, not a run-in feature title.
+      expect(page.at("Subclass")!.font).not.toBe(page.at("Wild")!.font);
+      expect(page.at("Subclass")!.font).not.toBe(page.first.find((item) => item.str.includes("prose"))!.font);
+      expect(page.rules).toHaveLength(3);
+      for (const [index, heading] of ["Class", "Subclass", "Feats"].entries()) {
+        const y = page.at(heading)!.y;
+        expect(page.rules[index]!).toBeLessThan(y);
+        expect(page.rules[index]!).toBeGreaterThan(y - 4);
+      }
+    });
+
+    it("leaves out a group with no features", async () => {
+      const featless = { ...model, pages: [{ ...page, featureGroups: { ...page.featureGroups, feats: [] } }] };
+      const written = await inline("2014", featless);
+      expect(written.at("Feats")).toBeUndefined();
+      expect(written.rules).toHaveLength(2);
+    });
+
+    it("continues a long group under its own name and keeps the later headings", async () => {
+      const long = Array.from({ length: 900 }, (_, index) => `word${index}`).join(" ");
+      const overflowing = { ...model, pages: [{ ...page, featureGroups: { ...page.featureGroups, "subclass-features": [line(`Starry Form. ${long}`)] } }] };
+      const written = await inline("2014", overflowing);
+      expect(written.pages.length).toBeGreaterThan(1);
+      const rest = written.pages.slice(1).flat().map((item) => item.str).join(" ");
+      expect(rest).toContain("FEATURES & TRAITS (CONTINUED)");
+      expect(rest).toMatch(/Subclass Features \(continued\)/);
+      expect(rest).toContain("Alert.");
+      const words = written.pages.flat().flatMap((item) => item.str.match(/word\d+/g) ?? []);
+      expect(words).toHaveLength(900);
+      expect(new Set(words).size).toBe(900);
+    });
+  });
+
+  // Overflow continues on pages of its own, never on a further copy of the
+  // character page, whatever the set and layout.
+  describe.each([...SHEET_TEMPLATE_SETS])("continuing overflow on %s", (set) => {
+    const tokens = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`).join(" ");
+    const overflowing: CharacterSheetModel = {
+      characterId: "Overflow", mode: "lite", pageCount: 1,
+      formValues: { details_character_name: "Overflow Hero" },
+      pages: [{
+        page: 1, templateKind: "details",
+        sections: [
+          { title: "racial-traits", rows: [line(`Ancestry. ${tokens("racial", 500)}`)] },
+          { title: "features", rows: [line(`Spellcasting. ${tokens("feature", 1200)}`)] },
+          { title: "proficiencies", rows: [line(`Tools. ${tokens("prof", 300)}`)] },
+        ],
+        featureGroups: { "class-features": [line(`Spellcasting. ${tokens("feature", 1200)}`)], "subclass-features": [], feats: [] },
+      }],
+    };
+    it.each([{ file: BASE, layout: {} }, ...sheetLayoutVariants(set)])("$file", async ({ layout }) => {
+      const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(overflowing, localTemplateBundle(set, DEFAULT_SHEET_FONTS, layout))) }).promise;
+      const pages: string[] = [];
+      for (let index = 1; index <= doc.numPages; index++) {
+        pages.push((await (await doc.getPage(index)).getTextContent()).items.map((item) => ("str" in item ? item.str : "")).join(" "));
+      }
+      expect(pages.length).toBeGreaterThan(1);
+      expect(pages.filter((text) => text.includes("Overflow Hero"))).toHaveLength(1);
+      const rest = pages.slice(1).join(" ");
+      for (const text of pages.slice(1)) expect(text).toContain("FEATURES & TRAITS (CONTINUED)");
+      expect(rest).toMatch(/(Racial|Species) Traits \(continued\)/);
+      expect(rest).toMatch(/Proficiencies.* \(continued\)/);
+      for (const [prefix, count] of [["racial", 500], ["feature", 1200], ["prof", 300]] as const) {
+        const words = pages.join(" ").match(new RegExp(`\\b${prefix}\\d+\\b`, "g")) ?? [];
+        expect(words, prefix).toHaveLength(count);
+        expect(new Set(words).size, prefix).toBe(count);
+      }
+    });
   });
 
   it("prints every feature in one box on the unsplit Hybrid page", async () => {
@@ -327,6 +445,23 @@ describe("the compact top row's values", () => {
     const bare = buildCharacterSheetModel(new CharacterService(undefined, library).createCharacter("Bare"), library, { mode: "lite" }).formValues ?? {};
     expect(bare["details_shield_equipped"]).toBe("");
     expect(bare["details_equipped_shield"]).toBe("");
+  }, 120_000);
+});
+
+describe("the split layout's feature groups", () => {
+  it("puts every row of the features box, senses included, in exactly one group", async () => {
+    const library = await sharedLibrary();
+    for (const build of [buildWizard4, buildRangerRogue8, buildFullSheetCharacter]) {
+      const details = buildCharacterSheetModel(build(library).state, library, { mode: "full" }).pages.find((candidate) => candidate.templateKind === "details")!;
+      const features = details.sections.find((section) => section.title === "features")!;
+      const groups = details.featureGroups!;
+      const lines = (rows: readonly { kind: string; lines?: readonly string[] }[]) => rows.flatMap((row) => row.lines ?? []);
+      const grouped = [...lines(groups["class-features"]!), ...lines(groups["subclass-features"]!), ...lines(groups.feats!)];
+      expect(grouped.sort(), build.name).toEqual(lines(features.renderRows ?? features.rows).sort());
+    }
+    // The high elf's darkvision is a sense; it prints with the class features.
+    const wizard = buildCharacterSheetModel(buildWizard4(library).state, library, { mode: "full" }).pages.find((candidate) => candidate.templateKind === "details")!;
+    expect(wizard.featureGroups!["class-features"]!.some((row) => row.kind === "lines" && row.lines.some((text) => text.startsWith("Darkvision")))).toBe(true);
   }, 120_000);
 });
 

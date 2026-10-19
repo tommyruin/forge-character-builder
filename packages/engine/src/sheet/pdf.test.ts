@@ -769,16 +769,26 @@ describe("character sheet PDF writer", () => {
       return content.items.filter((item): item is Extract<(typeof content.items)[number], { str: string }> => "str" in item);
     }));
     const assertInside = (prefix: string, rect: { x: number; y: number; width: number; height: number }): void => {
-      const matched = pages.flat().filter((item) => item.str.includes(prefix));
+      const matched = pages[0]!.filter((item) => item.str.includes(prefix));
       expect(matched.length).toBeGreaterThan(0);
       for (const item of matched) {
         expect(item.transform[5]).toBeGreaterThanOrEqual(rect.y - 0.5);
         expect(item.transform[5]).toBeLessThanOrEqual(rect.y + rect.height);
         expect(item.transform[4]).toBeGreaterThanOrEqual(rect.x - 0.5);
+        expect(item.transform[4] + item.width).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
       }
     };
     assertInside("featuretok", featuresRect);
     assertInside("racialtok", racialRect);
+    // The rest continues on the continuation pages, wrapped at their own
+    // width rather than the boxes', every word once.
+    const rest = pages.slice(1).flat();
+    expect(rest.some((item) => item.width > featuresRect.width)).toBe(true);
+    for (const prefix of ["featuretok", "racialtok"]) {
+      const words = pages.flat().flatMap((item) => item.str.match(new RegExp(`${prefix}-\\d+`, "g")) ?? []);
+      expect(words, prefix).toHaveLength(800);
+      expect(new Set(words).size, prefix).toBe(800);
+    }
   }, 120_000);
 
   // The Resistances box prints one line per defence group, so its value is

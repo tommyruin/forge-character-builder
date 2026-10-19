@@ -34,10 +34,12 @@ export function localTemplateBundle(
 ): CharacterSheetTemplateBundle {
   const dir = join(SHEETS_ROOT, set);
   const template = (name: string): Uint8Array => new Uint8Array(readFileSync(join(dir, name)));
-  const detailsFile = sheetDetailsFile(set, resolveSheetLayout(set, layout));
+  const resolvedLayout = resolveSheetLayout(set, layout);
+  const detailsFile = sheetDetailsFile(set, resolvedLayout);
   return {
     labels: JSON.parse(readFileSync(join(dir, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")),
     faces: sheetFaces(fonts, (file) => new Uint8Array(readFileSync(join(FONTS_DIR, file)))),
+    layout: resolvedLayout,
     ...(detailsFile === SHEET_TEMPLATE_CONTRACT.files.details ? {} : { detailsFile }),
     details: template(detailsFile),
     background: template(SHEET_TEMPLATE_CONTRACT.files.background),
