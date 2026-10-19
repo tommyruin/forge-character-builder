@@ -544,7 +544,10 @@ export function createEngineMethodHandlers(
       objectResult(service.getCharacterDetail(service.addGrantedAbilityScore(id, request).id)),
     removeGrantedAbilityScore: (id, request) =>
       objectResult(service.getCharacterDetail(service.removeGrantedAbilityScore(id, request).id)),
-    getDmGrants: (id) => listResult(service.getDmGrants(id)),
+    addGrantedElement: (id, request) => objectResult(service.getCharacterDetail(service.addGrantedElement(id, request).id)),
+    removeGrantedElement: (id, request) =>
+      objectResult(service.getCharacterDetail(service.removeGrantedElement(id, request).id)),
+    getDmGrants: (id) => service.getDmGrants(id),
     getAppearanceSuggestions: (id, seed) => objectResult(service.getAppearanceSuggestions(id, seed)),
   };
 }

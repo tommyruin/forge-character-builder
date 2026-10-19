@@ -1,15 +1,20 @@
-import { registrationCount } from "../character/registration-count.js";
+import { STANDALONE_FEATURE_TYPES, registrationCount } from "../character/registration-count.js";
 /**
- * DM grants: add/remove granted feats and ability-score elements, and the
- * grants DTO. Element registration mirrors the planItemEdits raw-edit style
- * (character/options.ts): the element node is appended after the level
- * wrappers, the sum entries at the end, and the registered count updated.
- * Spell grants reuse the magic planners' <additional> surface.
+ * DM grants: add/remove granted feature elements (feats, ability scores,
+ * traits, custom features ...), and the grants DTO. Element registration
+ * mirrors the planItemEdits raw-edit style (character/options.ts): the element
+ * node is appended after the level wrappers, the sum entries at the end, and
+ * the registered count updated. Spell grants reuse the magic planners'
+ * <additional> surface.
  */
 
 import { childElements, getAttr, type Dnd5eDocument, type Dnd5eNode } from "../dnd5e/document.js";
+import type { DmGrantDto } from "@forge-cb/api";
+import { characterPackOwners } from "../content/character-packs.js";
 import { allowsDuplicate, type ElementLibrary } from "../content/library.js";
+import type { ParsedElement } from "../content/parser.js";
 import type { CharacterState } from "../character/state.js";
+import { buildSectionOfType, contentOrigin } from "../custom/placement.js";
 import {
   attrValueRange,
   createRegistrationContext,
@@ -26,16 +31,22 @@ import {
   subtreeIdsOf as subtreeIdsOfNode,
 } from "../inventory/item-registration.js";
 
-export interface GrantedElementDto {
-  kind: "spell" | "feat" | "ability";
-  id: string;
-  name: string;
-  source: string;
+export type GrantedElementDto = DmGrantDto;
+
+export type DmGrantsDto = DmGrantDto[];
+
+/**
+ * The element types a top-level grant may register: the feature types that
+ * stand on their own, plus the plain tokens a DM hands out (a language, a
+ * proficiency, a sense). Physical items join through the inventory, spells
+ * through <additional>, and a class, race or background through the build.
+ */
+export const GRANTABLE_FEATURE_TYPES: ReadonlySet<string> = STANDALONE_FEATURE_TYPES;
+
+/** Whether an element may be granted at the top level. */
+export function isGrantableFeature(element: ParsedElement): boolean {
+  return GRANTABLE_FEATURE_TYPES.has(element.identity.type);
 }
-
-export type DmGrantsDto = GrantedElementDto[];
-
-/** Grantable element types: corpus types registered as standalone nodes. */
 
 
 /** How many times the id appears in the `<sum>`. */
@@ -111,14 +122,16 @@ function planGrantedRegistrations(
   state: CharacterState,
   library: ElementLibrary,
   ids: string[],
-  type: string,
+  accepts: (element: ParsedElement) => boolean,
   label: string,
 ): RawEdit[] {
   const seen = new Set<string>();
   const itemOwned = itemOwnedRegistrationIds(document, library);
   const elements = ids.map((id) => {
     const element = library.byId.get(id);
-    if (!element || element.identity.type !== type) {
+    // Another character's own custom content is not this character's to be granted.
+    const owners = characterPackOwners(library, id);
+    if (!element || !accepts(element) || (owners !== undefined && !owners.has(state.id))) {
       throw engineError("not-found", `${label} '${id}' not found`);
     }
     // Allow-duplicate elements (the +1 ability score improvements) may be
@@ -210,6 +223,23 @@ function planGrantedRemovals(
   return edits;
 }
 
+/**
+ * Registers/unregisters any grantable feature element (book, homebrew, or the
+ * character's own pack) at the top level of the character's elements tree.
+ */
+export function planGrantedElementEdits(
+  document: Dnd5eDocument,
+  state: CharacterState,
+  library: ElementLibrary,
+  elementId: string,
+  action: "add" | "remove",
+): RawEdit[] {
+  if (action === "add") {
+    return planGrantedRegistrations(document, state, library, [elementId], isGrantableFeature, "element");
+  }
+  return planGrantedRemovals(document, state, library, [elementId], "element");
+}
+
 /** Registers/unregisters a Feat element into the character's elements tree. */
 export function planGrantedFeatEdits(
   document: Dnd5eDocument,
@@ -218,7 +248,9 @@ export function planGrantedFeatEdits(
   featId: string,
   action: "add" | "remove",
 ): RawEdit[] {
-  if (action === "add") return planGrantedRegistrations(document, state, library, [featId], "Feat", "feat");
+  if (action === "add") {
+    return planGrantedRegistrations(document, state, library, [featId], (element) => element.identity.type === "Feat", "feat");
+  }
   return planGrantedRemovals(document, state, library, [featId], "feat");
 }
 
@@ -234,34 +266,57 @@ export function planGrantedAbilityScoreEdits(
   action: "add" | "remove",
 ): RawEdit[] {
   if (action === "add") {
-    return planGrantedRegistrations(document, state, library, abilityElementIds, "Ability Score Improvement", "ability score");
+    return planGrantedRegistrations(
+      document,
+      state,
+      library,
+      abilityElementIds,
+      (element) => element.identity.type === "Ability Score Improvement",
+      "ability score",
+    );
   }
   return planGrantedRemovals(document, state, library, abilityElementIds, "ability score");
 }
 
 /**
  * The grants DTO: the character's <additional> spells (DM-granted source),
- * followed by the registered Feat and Ability Score Improvement elements
- * granted at the TOP LEVEL of the elements tree. Selection results (feats/
- * ASIs picked through class feat rules) nest inside level/class wrappers and
- * are never DM grants (Valerian/Samurai2 fixture evidence).
+ * followed by the registered grantable elements (feats, ability score
+ * improvements, traits, custom features ...) granted at the TOP LEVEL of the
+ * elements tree. Selection results (feats/ASIs picked through class feat
+ * rules) nest inside level/class wrappers and are never DM grants
+ * (Valerian/Samurai2 fixture evidence).
  */
 export function buildDmGrantsDto(state: CharacterState, library: ElementLibrary): DmGrantsDto {
-  const out: GrantedElementDto[] = [];
+  const out: DmGrantsDto = [];
   if (state.magic !== null) {
     for (const spell of state.magic.additional) {
       if (!spell.source.startsWith("Additional Spell")) continue;
-      out.push({ kind: "spell", id: spell.id, name: spell.name, source: spell.source });
+      const origin = contentOrigin(library, spell.id);
+      out.push({
+        kind: "spell",
+        id: spell.id,
+        name: spell.name,
+        source: spell.source,
+        type: "Spell",
+        isCustom: origin !== "book",
+        origin,
+        section: null,
+      });
     }
   }
   for (const node of state.elements) {
-    if (node.id === "" || (node.type !== "Feat" && node.type !== "Ability Score Improvement")) continue;
+    if (node.id === "" || !GRANTABLE_FEATURE_TYPES.has(node.type)) continue;
     const element = library.byId.get(node.id);
+    const origin = contentOrigin(library, node.id);
     out.push({
-      kind: node.type === "Feat" ? "feat" : "ability",
+      kind: node.type === "Feat" ? "feat" : node.type === "Ability Score Improvement" ? "ability" : "feature",
       id: node.id,
       name: element?.identity.name ?? node.name,
       source: element?.identity.source ?? "",
+      type: node.type,
+      isCustom: origin !== "book",
+      origin,
+      section: buildSectionOfType(node.type),
     });
   }
   return out;

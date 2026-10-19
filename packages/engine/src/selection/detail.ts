@@ -5,6 +5,8 @@
  * calculator.
  */
 
+import type { ContentOrigin } from "@forge-cb/api";
+import { contentOrigin } from "../custom/placement.js";
 import { randomUuid } from "../platform.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState, RegisteredElement } from "../character/state.js";
@@ -44,6 +46,10 @@ export interface RegisteredElementInfo {
   type: string;
   name: string;
   source: string;
+  /** True for content made in the builder (a character's own pack or a homebrew collection). */
+  isCustom: boolean;
+  /** Where the element came from; the Build tab badges everything but "book". */
+  origin: ContentOrigin;
 }
 
 export interface SelectionRuleDetail {
@@ -161,16 +167,19 @@ function resolveElementInfo(
 ): RegisteredElementInfo {
   const fromLibrary = library?.byId.get(id);
   if (fromLibrary) {
+    const origin = contentOrigin(library, id);
     return {
       id,
       type: fromLibrary.identity.type,
       name: fromLibrary.identity.name,
       source: fromLibrary.identity.source,
+      isCustom: origin !== "book",
+      origin,
     };
   }
   const baked = ENGINE_INTERNAL_ELEMENTS.get(id);
   if (baked) {
-    return { id, type: baked.identity.type, name: baked.identity.name, source: baked.identity.source };
+    return { id, type: baked.identity.type, name: baked.identity.name, source: baked.identity.source, isCustom: false, origin: "book" };
   }
   const find = (nodes: CharacterState["elements"]): CharacterState["elements"][number] | undefined => {
     for (const node of nodes) {
@@ -181,7 +190,7 @@ function resolveElementInfo(
     return undefined;
   };
   const node = find(state.elements);
-  return { id, type: node?.type ?? type, name: node?.name ?? "", source: "Internal" };
+  return { id, type: node?.type ?? type, name: node?.name ?? "", source: "Internal", isCustom: false, origin: "book" };
 }
 
 function abilityBonuses(state: CharacterState, library?: ElementLibrary): Map<string, AbilityBonusSource[]> {

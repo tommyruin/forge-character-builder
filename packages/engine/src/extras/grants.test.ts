@@ -246,13 +246,20 @@ describe("dm grants DTO", () => {
     service.applyRegionEdits("D1", planGrantedAbilityScoreEdits(service.documentOf("D1"), state, lib, [ASI_STRENGTH], "add"));
     const dto: DmGrantsDto = buildDmGrantsDto(service.getCharacter("D1"), lib);
     const spells = dto.filter((entry) => entry.kind === "spell");
+    const book = { type: "Spell", isCustom: false, origin: "book", section: null };
     expect(spells).toEqual([
-      { kind: "spell", id: "ID_PHB_SPELL_FOG_CLOUD", name: "Fog Cloud", source: "Additional Spell, Fog Cloud" },
-      { kind: "spell", id: "ID_PHB_SPELL_INVISIBILITY", name: "Invisibility", source: "Additional Spell, Invisibility" },
-      { kind: "spell", id: "ID_PHB_SPELL_PASS_WITHOUT_TRACE", name: "Pass without Trace", source: "Additional Spell, Pass without Trace" },
+      { kind: "spell", id: "ID_PHB_SPELL_FOG_CLOUD", name: "Fog Cloud", source: "Additional Spell, Fog Cloud", ...book },
+      { kind: "spell", id: "ID_PHB_SPELL_INVISIBILITY", name: "Invisibility", source: "Additional Spell, Invisibility", ...book },
+      { kind: "spell", id: "ID_PHB_SPELL_PASS_WITHOUT_TRACE", name: "Pass without Trace", source: "Additional Spell, Pass without Trace", ...book },
     ]);
-    expect(dto).toContainEqual({ kind: "feat", id: FEAT_ALERT, name: "Alert", source: "Player’s Handbook" });
-    expect(dto).toContainEqual({ kind: "ability", id: ASI_STRENGTH, name: "Strength", source: "Player’s Handbook" });
+    expect(dto).toContainEqual({
+      kind: "feat", id: FEAT_ALERT, name: "Alert", source: "Player’s Handbook",
+      type: "Feat", isCustom: false, origin: "book", section: "feats",
+    });
+    expect(dto).toContainEqual({
+      kind: "ability", id: ASI_STRENGTH, name: "Strength", source: "Player’s Handbook",
+      type: "Ability Score Improvement", isCustom: false, origin: "book", section: "abilities",
+    });
   });
 
   it("returns an empty list on a fresh character", async () => {

@@ -147,6 +147,7 @@ import {
 import { buildCompanionDto, buildMagicAttackOptions, reconcileMagic, type CompanionDto } from "../magic/reconcile.js";
 import { featureSpellCasters } from "../magic/feature-casters.js";
 import {
+  planGrantedElementEdits,
   planGrantedFeatEdits,
   planGrantedAbilityScoreEdits,
   buildDmGrantsDto,
@@ -2186,7 +2187,31 @@ export class CharacterService {
     return this.applyWithRuleReconcile(id, state, document, edits);
   }
 
-  /** The DM grants list (granted spells, feats, and ability scores). */
+  /**
+   * Grants any feature-type element (a book's, a homebrew collection's, or the
+   * character's own pack) at the top level. `addGrantedFeat` and
+   * `addGrantedAbilityScore` are the same operation with a narrower type check.
+   */
+  addGrantedElement(id: string, request: { elementId: string }): CharacterState {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for grants");
+    }
+    const edits = planGrantedElementEdits(document, state, this.library, request.elementId, "add");
+    return this.applyWithRuleReconcile(id, state, document, edits);
+  }
+
+  /** Removes a granted feature element. */
+  removeGrantedElement(id: string, request: { elementId: string }): CharacterState {
+    const { state, document } = this.require(id);
+    if (this.library === undefined) {
+      throw engineError("invalid-argument", "character service requires a content library for grants");
+    }
+    const edits = planGrantedElementEdits(document, state, this.library, request.elementId, "remove");
+    return this.applyWithRuleReconcile(id, state, document, edits);
+  }
+
+  /** The DM grants list (granted spells, feats, ability scores and other features). */
   getDmGrants(id: string): DmGrantsDto {
     const { state } = this.require(id);
     if (this.library === undefined) {
