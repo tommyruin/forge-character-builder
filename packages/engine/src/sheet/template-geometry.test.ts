@@ -292,14 +292,15 @@ describe("sheet template geometry", () => {
   // The cell's top is 0.9pt proud of the row's, because the writer places the
   // two kinds of line differently: a single-line value is centred on its box by
   // cap height, a wrapped cell's first baseline is a fixed `top - 2 - size`
-  // inset. Sharing the top left the note visibly low; pdf.test.ts measures
-  // what the 0.9pt buys.
+  // inset (or, as the writer now places it, a cap height 4pt under the top).
+  // 1.05pt levels the first line with the row to within half a point in
+  // every body face under either rule; pdf.test.ts measures it.
   it.each(DETAILS_PAGES.filter(([set]) => set !== "2014"))("gives the 2024 attack notes a wrapping cell that clears its neighbours on %s/%s", async (set, file) => {
     const form = (await PDFDocument.load(readFileSync(join(SHEETS, set, file)))).getForm();
     const rectOf = (name: string) => form.getTextField(name).acroField.getWidgets()[0]!.getRectangle();
     const freeText = rectOf("details_attack_description");
     expect(form.getTextField("details_attack_description").isMultiline()).toBe(true);
-    // Five rows, under column captions on a 193 baseline.
+    // Five rows, under column captions on a 193.5 baseline.
     expect(form.getFields().filter((field) => /^details_attack\d+_weapon$/.test(field.getName()))).toHaveLength(5);
     for (let row = 1; row <= 5; row += 1) {
       const name = `details_attack${row}_description`;
@@ -307,11 +308,11 @@ describe("sheet template geometry", () => {
       const weapon = rectOf(`details_attack${row}_weapon`);
       expect(form.getTextField(name).isMultiline(), name).toBe(true);
       expect(notes.width, name).toBeGreaterThanOrEqual(86);
-      expect(notes.height, name).toBe(21);
-      expect(notes.y + notes.height, name).toBeCloseTo(weapon.y + weapon.height + 0.9, 5);
+      expect(notes.height, name).toBeCloseTo(21, 5);
+      expect(notes.y + notes.height, name).toBeCloseTo(weapon.y + weapon.height + 1.05, 5);
       if (row > 1) expect(notes.y + notes.height, name).toBeLessThanOrEqual(rectOf(`details_attack${row - 1}_description`).y);
       expect(freeText.y + freeText.height, name).toBeLessThanOrEqual(notes.y);
-      expect(notes.y + notes.height, name).toBeLessThan(193);
+      expect(notes.y + notes.height, name).toBeLessThan(193.5);
       expect(notes.x + notes.width, name).toBeLessThanOrEqual(582);
     }
     // The free-text note is the user's own prose and the attacks without a

@@ -801,22 +801,24 @@ function classicHeader2024(s, edition, style, layout) {
   const readable = layout.readable;
   pageChrome(s, "CHARACTER", edition);
 
-  s.brush(26, 696, 308, 64);
-  s.frame(26, 696, 308, 64);
-  s.text("details_character_name", 32, 740, 226, 16, { size: 12 });
+  s.brush(26, 696, 292, 64);
+  s.frame(26, 696, 292, 64);
+  s.text("details_character_name", 32, 740, 218, 16, { size: 12 });
   s.label("CHARACTER NAME", 32, 733.5, { size: readable ? 5 : 4.2 });
-  s.entry("details_player", "PLAYER", 266, 741, 62, 11, { captionSize: readable ? 5 : 4.2 });
-  s.entry("details_build", "CLASS & LEVEL", 32, 719, 296, 11, { captionSize: readable ? 5 : 4.2 });
+  s.entry("details_player", "PLAYER", 256, 741, 56, 11, { captionSize: readable ? 5 : 4.2 });
+  s.entry("details_build", "CLASS & LEVEL", 32, 719, 280, 11, { captionSize: readable ? 5 : 4.2 });
+  // The species is on the class and level line, so the background is captioned alone.
   const captionSize = readable ? 4.4 : 3.4;
-  [["details_background", style.origin, 32, 104], ["details_alignment", "ALIGNMENT", 142, 72], ["details_deity", "DEITY", 220, 56], ["details_xp", "XP", 282, 46]].forEach(([name, caption, x, width]) => {
+  [["details_background", "BACKGROUND", 32, 84], ["details_alignment", "ALIGNMENT", 120, 86], ["details_deity", "DEITY", 210, 60], ["details_xp", "XP", 274, 38]].forEach(([name, caption, x, width]) => {
     const captionWidth = s.textWidth(caption, "caption", captionSize) + 4;
     s.label(caption, x, 702.5, { size: captionSize, color: "lines" });
     s.text(name, x + captionWidth, 702, width - captionWidth, 8, { size: 6 });
   });
 
-  armorBeside2024(s, layout, 340, 696, 90, 64);
+  // Wide enough for the longest armor line at 5.5pt.
+  armorBeside2024(s, layout, 324, 696, 108, 64);
   s.shield("details_armor_class", "ARMOR CLASS", 436, 762, 46, 46, { captionSize: readable ? 4.2 : 3.8 });
-  s.text("details_equipped_shield", 436, 705, 46, 9, { align: "center", size: 5, box: "none" });
+  s.text("details_equipped_shield", 436, 705, 46, 9, { align: "center", size: 6, box: "none" });
   s.label("SHIELD", 436, 699, { size: 5, align: "center", width: 46 });
 
   const hp = s.section("HIT POINTS", 488, 700, 98, 60, { style: "plate", at: "top", size: 5.8 });
@@ -915,20 +917,23 @@ function topBand2024(s, edition, layout) {
   s.text("details_character_name", 32, 738, 168, 16, { size: 12 });
   s.label("CHARACTER NAME", 32, 731.5, { size: captionSize });
   s.entry("details_player", "PLAYER", 206, 739, 56, 11, { captionSize });
-  // One line; a long multiclass shrinks to fit, and wraps only past the floor.
-  s.entry("details_class", "CLASS", 32, 716, 182, 11, { size: 7, captionSize });
-  s.entry("details_level", "LEVEL", 220, 716, 42, 11, { align: "center", size: 10, captionAlign: "center", captionSize });
-  s.entry("details_species", "SPECIES", 32, 692, 80, 10, { size: 7, captionSize });
-  s.entry("details_background", "BACKGROUND", 118, 692, 96, 10, { size: 7, captionSize });
-  s.entry("details_xp", "XP", 220, 692, 42, 10, { align: "center", size: 7, captionAlign: "center", captionSize });
-  s.entry("details_alignment", "ALIGNMENT", 32, 668, 106, 10, { size: 7, captionSize });
-  s.entry("details_deity", "DEITY", 144, 668, 118, 10, { size: 7, captionSize });
+  // One line, centred like the level beside it; the box is tall enough for a
+  // three-class line to wrap onto two lines rather than shrink past 5.5pt.
+  s.entry("details_class", "CLASS", 32, 714, 182, 16, { size: 7, captionSize });
+  s.entry("details_level", "LEVEL", 220, 714, 42, 16, { align: "center", size: 10, captionAlign: "center", captionSize });
+  s.entry("details_species", "SPECIES", 32, 690, 80, 10, { size: 7, captionSize });
+  s.entry("details_background", "BACKGROUND", 118, 690, 96, 10, { size: 7, captionSize });
+  s.entry("details_xp", "XP", 220, 690, 42, 10, { align: "center", size: 7, captionAlign: "center", captionSize });
+  s.entry("details_alignment", "ALIGNMENT", 32, 666, 106, 10, { size: 7, captionSize });
+  s.entry("details_deity", "DEITY", 144, 666, 118, 10, { size: 7, captionSize });
 
   // The top row, x 274..586: armor and resistances, hit points, hit dice.
   const rowY = 696;
   const rowH = bandTop - rowY;
+  // Wide enough for the longest armor line ("Unarmored Defense (Barbarian)
+  // (10)") at 5.5pt.
   const ax = 274;
-  const aw = 144;
+  const aw = 154;
   s.frame(ax, rowY, aw, rowH);
   // The shield stands over the box's left edge, its top on the frame's.
   s.shield("details_armor_class", "ARMOR CLASS", ax, bandTop, 44, 60, { captionSize: readable ? 4.2 : 3.6 });
@@ -949,14 +954,14 @@ function topBand2024(s, edition, layout) {
   s.label("STEALTH DISADV.", stealthX + 8, rowY + 5.3, { size: tickSize });
 
   const hpCaption = readable ? 4.8 : 3.8;
-  const hp = plateSection(s, "HIT POINTS", 424, rowY, 110, rowH);
-  s.text("details_hp_current", hp.x + 2, hp.y + 8, 50, 26, { align: "center", size: 20, box: "none" });
-  s.rounded(hp.x + 2, hp.y + 8, 50, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
-  s.label("CURRENT", hp.x + 2, hp.y + 1.5, { size: hpCaption, align: "center", width: 50 });
-  s.label("TEMP", hp.x + 56, hp.y + 26, { size: hpCaption, color: "lines" });
-  s.text("details_hp_temp", hp.x + 70, hp.y + 24, 30, 11, { align: "center", size: 8 });
-  s.label("MAX", hp.x + 56, hp.y + 10, { size: hpCaption, color: "lines" });
-  s.text("details_hp_max", hp.x + 70, hp.y + 8, 30, 11, { align: "center", size: 8 });
+  const hp = plateSection(s, "HIT POINTS", 434, rowY, 100, rowH);
+  s.text("details_hp_current", hp.x + 2, hp.y + 8, 44, 26, { align: "center", size: 20, box: "none" });
+  s.rounded(hp.x + 2, hp.y + 8, 44, 26, 3, { stroke: GOLD, lineWidth: 0.4 });
+  s.label("CURRENT", hp.x + 2, hp.y + 1.5, { size: hpCaption, align: "center", width: 44 });
+  s.label("TEMP", hp.x + 50, hp.y + 26, { size: hpCaption, color: "lines" });
+  s.text("details_hp_temp", hp.x + 62, hp.y + 24, 26, 11, { align: "center", size: 8 });
+  s.label("MAX", hp.x + 50, hp.y + 10, { size: hpCaption, color: "lines" });
+  s.text("details_hp_max", hp.x + 62, hp.y + 8, 26, 11, { align: "center", size: 8 });
 
   const dice = plateSection(s, "HIT DICE", 540, rowY, 46, rowH);
   s.text("details_hd", dice.x, 725, dice.width, 18, { align: "center", size: 14, box: "none" });
@@ -1023,7 +1028,7 @@ function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, f
   s.block(style.traits, "details_additional_notes", areaX, 557, areaW, 642 - 557);
   const weaponsTop = 218;
   s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 60, areaW, weaponsTop - 60);
-  columns.forEach(([caption, x]) => s.label(caption, x, weaponsTop - 25, { size: captionSize, color: "lines" }));
+  columns.forEach(([caption, x]) => s.label(caption, x, weaponsTop - 24.5, { size: captionSize, color: "lines" }));
   for (let row = 1; row <= 5; row += 1) {
     const y = weaponsTop - 36 - (row - 1) * 21;
     const [[, nx, nw], [, rx, rw], [, ax, aw], [, dx, dw], [, ox, ow]] = columns;
@@ -1031,8 +1036,11 @@ function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, f
     s.text(`details_attack${row}_range`, rx, y, rw, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_attack`, ax, y, aw, 10, { size: 7, align: "center" });
     s.text(`details_attack${row}_damage`, dx, y, dw, 10, { size: 7 });
-    // Match the first baseline to the adjacent values; overflow continues in the writer.
-    s.text(`details_attack${row}_description`, ox, y - 10.1, ow, 21, { multiline: true, size: 6, box: "none" });
+    // The note's top stands 1.05pt proud of the row, which levels its first
+    // line with the row's values to within half a point in every body face,
+    // whether the writer seats the first line by baseline (one size and 2pt
+    // down) or by cap height (4pt down). Overflow continues in the writer.
+    s.text(`details_attack${row}_description`, ox, y - 9.95, ow, 21, { multiline: true, size: 6, box: "none" });
   }
   // The attacks without a row and the user's own notes, under the last row's notes cell.
   s.text("details_attack_description", areaX + 4, 64, areaW - 8, 22, { multiline: true, size: layout.readable ? 7 : 6, box: "none" });
@@ -1104,7 +1112,7 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
 
   rightColumn2024(s, style, layout, 270, 316,
     // RANGE holds a ranged weapon's ammunition too ("30/120; Bullet").
-    [["NAME", 274, 68], ["RANGE", 344, 40], ["ATK / DC", 386, 34], ["DAMAGE & TYPE", 422, 64], ["NOTES", 488, 94]], readable ? 5 : 3.8, "CLASS FEATURES");
+    [["NAME", 274, 74], ["RANGE", 350, 40], ["ATK / DC", 392, 34], ["DAMAGE & TYPE", 428, 64], ["NOTES", 494, 88]], readable ? 5 : 3.8, "CLASS FEATURES");
   return finish(doc, s);
 }
 

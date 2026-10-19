@@ -40,7 +40,7 @@
    {
     "text": "CLASS",
     "x": 32,
-    "y": 709.5,
+    "y": 707.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -48,7 +48,7 @@
    {
     "text": "LEVEL",
     "x": 220,
-    "y": 709.5,
+    "y": 707.5,
     "size": 4.2,
     "font": "captions",
     "color": "text",
@@ -58,7 +58,7 @@
    {
     "text": "SPECIES",
     "x": 32,
-    "y": 685.5,
+    "y": 683.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -66,7 +66,7 @@
    {
     "text": "BACKGROUND",
     "x": 118,
-    "y": 685.5,
+    "y": 683.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -74,7 +74,7 @@
    {
     "text": "XP",
     "x": 220,
-    "y": 685.5,
+    "y": 683.5,
     "size": 4.2,
     "font": "captions",
     "color": "text",
@@ -84,7 +84,7 @@
    {
     "text": "ALIGNMENT",
     "x": 32,
-    "y": 661.5,
+    "y": 659.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -92,7 +92,7 @@
    {
     "text": "DEITY",
     "x": 144,
-    "y": 661.5,
+    "y": 659.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -115,7 +115,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 89
+    "width": 99
    },
    {
     "text": "SHIELD",
@@ -135,27 +135,27 @@
    },
    {
     "text": "HIT POINTS",
-    "x": 424,
+    "x": 434,
     "y": 749,
     "size": 5.8,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 110
+    "width": 100
    },
    {
     "text": "CURRENT",
-    "x": 430,
+    "x": 440,
     "y": 701.5,
     "size": 3.8,
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 50
+    "width": 44
    },
    {
     "text": "TEMP",
-    "x": 484,
+    "x": 488,
     "y": 726,
     "size": 3.8,
     "font": "captions",
@@ -163,7 +163,7 @@
    },
    {
     "text": "MAX",
-    "x": 484,
+    "x": 488,
     "y": 710,
     "size": 3.8,
     "font": "captions",
@@ -820,7 +820,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -828,7 +828,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -836,7 +836,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -844,7 +844,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -852,7 +852,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -1956,7 +1956,7 @@
    {
     "text": "CLASS",
     "x": 32,
-    "y": 709.5,
+    "y": 707.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -1964,7 +1964,7 @@
    {
     "text": "LEVEL",
     "x": 220,
-    "y": 709.5,
+    "y": 707.5,
     "size": 4.2,
     "font": "captions",
     "color": "text",
@@ -1974,7 +1974,7 @@
    {
     "text": "SPECIES",
     "x": 32,
-    "y": 685.5,
+    "y": 683.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -1982,7 +1982,7 @@
    {
     "text": "BACKGROUND",
     "x": 118,
-    "y": 685.5,
+    "y": 683.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -1990,7 +1990,7 @@
    {
     "text": "XP",
     "x": 220,
-    "y": 685.5,
+    "y": 683.5,
     "size": 4.2,
     "font": "captions",
     "color": "text",
@@ -2000,7 +2000,7 @@
    {
     "text": "ALIGNMENT",
     "x": 32,
-    "y": 661.5,
+    "y": 659.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -2008,7 +2008,7 @@
    {
     "text": "DEITY",
     "x": 144,
-    "y": 661.5,
+    "y": 659.5,
     "size": 4.2,
     "font": "captions",
     "color": "text"
@@ -2031,7 +2031,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 89
+    "width": 99
    },
    {
     "text": "SHIELD",
@@ -2051,27 +2051,27 @@
    },
    {
     "text": "HIT POINTS",
-    "x": 424,
+    "x": 434,
     "y": 749,
     "size": 5.8,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 110
+    "width": 100
    },
    {
     "text": "CURRENT",
-    "x": 430,
+    "x": 440,
     "y": 701.5,
     "size": 3.8,
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 50
+    "width": 44
    },
    {
     "text": "TEMP",
-    "x": 484,
+    "x": 488,
     "y": 726,
     "size": 3.8,
     "font": "captions",
@@ -2079,7 +2079,7 @@
    },
    {
     "text": "MAX",
-    "x": 484,
+    "x": 488,
     "y": 710,
     "size": 3.8,
     "font": "captions",
@@ -2736,7 +2736,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2744,7 +2744,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2752,7 +2752,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2760,7 +2760,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2768,7 +2768,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2818,7 +2818,7 @@
    },
    {
     "text": "PLAYER",
-    "x": 266,
+    "x": 256,
     "y": 734.5,
     "size": 4.2,
     "font": "captions",
@@ -2833,7 +2833,7 @@
     "color": "text"
    },
    {
-    "text": "SPECIES & BACKGROUND",
+    "text": "BACKGROUND",
     "x": 32,
     "y": 702.5,
     "size": 3.4,
@@ -2842,7 +2842,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 142,
+    "x": 120,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -2850,7 +2850,7 @@
    },
    {
     "text": "DEITY",
-    "x": 220,
+    "x": 210,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -2858,7 +2858,7 @@
    },
    {
     "text": "XP",
-    "x": 282,
+    "x": 274,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -2866,7 +2866,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 345,
+    "x": 329,
     "y": 750,
     "size": 4.2,
     "font": "captions",
@@ -2874,13 +2874,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 345,
+    "x": 329,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 72.5
+    "width": 90.5
    },
    {
     "text": "ARMOR CLASS",
@@ -3539,7 +3539,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3547,7 +3547,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3555,7 +3555,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3563,7 +3563,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3571,7 +3571,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3621,7 +3621,7 @@
    },
    {
     "text": "PLAYER",
-    "x": 266,
+    "x": 256,
     "y": 734.5,
     "size": 4.2,
     "font": "captions",
@@ -3636,7 +3636,7 @@
     "color": "text"
    },
    {
-    "text": "SPECIES & BACKGROUND",
+    "text": "BACKGROUND",
     "x": 32,
     "y": 702.5,
     "size": 3.4,
@@ -3645,7 +3645,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 142,
+    "x": 120,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -3653,7 +3653,7 @@
    },
    {
     "text": "DEITY",
-    "x": 220,
+    "x": 210,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -3661,7 +3661,7 @@
    },
    {
     "text": "XP",
-    "x": 282,
+    "x": 274,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -3669,7 +3669,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 345,
+    "x": 329,
     "y": 750,
     "size": 4.2,
     "font": "captions",
@@ -3677,13 +3677,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 345,
+    "x": 329,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 72.5
+    "width": 90.5
    },
    {
     "text": "ARMOR CLASS",
@@ -4342,7 +4342,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4350,7 +4350,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4358,7 +4358,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4366,7 +4366,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4374,7 +4374,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4433,7 +4433,7 @@
    {
     "text": "CLASS",
     "x": 32,
-    "y": 708.9,
+    "y": 706.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4441,7 +4441,7 @@
    {
     "text": "LEVEL",
     "x": 220,
-    "y": 708.9,
+    "y": 706.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -4451,7 +4451,7 @@
    {
     "text": "SPECIES",
     "x": 32,
-    "y": 684.9,
+    "y": 682.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4459,7 +4459,7 @@
    {
     "text": "BACKGROUND",
     "x": 118,
-    "y": 684.9,
+    "y": 682.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4467,7 +4467,7 @@
    {
     "text": "XP",
     "x": 220,
-    "y": 684.9,
+    "y": 682.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -4477,7 +4477,7 @@
    {
     "text": "ALIGNMENT",
     "x": 32,
-    "y": 660.9,
+    "y": 658.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4485,7 +4485,7 @@
    {
     "text": "DEITY",
     "x": 144,
-    "y": 660.9,
+    "y": 658.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4508,7 +4508,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 89
+    "width": 99
    },
    {
     "text": "SHIELD",
@@ -4528,27 +4528,27 @@
    },
    {
     "text": "HIT POINTS",
-    "x": 424,
+    "x": 434,
     "y": 749,
     "size": 5.8,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 110
+    "width": 100
    },
    {
     "text": "CURRENT",
-    "x": 430,
+    "x": 440,
     "y": 701.5,
     "size": 4.8,
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 50
+    "width": 44
    },
    {
     "text": "TEMP",
-    "x": 484,
+    "x": 488,
     "y": 726,
     "size": 4.8,
     "font": "captions",
@@ -4556,7 +4556,7 @@
    },
    {
     "text": "MAX",
-    "x": 484,
+    "x": 488,
     "y": 710,
     "size": 4.8,
     "font": "captions",
@@ -5213,7 +5213,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5221,7 +5221,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5229,7 +5229,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5237,7 +5237,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5245,7 +5245,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5304,7 +5304,7 @@
    {
     "text": "CLASS",
     "x": 32,
-    "y": 708.9,
+    "y": 706.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5312,7 +5312,7 @@
    {
     "text": "LEVEL",
     "x": 220,
-    "y": 708.9,
+    "y": 706.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5322,7 +5322,7 @@
    {
     "text": "SPECIES",
     "x": 32,
-    "y": 684.9,
+    "y": 682.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5330,7 +5330,7 @@
    {
     "text": "BACKGROUND",
     "x": 118,
-    "y": 684.9,
+    "y": 682.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5338,7 +5338,7 @@
    {
     "text": "XP",
     "x": 220,
-    "y": 684.9,
+    "y": 682.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5348,7 +5348,7 @@
    {
     "text": "ALIGNMENT",
     "x": 32,
-    "y": 660.9,
+    "y": 658.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5356,7 +5356,7 @@
    {
     "text": "DEITY",
     "x": 144,
-    "y": 660.9,
+    "y": 658.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5379,7 +5379,7 @@
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 89
+    "width": 99
    },
    {
     "text": "SHIELD",
@@ -5399,27 +5399,27 @@
    },
    {
     "text": "HIT POINTS",
-    "x": 424,
+    "x": 434,
     "y": 749,
     "size": 5.8,
     "font": "titles",
     "color": "accent",
     "align": "center",
-    "width": 110
+    "width": 100
    },
    {
     "text": "CURRENT",
-    "x": 430,
+    "x": 440,
     "y": 701.5,
     "size": 4.8,
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 50
+    "width": 44
    },
    {
     "text": "TEMP",
-    "x": 484,
+    "x": 488,
     "y": 726,
     "size": 4.8,
     "font": "captions",
@@ -5427,7 +5427,7 @@
    },
    {
     "text": "MAX",
-    "x": 484,
+    "x": 488,
     "y": 710,
     "size": 4.8,
     "font": "captions",
@@ -6084,7 +6084,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6092,7 +6092,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6100,7 +6100,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6108,7 +6108,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6116,7 +6116,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6166,7 +6166,7 @@
    },
    {
     "text": "PLAYER",
-    "x": 266,
+    "x": 256,
     "y": 733.9,
     "size": 5,
     "font": "captions",
@@ -6181,7 +6181,7 @@
     "color": "text"
    },
    {
-    "text": "SPECIES & BACKGROUND",
+    "text": "BACKGROUND",
     "x": 32,
     "y": 702.5,
     "size": 4.4,
@@ -6190,7 +6190,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 142,
+    "x": 120,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6198,7 +6198,7 @@
    },
    {
     "text": "DEITY",
-    "x": 220,
+    "x": 210,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6206,7 +6206,7 @@
    },
    {
     "text": "XP",
-    "x": 282,
+    "x": 274,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6214,7 +6214,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 345,
+    "x": 329,
     "y": 750,
     "size": 5,
     "font": "captions",
@@ -6222,13 +6222,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 345,
+    "x": 329,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 72.5
+    "width": 90.5
    },
    {
     "text": "ARMOR CLASS",
@@ -6887,7 +6887,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6895,7 +6895,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6903,7 +6903,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6911,7 +6911,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6919,7 +6919,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6969,7 +6969,7 @@
    },
    {
     "text": "PLAYER",
-    "x": 266,
+    "x": 256,
     "y": 733.9,
     "size": 5,
     "font": "captions",
@@ -6984,7 +6984,7 @@
     "color": "text"
    },
    {
-    "text": "SPECIES & BACKGROUND",
+    "text": "BACKGROUND",
     "x": 32,
     "y": 702.5,
     "size": 4.4,
@@ -6993,7 +6993,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 142,
+    "x": 120,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -7001,7 +7001,7 @@
    },
    {
     "text": "DEITY",
-    "x": 220,
+    "x": 210,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -7009,7 +7009,7 @@
    },
    {
     "text": "XP",
-    "x": 282,
+    "x": 274,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -7017,7 +7017,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 345,
+    "x": 329,
     "y": 750,
     "size": 5,
     "font": "captions",
@@ -7025,13 +7025,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 345,
+    "x": 329,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 72.5
+    "width": 90.5
    },
    {
     "text": "ARMOR CLASS",
@@ -7690,7 +7690,7 @@
    {
     "text": "NAME",
     "x": 234,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7698,7 +7698,7 @@
    {
     "text": "RANGE",
     "x": 318,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7706,7 +7706,7 @@
    {
     "text": "ATK / DC",
     "x": 360,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7714,7 +7714,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 398,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7722,7 +7722,7 @@
    {
     "text": "NOTES",
     "x": 472,
-    "y": 193,
+    "y": 193.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"

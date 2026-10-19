@@ -966,7 +966,8 @@ describe("character sheet PDF writer", () => {
     // over the row's full pitch.
     for (let row = 1; row <= 4; row += 1) {
       const rect = rectOf(`details_attack${row}_description`);
-      expect({ width: rect.width, height: rect.height }, `row ${row} cell`).toEqual({ width: 94, height: 21 });
+      expect(rect.width, `row ${row} cell width`).toBe(88);
+      expect(rect.height, `row ${row} cell height`).toBeCloseTo(21, 5);
     }
     // A note's lines are the drawn items inside its own cell; picking them by
     // text alone would catch a weapon name that reads as part of a note.
@@ -1001,16 +1002,15 @@ describe("character sheet PDF writer", () => {
     expect(Math.abs(baselineOf(short) - baselineOf("1d8+2 Piercing"))).toBeLessThanOrEqual(0.6);
   }, 120_000);
 
-  // The reported defect behind the notes cell's 0.9pt lift: the note read as
+  // The reported defect behind the notes cell's lift: the note read as
   // sitting under the rest of its row. The writer places the two kinds of line
   // by different rules — a single-line value is centred on its box by cap
-  // height, a wrapped cell's first baseline is a fixed `top - 2 - size` inset —
-  // so sharing the row's top left the 6pt note half a point under the 7pt
-  // values' baseline and more than a point under their cap top. The cell's top
-  // is now 604.9 rather than 604, which is the one number that holds both
-  // errors inside half a point for every body face: the value baseline moves
-  // with the face's cap height and the note's does not, so the two cannot be
-  // made to coincide, only balanced.
+  // height, a wrapped cell's first line is inset from the box's top — so
+  // sharing the row's top left the 6pt note under the 7pt values. The cell's
+  // top stands 1.05pt proud of the row, which holds the baseline and cap-top
+  // errors inside 0.6pt for every body face whether the first line is inset
+  // by `top - 2 - size` or by a cap height 4pt under the top: the value
+  // baseline moves with the face's cap height, so the two can only be balanced.
   it("sets a 2024 weapon note's first line level with its row in every body face", async () => {
     const model = {
       characterId: "Level",
