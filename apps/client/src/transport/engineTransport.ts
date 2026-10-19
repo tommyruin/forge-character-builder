@@ -8,6 +8,7 @@ import {
 import { CHARACTER_LOAD_MANIFEST, FAST_START_MANIFEST } from "@forge-cb/api";
 import { localStore as defaultStore } from "./localStore.js";
 import { contentStoragePath, createContentSourceId } from "./contentStorage.js";
+import { bundledPacks, packStoredPath, restoreBundledPacks } from "./packBundle.js";
 import { findMatchingContentSources, fingerprintContentSource } from "./contentDuplicates.js";
 import {
   createFastStartIdentity,
@@ -162,12 +163,14 @@ const CHARACTER_PACKAGE_FORMATS = new Set<string>(ACCEPTED_CHARACTER_PACKAGE_TOK
 
 /**
  * The `.dnd5e-pkg` package format: a JSON envelope
- * `{format:"fcb-character-package",version:1,character:{id,xml},content:[{path,base64}]}`
+ * `{format:"fcb-character-package",version:1,character:{id,xml},content:[{path,base64}],packs?:[...]}`
  * bundling the character document with the custom-content files it depends on.
+ * `packs` is optional: the homebrew packs (drafts included) the character uses, so another device
+ * can open them for editing. A reader that does not know it reads the rest unchanged.
  * Returns null for anything that is not such an envelope so plain `.dnd5e`
  * XML (and misnamed files) fall through to the XML importer unchanged.
  */
-function parseCharacterPackage(text: string): { id: string | null; xml: string; content: Array<{ path: string; base64: string }> } | null {
+function parseCharacterPackage(text: string): { id: string | null; xml: string; content: Array<{ path: string; base64: string }>; packs: unknown[] } | null {
   if (!/^\uFEFF?\s*\{/.test(text)) return null;
   let parsed: unknown;
   try {
@@ -185,7 +188,8 @@ function parseCharacterPackage(text: string): { id: string | null; xml: string; 
     .map((entry) => entry as AnyRecord)
     .filter((entry) => typeof entry.path === "string" && typeof entry.base64 === "string")
     .map((entry) => ({ path: String(entry.path), base64: String(entry.base64) }));
-  return { id: typeof character.id === "string" ? character.id : null, xml: character.xml, content };
+  const packs = Array.isArray(envelope.packs) ? envelope.packs : [];
+  return { id: typeof character.id === "string" ? character.id : null, xml: character.xml, content, packs };
 }
 
 function characterNameFromXml(xml: string, fallback: string): string {
@@ -1528,6 +1532,9 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       // Bundle every stored custom-content file: the package must open on a
       // device that has none of this library, so over-including is the safe side.
       const records = typeof store.listContent === "function" ? ((await store.listContent()) as AnyRecord[] | null) ?? [] : [];
+      // The packs behind that content travel as packs too, so they open editable on arrival.
+      const homebrew = typeof store.listHomebrew === "function" ? ((await store.listHomebrew()) as AnyRecord[] | null) ?? [] : [];
+      const packs = bundledPacks(homebrew, xml);
       const envelope = {
         format: CHARACTER_PACKAGE_TOKEN,
         version: 1,
@@ -1535,6 +1542,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         content: records
           .filter((record) => typeof record.path === "string" && typeof record.base64 === "string")
           .map((record) => ({ path: record.path, base64: record.base64 })),
+        ...(packs.length > 0 ? { packs } : {}),
       };
       return { filename: `${id}.dnd5e-pkg`, blob: new Blob([JSON.stringify(envelope)], { type: "application/json" }) };
     },
@@ -1544,8 +1552,24 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       // A package carries its custom content; ingest it before the character
       // XML so the document's selections resolve against a complete library.
       // A duplicate verdict means this exact source is already stored — skip.
-      if (pkg && pkg.content.length > 0) {
-        await contentApi.upload(pkg.content.map((entry) => ({ relativePath: entry.path, base64: entry.base64 })));
+      let bundled = pkg ? pkg.content : [];
+      let restoredPacks: string[] = [];
+      if (pkg && pkg.packs.length > 0) {
+        // A pack goes back into the pack store and its file back to the path the editor saves it
+        // under, so editing it here replaces that file instead of adding a second copy of it.
+        const restored = await restoreBundledPacks(store, pkg.packs, new Set(bundled.map((entry) => entry.path)));
+        const owned = new Set(restored.map((entry) => packStoredPath(entry.id)));
+        for (const entry of restored) {
+          const stored = bundled.find((candidate) => candidate.path === packStoredPath(entry.id));
+          if (entry.written && entry.loaded && stored) {
+            await contentApi.upload([{ relativePath: "collection.xml", base64: stored.base64 }], "homebrew", { sourceId: `homebrew-${entry.id}` });
+          }
+        }
+        bundled = bundled.filter((entry) => !owned.has(entry.path));
+        restoredPacks = restored.filter((entry) => entry.written).map((entry) => entry.name);
+      }
+      if (bundled.length > 0) {
+        await contentApi.upload(bundled.map((entry) => ({ relativePath: entry.path, base64: entry.base64 })));
       }
       const xml = pkg ? pkg.xml : text;
       const requestedName = characterNameFromXml(xml, file.name.replace(/\.dnd5e(?:-pkg)?$/i, ""));
@@ -1568,7 +1592,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         committed = true;
         loadedId = id;
         updateCharacter({ active: false, percentage: 100, message: "Character ready", error: null });
-        return { id, bundledContent: Boolean(pkg && pkg.content.length > 0) };
+        return { id, bundledContent: Boolean(pkg && pkg.content.length > 0), ...(restoredPacks.length > 0 ? { restoredPacks } : {}) };
       } catch (error) {
         loadedId = null;
         portraitBase64 = previousPortrait;

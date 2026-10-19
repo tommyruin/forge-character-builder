@@ -1190,3 +1190,113 @@ describe("typed FCB nested adapter", () => {
     expect(await store.listCharacters()).toEqual(before);
   });
 });
+
+describe("homebrew packs in a character package", () => {
+  const PACK_ID = "11111111-2222-3333-4444-555555555555";
+  const stablePath = `imports/homebrew-${PACK_ID}/collection.xml`;
+  const packRecord = (extra: Record<string, unknown> = {}) => ({
+    id: PACK_ID,
+    name: "Moon World",
+    slug: "moon-world",
+    elements: [{ localId: "a", type: "Custom Feature", name: "Tide Gift", id: "ID_CUSTOM_TIDEGIFT0001", rawXml: '<element id="ID_CUSTOM_TIDEGIFT0001" />', customDraft: { id: "ID_CUSTOM_TIDEGIFT0001" } }],
+    ingestedAt: 5,
+    hasUnloadedChanges: false,
+    updatedAt: 99,
+    version: 10,
+    ...extra,
+  });
+  const withPacks = (store: ReturnType<typeof fakeStore>, packs: Array<Record<string, unknown>>) => {
+    const kept = new Map(packs.map((pack) => [String(pack.id), pack]));
+    const target = store as unknown as Record<string, unknown>;
+    target.listHomebrew = vi.fn(async () => [...kept.values()]);
+    target.getHomebrew = vi.fn(async (id: string) => kept.get(id));
+    target.putHomebrew = vi.fn(async (record: Record<string, unknown>) => kept.set(String(record.id), record));
+    return kept;
+  };
+
+  it("bundles the packs whose elements the character names, drafts included, and leaves the rest", async () => {
+    const { client } = fakeClient();
+    const store = fakeStore();
+    const other = packRecord({ id: "other", elements: [{ localId: "b", type: "Feat", name: "Other", id: "ID_HB_OTHER_FEAT" }] });
+    withPacks(store, [packRecord(), other]);
+    await store.putCharacter({ id: "Ada", xml: "<character />", summary: { id: "Ada", name: "Ada" } });
+    (client.exportCharacterXml as unknown as ReturnType<typeof vi.fn>).mockImplementation(async () => ({ base64: btoa('<character><register id="ID_CUSTOM_TIDEGIFT0001" /></character>') }));
+    const api = createEngineApi({ client, store });
+    const parsed = JSON.parse(await (await api.characters.exportPackage("Ada")).blob.text());
+    expect(parsed.packs).toHaveLength(1);
+    expect(parsed.packs[0]).toMatchObject({ loaded: true, unloadedChanges: false });
+    expect(parsed.packs[0].pack).toMatchObject({ id: PACK_ID, name: "Moon World", version: 10 });
+    expect(parsed.packs[0].pack.ingestedAt).toBeUndefined();
+    expect(parsed.packs[0].pack.elements[0].customDraft).toEqual({ id: "ID_CUSTOM_TIDEGIFT0001" });
+  });
+
+  it("writes no packs part for a character that uses none, so its package is unchanged", async () => {
+    const { client } = fakeClient();
+    const store = fakeStore();
+    withPacks(store, [packRecord()]);
+    await store.putCharacter({ id: "Ada", xml: "<character />", summary: { id: "Ada", name: "Ada" } });
+    const api = createEngineApi({ client, store });
+    const parsed = JSON.parse(await (await api.characters.exportPackage("Ada")).blob.text());
+    expect("packs" in parsed).toBe(false);
+  });
+
+  it("restores the packs as editable packs and puts their file back at the editor's own path", async () => {
+    const { client, store, liveFiles } = statefulContentHarness();
+    const kept = withPacks(store, []);
+    const api = createEngineApi({ client, store });
+    const xml = "<character><display-properties><name>Donyo</name></display-properties></character>";
+    const fileBody = btoa('<elements><element id="ID_CUSTOM_TIDEGIFT0001" /></elements>');
+    const pkg = JSON.stringify({
+      format: "fcb-character-package",
+      version: 1,
+      character: { id: "Donyo", xml },
+      content: [
+        { path: stablePath, base64: fileBody },
+        { path: "imports/loose/other.xml", base64: btoa("<elements />") },
+      ],
+      packs: [{ pack: packRecord({ ingestedAt: undefined, updatedAt: undefined }), loaded: true, unloadedChanges: false }],
+    });
+    const result = await api.characters.import({ name: "Donyo.dnd5e-pkg", text: async () => pkg } as unknown as File);
+    expect(result).toMatchObject({ id: "Donyo", bundledContent: true, restoredPacks: ["Moon World"] });
+    const restored = kept.get(PACK_ID) as Record<string, unknown>;
+    expect(restored).toMatchObject({ name: "Moon World", hasUnloadedChanges: false, version: 10 });
+    expect(restored.ingestedAt).toEqual(expect.any(Number));
+    expect((restored.elements as Array<Record<string, unknown>>)[0].customDraft).toEqual({ id: "ID_CUSTOM_TIDEGIFT0001" });
+    // The pack's file sits at its stable path once, and the other file arrived as before.
+    const paths = [...liveFiles.keys()];
+    expect(paths.filter((path) => path.endsWith("collection.xml"))).toEqual([stablePath]);
+    expect(paths.some((path) => path.endsWith("other.xml"))).toBe(true);
+  });
+
+  it("keeps a pack the device already has when its own copy is newer", async () => {
+    const { client, store } = statefulContentHarness();
+    const kept = withPacks(store, [packRecord({ version: 50, name: "Moon World (edited here)" })]);
+    const api = createEngineApi({ client, store });
+    const xml = "<character><display-properties><name>Donyo</name></display-properties></character>";
+    const pkg = JSON.stringify({
+      format: "fcb-character-package",
+      version: 1,
+      character: { id: "Donyo", xml },
+      content: [{ path: stablePath, base64: btoa("<elements />") }],
+      packs: [{ pack: packRecord({ version: 10 }), loaded: true }],
+    });
+    const result = await api.characters.import({ name: "Donyo.dnd5e-pkg", text: async () => pkg } as unknown as File);
+    expect(result).not.toHaveProperty("restoredPacks");
+    expect((kept.get(PACK_ID) as Record<string, unknown>).name).toBe("Moon World (edited here)");
+  });
+
+  it("leaves a pack unloaded when the package carries no file for it", async () => {
+    const { client, store } = statefulContentHarness();
+    const kept = withPacks(store, []);
+    const api = createEngineApi({ client, store });
+    const pkg = JSON.stringify({
+      format: "fcb-character-package",
+      version: 1,
+      character: { id: "Donyo", xml: "<character><display-properties><name>Donyo</name></display-properties></character>" },
+      content: [],
+      packs: [{ pack: packRecord(), loaded: true }],
+    });
+    await api.characters.import({ name: "Donyo.dnd5e-pkg", text: async () => pkg } as unknown as File);
+    expect(kept.get(PACK_ID)).toMatchObject({ ingestedAt: null, hasUnloadedChanges: true });
+  });
+});
