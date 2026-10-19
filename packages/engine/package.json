@@ -12,6 +12,10 @@
       "types": "./dist/browser.d.ts",
       "default": "./dist/browser.js"
     },
+    "./requirements": {
+      "types": "./dist/selection/expr.d.ts",
+      "default": "./dist/selection/expr.js"
+    },
     "./sheet-contract": {
       "types": "./dist/sheet/template-contract.d.ts",
       "default": "./dist/sheet/template-contract.js"

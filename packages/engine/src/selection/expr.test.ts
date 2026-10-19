@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateRequirements, type RequirementContext } from "./expr.js";
+import { evaluateRequirements, requirementsSyntaxError, type RequirementContext } from "./expr.js";
 
 function ctx(
   options: Partial<{
@@ -134,6 +134,21 @@ describe("requirement expression evaluator (corpus grammar)", () => {
     for (const bad of ["(", "ID_A||", "!", "!!!", "[dex:13", "ID_A,,ID_B", "&&ID_A", "((ID_A)", "ID_A||ID_B||", "[dex:13]||", "ID_A,", "()"]) {
       expect(() => evaluateRequirements(bad, ctx({ ability: { dex: 15 } }))).not.toThrow();
       expect(evaluateRequirements(bad, ctx({ ability: { dex: 15 } }))).toBe(false);
+    }
+  });
+});
+
+describe("requirement expression syntax check", () => {
+  it("accepts the expressions the grammar reads", () => {
+    for (const expression of ["", "[str:13],[level:4]", "(ID_A||ID_B),!ID_C", "[level:wizard:3]", "ID_A | ID_B"]) {
+      expect(requirementsSyntaxError(expression), expression).toBeNull();
+    }
+  });
+
+  it("names a problem the evaluator would only report as 'not met'", () => {
+    for (const expression of ["[str:13", "ID_A,", "(ID_A", "ID_A ID_B", "ID_A $"]) {
+      expect(requirementsSyntaxError(expression), expression).not.toBeNull();
+      expect(evaluateRequirements(expression, ctx({ ids: ["ID_A", "ID_B"] })), expression).toBe(false);
     }
   });
 });

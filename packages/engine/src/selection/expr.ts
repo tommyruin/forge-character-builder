@@ -265,3 +265,26 @@ export function evaluateRequirements(
     return false;
   }
 }
+
+/**
+ * The reason a requirement expression cannot be read, or null when it parses.
+ * Evaluation reports a malformed expression as "not met" (never throws), which
+ * an editor cannot tell apart from a real, unmet requirement; this checks the
+ * grammar alone, against a context that satisfies every atom.
+ */
+export function requirementsSyntaxError(expression: string | undefined): string | null {
+  if (expression === undefined || expression.trim() === "") return null;
+  const everything: RequirementContext = {
+    hasElement: () => true,
+    hasType: () => true,
+    ability: () => 0,
+    level: 0,
+    classLevel: () => 0,
+  };
+  try {
+    new Parser(tokenize(expression), everything).parse();
+    return null;
+  } catch (cause) {
+    return cause instanceof Error ? cause.message : "unreadable expression";
+  }
+}
