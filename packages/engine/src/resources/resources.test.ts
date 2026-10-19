@@ -10,6 +10,7 @@ import { CharacterService } from "../character/service.js";
 import { computeInlineValues, computeStatistics } from "../statistics/calculator.js";
 import { buildCharacterSheetModel } from "../sheet/model.js";
 import { buildCharacter, buildFighter3, ID, sharedLibrary, type BuiltCharacter } from "../testing/character-factory.js";
+import { SAMPLE_CASTER, SAMPLE_CHARACTER } from "../testing/dnd5e-samples.js";
 import {
   createCustomDraft,
   createCustomItemDraft,
@@ -44,6 +45,20 @@ const byLabel = (resources: ResourcesDto, label: string): TrackerDto => {
   if (found === undefined) throw new Error(`no tracker '${label}' in ${resources.trackers.map((entry) => entry.label).join(", ")}`);
   return found;
 };
+
+describe("an Aurora file that never used a tracker", () => {
+  it.each([["minimal", SAMPLE_CHARACTER], ["caster", SAMPLE_CASTER]])("round-trips the %s sample byte for byte after resources are read and a rest is taken", (_name, sample) => {
+    const service = new CharacterService(undefined, library);
+    service.importCharacterXml("Sample", sample);
+    const original = service.exportCharacterXml("Sample");
+    expect(original).toBe(sample);
+    service.getResources("Sample");
+    service.restCharacter("Sample", { kind: "short" });
+    service.restCharacter("Sample", { kind: "long" });
+    expect(service.exportCharacterXml("Sample")).toBe(original);
+    expect(original).not.toContain("<forge-builder");
+  });
+});
 
 describe("a character that never used a tracker", () => {
   it("has the same file after looking at its resources, spending nothing and resting", () => {
@@ -399,5 +414,59 @@ describe("limited uses printed in the book content", () => {
     const first = book[0]!;
     service.setTrackerUsed(id, { trackerId: first.id, used: 1 });
     expect(service.getResources(id).trackers.find((entry) => entry.id === first.id)!.used).toBe(1);
+    expect(service.restCharacter(id, { kind: "short" }).trackers.find((entry) => entry.id === first.id)!.used).toBe(0);
+  });
+
+  it("follow the counts the engine already computes: rage, bardic inspiration, wild shape", () => {
+    const barbarian = buildCharacter(library, { id: `TrackBarb${counter++}`, classId: ID.CLASS_BARBARIAN, levels: 5 });
+    const rage = byLabel(barbarian.service.getResources(barbarian.id), "Rage");
+    expect(rage).toMatchObject({ max: computeStatistics(barbarian.service.getCharacter(barbarian.id), library)["barbarian rage:count"], recharge: "longRest" });
+
+    const bard = buildCharacter(library, {
+      id: `TrackBard${counter++}`, classId: "ID_WOTC_PHB_CLASS_BARD", levels: 5,
+      abilities: { strength: 8, dexterity: 14, constitution: 14, intelligence: 10, wisdom: 12, charisma: 16 },
+    });
+    const values = computeStatistics(bard.service.getCharacter(bard.id), library);
+    expect(byLabel(bard.service.getResources(bard.id), "Bardic Inspiration").max).toBe(values["bardic-inspiration:count"]);
+
+    const druid = buildCharacter(library, { id: `TrackDruid${counter++}`, classId: ID.CLASS_DRUID, levels: 5 });
+    expect(byLabel(druid.service.getResources(druid.id), "Wild Shape")).toMatchObject({ max: 2, recharge: "shortRest" });
+  });
+
+  it("leave a feature with no count in its usage line alone", () => {
+    const { service, id } = buildCharacter(library, { id: `TrackRogue${counter++}`, classId: ID.CLASS_ROGUE, levels: 5 });
+    expect(service.getResources(id).trackers).toEqual([]);
+  });
+});
+
+describe("the sheet", () => {
+  const resourceLines = (service: CharacterService, id: string): string[] => {
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
+    return model.pages
+      .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))))
+      .filter((line) => line.startsWith("Resources."));
+  };
+
+  it("prints every resource in one paragraph: boxes for a few uses, a blank for many", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", {
+        trackers: [
+          tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" }),
+          tracker({ id: "b", label: "Embers", unit: "charges", max: { kind: "number", value: 12 }, recharge: "dawn" }),
+          tracker({ id: "c", label: "Wand", unit: "charges", max: { kind: "number", value: 7 }, recharge: "diceRoll", regain: "1d6+1 at dawn" }),
+        ],
+      }),
+    });
+    service.setTrackerUsed(id, { trackerId: "a", used: 1 });
+    const [line] = resourceLines(service, id);
+    expect(line).toContain("Moonbeam [ ] [ ] (SR)");
+    expect(line).toContain("Embers ____ / 12 charges (dawn)");
+    expect(line).toContain("Wand ____ / 7 charges (1d6+1 at dawn)");
+  });
+
+  it("prints nothing for a character with no limited uses", () => {
+    const { service, id } = buildCharacter(library, { id: `SheetRogue${counter++}`, classId: ID.CLASS_ROGUE, levels: 5 });
+    expect(resourceLines(service, id)).toEqual([]);
   });
 });
