@@ -232,5 +232,6 @@ export function sheetFaces(fonts: SheetFonts, read: (file: string) => Uint8Array
       italic: faceSource(body, "italic", read),
       boldItalic: faceSource(body, "boldItalic", read),
     },
+    bodyFace: fonts.body,
   };
 }

@@ -524,6 +524,7 @@ export function createEngineMethodHandlers(
         mode: request.lite ? "lite" : "full",
         ...(request.include ? { include: request.include } : {}),
         ...(request.inventoryNotes === true ? { inventoryNotes: true } : {}),
+        ...(typeof request.bodyFace === "string" ? { bodyFace: request.bodyFace } : {}),
       }));
     },
     getSpellcasting: (id) => service.getSpellcasting(id),

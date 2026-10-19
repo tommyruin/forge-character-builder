@@ -83,6 +83,8 @@ export type SheetTemplateKind =
 export interface SheetSpellListSection {
   level: number;
   slots: number;
+  /** The class whose band prints this combined multiclass caster's shared slots (on its first band). */
+  sharedSlotsWith?: string;
   spells: readonly {
     name: string;
     prepared: boolean;
@@ -169,6 +171,12 @@ export interface BuildSheetOptions {
    * `inventoryColumnEntries`). Absent or `false` prints the column as always.
    */
   inventoryNotes?: boolean;
+  /**
+   * The body face the sheet will be drawn in (a SHEET_FONT_FACES key), so card
+   * prose is measured in that face's widths. Absent measures in Helvetica,
+   * the default body face.
+   */
+  bodyFace?: string;
 }
 
 const ABILITY_KEYS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
@@ -337,10 +345,10 @@ export function buildCharacterSheetModel(
     pages.push(...buildSpellListPages(state, library, options.canonical === true ? spellcasters : mergeSheetSpellcasters(spellcasters)));
   }
   if (options.mode === "full" && wants("spellCards")) {
-    pages.push(...buildSpellDescriptionPages(state, library, spellcasters, options.canonical === true));
+    pages.push(...buildSpellDescriptionPages(state, library, spellcasters, options.canonical === true, options.bodyFace));
   }
   if (options.mode === "full" && wants("itemCards")) {
-    const itemPage = buildItemDescriptionPage(state, library, options.canonical === true);
+    const itemPage = buildItemDescriptionPage(state, library, options.canonical === true, options.bodyFace);
     if (itemPage !== null) pages.push(itemPage);
   }
   // The page builders each carry their own idea of where they sit (the
@@ -398,12 +406,19 @@ function sheetAttackNote(attack: AttackDto, library: ElementLibrary): string {
     (attack.source?.beamCount ?? 0) > 1 ? `${attack.source!.beamCount} beams` : ""].filter(Boolean).join("; ");
 }
 
-/** A spell as the spell page layout draws it. */
-function layoutSpell(spell: KnownSpellDto): SheetSpellListSection["spells"][number] {
+/**
+ * A spell as the spell page layout draws it. A caster that does not prepare
+ * (Warlock, Sorcerer, a 2024 Bard) has every levelled spell it knows ready,
+ * so those print marked like prepared spells. Cantrips are never prepared and
+ * always ready, for every caster, so none is marked (not even a feat's,
+ * which counts as always prepared once folded into a class list).
+ */
+function layoutSpell(spell: KnownSpellDto, requiresPreparation: boolean): SheetSpellListSection["spells"][number] {
+  const levelled = spell.level > 0;
   return {
     name: spell.name,
-    prepared: spell.isPrepared,
-    alwaysPrepared: spell.isAlwaysPrepared,
+    prepared: levelled && (spell.isPrepared || !requiresPreparation),
+    alwaysPrepared: levelled && spell.isAlwaysPrepared,
     ...(spell.usage === undefined || spell.usage === null || spell.usage === "" ? {} : { usage: spell.usage }),
   };
 }
@@ -2326,12 +2341,36 @@ const MULTICLASS_SLOTS: readonly (readonly number[])[] = [
   [4, 3, 3, 3, 3, 2, 2, 1, 1],
 ];
 
-function sheetSlots(state: CharacterState, caster: SpellcasterDto): readonly number[] {
-  if (state.magic?.multiclass !== true) return caster.slotsPerLevel;
-  const block = state.magic.casters.find((entry) => entry.name === caster.name);
-  if (block?.source.includes("PACT_MAGIC") === true) return caster.slotsPerLevel;
-  const level = Number.parseInt(state.magic.level ?? "0", 10);
-  return MULTICLASS_SLOTS[Math.min(Math.max(level, 0), 20)] ?? [];
+/**
+ * The slot circles each printed caster carries. A feature caster has no slots
+ * of its own. A combined multiclass character has one shared pool, so it
+ * prints once, on the class caster whose own spells reach highest (the first
+ * such in order on a tie); the other combined class casters print their bands
+ * without circles, pointing to that class. Pact Magic keeps its own table.
+ */
+function sheetSlots(
+  state: CharacterState,
+  casters: readonly SpellcasterDto[],
+): { slots: Map<SpellcasterDto, readonly number[]>; sharedWith: Map<SpellcasterDto, string> } {
+  const slots = new Map<SpellcasterDto, readonly number[]>();
+  const sharedWith = new Map<SpellcasterDto, string>();
+  const isPact = (caster: SpellcasterDto): boolean =>
+    state.magic?.casters.find((entry) => entry.name === caster.name)?.source.includes("PACT_MAGIC") === true;
+  const combined = state.magic?.multiclass === true
+    ? casters.filter((caster) => caster.kind === "class" && caster.resource.mode === "slots" && !isPact(caster))
+    : [];
+  const holder = combined.reduce<SpellcasterDto | undefined>(
+    (best, caster) => (best === undefined || caster.maxSpellLevel > best.maxSpellLevel ? caster : best), undefined);
+  const level = Number.parseInt(state.magic?.level ?? "0", 10);
+  for (const caster of casters) {
+    if (caster.kind === "feature") slots.set(caster, []);
+    else if (caster === holder) slots.set(caster, MULTICLASS_SLOTS[Math.min(Math.max(level, 0), 20)] ?? []);
+    else if (combined.includes(caster)) {
+      slots.set(caster, []);
+      sharedWith.set(caster, holder!.name);
+    } else slots.set(caster, caster.slotsPerLevel);
+  }
+  return { slots, sharedWith };
 }
 
 interface SpellGridGeometry {
@@ -2444,10 +2483,13 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
     }
     return tokens;
   };
+  const slotPlan = sheetSlots(state, casters);
   for (const caster of casters) {
     const name = casterDisplayName(state, library, caster);
     const spells = uniqueSpellNames(caster.knownSpells);
-    const slotsPerLevel = casters.length === 1 ? caster.slotsPerLevel : sheetSlots(state, caster);
+    const slotsPerLevel = slotPlan.slots.get(caster) ?? [];
+    const sharedWith = slotPlan.sharedWith.get(caster);
+    let sharedNoted = false;
     const cantrips = spells.filter((spell) => spell.level === 0);
     const levels: Array<{
       level: number;
@@ -2460,9 +2502,13 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       const knownAtLevel = spells.filter((spell) => spell.level === level);
       // A feature caster has no slots of its own (its level-1 spell is cast
       // free once per long rest, or from another caster's slots), so its
-      // levels are admitted on known spells alone.
+      // levels are admitted on known spells alone. A class caster's level
+      // without circles of its own (Pact Magic's lower levels, a multiclass
+      // caster whose shared slots print on another class) still prints the
+      // spells it knows up to its own highest spell level.
       const slotless = caster.resource.mode === "spellPoints" || caster.kind === "feature";
-      if (slots <= 0 && !(slotless && knownAtLevel.length > 0)) continue;
+      const castable = slotless || level <= caster.maxSpellLevel;
+      if (slots <= 0 && !(castable && knownAtLevel.length > 0)) continue;
       const prepared = spells.filter(
         (spell) => spell.level === level && (spell.isPrepared || spell.isAlwaysPrepared),
       );
@@ -2529,16 +2575,21 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       slots: number;
       prepared: KnownSpellDto[];
       full: KnownSpellDto[];
-    }): SheetSpellListSection => ({
-      level: level.level,
-      slots: level.slots,
-      spells: [...level.prepared, ...level.full].map(layoutSpell),
-    });
+    }): SheetSpellListSection => {
+      const noteShared = sharedWith !== undefined && !sharedNoted;
+      if (noteShared) sharedNoted = true;
+      return {
+        level: level.level,
+        slots: level.slots,
+        ...(noteShared ? { sharedSlotsWith: sharedWith } : {}),
+        spells: [...level.prepared, ...level.full].map((spell) => layoutSpell(spell, caster.requiresPreparation)),
+      };
+    };
     let layoutSections = emitCasterHeader();
     layoutSections.push({
       level: 0,
       slots: 0,
-      spells: cantrips.map(layoutSpell),
+      spells: cantrips.map((spell) => layoutSpell(spell, caster.requiresPreparation)),
     });
     if (absorbFirstLevel) {
       const first = levels.shift()!;
@@ -2582,6 +2633,7 @@ function buildSpellDescriptionPages(
   library: ElementLibrary,
   casters: readonly SpellcasterDto[],
   canonical: boolean,
+  bodyFace?: string,
 ): SheetPage[] {
   // Description cards are a projection of active spell identities, not the
   // complete DTO class lists. Cantrips are active by registration; prepared
@@ -2643,7 +2695,7 @@ function buildSpellDescriptionPages(
   for (let i = 0; i < entries.length; i += 9) {
     const slice = entries.slice(i, i + 9);
     const cards = slice.map((entry) => spellDescriptionCard(state, library, entry));
-    const positioned = descriptionCardRuns(cards);
+    const positioned = descriptionCardRuns(cards, { face: bodyFace });
     const canonicalPositioned = canonical ? descriptionCardRuns(cards, { richText: false }) : undefined;
     pages.push({
       page: pages.length + 1,
@@ -2654,7 +2706,7 @@ function buildSpellDescriptionPages(
         return {
           title: "spell-description",
           rows: descriptionPageRows(entry.spell, element, origin),
-          positionedRuns: positioned.filter((run) => run.card === card),
+          positionedRuns: positioned.filter((run) => run.cardIndex === card),
           ...(canonicalPositioned === undefined
             ? {}
             : { canonicalRuns: canonicalPositioned.filter((run) => run.card === card) }),
@@ -2805,7 +2857,12 @@ function ordinalLevel(level: number): string {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-function buildItemDescriptionPage(state: CharacterState, library: ElementLibrary, canonical: boolean): SheetPage | null {
+function buildItemDescriptionPage(
+  state: CharacterState,
+  library: ElementLibrary,
+  canonical: boolean,
+  bodyFace?: string,
+): SheetPage | null {
   const items: Array<{ name: string; category: string; description: string; descriptionHtml: string; weight: string; source: string }> = [];
   for (const item of state.items) {
     if (!item.card) continue;
@@ -2835,11 +2892,11 @@ function buildItemDescriptionPage(state: CharacterState, library: ElementLibrary
     footer: item.weight,
     footerRight: item.source,
   }));
-  const positioned = descriptionCardRuns(cards);
+  const positioned = descriptionCardRuns(cards, { face: bodyFace });
   const canonicalPositioned = canonical ? descriptionCardRuns(cards, { richText: false }) : undefined;
   const sections: SheetSection[] = items.map((item, card) => ({
     title: "item-description",
-    positionedRuns: positioned.filter((run) => run.card === card),
+    positionedRuns: positioned.filter((run) => run.cardIndex === card),
     ...(canonicalPositioned === undefined
       ? {}
       : { canonicalRuns: canonicalPositioned.filter((run) => run.card === card) }),

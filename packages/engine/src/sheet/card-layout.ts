@@ -1,4 +1,4 @@
-import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, measuredTextWidth, type TextStyle } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, READABLE_MIN_FONT_SIZE, faceCapHeight, measuredTextWidth, type TextStyle } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 export interface LayoutRun {
@@ -10,6 +10,12 @@ export interface LayoutRun {
   card?: number;
   /** Zero-based PDF page within the containing card-page model page. */
   page?: number;
+  /**
+   * The description card the run belongs to, in input order. A long card's
+   * continuation takes the next free slot, so a slot (`card`, `page`) no
+   * longer tells which card it holds.
+   */
+  cardIndex?: number;
   role?: "title" | "subtitle" | "metadata" | "metadata-value" | "body" | "footer" | "table" | "sidebar";
   fontSize?: number;
   style?: "regular" | "bold" | "italic" | "bold-italic";
@@ -49,6 +55,8 @@ export interface HtmlLayoutOptions {
   frames?: (page: number) => HtmlFrame;
   /** The page, and so the area, the flow starts on. */
   frame?: number;
+  /** The body face the runs will be drawn in (see measuredTextWidth); Helvetica when absent. */
+  face?: string;
 }
 
 export interface HtmlFrame {
@@ -83,8 +91,8 @@ const LABEL_BOXES = [
 
 type InlineStyle = TextStyle;
 
-function measuredWidth(text: string, fontSize: number, style: InlineStyle = "regular"): number {
-  return measuredTextWidth(text, fontSize, style);
+function measuredWidth(text: string, fontSize: number, style: InlineStyle = "regular", face?: string): number {
+  return measuredTextWidth(text, fontSize, style, face);
 }
 
 
@@ -140,16 +148,16 @@ function htmlBlocks(html: string): HtmlBlock[] {
   return blocks;
 }
 
-function styledWidth(word: InlineWord, fontSize: number): number {
-  return measuredWidth(word.text, fontSize, word.style);
+function styledWidth(word: InlineWord, fontSize: number, face?: string): number {
+  return measuredWidth(word.text, fontSize, word.style, face);
 }
 
 /** iText-style composite flow: inline chunks share baselines; later paragraphs
  * receive the four-space indentation inserted by FillCardDescription. */
 export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): LayoutRun[] {
   const runs: LayoutRun[] = [];
-  const space = measuredWidth(" ", options.fontSize);
-  const indent = measuredWidth("    ", options.fontSize);
+  const space = measuredWidth(" ", options.fontSize, "regular", options.face);
+  const indent = measuredWidth("    ", options.fontSize, "regular", options.face);
   const lineHeight = options.lineHeight ?? options.fontSize;
   const frames = options.frames;
   let frame = options.frame ?? 0;
@@ -173,18 +181,18 @@ export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): Layout
     let x = left + contentIndent + firstLineIndent;
     if (block.list) push({ text: "\u0007", x: bulletX, y, width: space, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: "regular" });
     for (const word of block.words) {
-      const wordWidth = styledWidth(word, options.fontSize);
+      const wordWidth = styledWidth(word, options.fontSize, options.face);
       if (x > left + contentIndent + firstLineIndent && x + wordWidth > left + width) {
         const hyphen = /^(.+-)([^-]+)$/.exec(word.text);
         if (hyphen !== null) {
           const prefix = hyphen[1]!;
           const suffix = hyphen[2]!;
-          const prefixWidth = measuredWidth(prefix, options.fontSize, word.style);
+          const prefixWidth = measuredWidth(prefix, options.fontSize, word.style, options.face);
           if (x + prefixWidth <= left + width) {
             push({ text: prefix, x, y, width: prefixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
             y -= lineHeight;
             fit();
-            const suffixWidth = measuredWidth(suffix, options.fontSize, word.style);
+            const suffixWidth = measuredWidth(suffix, options.fontSize, word.style, options.face);
             push({ text: suffix, x: left + contentIndent, y, width: suffixWidth, height: options.fontSize, role: options.role, card: options.card, fontSize: options.fontSize, style: word.style });
             x = left + contentIndent + suffixWidth + space;
             continue;
@@ -202,15 +210,15 @@ export function layoutHtmlRuns(html: string, options: HtmlLayoutOptions): Layout
   return runs;
 }
 
-function wrap(text: string, width: number, fontSize: number): string[] {
+function wrap(text: string, width: number, fontSize: number, face?: string): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
   for (const word of words) {
     const candidate = line === "" ? word : `${line} ${word}`;
-    if (line !== "" && measuredWidth(candidate, fontSize) > width) {
+    if (line !== "" && measuredWidth(candidate, fontSize, "regular", face) > width) {
       const hyphen = /^(.+-)([^-]+)$/.exec(word);
-      if (hyphen !== null && measuredWidth(`${line} ${hyphen[1]}`, fontSize) <= width) {
+      if (hyphen !== null && measuredWidth(`${line} ${hyphen[1]}`, fontSize, "regular", face) <= width) {
         lines.push(`${line} ${hyphen[1]}`);
         line = hyphen[2]!;
         continue;
@@ -243,15 +251,49 @@ function wrapWithContinuation(text: string, firstWidth: number, continuationWidt
   return lines;
 }
 
-function clippedText(text: string, width: number, fontSize: number): string {
+function clippedText(text: string, width: number, fontSize: number, face?: string): string {
   const words = text.split(/\s+/).filter(Boolean);
   const kept: string[] = [];
   for (const word of words) {
     const candidate = [...kept, word].join(" ");
-    if (kept.length > 0 && measuredWidth(candidate, fontSize) > width) break;
+    if (kept.length > 0 && measuredWidth(candidate, fontSize, "regular", face) > width) break;
     kept.push(word);
   }
   return kept.join(" ");
+}
+
+const METADATA_WIDTH = 120.5;
+const METADATA_SIZE = 6;
+/** The readable floor: a value too long even there moves under the description. */
+const METADATA_MIN_SIZE = READABLE_MIN_FONT_SIZE;
+
+function escapeHtml(text: string): string {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+/**
+ * A spell card metadata row's value. It shrinks to fit its line; a value too
+ * long even at the body size (a costly material component, a reaction's
+ * trigger) prints its head with "(see below)", and the whole value follows
+ * the description as a labelled paragraph, so no word is dropped.
+ */
+function fittedMetadata(label: string, value: string, face?: string): { text: string; fontSize: number; note?: string } {
+  const fit = (text: string): number => {
+    const width = measuredWidth(text, METADATA_SIZE, "regular", face);
+    return width <= METADATA_WIDTH ? METADATA_SIZE : METADATA_SIZE * METADATA_WIDTH / width;
+  };
+  const size = fit(value);
+  if (size >= METADATA_MIN_SIZE) return { text: value, fontSize: size };
+  // "V, S, M (a pearl ...)" keeps "V, S, M"; "1 reaction, which you take ..." keeps "1 reaction".
+  const head = value.includes(" (") ? value.slice(0, value.indexOf(" (")) : /^(.+?),\s/.exec(value)?.[1];
+  if (head === undefined) return { text: clippedText(value, METADATA_WIDTH, METADATA_MIN_SIZE, face), fontSize: METADATA_MIN_SIZE };
+  const text = `${head} (see below)`;
+  const name = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+  return {
+    text,
+    fontSize: Math.max(METADATA_MIN_SIZE, fit(text)),
+    note: `<p><strong><em>${escapeHtml(name)}.</em></strong> ${escapeHtml(value)}</p>`,
+  };
 }
 
 function overlapsFixedLabel(run: LayoutRun): boolean {
@@ -261,6 +303,62 @@ function overlapsFixedLabel(run: LayoutRun): boolean {
 }
 
 const CARD_BODY_MIN_FONT_SIZE = 4.5;
+
+/**
+ * A card body's design: its size, line width, and the top edge of its band
+ * below the card's top. The spell band starts at the rule under the metadata
+ * (the template draws it 8pt above the designed first baseline); the generic
+ * band is placed so its 6pt body keeps the baseline the template was laid
+ * out for.
+ */
+interface CardBodyDesign { size: number; width: number; bandTop: number }
+const SPELL_BODY: CardBodyDesign = { size: 5, width: SPELL_BODY_WIDTH, bandTop: CARD_CONTRACT.spell.bodyTop - 8 };
+const GENERIC_BODY: CardBodyDesign = {
+  size: 6,
+  width: 162,
+  bandTop: CARD_CONTRACT.generic.bodyTop - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 6,
+};
+
+/**
+ * Sets a card body at its design size, or smaller down to the readable floor
+ * (never below the design size's own floor: a 5pt spell body keeps 5pt), and
+ * places its first line's cap height BOX_TEXT_TOP_INSET under the band top
+ * for the size chosen. A body too long even at the floor continues into
+ * further slots (descriptionCardRuns). `drop` is the first baseline's depth
+ * below the card's top.
+ */
+function fitCardBody(
+  card: DescriptionCard,
+  slot: number,
+  top: number,
+  design: CardBodyDesign,
+  face: string | undefined,
+): { runs: LayoutRun[]; drop: number } {
+  const floor = Math.min(READABLE_MIN_FONT_SIZE, design.size);
+  const bottom = top - CARD_CONTRACT.bodyBottom;
+  const dropAt = (size: number): number => design.bandTop + BOX_TEXT_TOP_INSET + faceCapHeight(face) * size;
+  const at = (size: number): LayoutRun[] => cardBodyRuns(card, slot, size, design.width, top - dropAt(size), face);
+  let size = design.size;
+  let runs = at(size);
+  if (!bodyFits(runs, bottom) && floor < design.size) {
+    const minimum = at(floor);
+    if (bodyFits(minimum, bottom)) {
+      let low = floor;
+      let high = design.size;
+      for (let pass = 0; pass < 8; pass += 1) {
+        const candidate = (low + high) / 2;
+        if (bodyFits(at(candidate), bottom)) low = candidate;
+        else high = candidate;
+      }
+      size = low;
+      runs = at(size);
+    } else {
+      size = floor;
+      runs = minimum;
+    }
+  }
+  return { runs, drop: dropAt(size) };
+}
 
 function bodyLineGroups(runs: readonly LayoutRun[]): LayoutRun[][] {
   const groups: LayoutRun[][] = [];
@@ -278,14 +376,16 @@ function cardBodyRuns(
   fontSize: number,
   bodyWidth: number,
   bodyTop: number,
+  face?: string,
 ): LayoutRun[] {
   const plainBody = decodeHtml(card.body.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
   const firstLineIndent = card.kind === "spell"
-    ? wrap(plainBody, 160, fontSize).length * fontSize > SHORT_SPELL_BODY_HEIGHT
-      ? measuredWidth("    ", fontSize)
+    ? wrap(plainBody, 160, fontSize, face).length * fontSize > SHORT_SPELL_BODY_HEIGHT
+      ? measuredWidth("    ", fontSize, "regular", face)
       : 0
     : 0;
   const runs = layoutHtmlRuns(card.body, {
+    face,
     x: PAGE_MARGIN + (cardIndex % 3) * (CARD_WIDTH + CARD_GUTTER) + 5,
     top: bodyTop,
     width: bodyWidth,
@@ -344,20 +444,31 @@ function canonicalDescriptionCardRuns(cards: readonly DescriptionCard[]): Layout
   return runs;
 }
 
+/** A card slot's page, position on the page (0-8, reading order) and frame. */
+function cardSlot(slot: number): { page: number; local: number; x: number; top: number } {
+  const local = slot % 9;
+  return {
+    page: Math.floor(slot / 9),
+    local,
+    x: PAGE_MARGIN + (local % 3) * (CARD_WIDTH + CARD_GUTTER),
+    top: CARD_TOPS[Math.floor(local / 3)]!,
+  };
+}
+
 export function descriptionCardRuns(
   cards: readonly DescriptionCard[],
-  options: { richText?: boolean } = {},
+  options: { richText?: boolean; face?: string } = {},
 ): LayoutRun[] {
+  const { face } = options;
   if (options.richText === false) return canonicalDescriptionCardRuns(cards);
   const runs: LayoutRun[] = [];
+  // Slots are handed out in reading order: a card, then each continuation
+  // of its body, then the next card. Placing cards by their index instead
+  // gave a continuation the slot of the card nine places later.
+  let nextSlot = 0;
   cards.forEach((card, cardIndex) => {
-    const pageIndex = Math.floor(cardIndex / 9);
-    const localCardIndex = cardIndex % 9;
-    const column = localCardIndex % 3;
-    const row = Math.floor(localCardIndex / 3);
-    const top = CARD_TOPS[row];
-    if (top === undefined) return;
-    const x = PAGE_MARGIN + column * (CARD_WIDTH + CARD_GUTTER);
+    const first = cardSlot(nextSlot++);
+    const { local: localCardIndex, top } = first;
     const add = (
       text: string,
       y: number,
@@ -367,17 +478,18 @@ export function descriptionCardRuns(
       xOffset = 3,
       align: LayoutRun["align"] = "left",
       rightInset = 3,
-      targetPage = pageIndex,
+      slot = first,
     ): void => {
       if (text === "") return;
       const run: LayoutRun = {
         text,
-        x: x + xOffset,
-        y,
+        x: slot.x + xOffset,
+        y: y - top + slot.top,
         width: CARD_WIDTH - xOffset - rightInset,
         height: fontSize,
-        card: localCardIndex,
-        page: targetPage,
+        card: slot.local,
+        page: slot.page,
+        cardIndex,
         role,
         fontSize,
         style,
@@ -388,107 +500,54 @@ export function descriptionCardRuns(
     add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0);
     add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0);
 
-    const appendBody = (bodyRuns: readonly LayoutRun[], targetPage: number, yShift = 0): void => {
-      for (const run of bodyRuns) {
-        runs.push({ ...run, card: localCardIndex, page: targetPage, y: run.y + yShift });
+    /**
+     * Lays the chosen body runs into the card's slot and, past its band, into
+     * further slots of their own (each with the title and subtitle again).
+     * `bodyDrop` and `bandDepth` place the band below a slot's top.
+     */
+    const placeBody = (bodyRuns: readonly LayoutRun[], bodyDrop: number, bandDepth: number): void => {
+      const groups = bodyLineGroups(bodyRuns);
+      let groupIndex = 0;
+      let slot = first;
+      while (groupIndex < groups.length) {
+        const firstY = groups[groupIndex]![0]!.y;
+        let end = groupIndex;
+        while (end < groups.length && groups[end]![0]!.y - firstY >= -bandDepth) end += 1;
+        if (end === groupIndex) end += 1;
+        const yShift = slot.top - bodyDrop - firstY;
+        const xShift = slot.x - first.x;
+        for (const run of groups.slice(groupIndex, end).flat()) {
+          runs.push({ ...run, x: run.x + xShift, y: run.y + yShift, card: slot.local, page: slot.page, cardIndex });
+        }
+        groupIndex = end;
+        if (groupIndex < groups.length) {
+          slot = cardSlot(nextSlot++);
+          add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0, slot);
+          add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, slot);
+        }
       }
     };
 
     if (card.kind === "spell") {
       let metadataY = top - 39;
+      const notes: string[] = [];
       for (const [label, value] of card.metadata) {
         add(label, metadataY, "metadata", 6, "bold");
-        add(clippedText(value, 120.5, 6), metadataY, "metadata-value", 6, "regular", 53.5);
+        const fitted = fittedMetadata(label, value, face);
+        add(fitted.text, metadataY, "metadata-value", fitted.fontSize, "regular", 53.5);
+        if (fitted.note !== undefined) notes.push(fitted.note);
         metadataY -= 11;
       }
-      const bodyTop = top - 83;
-      const bodyBottom = top - 225;
-      const normalSize = 5;
-      const normalRuns = cardBodyRuns(card, localCardIndex, normalSize, SPELL_BODY_WIDTH, bodyTop);
-      let chosenSize = normalSize;
-      let chosenRuns = normalRuns;
-      if (!bodyFits(normalRuns, bodyBottom)) {
-        const minimumRuns = cardBodyRuns(card, localCardIndex, CARD_BODY_MIN_FONT_SIZE, SPELL_BODY_WIDTH, bodyTop);
-        if (bodyFits(minimumRuns, bodyBottom)) {
-          let low = CARD_BODY_MIN_FONT_SIZE;
-          let high = normalSize;
-          for (let pass = 0; pass < 8; pass += 1) {
-            const candidate = (low + high) / 2;
-            const candidateRuns = cardBodyRuns(card, localCardIndex, candidate, SPELL_BODY_WIDTH, bodyTop);
-            if (bodyFits(candidateRuns, bodyBottom)) low = candidate;
-            else high = candidate;
-          }
-          chosenSize = low;
-          chosenRuns = cardBodyRuns(card, localCardIndex, chosenSize, SPELL_BODY_WIDTH, bodyTop);
-        } else {
-          chosenSize = CARD_BODY_MIN_FONT_SIZE;
-          chosenRuns = minimumRuns;
-        }
-      }
-      const groups = bodyLineGroups(chosenRuns);
-      let groupIndex = 0;
-      let bodyPage = pageIndex;
-      while (groupIndex < groups.length) {
-        const firstY = groups[groupIndex]![0]!.y;
-        let end = groupIndex;
-        while (end < groups.length && groups[end]![0]!.y + bodyTop - firstY >= bodyBottom) end += 1;
-        if (end === groupIndex) end += 1;
-        const pageGroups = groups.slice(groupIndex, end);
-        const pageRuns = pageGroups.flat();
-        appendBody(pageRuns, bodyPage, bodyTop - firstY);
-        if (bodyPage > pageIndex) {
-          add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0, bodyPage);
-          add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, bodyPage);
-        }
-        groupIndex = end;
-        bodyPage += 1;
-      }
+      const bodyCard = notes.length > 0 ? { ...card, body: `${card.body}${notes.join("")}` } : card;
+      const body = fitCardBody(bodyCard, localCardIndex, top, SPELL_BODY, face);
+      placeBody(body.runs, body.drop, CARD_CONTRACT.bodyBottom - body.drop);
     } else {
-      const bodyTop = top - 38;
-      const bodyBottom = top - 225;
-      const normalSize = 6;
-      const normalRuns = cardBodyRuns(card, localCardIndex, normalSize, 162, bodyTop);
-      let chosenSize = normalSize;
-      let chosenRuns = normalRuns;
-      if (!bodyFits(normalRuns, bodyBottom)) {
-        const minimumRuns = cardBodyRuns(card, localCardIndex, CARD_BODY_MIN_FONT_SIZE, 162, bodyTop);
-        if (bodyFits(minimumRuns, bodyBottom)) {
-          let low = CARD_BODY_MIN_FONT_SIZE;
-          let high = normalSize;
-          for (let pass = 0; pass < 8; pass += 1) {
-            const candidate = (low + high) / 2;
-            const candidateRuns = cardBodyRuns(card, localCardIndex, candidate, 162, bodyTop);
-            if (bodyFits(candidateRuns, bodyBottom)) low = candidate;
-            else high = candidate;
-          }
-          chosenSize = low;
-          chosenRuns = cardBodyRuns(card, localCardIndex, chosenSize, 162, bodyTop);
-        } else {
-          chosenSize = CARD_BODY_MIN_FONT_SIZE;
-          chosenRuns = minimumRuns;
-        }
-      }
-      const groups = bodyLineGroups(chosenRuns);
-      let groupIndex = 0;
-      let bodyPage = pageIndex;
-      while (groupIndex < groups.length) {
-        const firstY = groups[groupIndex]![0]!.y;
-        let end = groupIndex;
-        while (end < groups.length && groups[end]![0]!.y + bodyTop - firstY >= bodyBottom) end += 1;
-        if (end === groupIndex) end += 1;
-        const pageGroups = groups.slice(groupIndex, end);
-        appendBody(pageGroups.flat(), bodyPage, bodyTop - firstY);
-        if (bodyPage > pageIndex) {
-          add(card.title, top - 13.5, "title", 10, "regular", 0, "center", 0, bodyPage);
-          add(card.subtitle, top - 26, "subtitle", 6, "italic", 0, "center", 0, bodyPage);
-        }
-        groupIndex = end;
-        bodyPage += 1;
-      }
+      const body = fitCardBody(card, localCardIndex, top, GENERIC_BODY, face);
+      placeBody(body.runs, body.drop, CARD_CONTRACT.bodyBottom - body.drop);
     }
-    add(card.footer, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "left", CARD_FOOTER_INSET, pageIndex);
+    add(card.footer, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "left", CARD_FOOTER_INSET);
     if (card.footerRight !== undefined) {
-      add(card.footerRight, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "right", CARD_FOOTER_INSET, pageIndex);
+      add(card.footerRight, top - 233.5, "footer", 6, "regular", CARD_FOOTER_INSET, "right", CARD_FOOTER_INSET);
     }
   });
   return runs;

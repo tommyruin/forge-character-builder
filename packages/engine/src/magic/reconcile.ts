@@ -5,7 +5,7 @@ import type { Dnd5eDocument } from "../dnd5e/document.js";
 import type { RawEdit } from "../selection/selection.js";
 import { isSpellcastingExtension } from "../content/parser.js";
 import { multiclassSlotProgression } from "../statistics/calculator.js";
-import { spellInfo, canonicalSourceRank, alwaysPreparedSets } from "./spelllist.js";
+import { spellInfo, canonicalSourceRank, alwaysPreparedSets, casterSpellLevelCap } from "./spelllist.js";
 import { applySpellRiders, damageWithBonus, ATTACK_ROLL_RIDER_IDS } from "./spell-riders.js";
 import { featureSpellCasters } from "./feature-casters.js";
 import { casterModifier } from "./caster-modifiers.js";
@@ -641,10 +641,9 @@ export function buildMagicAttackOptions(
   const granted = magic === null ? new Map<string, Set<string>>() : alwaysPreparedSets(state, library);
   for (const [index, block] of (magic?.casters ?? []).entries()) {
     const abbr = ABILITY_ABBR[block.ability] ?? block.ability;
-    let maxSlotLevel = 0;
-    for (let level = 1; level <= 9; level++) {
-      if (Number.parseInt(block.slots[`s${level}`] ?? "0", 10) > 0) maxSlotLevel = level;
-    }
+    // Its own highest spell level: a combined multiclass table can hold slots
+    // above what this class casts.
+    const maxSlotLevel = casterSpellLevelCap(state, library, block);
     const grants = [...(granted.get(block.name) ?? [])].filter(
       (id) => (spellInfo(library, id)?.level ?? 0) <= maxSlotLevel,
     );

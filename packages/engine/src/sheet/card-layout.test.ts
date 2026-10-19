@@ -10,7 +10,7 @@ import {
   type DescriptionCard,
   type LayoutRun,
 } from "./card-layout.js";
-import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, winAnsiText } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, measuredTextWidth, winAnsiText } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 const spell = (title: string, body: string): DescriptionCard => ({
@@ -90,7 +90,8 @@ describe("positioned card layout", () => {
     ]).filter((run) => run.role === "body");
 
     expect([0, 1, 2].map((card) => Math.min(...runs.filter((run) => run.card === card).map((run) => run.x)))).toEqual([31, 220, 409]);
-    expect(new Set(runs.map((run) => run.y))).toEqual(new Set([683]));
+    // The first line's cap height sits BOX_TEXT_TOP_INSET under the rule below the metadata.
+    expect(new Set(runs.map((run) => run.y))).toEqual(new Set([766 - (SHEET_TEMPLATE_CONTRACT.cards.spell.bodyTop - 8) - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 5]));
     expect(new Set(runs.map((run) => run.fontSize))).toEqual(new Set([5]));
   });
 
@@ -131,7 +132,7 @@ describe("positioned card layout", () => {
     const first = descriptionCardRuns([spell("Long", body)]).find((run) => run.role === "body")!;
 
     expect(first.x).toBeCloseTo(36.56, 2);
-    expect(first.y).toBe(683);
+    expect(first.y).toBeCloseTo(683.41, 2);
   });
 
   it("keeps long generic bodies based on geometry, without a card-count gate", () => {
@@ -151,8 +152,10 @@ describe("positioned card layout", () => {
     ]);
     const bodyRuns = runs.filter((run) => run.role === "body");
 
-    expect(new Set(bodyRuns.map((run) => run.page ?? 0)).size).toBeGreaterThan(1);
-    expect(bodyRuns.every((run) => run.y >= 532)).toBe(true);
+    // The body continues into further slots, each kept above its own band floor.
+    expect(new Set(bodyRuns.map((run) => `${run.page ?? 0}:${run.card}`)).size).toBeGreaterThan(1);
+    const floor = (run: LayoutRun) => SHEET_TEMPLATE_CONTRACT.cards.rowTops[Math.floor((run.card ?? 0) / 3)]! - 225;
+    expect(bodyRuns.every((run) => run.y >= floor(run))).toBe(true);
     expect(bodyRuns.some((run) => run.text === "card-token-599")).toBe(true);
   });
 
@@ -349,5 +352,94 @@ describe("drawn text stays inside its box", () => {
     expect(Math.max(...continued.map((run) => run.x + run.width))).toBeGreaterThan(area.x + SHEET_TEMPLATE_CONTRACT.equipmentNotes.width);
     expect(runs.filter((run) => run.text === "Winged")).toHaveLength(overwhelming.length);
     expect((await drawnBounds(runs)).filter((word) => word.overflow > 0.001)).toEqual([]);
+  });
+});
+
+describe("spell card metadata", () => {
+  const card = (metadata: DescriptionCard["metadata"]): DescriptionCard => ({ ...spell("Identify", "<p>You choose one object.</p>"), metadata });
+  const values = (runs: readonly LayoutRun[]): LayoutRun[] => runs.filter((run) => run.role === "metadata-value");
+
+  it("shrinks a value to fit its line instead of dropping words", () => {
+    const components = "V, S, M (a diamond worth at least 50 gp, held)";
+    const [, , , row] = values(descriptionCardRuns([card([
+      ["CASTING TIME", "1 action"], ["RANGE", "90 feet"], ["DURATION", "Instantaneous"], ["COMPONENTS", components],
+    ])]));
+    expect(row!.text).toBe(components);
+    expect(row!.fontSize).toBeLessThan(6);
+    expect(row!.fontSize).toBeGreaterThanOrEqual(5);
+    expect(row!.fontSize! * measuredWidthAt1(components)).toBeLessThanOrEqual(120.5 + 0.01);
+  });
+
+  it("moves a value too long for its line under the description, whole", () => {
+    const components = "V, S, M (a pearl worth at least 100 gp and an owl feather, which the spell does not consume)";
+    const trigger = "1 reaction, which you take when you see a creature within 60 feet of you casting a spell";
+    const runs = descriptionCardRuns([card([
+      ["CASTING TIME", trigger], ["RANGE", "Touch"], ["DURATION", "Instantaneous"], ["COMPONENTS", components],
+    ])]);
+    expect(values(runs).map((run) => run.text)).toEqual(["1 reaction (see below)", "Touch", "Instantaneous", "V, S, M (see below)"]);
+    const body = runs.filter((run) => run.role === "body").map((run) => run.text).join(" ");
+    expect(body).toBe(`You choose one object. Casting time. ${trigger} Components. ${components}`);
+  });
+});
+
+/** Helvetica advance width at 1pt, as the card layout measures. */
+function measuredWidthAt1(text: string): number {
+  return measuredTextWidth(text, 1);
+}
+
+describe("card slots", () => {
+  it("gives a long first card's continuation its own slot among ten cards", () => {
+    const long = Array.from({ length: 700 }, (_, index) => `long-${index}`).join(" ");
+    const cards: DescriptionCard[] = Array.from({ length: 10 }, (_, index) => ({
+      kind: "generic", title: `Item ${index + 1}`, subtitle: "Gear", metadata: [],
+      body: index === 0 ? `<p>${long}</p>` : "<p>A short description.</p>", footer: "1 lb.",
+    }));
+    const runs = descriptionCardRuns(cards);
+    const owners = new Map<string, Set<number>>();
+    for (const run of runs) {
+      const slot = `${run.page ?? 0}:${run.card}`;
+      owners.set(slot, (owners.get(slot) ?? new Set()).add(run.cardIndex!));
+    }
+    // No slot holds two cards' text.
+    expect([...owners.values()].every((cards) => cards.size === 1)).toBe(true);
+    // Reading order: the long card and its continuation, then the other nine.
+    const order = [...owners.entries()]
+      .sort(([left], [right]) => {
+        const [lp, ls] = left.split(":").map(Number);
+        const [rp, rs] = right.split(":").map(Number);
+        return lp! - rp! || ls! - rs!;
+      })
+      .map(([, cards]) => [...cards][0]!);
+    expect(order[0]).toBe(0);
+    expect(order[1]).toBe(0);
+    expect(order.filter((card) => card !== 0)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    // Every card's title prints once in its first slot (the continuation repeats card 0's).
+    expect(runs.filter((run) => run.role === "title" && run.cardIndex === 9)).toHaveLength(1);
+  });
+});
+
+describe("card body sizes", () => {
+  const generic = (body: string): DescriptionCard => ({ kind: "generic", title: "Gear", subtitle: "Item", metadata: [], body, footer: "" });
+  const words = (count: number) => `<p>${Array.from({ length: count }, (_, index) => `word${index}`).join(" ")}</p>`;
+  const bodyRuns = (runs: readonly LayoutRun[]) => runs.filter((run) => run.role === "body");
+
+  it("never sets a body below the readable floor, nor a spell body below its 5pt design", () => {
+    for (const count of [300, 420, 2000]) {
+      const sizes = bodyRuns(descriptionCardRuns([generic(words(count)), spell("Long", words(count))])).map((run) => run.fontSize!);
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(5);
+    }
+    const shrunk = bodyRuns(descriptionCardRuns([generic(words(420))]));
+    expect(Math.min(...shrunk.map((run) => run.fontSize!))).toBeGreaterThanOrEqual(5.5);
+  });
+
+  it("holds the first line's cap height the same inset under the band at any size", () => {
+    const capTop = (runs: readonly LayoutRun[]) => {
+      const first = bodyRuns(runs).filter((run) => (run.page ?? 0) === 0 && run.card === 0)[0]!;
+      return first.y + LAYOUT_CAP_HEIGHT * first.fontSize!;
+    };
+    const normal = descriptionCardRuns([generic(words(20))]);
+    const smaller = descriptionCardRuns([generic(words(330))]);
+    expect(bodyRuns(smaller)[0]!.fontSize).toBeLessThan(6);
+    expect(capTop(smaller)).toBeCloseTo(capTop(normal), 6);
   });
 });

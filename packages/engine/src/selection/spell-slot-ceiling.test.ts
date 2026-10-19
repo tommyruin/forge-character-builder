@@ -1,13 +1,14 @@
 /**
  * The `$(spellcasting:slots)` ceiling of a spell select. A known-spells caster
  * (the 2024 Sorcerer, Bard, Warlock, Paladin and Ranger; their 2014
- * counterparts; the Eldritch Knight and Arcane Trickster) may fill any of its
- * spell choices with a spell of any level it has slots for NOW, so the ceiling
- * follows the caster's current level in its own class — not the level at which
- * the select was gained, not the character level, and not the combined
- * multiclass slot table. The wizard's spellbook is the exception: spells are
- * copied in when the level is gained, so its selects keep the ceiling of the
- * level that granted them.
+ * counterparts; the Eldritch Knight and Arcane Trickster) learns a new spell at
+ * the level that granted the choice, so an empty slot keeps that level's
+ * ceiling even when several levels were gained at once. Swapping a filled
+ * slot may take a spell of any level it has slots for NOW: that ceiling
+ * follows the caster's current level in its own class — not the character
+ * level, and not the combined multiclass slot table. The wizard's spellbook
+ * keeps the ceiling of the level that granted it either way: spells are
+ * copied in when the level is gained.
  *
  * The same ceiling bounds the Magic tab's browse projection, and a delevel
  * that lowers it takes back the picks above it for re-picking.
@@ -22,7 +23,7 @@ import { join } from "node:path";
 import { createEmptyLibrary, replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
 import { CharacterService } from "../character/service.js";
-import { pendingSelectionRules, selectionOptions, type SelectionRule } from "./selection.js";
+import { pendingSelectionRules, selectionOptions, selectionRuleFor, selectionSlotRule, type SelectionRule } from "./selection.js";
 import { wrapperSnapshots } from "../progression/delevel-replay.js";
 import { buildRangerRogue8, seededRng } from "../testing/character-factory.js";
 import { SYSTEM_ROOT, buildCorpusLibrary } from "../testing/corpus.js";
@@ -103,6 +104,22 @@ function optionIds(built: Built, name: string, requiredLevel: number): string[] 
   return selectionOptions(state, built.library, spellRule(built, name, requiredLevel)).map((option) => option.id);
 }
 
+/** The options of one numbered slot of a select, filled or empty. */
+function slotOptionIds(built: Built, ruleId: string, number: number): string[] {
+  const state = built.service.getCharacter(built.id);
+  const slot = selectionSlotRule(state, selectionRuleFor(state, ruleId)!, number, built.library);
+  return selectionOptions(state, built.library, slot).map((option) => option.id);
+}
+
+/**
+ * Swaps `spellId` into slot `number` of an open select: the slot takes a new
+ * pick first, so the spell replaces it, as a swap on a later level does.
+ */
+function swapIn(built: Built, ruleId: string, placeholder: string, spellId: string, number = 1): void {
+  built.service.setSelection(built.id, ruleId, placeholder, number);
+  built.service.setSelection(built.id, ruleId, spellId, number);
+}
+
 /** The spells chosen in every wrapper of a select. */
 function picksOf(state: CharacterState, name: string, requiredLevel: number): string[] {
   return wrapperSnapshots(state)
@@ -148,7 +165,7 @@ describe("spell select slot ceiling (2024 Sorcerer)", () => {
     expect(options).not.toContain(SCORCHING_RAY);
   });
 
-  it("a level-3 sorcerer's level-1 select offers 2nd-level spells but not 3rd", () => {
+  it("a level-3 sorcerer swaps a level-1 pick up to 2nd level but not 3rd; an empty level-1 slot stays at 1st", () => {
     const built = create(SORCERER);
     const { service, id } = built;
     // Expand the select at level 1 first: the ceiling cached for that state
@@ -156,15 +173,34 @@ describe("spell select slot ceiling (2024 Sorcerer)", () => {
     expect(optionIds(built, "Spell (Sorcerer)", 1)).not.toContain(SCORCHING_RAY);
     levelTo(built, 3);
 
-    const options = optionIds(built, "Spell (Sorcerer)", 1);
-    expect(options).toContain(MAGIC_MISSILE);
-    expect(options).toContain(SCORCHING_RAY);
-    expect(options).not.toContain(FIREBALL);
-    expect(optionIds(built, "Spell (Sorcerer)", 2)).toContain(SCORCHING_RAY);
+    const empty = optionIds(built, "Spell (Sorcerer)", 1);
+    expect(empty).toContain(MAGIC_MISSILE);
+    expect(empty).not.toContain(SCORCHING_RAY);
+    expect(optionIds(built, "Spell (Sorcerer)", 3)).toContain(SCORCHING_RAY);
 
     const rule = spellRule(built, "Spell (Sorcerer)", 1);
+    service.setSelection(id, rule.identifier, MAGIC_MISSILE, 1);
+    const swap = slotOptionIds(built, rule.identifier, 1);
+    expect(swap).toContain(SCORCHING_RAY);
+    expect(swap).not.toContain(FIREBALL);
+    expect(slotOptionIds(built, rule.identifier, 2)).not.toContain(SCORCHING_RAY);
+    expect(() => service.setSelection(id, rule.identifier, SCORCHING_RAY, 2)).toThrowError(/not eligible/);
     expect(() => service.setSelection(id, rule.identifier, SCORCHING_RAY, 1)).not.toThrow();
-    expect(() => service.setSelection(id, rule.identifier, FIREBALL, 2)).toThrowError(/not eligible/);
+    expect(() => service.setSelection(id, rule.identifier, FIREBALL, 1)).toThrowError(/not eligible/);
+  });
+
+  it("caps each pick of a 1->5 level-up at the level that granted it", () => {
+    const built = create(SORCERER);
+    levelTo(built, 5);
+    // Level 2 has 1st-level slots only, level 3 reaches 2nd, level 5 3rd.
+    expect(optionIds(built, "Spell (Sorcerer)", 2)).not.toContain(SCORCHING_RAY);
+    expect(optionIds(built, "Spell (Sorcerer)", 3)).toContain(SCORCHING_RAY);
+    expect(optionIds(built, "Spell (Sorcerer)", 3)).not.toContain(FIREBALL);
+    expect(optionIds(built, "Spell (Sorcerer)", 5)).toContain(FIREBALL);
+    const rule = spellRule(built, "Spell (Sorcerer)", 2);
+    expect(() => built.service.setSelection(built.id, rule.identifier, FIREBALL)).toThrowError(/not eligible/);
+    built.service.setSelection(built.id, rule.identifier, MAGIC_MISSILE);
+    expect(slotOptionIds(built, rule.identifier, 1)).toContain(FIREBALL);
   });
 
   it("follows the sorcerer's own level, not the character level or the combined multiclass table", () => {
@@ -180,7 +216,9 @@ describe("spell select slot ceiling (2024 Sorcerer)", () => {
     expect(state.level).toBe(5);
     expect(state.spellcasting.some((casting) => Number(casting.slots.s3 ?? 0) > 0)).toBe(true);
 
-    const options = optionIds(built, "Spell (Sorcerer)", 1);
+    const rule = spellRule(built, "Spell (Sorcerer)", 1);
+    service.setSelection(id, rule.identifier, MAGIC_MISSILE, 1);
+    const options = slotOptionIds(built, rule.identifier, 1);
     expect(options).toContain(SCORCHING_RAY);
     expect(options).not.toContain(FIREBALL);
   });
@@ -237,14 +275,24 @@ describe("spell browse projection", () => {
   const statusOf = (browse: { spells: Array<{ id: string; status: string }> }, spellId: string): string | undefined =>
     browse.spells.find((spell) => spell.id === spellId)?.status;
 
-  it("a level-3 sorcerer's level-1 spell choices browse 1st and 2nd level", () => {
+  it("a level-3 sorcerer's level-1 spell choices browse 1st level, and 2nd as a swap once a pick is made", () => {
     const built = create(SORCERER);
     levelTo(built, 3);
+    const ruleId = spellRule(built, "Spell (Sorcerer)", 1).identifier;
 
-    const browse = built.service.getSpellBrowse(built.id, spellRule(built, "Spell (Sorcerer)", 1).identifier);
+    const empty = built.service.getSpellBrowse(built.id, ruleId);
+    expect(empty.maxSpellLevel).toBe(1);
+    expect(empty.activeSpellLevels).toEqual([1]);
+    expect(statusOf(empty, MAGIC_MISSILE)).toBe("learnable");
+    expect(statusOf(empty, SCORCHING_RAY)).toBe("level");
+
+    built.service.setSelection(built.id, ruleId, MAGIC_MISSILE, 1);
+    const browse = built.service.getSpellBrowse(built.id, ruleId);
     expect(browse.maxSpellLevel).toBe(2);
     expect(browse.activeSpellLevels).toEqual([1, 2]);
-    expect(statusOf(browse, SCORCHING_RAY)).toBe("learnable");
+    // Only a swap admits it: it replaces the pick rather than filling slot 2.
+    expect(statusOf(browse, SCORCHING_RAY)).toBe("limit");
+    expect(statusOf(browse, "ID_WOTC_PHB24_SPELL_SHIELD")).toBe("learnable");
     expect(statusOf(browse, FIREBALL)).toBe("level");
   });
 
@@ -270,10 +318,10 @@ describe("delevel below a pick's level", () => {
     service.levelUpMode(id, { mode: "multiclass", classId: mc });
     service.levelUpMode(id, { mode: "multiclass", classId: mc });
     const rule = spellRule(built, "Spell (Sorcerer)", 1);
-    expect(service.getSpellBrowse(id, rule.identifier).maxSpellLevel).toBe(2);
-    expect(optionIds(built, "Spell (Sorcerer)", 1)).toContain(SCORCHING_RAY);
-    service.setSelection(id, rule.identifier, SCORCHING_RAY, 1);
     service.setSelection(id, rule.identifier, MAGIC_MISSILE, 2);
+    expect(service.getSpellBrowse(id, rule.identifier).maxSpellLevel).toBe(2);
+    expect(slotOptionIds(built, rule.identifier, 2)).toContain(SCORCHING_RAY);
+    swapIn(built, rule.identifier, "ID_WOTC_PHB24_SPELL_SHIELD", SCORCHING_RAY, 1);
     const result = service.delevel(id, { mode, classId: SORCERER });
     expect(picksOf(service.getCharacter(id), "Spell (Sorcerer)", 1)).toEqual(["", MAGIC_MISSILE]);
     expect(result.requiredRepicks.some((r) => r.selectedElementIds.includes(SCORCHING_RAY))).toBe(true);
@@ -288,7 +336,7 @@ describe("delevel below a pick's level", () => {
     levelTo(built, 4);
     service.setCharacterOption(id, { optionId: OPTION_MULTICLASS, enabled: true });
     service.startMulticlass(id, MC_WIZARD);
-    service.setSelection(id, spellRule(built, "Spell (Sorcerer)", 1).identifier, SCORCHING_RAY, 1);
+    swapIn(built, spellRule(built, "Spell (Sorcerer)", 1).identifier, MAGIC_MISSILE, SCORCHING_RAY, 1);
     const result = service.delevel(id, { mode: "class", classId: SORCERER });
     expect(service.getCharacter(id).levelHistory.map((r) => r.classId)).toEqual([SORCERER, SORCERER, MC_WIZARD]);
     expect(result.requiredRepicks.some((r) => r.selectedElementIds.includes(SCORCHING_RAY))).toBe(true);
@@ -300,7 +348,7 @@ describe("delevel below a pick's level", () => {
     const { service, id } = built;
     levelTo(built, 3);
     const ruleId = spellRule(built, "Spell (Sorcerer)", 1).identifier;
-    service.setSelection(id, ruleId, SCORCHING_RAY, 1);
+    swapIn(built, ruleId, "ID_WOTC_PHB24_SPELL_SHIELD", SCORCHING_RAY, 1);
     service.setSelection(id, ruleId, MAGIC_MISSILE, 2);
 
     const result = service.delevel(id, { mode: "last" });
@@ -332,7 +380,7 @@ describe("corpus casters: delevel replay and subclass casters", () => {
     const SPIKE_GROWTH = "ID_PHB_SPELL_SPIKE_GROWTH";
     const { service, id } = buildRangerRogue8(corpus, "CeilingReplay");
     const built: Built = { service, id, library: corpus };
-    service.setSelection(id, spellRule(built, "Spellcasting (Ranger)", 2).identifier, SPIKE_GROWTH, 1);
+    swapIn(built, spellRule(built, "Spellcasting (Ranger)", 2).identifier, "ID_PHB_SPELL_ALARM", SPIKE_GROWTH, 1);
 
     const result = service.delevel(id, { mode: "class", classId: "ID_WOTC_PHB_CLASS_RANGER" });
 
@@ -355,7 +403,9 @@ describe("corpus casters: delevel replay and subclass casters", () => {
     expect(optionIds(built, "Spell (Eldritch Knight)", 3)).not.toContain(SCORCHING_RAY);
     levelTo(built, 7);
 
-    const options = optionIds(built, "Spell (Eldritch Knight)", 3);
+    const ruleId = spellRule(built, "Spell (Eldritch Knight)", 3).identifier;
+    built.service.setSelection(built.id, ruleId, MAGIC_MISSILE, 1);
+    const options = slotOptionIds(built, ruleId, 1);
     expect(options).toContain(MAGIC_MISSILE);
     expect(options).toContain(SCORCHING_RAY);
     expect(options).not.toContain(FIREBALL);
@@ -365,7 +415,9 @@ describe("corpus casters: delevel replay and subclass casters", () => {
     const built = subclassCaster("ID_WOTC_PHB24_CLASS_ROGUE", "ID_WOTC_PHB24_ARCHETYPE_ROGUE_ARCANE_TRICKSTER", "2024");
     levelTo(built, 7);
 
-    const options = optionIds(built, "Spell (Arcane Trickster)", 3);
+    const ruleId = spellRule(built, "Spell (Arcane Trickster)", 3).identifier;
+    built.service.setSelection(built.id, ruleId, MAGIC_MISSILE, 1);
+    const options = slotOptionIds(built, ruleId, 1);
     expect(options).toContain(SCORCHING_RAY);
     expect(options).not.toContain(FIREBALL);
   });
@@ -374,7 +426,10 @@ describe("corpus casters: delevel replay and subclass casters", () => {
     const built = subclassCaster("ID_WOTC_PHB_CLASS_FIGHTER", "ID_WOTC_PHB_ARCHETYPE_FIGHTER_ELDRITCH_KNIGHT", "2014");
     levelTo(built, 7);
 
-    const fourth = optionIds(built, "Spellcasting (Eldritch Knight)", 4);
+    const ruleId = spellRule(built, "Spellcasting (Eldritch Knight)", 4).identifier;
+    expect(optionIds(built, "Spellcasting (Eldritch Knight)", 4)).not.toContain("ID_PHB_SPELL_SHATTER");
+    built.service.setSelection(built.id, ruleId, "ID_PHB_SPELL_SHIELD", 1);
+    const fourth = slotOptionIds(built, ruleId, 1);
     expect(fourth).toContain("ID_PHB_SPELL_SHATTER");
     expect(fourth).not.toContain("ID_PHB_SPELL_FIREBALL");
     expect(optionIds(built, "Spellcasting (Eldritch Knight)", 3)).not.toContain("ID_PHB_SPELL_SHATTER");

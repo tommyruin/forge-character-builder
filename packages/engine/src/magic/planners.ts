@@ -4,7 +4,7 @@ import type { ElementLibrary } from "../content/library.js";
 import type { CharacterState } from "../character/state.js";
 import type { RawEdit } from "../selection/selection.js";
 import { engineError } from "../errors.js";
-import { alwaysPreparedSets, fullCasterList, spellInfo, canonicalSourceRank } from "./spelllist.js";
+import { alwaysPreparedSets, casterSpellLevelCap, fullCasterList, spellInfo, canonicalSourceRank } from "./spelllist.js";
 import type { MagicCasterBlock, MagicSpellEntry } from "./state.js";
 
 /**
@@ -93,7 +93,7 @@ export function renderSpellsLines(input: RebuildInput): MagicSpellEntry[] {
     universeIds.push(id);
   };
   if (fullList) {
-    const maxLevel = maxSlotOf(block);
+    const maxLevel = casterSpellLevelCap(state, library, block);
     for (const info of fullCasterList(library, block.name, maxLevel, state)) {
       addToUniverse(info.id);
     }
@@ -119,14 +119,6 @@ export function renderSpellsLines(input: RebuildInput): MagicSpellEntry[] {
     .map(({ id }) => existing(id));
 
   return [...prepared, ...rest];
-}
-
-function maxSlotOf(block: MagicCasterBlock): number {
-  for (let level = 9; level >= 1; level--) {
-    const value = Number.parseInt(block.slots[`s${level}`] ?? "0", 10);
-    if (Number.isFinite(value) && value > 0) return level;
-  }
-  return 0;
 }
 
 function findSpellsNode(casting: Dnd5eNode): Dnd5eNode | null {
@@ -199,7 +191,7 @@ export function planSetPrepared(
   const fullList = isFullListCaster(library, block);
   const universe = new Set(
     fullList
-      ? fullCasterList(library, block.name, maxSlotOf(block), state).map((info) => info.id)
+      ? fullCasterList(library, block.name, casterSpellLevelCap(state, library, block), state).map((info) => info.id)
       : knownIds,
   );
   const element = library.byId.get(spellId);

@@ -73,7 +73,10 @@ export function declaredUsage(element: ParsedElement | undefined): string | null
  * slot but never mentions a rest, so it stays at-will and unmarked.
  */
 export function promisesFreeCastPerLongRest(element: ParsedElement | undefined): boolean {
-  const text = (element?.descriptionXml ?? "").replace(/<[^>]*>/g, " ").toLowerCase();
+  const text = (element?.descriptionXml ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").toLowerCase();
+  // The 2014 Magic Initiate options word it without slots: "Once you cast it,
+  // you must finish a long rest before you can cast it again."
+  if (/once you cast it, you must finish a long rest before you can cast it again/.test(text)) return true;
   if (!/without (expending )?a spell slot/.test(text)) return false;
   return text.includes("long rest");
 }
@@ -108,6 +111,42 @@ function abilitySibling(
     if (SPELLCASTING_ABILITIES.includes(element.identity.name)) return element;
   }
   return null;
+}
+
+/**
+ * The ability a feature states in its own text, when the sentence that names
+ * its spellcasting ability names exactly one: the 2014 Magic Initiate options
+ * ("Spellcasting ability: Intelligence."), racial casting ("Charisma is your
+ * spellcasting ability for these spells.", the High Elf's "... for it") and
+ * feats ("... using Wisdom as your spellcasting ability"). A sentence offering
+ * a choice ("Intelligence, Wisdom, or Charisma is ...") names none; the
+ * choice is a sub-feature (abilitySibling).
+ */
+function statedAbility(element: ParsedElement): string | null {
+  const texts = [...element.sheets.flatMap((sheet) => sheet.descriptions.map((entry) => entry.text)), element.descriptionXml ?? ""];
+  for (const raw of texts) {
+    const sentences = raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").split(/(?<=[.!?])\s+/);
+    for (const sentence of sentences) {
+      if (!/spellcasting ability/i.test(sentence)) continue;
+      const named = SPELLCASTING_ABILITIES.filter((ability) => new RegExp(`\\b${ability}\\b`, "i").test(sentence));
+      if (named.length === 1) return named[0]!;
+    }
+  }
+  return null;
+}
+
+/**
+ * The banner a feature caster prints under. A feat's chosen sub-feature is
+ * named for its option alone ("Wizard"), which on a sheet reads as the class;
+ * it is qualified by its feat ("Magic Initiate (Wizard)"), the way the 2024
+ * sub-features name themselves.
+ */
+function casterName(ownerElement: ParsedElement, parentElement: ParsedElement | undefined): string {
+  const name = ownerElement.identity.name;
+  if (ownerElement.identity.type !== "Feat Feature" || parentElement?.identity.type !== "Feat") return name;
+  // An option named for its ability ("Charisma") says nothing on a banner.
+  if (SPELLCASTING_ABILITIES.includes(name)) return parentElement.identity.name;
+  return name.includes(parentElement.identity.name) ? name : `${parentElement.identity.name} (${name})`;
 }
 
 /** The first class caster's ability, used when the feature nominates none. */
@@ -145,7 +184,11 @@ export function featureSpellCasters(
   const byElement = new Map<string, FeatureSpellCaster>();
   const order: string[] = [];
 
-  const casterFor = (owner: RegisteredElement, ownerElement: ParsedElement): FeatureSpellCaster => {
+  const casterFor = (
+    owner: RegisteredElement,
+    ownerElement: ParsedElement,
+    parentElement: ParsedElement | undefined,
+  ): FeatureSpellCaster => {
     const ownerId = ownerElement.identity.id;
     let caster = byElement.get(ownerId);
     if (caster === undefined) {
@@ -153,8 +196,11 @@ export function featureSpellCasters(
       caster = {
         key: `feature:${ownerId}`,
         elementId: ownerId,
-        name: nominated?.sheets.find((sheet) => sheet.alt !== undefined)?.alt ?? ownerElement.identity.name,
-        ability: nominated?.identity.name ?? fallbackAbility(state),
+        name: nominated?.sheets.find((sheet) => sheet.alt !== undefined)?.alt ?? casterName(ownerElement, parentElement),
+        ability: nominated?.identity.name
+          ?? (SPELLCASTING_ABILITIES.includes(ownerElement.identity.name) ? ownerElement.identity.name : null)
+          ?? statedAbility(ownerElement)
+          ?? fallbackAbility(state),
         usage: featureUsage(ownerElement, nominated ?? undefined),
         cantripIds: [],
         spellIds: [],
@@ -174,12 +220,14 @@ export function featureSpellCasters(
     nodes: readonly RegisteredElement[],
     underSpellcasting: boolean,
     owner: RegisteredElement | null,
+    ownerParent: RegisteredElement | null,
   ): void => {
     for (const node of nodes) {
       const elementId = nodeElementId(node);
       const element = elementId === "" ? undefined : library.byId.get(elementId);
       const nextUnderSpellcasting = underSpellcasting || element?.spellcasting !== undefined;
       const ownerElement = owner === null ? undefined : library.byId.get(nodeElementId(owner));
+      const parentElement = ownerParent === null ? undefined : library.byId.get(nodeElementId(ownerParent));
       if (!nextUnderSpellcasting && node.type === "Spell" && owner !== null && ownerElement !== undefined) {
         // A wrapper carries its selection in `registered` and has an empty id;
         // a granted spell is an element node with the spell's own id.
@@ -187,18 +235,18 @@ export function featureSpellCasters(
         const selected = node.registered ?? "";
         if (isWrapper && selected !== "") {
           const spell = library.byId.get(selected);
-          if (spell !== undefined) collect(casterFor(owner, ownerElement), spell);
+          if (spell !== undefined) collect(casterFor(owner, ownerElement, parentElement), spell);
         } else if (!isWrapper && element !== undefined && isCasterLessGrant(ownerElement, elementId)) {
-          collect(casterFor(owner, ownerElement), element);
+          collect(casterFor(owner, ownerElement, parentElement), element);
         }
       }
       // Spell nodes never own a group, so the nearest feature above a spell is
       // the one that granted it.
-      const nextOwner = element !== undefined && node.type !== "Spell" ? node : owner;
-      walk(node.children, nextUnderSpellcasting, nextOwner);
+      const ownsGroup = element !== undefined && node.type !== "Spell";
+      walk(node.children, nextUnderSpellcasting, ownsGroup ? node : owner, ownsGroup ? owner : ownerParent);
     }
   };
-  walk(state.elements, false, null);
+  walk(state.elements, false, null, null);
 
   return order.map((id) => byElement.get(id)!);
 }

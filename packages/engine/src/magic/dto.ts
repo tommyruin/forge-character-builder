@@ -23,6 +23,7 @@ import {
   alwaysPreparedSets,
   alwaysPreparedUsages,
   canonicalSourceRank,
+  casterSpellLevelCap,
   compareSpellInfo,
   fullCasterList,
   ownKnownSpells,
@@ -180,13 +181,6 @@ function slotsArray(block: MagicCasterBlock): number[] {
   return slots;
 }
 
-function maxSlotLevel(slots: number[]): number {
-  for (let level = 9; level >= 1; level--) {
-    if (slots[level - 1]! > 0) return level;
-  }
-  return 0;
-}
-
 function knownFlags(
   block: MagicCasterBlock,
   alwaysPrepared: Set<string>,
@@ -291,7 +285,7 @@ export function buildSpellcastingDto(
     const rawSlots = slotsArray(block);
     const resource = spellResource(state, block, rawSlots);
     const slots = resource.mode === "spellPoints" ? Array(9).fill(0) : rawSlots;
-    const maxLevel = maxSlotLevel(rawSlots);
+    const maxLevel = casterSpellLevelCap(state, library, block);
 
     const fullList = isFullListCaster(library, block);
     const alwaysSet = new Set(always.get(block.name) ?? []);
@@ -643,8 +637,17 @@ export function buildSpellBrowseDto(
   const spells: SpellBrowseEntryDto[] = [];
   const isCantripRule = rule.name.startsWith("Cantrip");
   const eligibleIds = new Set<string>();
+  // An empty slot takes a new pick at the level that granted it; a filled
+  // slot can be swapped up to the caster's current ceiling. A spell only a
+  // swap admits reads "limit", so picking it replaces a pick instead of
+  // filling an empty slot that would refuse it.
+  const newPickIds = new Set<string>();
   for (const slotRule of groupRules) {
-    for (const option of selectionOptions(state, library, slotRule)) eligibleIds.add(option.id);
+    const empty = (slotRule.selectedElementIds[0] ?? null) === null || slotRule.selectedElementIds[0] === "";
+    for (const option of selectionOptions(state, library, slotRule)) {
+      eligibleIds.add(option.id);
+      if (empty) newPickIds.add(option.id);
+    }
   }
 
   if (caster === null) {
@@ -659,7 +662,7 @@ export function buildSpellBrowseDto(
       let status: string;
       if (selectedNumber !== null) status = "selected";
       else if (known.has(info.id)) status = "known";
-      else if (selectionFull) status = "limit";
+      else if (selectionFull || !newPickIds.has(info.id)) status = "limit";
       else status = "learnable";
       spells.push({
         id: info.id,
@@ -702,13 +705,14 @@ export function buildSpellBrowseDto(
   }
 
   // The same ceiling the select's supports expand to, so the panel offers and
-  // labels exactly the levels the select accepts.
+  // labels exactly the levels the select accepts (a swap's, when any slot is
+  // filled).
   const progressionLevel = isCantripRule
     ? 0
-    : spellSlotCeilingFor(state, library, rule, caster.name);
+    : Math.max(0, ...(groupRules.length > 0 ? groupRules : [rule]).map((slotRule) => spellSlotCeilingFor(state, library, slotRule, caster.name)));
   const maxLevel = isCantripRule
     ? 0
-    : progressionLevel > 0 ? progressionLevel : maxSlotLevel(slotsArray(caster));
+    : progressionLevel > 0 ? progressionLevel : casterSpellLevelCap(state, library, caster);
 
   // The caster's browsable universe is its base list expression (the
   // spellcasting feature's <list>, defaulting to the caster name) OR-ed with
@@ -737,7 +741,7 @@ export function buildSpellBrowseDto(
     if (selectedNumber !== null) status = "selected";
     else if (known.has(info.id)) status = "known";
     else if (!eligibleIds.has(info.id)) status = !isCantripRule && info.level > maxLevel ? "level" : "unavailable";
-    else if (selectionFull) status = "limit";
+    else if (selectionFull || !newPickIds.has(info.id)) status = "limit";
     else status = "learnable";
     spells.push({
       id: info.id,

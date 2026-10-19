@@ -184,6 +184,49 @@ function requirementContext(
 
 export { requirementContext as createRegistrationContext };
 
+/**
+ * The requirement context an empty selection is judged in: the character as
+ * it was when the choice was granted. A multi-level level-up (1->5) grants a
+ * warlock's level-2 invocations at character level 2, so a "[level:5]"
+ * invocation is not yet among them; the level-5 choices see level 5. A choice
+ * under a class counts its `requiredLevel` in that class (the character level
+ * when the class reached it); any other choice counts character levels.
+ * Undefined when the choice belongs to the current level, or its grant point
+ * cannot be placed. A filled choice is a swap and is judged as of now.
+ */
+function grantPointContext(
+  state: CharacterState,
+  library: ElementLibrary,
+  rule: SelectionRule,
+): RegistrationContext | undefined {
+  if (rule.selectedElementIds.some((id) => id !== null && id !== "")) return undefined;
+  let classId: string | undefined;
+  let nodes = state.elements;
+  for (const index of rule.path.slice(0, -1)) {
+    const node = nodes[index];
+    if (node === undefined) return undefined;
+    if ((node.type === "Class" || node.type === "Multiclass") && (node.registered ?? "") !== "") classId = node.registered;
+    nodes = node.children;
+  }
+  const nameOf = (id: string): string | undefined => library.byId.get(id)?.identity.name;
+  const entries = state.levelHistory.slice(0, state.level).filter((entry) => !entry.isPending);
+  let grantLevel = rule.requiredLevel;
+  if (classId !== undefined) {
+    const className = nameOf(classId);
+    const reached = entries.find((entry) => nameOf(entry.classId) === className && entry.classLevel >= rule.requiredLevel);
+    if (reached === undefined) return undefined;
+    grantLevel = reached.totalLevel;
+  }
+  if (grantLevel < 1 || grantLevel >= state.level) return undefined;
+  const classLevels = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.totalLevel > grantLevel) break;
+    const name = nameOf(entry.classId);
+    if (name !== undefined) classLevels.set(name.toLowerCase(), entry.classLevel);
+  }
+  return { ...requirementContext(state, library, [], grantLevel), classLevel: (name) => classLevels.get(name) ?? 0 };
+}
+
 function isEligible(
   state: CharacterState,
   library: ElementLibrary,
@@ -192,7 +235,7 @@ function isEligible(
   candidate: ParsedElement,
   allowedRegisteredId?: string,
   authored = authoredSelectResolution(state, library, rule),
-  supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined,
+  supports = authored.select ? expandSelectSupports(state, library, authored.select, isFilledSlot(rule)) : undefined,
 ): boolean {
   if (candidate.identity.type !== rule.type) return false;
   if (isRestrictedForCharacter(state, library, candidate)) return false;
@@ -345,7 +388,7 @@ export function selectRuleFor(state: CharacterState, library: ElementLibrary, ru
 
 export function selectSupportsFor(state: CharacterState, library: ElementLibrary, rule: SelectionRule): string | undefined {
   const select = selectRuleFor(state, library, rule);
-  return select ? expandSelectSupports(state, library, select) : undefined;
+  return select ? expandSelectSupports(state, library, select, isFilledSlot(rule)) : undefined;
 }
 
 /**
@@ -493,13 +536,19 @@ function casterBlockNamed(
  *   with every registered extension expression;
  * - `$(spellcasting:slots)` becomes the OR of every slot level from 1 up to
  *   the caster's highest slot level (its own class's progression at the level
- *   slotCeilingClassLevel picks when derivable, else the serialized slots);
+ *   slotCeilingClassLevel picks for an empty or a filled slot when derivable,
+ *   else the serialized slots);
  * - extension spell ids are admitted by id when their own level fits.
  */
 const supportsExpansionCache = new WeakMap<
   CharacterState,
-  Map<SelectRule, { revision: number; value: string | undefined }>
+  Map<SelectRule, { revision: number; filled: boolean; value: string | undefined }>
 >();
+
+/** Whether a rule (or one numbered slot of it) already holds a pick. */
+function isFilledSlot(rule: SelectionRule): boolean {
+  return rule.selectedElementIds.some((id) => id !== null && id !== "");
+}
 
 /** The original uploaded 2024 Bard repertoire used a fixed level-one tag.
  * Resolve it at runtime so saved checksums and uploaded bytes stay intact. */
@@ -513,7 +562,12 @@ export function effectiveSpellSupports(state: CharacterState, library: ElementLi
     ? "$(spellcasting:list), $(spellcasting:slots)" : select.supports;
 }
 
-function expandSelectSupports(state: CharacterState, library: ElementLibrary, select: SelectRule): string | undefined {
+function expandSelectSupports(
+  state: CharacterState,
+  library: ElementLibrary,
+  select: SelectRule,
+  filled: boolean,
+): string | undefined {
   const supports = effectiveSpellSupports(state, library, select);
   if (supports === undefined) return undefined;
   const casterName = select.spellcasting ?? state.spellcasting[0]?.name ?? "";
@@ -527,13 +581,15 @@ function expandSelectSupports(state: CharacterState, library: ElementLibrary, se
   const revision = library.revision ?? 0;
   let perState = supportsExpansionCache.get(state);
   const cached = perState?.get(select);
-  if (cached !== undefined && cached.revision === revision) return cached.value;
-  const value = expandSelectSupportsUncached(state, library, select, casterName, hasListToken, hasSlotsToken);
+  if (cached !== undefined && cached.revision === revision && (cached.filled === filled || !hasSlotsToken)) {
+    return cached.value;
+  }
+  const value = expandSelectSupportsUncached(state, library, select, casterName, hasListToken, hasSlotsToken, filled);
   if (perState === undefined) {
     perState = new Map();
     supportsExpansionCache.set(state, perState);
   }
-  perState.set(select, { revision, value });
+  perState.set(select, { revision, filled, value });
   return value;
 }
 
@@ -544,6 +600,7 @@ function expandSelectSupportsUncached(
   casterName: string,
   hasListToken: boolean,
   hasSlotsToken: boolean,
+  filled: boolean,
 ): string | undefined {
 
   const extensions = spellListExtensions(state, library, casterName);
@@ -551,10 +608,10 @@ function expandSelectSupportsUncached(
   const listParts = [baseList, ...extensions.expressions].filter((part) => part.trim() !== "");
   const listExpression = listParts.length > 1 ? `(${listParts.map((part) => `(${part})`).join("||")})` : (listParts[0] ?? casterName);
 
-  const ceilingLevel = select.type === "Spell" ? slotCeilingClassLevel(state, library, select, casterName) : undefined;
+  const ceilingLevel = select.type === "Spell" ? slotCeilingClassLevel(state, library, select, casterName, filled) : undefined;
   const progressionSlots =
     ceilingLevel !== undefined ? spellSlotLevelAtClassLevel(library, casterName, ceilingLevel) : 0;
-  const maxSlot = progressionSlots > 0 ? progressionSlots : maxSpellSlotLevel(state);
+  const maxSlot = progressionSlots > 0 ? progressionSlots : maxSpellSlotLevel(state, casterName);
   const levels = Array.from({ length: maxSlot }, (_, index) => String(index + 1));
   // No slot level yet: a token that cannot match anything (mirrors the
   // reference builder's unmatchable sentinel).
@@ -622,18 +679,33 @@ function spellSlotLevelAtClassLevel(
 }
 
 /**
+ * The highest spell level the named caster's own class progression reaches at
+ * the character's current level in that class: a multiclass character's
+ * combined slot table can hold higher slots than any one class may learn or
+ * prepare spells of. 0 when the progression cannot be derived.
+ */
+export function casterOwnSpellLevel(state: CharacterState, library: ElementLibrary, casterName: string): number {
+  const classLevel = casterClassLevel(state, library, casterName);
+  return classLevel > 0 ? spellSlotLevelAtClassLevel(library, casterName, classLevel) : 0;
+}
+
+/**
  * The class level a select's `$(spellcasting:slots)` ceiling is read at.
- * Spells known are the caster's current repertoire: every one of those choices
- * may hold a spell of any level the caster has slots for now, so the ceiling
- * follows its current level in its own class. Spellbook selects keep the level
- * that granted them, because a wizard copies those spells in when it gains the
- * level, of a level it had slots for then. Undefined when neither is known.
+ * A new pick is learned at the level that granted the choice, so an empty
+ * slot keeps that level's ceiling even when several levels were gained at
+ * once (a 1->5 level-up's level-2 pick is a 1st-level spell). Spells known are
+ * the caster's current repertoire, so swapping a filled slot may take a spell
+ * of any level the caster has slots for now: the ceiling follows its current
+ * level in its own class. Spellbook selects always keep the level that granted
+ * them, because a wizard copies those spells in when it gains the level, of a
+ * level it had slots for then. Undefined when neither is known.
  */
 function slotCeilingClassLevel(
   state: CharacterState,
   library: ElementLibrary,
   select: SelectRule,
   casterName: string,
+  filled: boolean,
 ): number | undefined {
   // A prepared caster without a full known list acquires spells individually
   // into a book. This also covers Savant and homebrew book choices regardless
@@ -641,7 +713,7 @@ function slotCeilingClassLevel(
   const source = state.magic?.casters.find((block) => block.name === casterName)?.source;
   const casting = source === undefined ? undefined : library.byId.get(source)?.spellcasting;
   const isSpellbook = casting?.prepare === true && casting.listKnown !== true;
-  const current = isSpellbook ? 0 : casterClassLevel(state, library, casterName);
+  const current = isSpellbook || !filled ? 0 : casterClassLevel(state, library, casterName);
   return current > 0 ? current : select.level;
 }
 
@@ -663,7 +735,7 @@ export function spellSlotCeilingFor(
   const caster = casterName ?? select?.spellcasting ?? state.spellcasting[0]?.name ?? "";
   const classLevel =
     select !== undefined && (effectiveSpellSupports(state, library, select) ?? "").includes("$(spellcasting:slots)")
-      ? slotCeilingClassLevel(state, library, select, caster)
+      ? slotCeilingClassLevel(state, library, select, caster, isFilledSlot(rule))
       : rule.requiredLevel;
   return classLevel !== undefined ? spellSlotLevelAtClassLevel(library, caster, classLevel) : 0;
 }
@@ -805,10 +877,15 @@ export function highestSlotLevelFromRules(
   return highest;
 }
 
-/** The highest spell-slot level with a non-zero count. */
-function maxSpellSlotLevel(state: CharacterState): number {
+/**
+ * The highest spell-slot level with a non-zero count in the named caster's
+ * serialized slots (any caster's when none is named so). Another class's
+ * table is not this caster's ceiling.
+ */
+function maxSpellSlotLevel(state: CharacterState, casterName: string): number {
   let max = 0;
-  for (const casting of state.spellcasting) {
+  const own = state.spellcasting.filter((casting) => casting.name === casterName);
+  for (const casting of own.length > 0 ? own : state.spellcasting) {
     for (const [key, value] of Object.entries(casting.slots)) {
       const match = key.match(/^s(\d+)$/);
       if (!match) continue;
@@ -1071,9 +1148,9 @@ export function selectionOptions(
       detail: null,
     }));
   }
-  const requirementCtx = ctx ?? requirementContext(state, library);
+  const requirementCtx = grantPointContext(state, library, rule) ?? ctx ?? requirementContext(state, library);
   const authored = authoredSelectResolution(state, library, rule);
-  const supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined;
+  const supports = authored.select ? expandSelectSupports(state, library, authored.select, isFilledSlot(rule)) : undefined;
   if (authored.hasCandidates && (authored.select === undefined || !authored.active)) return [];
   // Reopening a filled rule must keep its current value in the option list. For a
   // numbered group the rule passed here is the individual slot, so this also
@@ -1112,9 +1189,9 @@ export function hasAvailableSelectionOptions(
     const select = selectRuleFor(state, library, rule);
     return (select?.items?.length ?? 0) > 0;
   }
-  const requirementCtx = ctx ?? requirementContext(state, library);
+  const requirementCtx = grantPointContext(state, library, rule) ?? ctx ?? requirementContext(state, library);
   const authored = authoredSelectResolution(state, library, rule);
-  const supports = authored.select ? expandSelectSupports(state, library, authored.select) : undefined;
+  const supports = authored.select ? expandSelectSupports(state, library, authored.select, isFilledSlot(rule)) : undefined;
   if (authored.hasCandidates && (authored.select === undefined || !authored.active)) return false;
   const allowedRegisteredId = rule.selectedElementIds.find((id): id is string => id !== null);
   return (library.byType.get(rule.type) ?? []).some((candidate) =>
@@ -1663,7 +1740,8 @@ export function setSelection(
   }
   const base = replacing ? clearSelection(state, library, rule) : cloneState(state);
   const ctx = requirementContext(base, library);
-  if (!isEligible(base, library, rule, ctx, element)) {
+  // Judged as of the grant point; the element still registers at today's level.
+  if (!isEligible(base, library, rule, grantPointContext(base, library, rule) ?? ctx, element)) {
     throw engineError("invalid-argument", `element '${selectionId}' is not eligible for rule '${rule.type}'`);
   }
 

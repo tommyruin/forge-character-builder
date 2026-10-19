@@ -1,7 +1,7 @@
 import type { SpellResourceDto } from "@forge-cb/api";
 import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection, SheetSpellListSection } from "./model.js";
 import { CONTINUATION_PAGE_TEXT, type LayoutRun } from "./card-layout.js";
-import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, measuredTextWidth, winAnsiText } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, READABLE_MIN_FONT_SIZE, measuredTextWidth, winAnsiText } from "./text.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote } from "./attack-notes.js";
 import { decodeBase64 } from "../platform.js";
 import {
@@ -336,6 +336,8 @@ export interface SheetFaces {
   captions: SheetFaceSource;
   numbers: SheetFaceSource;
   body: { regular: SheetFaceSource; bold: SheetFaceSource; italic: SheetFaceSource; boldItalic: SheetFaceSource };
+  /** The body face's SHEET_FONT_FACES key, which picks its advance widths (see measuredTextWidth). */
+  bodyFace?: string;
 }
 
 export const DEFAULT_SHEET_FACES: SheetFaces = {
@@ -408,6 +410,8 @@ interface SheetFonts {
   titles: PDFFont;
   captions: PDFFont;
   numbers: PDFFont;
+  /** Positioned body runs measured as drawn, the way the model laid them out. */
+  bodyMeasure: TextMeasure;
 }
 
 /** The label colours of a scheme, as pdf-lib colours. */
@@ -441,14 +445,23 @@ async function embedFace(document: PDFDocument, source: SheetFaceSource, name: s
 
 async function embedSheetFonts(document: PDFDocument, faces: SheetFaces): Promise<SheetFonts> {
   document.registerFontkit(await loadFontkit());
-  return {
+  const body = {
     regular: await embedFace(document, faces.body.regular, "FCB-Body"),
     bold: await embedFace(document, faces.body.bold, "FCB-Body-Bold"),
     italic: await embedFace(document, faces.body.italic, "FCB-Body-Italic"),
     boldItalic: await embedFace(document, faces.body.boldItalic, "FCB-Body-BoldItalic"),
+  };
+  // A named or standard body face measures on its advance widths, as the
+  // model's layout did; custom bytes with no name fall back to the font.
+  const bodyMeasure: TextMeasure = faces.bodyFace !== undefined || "standard" in faces.body.regular
+    ? (text, fontSize, style) => measuredTextWidth(text, fontSize, style ?? "regular", faces.bodyFace)
+    : (text, fontSize, style) => runFont(body, style).widthOfTextAtSize(winAnsiText(text), fontSize);
+  return {
+    ...body,
     titles: await embedFace(document, faces.titles, "FCB-Titles"),
     captions: await embedFace(document, faces.captions, "FCB-Captions"),
     numbers: await embedFace(document, faces.numbers, "FCB-Numbers"),
+    bodyMeasure,
   };
 }
 
@@ -591,13 +604,6 @@ function fieldFontSize(name: string): number {
   if (name === "background_story" || name === "background_feature") return 6.5;
   return 8;
 }
-
-/**
- * The smallest size a value drawn into a template box shrinks to. Below it
- * print stops being readable, so a value that still does not fit wraps, is
- * marked as cut, or continues on another page instead of shrinking further.
- */
-const READABLE_MIN_FONT_SIZE = 5.5;
 
 /**
  * A single-line value shrinks, down to the readable floor (or its own size
@@ -1008,7 +1014,7 @@ function drawFieldValue(page: PDFPage, item: DrawnValue, font: PDFFont, colour: 
   });
 }
 
-function runFont(fonts: SheetFonts, style: LayoutRun["style"]): PDFFont {
+function runFont(fonts: Pick<SheetFonts, "regular" | "bold" | "italic" | "boldItalic">, style: LayoutRun["style"]): PDFFont {
   if (style === "bold") return fonts.bold;
   if (style === "italic") return fonts.italic;
   if (style === "bold-italic") return fonts.boldItalic;
@@ -1054,7 +1060,7 @@ function fontMeasure(fonts: SheetFonts): TextMeasure {
 }
 
 function drawPositionedRuns(page: PDFPage, runs: readonly LayoutRun[], fonts: SheetFonts): void {
-  const measure = fontMeasure(fonts);
+  const measure = fonts.bodyMeasure;
   const ink = rgb(0.08, 0.08, 0.08);
   let previousFlow:
     | { card: number | undefined; role: LayoutRun["role"]; y: number; endX: number; space: number }
@@ -1996,8 +2002,9 @@ function spellTextWidth(text: string, font: PDFFont, size: number): number {
 
 /** Keep even custom names/allowances inside their cell at the minimum size. */
 function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: number): string {
-  if (spellTextWidth(text, font, size) <= width) return text;
-  let used = spellTextWidth("...", font, size);
+  // The tolerance absorbs rounding when `size` was scaled to fit `width` exactly.
+  if (spellTextWidth(text, font, size) <= width + 0.01) return text;
+  let used = spellTextWidth("\u2026", font, size);
   if (used > width) return "";
   let prefix = "";
   for (const character of text) {
@@ -2005,7 +2012,37 @@ function ellipsizeSpellText(text: string, font: PDFFont, size: number, width: nu
     if (used > width) break;
     prefix += character;
   }
-  return `${prefix}...`;
+  return `${prefix}\u2026`;
+}
+
+/**
+ * A spell cell's name and free-cast marker. The name prints at 7pt with the
+ * marker after it at 5.5pt when both fit the cell. Otherwise the name gives
+ * up size, down to the readable floor, to make room; only when neither fits
+ * there is the marker cut (keeping at least half the cell) and then the name,
+ * each with an ellipsis. The spell's card carries the full name.
+ */
+function fitSpellCell(
+  name: string,
+  rawMarker: string,
+  font: PDFFont,
+  cellWidth: number,
+): { name: string; size: number; marker: string; markerSize: number; markerGap: number } {
+  const markerGap = 2.5;
+  const markerSize = 5.5;
+  // Clear of the cell's right border.
+  const width = cellWidth - 1;
+  const nameFull = spellTextWidth(name, font, 7);
+  let marker = rawMarker;
+  if (marker !== "") {
+    const nameMin = nameFull * READABLE_MIN_FONT_SIZE / 7;
+    if (width - markerGap - spellTextWidth(marker, font, markerSize) < nameMin) {
+      marker = ellipsizeSpellText(marker, font, markerSize, Math.max(width - markerGap - nameMin, width / 2 - markerGap));
+    }
+  }
+  const room = width - (marker === "" ? 0 : markerGap + spellTextWidth(marker, font, markerSize));
+  const size = nameFull <= room ? 7 : Math.max(READABLE_MIN_FONT_SIZE, 7 * room / nameFull);
+  return { name: ellipsizeSpellText(name, font, size, room), size, marker, markerSize, markerGap };
 }
 
 /** Clarify recognized free casts while retaining unrecognized authored allowances. */
@@ -2066,7 +2103,16 @@ async function addSpellListPage(
       page.drawPage(tops[spellSection.level] ?? tops[0]!, { x: 0, y: topY, width: PAGE_WIDTH, height: topHeight });
       drawTemplateText(page, bundle.labels[SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[spellSection.level] ?? SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[0]!], fonts, colours, 0, topY);
       // A feature caster's level block has no slots to count (its spells are
-      // cast free or from another caster's slots), so it prints no label.
+      // cast free or from another caster's slots), so it prints no label. A
+      // combined multiclass class whose shared slots print on another class's
+      // bands says where, once.
+      if (spellSection.sharedSlotsWith !== undefined && !hasSlots(spellSection)) {
+        const note = ellipsizeSpellText(
+          winAnsiText(`SHARED SLOTS: SEE ${spellSection.sharedSlotsWith.toUpperCase()}`),
+          fonts.regular, 5.5, SPELL_LIST.labelCellRight - 4 - slotTextX,
+        );
+        page.drawText(note, { x: slotTextX, y: topY + textBaseline, size: 5.5, font: fonts.regular, color: rgb(1, 1, 1) });
+      }
       if (hasSlots(spellSection)) {
         const slotLabel = `${spellSection.slots} SPELL ${spellSection.slots === 1 ? "SLOT" : "SLOTS"}`;
         page.drawText(slotLabel, {
@@ -2088,25 +2134,23 @@ async function addSpellListPage(
         const row = firstRow ? 0 : 1 + Math.floor((index - 2) / 3);
         const x = columns[column]!;
         const y = topY + textBaseline - row * rowHeight;
-        const name = winAnsiText(spell.name);
         const rawMarker = spell.usage === undefined || spell.usage === "" ? "" : winAnsiText(compactUsage(spell.usage));
-        const marker = ellipsizeSpellText(rawMarker, fonts.regular, 5.5, (SPELL_CELL_RIGHTS[column]! - x) / 2);
-        // A free cast's marker follows the name in the small slot-label size; a
-        // name too long to leave it room inside the cell gives up size rather
-        // than run the marker into the next cell's prepared dot.
-        const markerGap = 2.5;
-        const markerWidth = marker === "" ? 0 : markerGap + spellTextWidth(marker, fonts.regular, 5.5);
-        const room = SPELL_CELL_RIGHTS[column]! - x - markerWidth;
-        const fullWidth = spellTextWidth(name, fonts.regular, 7);
-        const size = fullWidth <= room ? 7 : Math.max(5, 7 * room / fullWidth);
-        const fittedName = ellipsizeSpellText(name, fonts.regular, size, room);
-        page.drawText(fittedName, { x, y, size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
-        if (marker !== "") {
-          const markerX = x + spellTextWidth(fittedName, fonts.regular, size) + markerGap;
-          page.drawText(marker, { x: markerX, y, size: 5.5, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
+        // A free cast's marker follows the name in the small slot-label size,
+        // inside the cell so it never runs into the next cell's bubble.
+        const cell = fitSpellCell(winAnsiText(spell.name), rawMarker, fonts.regular, SPELL_CELL_RIGHTS[column]! - x);
+        page.drawText(cell.name, { x, y, size: cell.size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+        if (cell.marker !== "") {
+          const markerX = x + spellTextWidth(cell.name, fonts.regular, cell.size) + cell.markerGap;
+          page.drawText(cell.marker, { x: markerX, y, size: cell.markerSize, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
         }
         if (spell.prepared || spell.alwaysPrepared) {
-          page.drawText("•", { x: x - 13, y: y - 0.2, size: 5, font: fonts.regular, color: rgb(0.18, 0.18, 0.18) });
+          // Fills the cell's template bubble (the same contract offsets draw it).
+          page.drawCircle({
+            x: x + SPELL_LIST.preparedMark.dx,
+            y: y + SPELL_LIST.preparedMark.dy,
+            size: SPELL_LIST.preparedMark.radius,
+            color: rgb(0.18, 0.18, 0.18),
+          });
         }
       });
       sectionTop -= topHeight + rows * rowHeight + endHeight;
@@ -2303,11 +2347,11 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
           modelPage.templateKind === "spell-cards" ? bundle.spellCard : bundle.genericCard,
           bundle.labels[modelPage.templateKind === "spell-cards" ? files.spellCard : files.genericCard],
           fragments,
-          cardPage === 0
-            ? modelPage.sections.length
-            : Math.max(1, ...positionedRuns
-              .filter((run) => (run.page ?? 0) === cardPage)
-              .map((run) => (run.card ?? 0) + 1)),
+          // The slots the layout filled on this page (a continuation takes a
+          // slot of its own, so the count is not the page's section count).
+          Math.max(1, ...positionedRuns
+            .filter((run) => (run.page ?? 0) === cardPage)
+            .map((run) => (run.card ?? 0) + 1)),
           fonts,
           labelInk,
         ));

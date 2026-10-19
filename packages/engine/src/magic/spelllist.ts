@@ -4,7 +4,7 @@ import type { CharacterState, RegisteredElement } from "../character/state.js";
 import type { MagicCasterBlock } from "./state.js";
 import { grantedSpellUsage, type GrantedSpellUsage } from "./spell-usage.js";
 import type { ParsedElement } from "../content/parser.js";
-import { casterClassLevel, createRegistrationContext, grantEligible } from "../selection/selection.js";
+import { casterClassLevel, casterOwnSpellLevel, createRegistrationContext, grantEligible } from "../selection/selection.js";
 
 /**
  * Caster spell-list derivation.
@@ -214,4 +214,26 @@ export function alwaysPreparedUsages(state: CharacterState, library: ElementLibr
     usages.set(casterName, spells);
   }
   return usages;
+}
+
+/**
+ * The highest spell level a caster block may learn or prepare: its highest
+ * slot, capped for a combined multiclass caster at its own class's spell
+ * level. The combined table can reach slots no class may fill with spells of
+ * that level (Druid 5 / Sorcerer 3 has 4th-level slots, but a Druid 5
+ * prepares at most 3rd-level spells); they still serve higher-level castings.
+ * Pact Magic always keeps its own table.
+ */
+export function casterSpellLevelCap(state: CharacterState | undefined, library: ElementLibrary, block: MagicCasterBlock): number {
+  let highest = 0;
+  for (let level = 9; level >= 1; level--) {
+    const value = Number.parseInt(block.slots[`s${level}`] ?? "0", 10);
+    if (Number.isFinite(value) && value > 0) {
+      highest = level;
+      break;
+    }
+  }
+  if (state?.magic?.multiclass !== true || block.source.toUpperCase().includes("PACT_MAGIC")) return highest;
+  const own = casterOwnSpellLevel(state, library, block.name);
+  return own > 0 ? Math.min(highest, own) : highest;
 }
