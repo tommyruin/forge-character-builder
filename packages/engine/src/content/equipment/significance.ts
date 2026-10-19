@@ -69,7 +69,8 @@ export function plainDescriptionText(xml: string | undefined): string {
 /**
  * How much rules text a passage carries: the {@link RULES_TEXT} cues it
  * contains, with extra weight for a DC, a saving throw, dice or a damage
- * amount and a little for a range, a save, speed, a condition, an attack, a rest or a limited number of uses. Zero means flavour.
+ * amount and a little for a range, a save, speed, a condition, an attack, a rest, a duration or a limited number of uses.
+ * Zero means flavour.
  */
 export function rulesCueScore(text: string): number {
   let score = text.match(new RegExp(RULES_TEXT.source, "gi"))?.length ?? 0;
@@ -78,6 +79,7 @@ export function rulesCueScore(text: string): number {
   if (/\d+d\d+|\b\d+\s+(?:[a-z]+\s+)?damage\b/i.test(text)) score += 2;
   if (/\b\d+(?:-foot|\s+feet)\b/i.test(text)) score += 0.5;
   if (/\b(?:saves?|speed|prone|grappled|poisoned|stunned|incapacitated|paralyzed|unconscious)\b/i.test(text)) score += 0.5;
+  if (/\b\d+\s+(?:rounds?|minutes?|hours?|days?)\b/i.test(text)) score += 1;
   if (/\b(?:short|long) rest\b|\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten) (?:uses|charges)\b/i.test(text)) {
     score += 1;
   }

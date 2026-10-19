@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { itemNote, NOTE_BUDGET } from "./item-summary.js";
+import { itemNote, NOTE_BUDGET, USES_BUDGET } from "./item-summary.js";
 
 const NAVIGATORS_2024 = `
   <ul class="unstyled">
@@ -50,14 +50,25 @@ describe("itemNote", () => {
     expect(note.text).toContain("Speed reduced to 0");
   });
 
-  it("gives every way of using the item a say, each under its heading, and drops the pointer to text it leaves out", () => {
+  it("keeps every headed use of an item, each under its heading, and drops the pointer to text it leaves out", () => {
     const note = itemNote(OIL_2024)!;
-    expect(note.text.length).toBeLessThanOrEqual(NOTE_BUDGET);
-    expect(note.text).toContain("Dousing a Creature or an Object. The target must succeed on a Dexterity saving throw");
-    expect(note.text).toContain("Dousing a Space. If lit, the oil burns");
+    expect(note.text.length).toBeLessThanOrEqual(USES_BUDGET);
+    for (const heading of ["Dousing a Creature or an Object.", "Dousing a Space.", "Fuel."]) {
+      expect(note.text, heading).toContain(heading);
+      expect(note.html, heading).toContain(`<strong><em>${heading}</em></strong>`);
+    }
     expect(note.text).toContain("5 Fire damage");
+    expect(note.text).toContain("burns for 6 hours");
     expect(note.text).not.toContain("as detailed below");
     expect(note.html).toMatch(/^<p><strong><em>Dousing a Creature or an Object\.<\/em><\/strong> /);
+  });
+
+  it("never drops a headed use to make the budget, and prints the name alone when even their key clauses cannot fit", () => {
+    const use = (name: string) => `<p class="indent"><b><i>${name}.</i></b> You can make a DC 15 check ${"word ".repeat(12).trim()}.</p>`;
+    const some = itemNote(`${use("One")}${use("Two")}${use("Three")}`)!;
+    for (const heading of ["One.", "Two.", "Three."]) expect(some.text).toContain(heading);
+    const many = itemNote(["One", "Two", "Three", "Four", "Five", "Six", "Seven"].map(use).join(""));
+    expect(many).toEqual({ html: "", text: "" });
   });
 
   it("reduces a 2014 tool to what it is for and its DC table, without the components and skill insight", () => {
