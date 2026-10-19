@@ -966,7 +966,7 @@ describe("character sheet PDF writer", () => {
     // over the row's full pitch.
     for (let row = 1; row <= 4; row += 1) {
       const rect = rectOf(`details_attack${row}_description`);
-      expect({ width: rect.width, height: rect.height }, `row ${row} cell`).toEqual({ width: 106, height: 21 });
+      expect({ width: rect.width, height: rect.height }, `row ${row} cell`).toEqual({ width: 94, height: 21 });
     }
     // A note's lines are the drawn items inside its own cell; picking them by
     // text alone would catch a weapon name that reads as part of a note.

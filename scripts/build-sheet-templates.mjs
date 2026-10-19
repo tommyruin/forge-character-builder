@@ -372,10 +372,15 @@ class Sheet {
     field.setFontSize(size);
     return field;
   }
-  /** A labelled entry: the field over a rule with its caption underneath. */
+  /**
+   * A labelled entry: the field over a rule with its caption underneath. The
+   * caption hangs the same gap under the rule at any size: 6.5pt down at the
+   * default 4.2pt, and lower by its extra cap height when it is larger.
+   */
   entry(name, caption, x, y, width, height, options = {}) {
     this.text(name, x, y, width, height, options);
-    this.label(caption, x, y - 6.5, { size: options.captionSize ?? 4.2, align: options.captionAlign ?? "left", width });
+    const size = options.captionSize ?? 4.2;
+    this.label(caption, x, y - 6.5 - (size - 4.2) * 0.75, { size, align: options.captionAlign ?? "left", width });
   }
   /** A captioned entry: the caption above the field, as the classic sheet has it. */
   captioned(name, caption, x, y, width, height, options = {}) {
@@ -796,20 +801,20 @@ function classicHeader2024(s, edition, style, layout) {
   const readable = layout.readable;
   pageChrome(s, "CHARACTER", edition);
 
-  s.brush(26, 696, 322, 64);
-  s.frame(26, 696, 322, 64);
-  s.text("details_character_name", 32, 740, 240, 16, { size: 12 });
+  s.brush(26, 696, 308, 64);
+  s.frame(26, 696, 308, 64);
+  s.text("details_character_name", 32, 740, 226, 16, { size: 12 });
   s.label("CHARACTER NAME", 32, 733.5, { size: readable ? 5 : 4.2 });
-  s.entry("details_player", "PLAYER", 280, 741, 62, 11, { captionSize: readable ? 5 : 4.2 });
-  s.entry("details_build", "CLASS & LEVEL", 32, 719, 310, 11, { captionSize: readable ? 5 : 4.2 });
+  s.entry("details_player", "PLAYER", 266, 741, 62, 11, { captionSize: readable ? 5 : 4.2 });
+  s.entry("details_build", "CLASS & LEVEL", 32, 719, 296, 11, { captionSize: readable ? 5 : 4.2 });
   const captionSize = readable ? 4.4 : 3.4;
-  [["details_background", style.origin, 32, 110], ["details_alignment", "ALIGNMENT", 148, 76], ["details_deity", "DEITY", 230, 58], ["details_xp", "XP", 294, 48]].forEach(([name, caption, x, width]) => {
+  [["details_background", style.origin, 32, 104], ["details_alignment", "ALIGNMENT", 142, 72], ["details_deity", "DEITY", 220, 56], ["details_xp", "XP", 282, 46]].forEach(([name, caption, x, width]) => {
     const captionWidth = s.textWidth(caption, "caption", captionSize) + 4;
     s.label(caption, x, 702.5, { size: captionSize, color: "lines" });
     s.text(name, x + captionWidth, 702, width - captionWidth, 8, { size: 6 });
   });
 
-  armorBeside2024(s, layout, 354, 696, 76, 64);
+  armorBeside2024(s, layout, 340, 696, 90, 64);
   s.shield("details_armor_class", "ARMOR CLASS", 436, 762, 46, 46, { captionSize: readable ? 4.2 : 3.8 });
   s.text("details_equipped_shield", 436, 705, 46, 9, { align: "center", size: 5, box: "none" });
   s.label("SHIELD", 436, 699, { size: 5, align: "center", width: 46 });
@@ -862,13 +867,14 @@ function vitalsRow2024(s, layout) {
   s.check("details_initiative_advantage", vitalX(1) + 6, vitalY + 30, 6);
   s.label("ADV", vitalX(1) + 14, vitalY + 31.2, { size: readable ? 4.4 : 3.6 });
   s.frame(vitalX(2), vitalY, vitalW, vitalH);
-  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 15, 38, 20, { align: "center", size: 14, box: "none" });
-  s.label("SPEED", vitalX(2) + 3, vitalY + 5, { size: caption, align: "center", width: 38 });
-  s.rule(vitalX(2) + 43, vitalY + 6, vitalX(2) + 43, vitalY + vitalH - 6, GOLD, 0.4);
+  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 15, 35, 20, { align: "center", size: 14, box: "none" });
+  s.label("SPEED", vitalX(2) + 3, vitalY + 5, { size: caption, align: "center", width: 35 });
+  s.rule(vitalX(2) + 40, vitalY + 6, vitalX(2) + 40, vitalY + vitalH - 6, GOLD, 0.4);
+  const modeX = vitalX(2) + 44.5 + s.textWidth("CLIMB", "caption", 3.4);
   [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, label], index) => {
     const y = vitalY + 27 - index * 9.5;
-    s.label(label, vitalX(2) + 46, y + 1.5, { size: 3.4, color: "lines" });
-    s.text(name, vitalX(2) + 58, y, 14, 8, { align: "center", size: 5.5 });
+    s.label(label, vitalX(2) + 43, y + 1.5, { size: 3.4, color: "lines" });
+    s.text(name, modeX, y, vitalX(2) + vitalW - 3 - modeX, 8, { align: "center", size: 5.5 });
   });
   stat("details_hd", "HIT DICE", 3);
   s.frame(vitalX(4), vitalY, vitalW, vitalH);
@@ -972,15 +978,16 @@ function topBand2024(s, edition, layout) {
   const speedX = 406;
   const speedW = 80;
   s.frame(speedX, vitalY, speedW, vitalH);
-  s.text("details_speed_walking", speedX + 3, vitalY + 14, 41, 20, { align: "center", size: 16, box: "none" });
-  s.label("SPEED", speedX + 3, vitalY + 5, { size: readable ? 5 : 4.2, align: "center", width: 41 });
-  s.rule(speedX + 46, vitalY + 6, speedX + 46, vitalY + vitalH - 6, GOLD, 0.4);
+  s.text("details_speed_walking", speedX + 3, vitalY + 14, 37, 20, { align: "center", size: 16, box: "none" });
+  s.label("SPEED", speedX + 3, vitalY + 5, { size: readable ? 5 : 4.2, align: "center", width: 37 });
+  s.rule(speedX + 42, vitalY + 6, speedX + 42, vitalY + vitalH - 6, GOLD, 0.4);
+  // Each mode's line takes what its caption leaves: "35ft." at 6pt needs 16pt.
   const modeCaption = readable ? 4 : 3.4;
-  const modeX = speedX + 50 + s.textWidth("CLIMB", "caption", modeCaption);
+  const modeX = speedX + 46.5 + s.textWidth("CLIMB", "caption", modeCaption);
   [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, caption], index) => {
     const y = vitalY + 28 - index * 10.5;
-    s.label(caption, speedX + 49, y + 1.5, { size: modeCaption, color: "lines" });
-    s.text(name, modeX, y, speedX + speedW - 4 - modeX, 9, { align: "center", size: 6 });
+    s.label(caption, speedX + 45, y + 1.5, { size: modeCaption, color: "lines" });
+    s.text(name, modeX, y, speedX + speedW - 3 - modeX, 9, { align: "center", size: 6 });
   });
 
   const savesX = 490;
@@ -1096,7 +1103,8 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   s.text("details_vision", inner.x + 30, inner.y + inner.height - 10, inner.width - 33, 10, { size: 7 });
 
   rightColumn2024(s, style, layout, 270, 316,
-    [["NAME", 274, 68], ["RANGE", 344, 28], ["ATK / DC", 374, 34], ["DAMAGE & TYPE", 410, 64], ["NOTES", 476, 106]], readable ? 5 : 3.8, "CLASS FEATURES");
+    // RANGE holds a ranged weapon's ammunition too ("30/120; Bullet").
+    [["NAME", 274, 68], ["RANGE", 344, 40], ["ATK / DC", 386, 34], ["DAMAGE & TYPE", 422, 64], ["NOTES", 488, 94]], readable ? 5 : 3.8, "CLASS FEATURES");
   return finish(doc, s);
 }
 
@@ -1172,7 +1180,7 @@ async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   conditions2024(s, layout, 26, 60, lw, 76);
 
   rightColumn2024(s, style, layout, 230, 356,
-    [["NAME", 234, 82], ["RANGE", 318, 32], ["ATK / DC", 352, 36], ["DAMAGE & TYPE", 390, 72], ["NOTES", 464, 118]], readable ? 5.5 : 5, "FEATURES");
+    [["NAME", 234, 82], ["RANGE", 318, 40], ["ATK / DC", 360, 36], ["DAMAGE & TYPE", 398, 72], ["NOTES", 472, 110]], readable ? 5.5 : 5, "FEATURES");
   return finish(doc, s);
 }
 

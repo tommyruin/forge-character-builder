@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { PDFCheckBox, PDFDocument, type PDFFont } from "pdf-lib";
+import { PDFCheckBox, PDFDocument, StandardFonts, type PDFFont } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { templateFontSize } from "./pdf.js";
 import { sheetFaces } from "./templates.js";
@@ -408,6 +408,23 @@ describe("the 2024 body", () => {
     expect(features.height).toBeGreaterThanOrEqual(290);
     expect(page.has("details_attack5_weapon")).toBe(true);
     expect(page.has("details_attack6_weapon")).toBe(false);
+  });
+
+  // A single-line value that cannot fit at the writer's 4.5pt floor wraps
+  // inside its one-line box and loses its second line, so the narrow cells
+  // hold the longest values they take at 5pt or more: a flying speed, and a
+  // ranged weapon's range with its ammunition.
+  it.each(PAGES_2024)("fits the longest speed and range values at 5pt or more on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const helvetica = await (await PDFDocument.create()).embedFont(StandardFonts.Helvetica);
+    const samples: Array<readonly [string, string]> = [
+      ["details_speed_fly", "120ft."], ["details_speed_climb", "120ft."], ["details_speed_swim", "120ft."],
+      ...[1, 2, 3, 4, 5].map((row) => [`details_attack${row}_range`, "30/120; Bullet"] as const),
+    ];
+    for (const [name, value] of samples) {
+      const fitted = Math.min(page.size(name)!, (page.rect(name).width - 4) / helvetica.widthOfTextAtSize(value, 1));
+      expect(fitted, name).toBeGreaterThanOrEqual(5);
+    }
   });
 
   // D&D Beyond's 2024 block: the modifier is the large number, the score a

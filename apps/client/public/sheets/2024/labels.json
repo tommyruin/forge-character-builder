@@ -265,11 +265,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 41
+    "width": 37
    },
    {
     "text": "FLY",
-    "x": 455,
+    "x": 451,
     "y": 679.5,
     "size": 3.4,
     "font": "captions",
@@ -277,7 +277,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 455,
+    "x": 451,
     "y": 669,
     "size": 3.4,
     "font": "captions",
@@ -285,7 +285,7 @@
    },
    {
     "text": "SWIM",
-    "x": 455,
+    "x": 451,
     "y": 658.5,
     "size": 3.4,
     "font": "captions",
@@ -801,7 +801,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -809,7 +809,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -817,7 +817,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -2147,11 +2147,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 41
+    "width": 37
    },
    {
     "text": "FLY",
-    "x": 455,
+    "x": 451,
     "y": 679.5,
     "size": 3.4,
     "font": "captions",
@@ -2159,7 +2159,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 455,
+    "x": 451,
     "y": 669,
     "size": 3.4,
     "font": "captions",
@@ -2167,7 +2167,7 @@
    },
    {
     "text": "SWIM",
-    "x": 455,
+    "x": 451,
     "y": 658.5,
     "size": 3.4,
     "font": "captions",
@@ -2683,7 +2683,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -2691,7 +2691,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -2699,7 +2699,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -2750,7 +2750,7 @@
    },
    {
     "text": "PLAYER",
-    "x": 280,
+    "x": 266,
     "y": 734.5,
     "size": 4.2,
     "font": "captions",
@@ -2774,7 +2774,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 148,
+    "x": 142,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -2782,7 +2782,7 @@
    },
    {
     "text": "DEITY",
-    "x": 230,
+    "x": 220,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -2790,7 +2790,7 @@
    },
    {
     "text": "XP",
-    "x": 294,
+    "x": 282,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -2798,7 +2798,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 359,
+    "x": 345,
     "y": 750,
     "size": 4.2,
     "font": "captions",
@@ -2806,13 +2806,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 359,
+    "x": 345,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 58.5
+    "width": 72.5
    },
    {
     "text": "ARMOR CLASS",
@@ -2906,11 +2906,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 38
+    "width": 35
    },
    {
     "text": "FLY",
-    "x": 236,
+    "x": 233,
     "y": 678.5,
     "size": 3.4,
     "font": "captions",
@@ -2918,7 +2918,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 236,
+    "x": 233,
     "y": 669,
     "size": 3.4,
     "font": "captions",
@@ -2926,7 +2926,7 @@
    },
    {
     "text": "SWIM",
-    "x": 236,
+    "x": 233,
     "y": 659.5,
     "size": 3.4,
     "font": "captions",
@@ -3452,7 +3452,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -3460,7 +3460,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -3468,7 +3468,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -3519,7 +3519,7 @@
    },
    {
     "text": "PLAYER",
-    "x": 280,
+    "x": 266,
     "y": 734.5,
     "size": 4.2,
     "font": "captions",
@@ -3543,7 +3543,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 148,
+    "x": 142,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -3551,7 +3551,7 @@
    },
    {
     "text": "DEITY",
-    "x": 230,
+    "x": 220,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -3559,7 +3559,7 @@
    },
    {
     "text": "XP",
-    "x": 294,
+    "x": 282,
     "y": 702.5,
     "size": 3.4,
     "font": "captions",
@@ -3567,7 +3567,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 359,
+    "x": 345,
     "y": 750,
     "size": 4.2,
     "font": "captions",
@@ -3575,13 +3575,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 359,
+    "x": 345,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 58.5
+    "width": 72.5
    },
    {
     "text": "ARMOR CLASS",
@@ -3675,11 +3675,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 38
+    "width": 35
    },
    {
     "text": "FLY",
-    "x": 236,
+    "x": 233,
     "y": 678.5,
     "size": 3.4,
     "font": "captions",
@@ -3687,7 +3687,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 236,
+    "x": 233,
     "y": 669,
     "size": 3.4,
     "font": "captions",
@@ -3695,7 +3695,7 @@
    },
    {
     "text": "SWIM",
-    "x": 236,
+    "x": 233,
     "y": 659.5,
     "size": 3.4,
     "font": "captions",
@@ -4221,7 +4221,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -4229,7 +4229,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -4237,7 +4237,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 3.8,
     "font": "captions",
@@ -4289,7 +4289,7 @@
    {
     "text": "PLAYER",
     "x": 206,
-    "y": 732.5,
+    "y": 731.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4297,7 +4297,7 @@
    {
     "text": "CLASS",
     "x": 32,
-    "y": 709.5,
+    "y": 708.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4305,7 +4305,7 @@
    {
     "text": "LEVEL",
     "x": 220,
-    "y": 709.5,
+    "y": 708.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -4315,7 +4315,7 @@
    {
     "text": "SPECIES",
     "x": 32,
-    "y": 685.5,
+    "y": 684.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4323,7 +4323,7 @@
    {
     "text": "BACKGROUND",
     "x": 118,
-    "y": 685.5,
+    "y": 684.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4331,7 +4331,7 @@
    {
     "text": "XP",
     "x": 220,
-    "y": 685.5,
+    "y": 684.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -4341,7 +4341,7 @@
    {
     "text": "ALIGNMENT",
     "x": 32,
-    "y": 661.5,
+    "y": 660.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4349,7 +4349,7 @@
    {
     "text": "DEITY",
     "x": 144,
-    "y": 661.5,
+    "y": 660.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -4522,11 +4522,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 41
+    "width": 37
    },
    {
     "text": "FLY",
-    "x": 455,
+    "x": 451,
     "y": 679.5,
     "size": 4,
     "font": "captions",
@@ -4534,7 +4534,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 455,
+    "x": 451,
     "y": 669,
     "size": 4,
     "font": "captions",
@@ -4542,7 +4542,7 @@
    },
    {
     "text": "SWIM",
-    "x": 455,
+    "x": 451,
     "y": 658.5,
     "size": 4,
     "font": "captions",
@@ -5058,7 +5058,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -5066,7 +5066,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -5074,7 +5074,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -5126,7 +5126,7 @@
    {
     "text": "PLAYER",
     "x": 206,
-    "y": 732.5,
+    "y": 731.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5134,7 +5134,7 @@
    {
     "text": "CLASS",
     "x": 32,
-    "y": 709.5,
+    "y": 708.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5142,7 +5142,7 @@
    {
     "text": "LEVEL",
     "x": 220,
-    "y": 709.5,
+    "y": 708.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5152,7 +5152,7 @@
    {
     "text": "SPECIES",
     "x": 32,
-    "y": 685.5,
+    "y": 684.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5160,7 +5160,7 @@
    {
     "text": "BACKGROUND",
     "x": 118,
-    "y": 685.5,
+    "y": 684.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5168,7 +5168,7 @@
    {
     "text": "XP",
     "x": 220,
-    "y": 685.5,
+    "y": 684.9,
     "size": 5,
     "font": "captions",
     "color": "text",
@@ -5178,7 +5178,7 @@
    {
     "text": "ALIGNMENT",
     "x": 32,
-    "y": 661.5,
+    "y": 660.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5186,7 +5186,7 @@
    {
     "text": "DEITY",
     "x": 144,
-    "y": 661.5,
+    "y": 660.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5359,11 +5359,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 41
+    "width": 37
    },
    {
     "text": "FLY",
-    "x": 455,
+    "x": 451,
     "y": 679.5,
     "size": 4,
     "font": "captions",
@@ -5371,7 +5371,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 455,
+    "x": 451,
     "y": 669,
     "size": 4,
     "font": "captions",
@@ -5379,7 +5379,7 @@
    },
    {
     "text": "SWIM",
-    "x": 455,
+    "x": 451,
     "y": 658.5,
     "size": 4,
     "font": "captions",
@@ -5895,7 +5895,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -5903,7 +5903,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -5911,7 +5911,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -5962,8 +5962,8 @@
    },
    {
     "text": "PLAYER",
-    "x": 280,
-    "y": 734.5,
+    "x": 266,
+    "y": 733.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5971,7 +5971,7 @@
    {
     "text": "CLASS & LEVEL",
     "x": 32,
-    "y": 712.5,
+    "y": 711.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -5986,7 +5986,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 148,
+    "x": 142,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -5994,7 +5994,7 @@
    },
    {
     "text": "DEITY",
-    "x": 230,
+    "x": 220,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6002,7 +6002,7 @@
    },
    {
     "text": "XP",
-    "x": 294,
+    "x": 282,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6010,7 +6010,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 359,
+    "x": 345,
     "y": 750,
     "size": 5,
     "font": "captions",
@@ -6018,13 +6018,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 359,
+    "x": 345,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 58.5
+    "width": 72.5
    },
    {
     "text": "ARMOR CLASS",
@@ -6118,11 +6118,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 38
+    "width": 35
    },
    {
     "text": "FLY",
-    "x": 236,
+    "x": 233,
     "y": 678.5,
     "size": 3.4,
     "font": "captions",
@@ -6130,7 +6130,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 236,
+    "x": 233,
     "y": 669,
     "size": 3.4,
     "font": "captions",
@@ -6138,7 +6138,7 @@
    },
    {
     "text": "SWIM",
-    "x": 236,
+    "x": 233,
     "y": 659.5,
     "size": 3.4,
     "font": "captions",
@@ -6664,7 +6664,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -6672,7 +6672,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -6680,7 +6680,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -6731,8 +6731,8 @@
    },
    {
     "text": "PLAYER",
-    "x": 280,
-    "y": 734.5,
+    "x": 266,
+    "y": 733.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -6740,7 +6740,7 @@
    {
     "text": "CLASS & LEVEL",
     "x": 32,
-    "y": 712.5,
+    "y": 711.9,
     "size": 5,
     "font": "captions",
     "color": "text"
@@ -6755,7 +6755,7 @@
    },
    {
     "text": "ALIGNMENT",
-    "x": 148,
+    "x": 142,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6763,7 +6763,7 @@
    },
    {
     "text": "DEITY",
-    "x": 230,
+    "x": 220,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6771,7 +6771,7 @@
    },
    {
     "text": "XP",
-    "x": 294,
+    "x": 282,
     "y": 702.5,
     "size": 4.4,
     "font": "captions",
@@ -6779,7 +6779,7 @@
    },
    {
     "text": "ARMOR",
-    "x": 359,
+    "x": 345,
     "y": 750,
     "size": 5,
     "font": "captions",
@@ -6787,13 +6787,13 @@
    },
    {
     "text": "STEALTH DISADV.",
-    "x": 359,
+    "x": 345,
     "y": 729.5,
     "size": 5,
     "font": "captions",
     "color": "lines",
     "align": "right",
-    "width": 58.5
+    "width": 72.5
    },
    {
     "text": "ARMOR CLASS",
@@ -6887,11 +6887,11 @@
     "font": "captions",
     "color": "text",
     "align": "center",
-    "width": 38
+    "width": 35
    },
    {
     "text": "FLY",
-    "x": 236,
+    "x": 233,
     "y": 678.5,
     "size": 3.4,
     "font": "captions",
@@ -6899,7 +6899,7 @@
    },
    {
     "text": "CLIMB",
-    "x": 236,
+    "x": 233,
     "y": 669,
     "size": 3.4,
     "font": "captions",
@@ -6907,7 +6907,7 @@
    },
    {
     "text": "SWIM",
-    "x": 236,
+    "x": 233,
     "y": 659.5,
     "size": 3.4,
     "font": "captions",
@@ -7433,7 +7433,7 @@
    },
    {
     "text": "ATK / DC",
-    "x": 374,
+    "x": 386,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -7441,7 +7441,7 @@
    },
    {
     "text": "DAMAGE & TYPE",
-    "x": 410,
+    "x": 422,
     "y": 193,
     "size": 5,
     "font": "captions",
@@ -7449,7 +7449,7 @@
    },
    {
     "text": "NOTES",
-    "x": 476,
+    "x": 488,
     "y": 193,
     "size": 5,
     "font": "captions",
