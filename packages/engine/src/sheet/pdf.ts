@@ -1800,7 +1800,16 @@ async function addSpellListPage(
       page.drawPage(tops[spellSection.level] ?? tops[0]!, { x: 0, y: topY, width: PAGE_WIDTH, height: topHeight });
       drawTemplateText(page, bundle.labels[SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[spellSection.level] ?? SHEET_TEMPLATE_CONTRACT.spellcastingSectionTops[0]!], fonts, colours, 0, topY);
       // A feature caster's level block has no slots to count (its spells are
-      // cast free or from another caster's slots), so it prints no label.
+      // cast free or from another caster's slots), so it prints no label. A
+      // combined multiclass class whose shared slots print on another class's
+      // bands says where, once.
+      if (spellSection.sharedSlotsWith !== undefined && !hasSlots(spellSection)) {
+        const note = ellipsizeSpellText(
+          winAnsiText(`SHARED SLOTS: SEE ${spellSection.sharedSlotsWith.toUpperCase()}`),
+          fonts.regular, 5.5, SPELL_LIST.labelCellRight - 4 - slotTextX,
+        );
+        page.drawText(note, { x: slotTextX, y: topY + textBaseline, size: 5.5, font: fonts.regular, color: rgb(1, 1, 1) });
+      }
       if (hasSlots(spellSection)) {
         const slotLabel = `${spellSection.slots} SPELL ${spellSection.slots === 1 ? "SLOT" : "SLOTS"}`;
         page.drawText(slotLabel, {

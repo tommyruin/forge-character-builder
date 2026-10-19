@@ -161,9 +161,14 @@ describe.each(EDITIONS)("Druid 5 / Sorcerer 3 with Magic Initiate (Wizard), $rul
     expect(levelsOf("Druid")).toEqual([0, 1, 2, 3, 4]);
     expect(slotsOf("Druid")).toEqual([0, 4, 3, 3, 2]);
     expect(layouts.find((layout) => layout.name.startsWith("Druid"))!.sections.at(-1)!.spells).toEqual([]);
-    // The sorcerer prints its own levels without circles.
+    // The sorcerer prints its own levels without circles, its first band
+    // pointing to the druid's.
     expect(levelsOf("Sorcerer")).toEqual([0, 1, 2]);
     expect(slotsOf("Sorcerer").every((slots) => slots === 0)).toBe(true);
+    const sharedNotes = (name: string) =>
+      layouts.find((layout) => layout.name.startsWith(name))!.sections.map((section) => section.sharedSlotsWith);
+    expect(sharedNotes("Sorcerer")).toEqual([undefined, "Druid", undefined]);
+    expect(sharedNotes("Druid").every((note) => note === undefined)).toBe(true);
     // Magic Initiate (Wizard) casts with Intelligence in both editions, so it
     // keeps its own list rather than joining the Wisdom druid's, and prints
     // no circles.
@@ -175,6 +180,7 @@ describe.each(EDITIONS)("Druid 5 / Sorcerer 3 with Magic Initiate (Wizard), $rul
     expect(initiate.sections.every((section) => section.slots === 0)).toBe(true);
 
     const circles = vi.spyOn(PDFPage.prototype, "drawCircle");
+    const texts = vi.spyOn(PDFPage.prototype, "drawText");
     const model = buildCharacterSheetModel(service.getCharacter(id), library, {
       mode: "full",
       include: { background: false, notes: false, spellCards: false, itemCards: false },
@@ -182,6 +188,7 @@ describe.each(EDITIONS)("Druid 5 / Sorcerer 3 with Magic Initiate (Wizard), $rul
     await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition.ruleset));
     const trackers = circles.mock.calls.filter(([options]) => options?.size === 2.7);
     expect(trackers).toHaveLength(4 + 3 + 3 + 2);
+    expect(texts.mock.calls.filter(([text]) => text === "SHARED SLOTS: SEE DRUID")).toHaveLength(1);
   }, 120_000);
 
   it("marks the sorcerer's known levelled spells, which it never prepares", () => {

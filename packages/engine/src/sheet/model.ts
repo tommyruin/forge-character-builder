@@ -83,6 +83,8 @@ export type SheetTemplateKind =
 export interface SheetSpellListSection {
   level: number;
   slots: number;
+  /** The class whose band prints this combined multiclass caster's shared slots (on its first band). */
+  sharedSlotsWith?: string;
   spells: readonly {
     name: string;
     prepared: boolean;
@@ -2331,10 +2333,14 @@ const MULTICLASS_SLOTS: readonly (readonly number[])[] = [
  * of its own. A combined multiclass character has one shared pool, so it
  * prints once, on the class caster whose own spells reach highest (the first
  * such in order on a tie); the other combined class casters print their bands
- * without circles. Pact Magic keeps its own table.
+ * without circles, pointing to that class. Pact Magic keeps its own table.
  */
-function sheetSlots(state: CharacterState, casters: readonly SpellcasterDto[]): Map<SpellcasterDto, readonly number[]> {
+function sheetSlots(
+  state: CharacterState,
+  casters: readonly SpellcasterDto[],
+): { slots: Map<SpellcasterDto, readonly number[]>; sharedWith: Map<SpellcasterDto, string> } {
   const slots = new Map<SpellcasterDto, readonly number[]>();
+  const sharedWith = new Map<SpellcasterDto, string>();
   const isPact = (caster: SpellcasterDto): boolean =>
     state.magic?.casters.find((entry) => entry.name === caster.name)?.source.includes("PACT_MAGIC") === true;
   const combined = state.magic?.multiclass === true
@@ -2346,10 +2352,12 @@ function sheetSlots(state: CharacterState, casters: readonly SpellcasterDto[]): 
   for (const caster of casters) {
     if (caster.kind === "feature") slots.set(caster, []);
     else if (caster === holder) slots.set(caster, MULTICLASS_SLOTS[Math.min(Math.max(level, 0), 20)] ?? []);
-    else if (combined.includes(caster)) slots.set(caster, []);
-    else slots.set(caster, caster.slotsPerLevel);
+    else if (combined.includes(caster)) {
+      slots.set(caster, []);
+      sharedWith.set(caster, holder!.name);
+    } else slots.set(caster, caster.slotsPerLevel);
   }
-  return slots;
+  return { slots, sharedWith };
 }
 
 interface SpellGridGeometry {
@@ -2466,7 +2474,9 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
   for (const caster of casters) {
     const name = casterDisplayName(state, library, caster);
     const spells = uniqueSpellNames(caster.knownSpells);
-    const slotsPerLevel = slotPlan.get(caster) ?? [];
+    const slotsPerLevel = slotPlan.slots.get(caster) ?? [];
+    const sharedWith = slotPlan.sharedWith.get(caster);
+    let sharedNoted = false;
     const cantrips = spells.filter((spell) => spell.level === 0);
     const levels: Array<{
       level: number;
@@ -2552,11 +2562,16 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
       slots: number;
       prepared: KnownSpellDto[];
       full: KnownSpellDto[];
-    }): SheetSpellListSection => ({
-      level: level.level,
-      slots: level.slots,
-      spells: [...level.prepared, ...level.full].map((spell) => layoutSpell(spell, caster.requiresPreparation)),
-    });
+    }): SheetSpellListSection => {
+      const noteShared = sharedWith !== undefined && !sharedNoted;
+      if (noteShared) sharedNoted = true;
+      return {
+        level: level.level,
+        slots: level.slots,
+        ...(noteShared ? { sharedSlotsWith: sharedWith } : {}),
+        spells: [...level.prepared, ...level.full].map((spell) => layoutSpell(spell, caster.requiresPreparation)),
+      };
+    };
     let layoutSections = emitCasterHeader();
     layoutSections.push({
       level: 0,
