@@ -10,7 +10,7 @@ import {
   type DescriptionCard,
   type LayoutRun,
 } from "./card-layout.js";
-import { winAnsiText } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, winAnsiText } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 const spell = (title: string, body: string): DescriptionCard => ({
@@ -197,12 +197,12 @@ describe("positioned card layout", () => {
     expect(sidebar[0]).toMatchObject({
       text: "Hand",
       x: SHEET_TEMPLATE_CONTRACT.equipmentNotes.x + 3,
-      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - 10,
+      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 7,
       fontSize: 7,
       style: "bold-italic",
     });
     expect(sidebar.find((run) => run.text === "This")).toMatchObject({
-      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - 10,
+      y: SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * 7,
       style: "regular",
     });
   });

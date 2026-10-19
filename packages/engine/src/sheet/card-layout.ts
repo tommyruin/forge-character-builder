@@ -1,4 +1,4 @@
-import { measuredTextWidth, type TextStyle } from "./text.js";
+import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, measuredTextWidth, type TextStyle } from "./text.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 
 export interface LayoutRun {
@@ -499,7 +499,11 @@ export function descriptionCardRuns(
 // the last baseline held a point above the floor.
 const SIDEBAR_FONT_SIZE = 7;
 const SIDEBAR_LINE_HEIGHT = 10;
-const SIDEBAR_TOP = SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + SHEET_TEMPLATE_CONTRACT.equipmentNotes.height - SIDEBAR_LINE_HEIGHT;
+/** The column's first baseline at `fontSize`: its cap height the shared inset under the top edge. */
+function sidebarTop(fontSize: number): number {
+  const notes = SHEET_TEMPLATE_CONTRACT.equipmentNotes;
+  return notes.y + notes.height - BOX_TEXT_TOP_INSET - LAYOUT_CAP_HEIGHT * fontSize;
+}
 const SIDEBAR_BOTTOM = SHEET_TEMPLATE_CONTRACT.equipmentNotes.y + 1;
 const SIDEBAR_X = SHEET_TEMPLATE_CONTRACT.equipmentNotes.x + 3;
 const SIDEBAR_WIDTH = SHEET_TEMPLATE_CONTRACT.equipmentNotes.width - 6;
@@ -517,7 +521,7 @@ function sidebarBlockRuns(
 ): LayoutRun[] {
   const scale = fontSize / SIDEBAR_FONT_SIZE;
   const runs: LayoutRun[] = [];
-  let y = SIDEBAR_TOP;
+  let y = sidebarTop(fontSize);
   let frame = 0;
   for (const sidebar of sidebars) {
     const sidebarRuns = layoutHtmlRuns(
@@ -541,7 +545,7 @@ function sidebarBlockRuns(
 
 /** The notes column, then the text area of each continuation page after it. */
 function sidebarFrame(page: number): HtmlFrame {
-  if (page === 0) return { x: SIDEBAR_X, top: SIDEBAR_TOP, width: SIDEBAR_WIDTH, bottom: SIDEBAR_BOTTOM };
+  if (page === 0) return { x: SIDEBAR_X, top: sidebarTop(SIDEBAR_FONT_SIZE), width: SIDEBAR_WIDTH, bottom: SIDEBAR_BOTTOM };
   const { x, top, width, bottom, partLine } = CONTINUATION_PAGE_TEXT;
   // The first continuation page opens with the column's "(continued)" line.
   return { x, top: page === 1 ? top - partLine : top, width, bottom };

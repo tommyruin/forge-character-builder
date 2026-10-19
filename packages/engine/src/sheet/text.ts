@@ -61,6 +61,16 @@ function unitWidth(text: string, style: TextStyle): number {
 }
 
 /**
+ * How far below a text box's top edge its first line's cap height sits, at
+ * whatever size the text is set: every box the sheet fills with flowed text
+ * shares it, so the gap under a box's title is the same everywhere.
+ */
+export const BOX_TEXT_TOP_INSET = 4;
+
+/** The layout face's cap height, as a fraction of the type size. */
+export const LAYOUT_CAP_HEIGHT = (styleFonts.regular.CapHeight || 718) / 1000;
+
+/**
  * How wide `text` will be once drawn, in points.
  *
  * Deliberately not pdf-lib's `widthOfTextAtSize`: that subtracts the font's

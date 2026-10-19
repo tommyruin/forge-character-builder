@@ -570,7 +570,13 @@ describe("writing the compact top row", () => {
 
   it.each(TOP_PAGES.filter(([set]) => set === "2014"))("keeps the 2014 identity line and prints the hit dice maximum on %s %j", async (set, layout) => {
     const page = await render(set, layout, model());
-    expect(page.inside("2d8/2d8/2d8", "details_hd")).toBe(true);
+    // Three classes' dice are wider than the compact box at the readable
+    // floor, so the box shows them cut short and marked; the continuation
+    // page prints them in full.
+    const box = page.rect("details_hd")!;
+    const shown = page.items.filter((item) => item.x >= box.x - 0.5 && item.x <= box.x + box.width && item.y >= box.y - 0.5 && item.y <= box.y + box.height);
+    expect(shown.map((item) => item.str).join(" ")).toMatch(/^2d8\/.*\u2026$/);
+    expect(shown.every((item) => item.x + item.width <= box.x + box.width + 0.5)).toBe(true);
     expect(page.rect("details_hd_spent")).toBeDefined();
     expect(page.text).toContain("SPENT");
   });
