@@ -172,10 +172,17 @@ export default function CustomFeatureModal({
         {/* While the warning is up, its two buttons are the only way forward. */}
         {warning === null && (
           <div className="fcb-toolbar fcb-dialog-footer justify-end">
+            {/* The button waits until the form is complete; this says what it is waiting for. */}
+            {issues.length > 0 && (
+              <p id="feature-add-needs" className="fcb-custom-needs mr-auto" data-testid="add-needs">
+                To add it: {issues[0].message.charAt(0).toLowerCase() + issues[0].message.slice(1)}
+                {issues.length > 1 ? ` (and ${issues.length - 1} more)` : ''}
+              </p>
+            )}
             <button type="button" className="fcb-button" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || issues.length > 0}>
+            <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || issues.length > 0} aria-describedby={issues.length > 0 ? 'feature-add-needs' : undefined}>
               {saving ? 'Saving…' : editing ? 'Save changes' : 'Add feature'}
             </button>
           </div>

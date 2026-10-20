@@ -265,6 +265,17 @@ describe('the custom feature dialog: creating', () => {
     expect($('[role="dialog"]')).not.toBeNull();
   });
 
+  it('says what the held-back Add button is waiting for', async () => {
+    const api = fakeApi();
+    await open(api);
+    const needs = $('[data-testid="add-needs"]');
+    expect(needs.textContent).toContain('To add it: give it a name');
+    expect(buttonByText('Add feature').getAttribute('aria-describedby')).toBe(needs.id);
+    await type(byLabel('Name'), 'Stag Mark');
+    expect($('[data-testid="add-needs"]')).toBeNull();
+    expect(buttonByText('Add feature').disabled).toBe(false);
+  });
+
   it('turns the button on once the name and the spell are there', async () => {
     const api = fakeApi();
     await open(api);
