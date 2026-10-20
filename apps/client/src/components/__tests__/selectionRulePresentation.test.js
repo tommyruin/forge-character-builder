@@ -126,7 +126,7 @@ describe("selection rule presentation", () => {
   it("retains the existing Choose one treatment for exact duplicates", () => {
     expect(
       getSelectionRulePresentation(rule({ name: "Race", type: "Race" }), {
-        sectionLabel: "Race",
+        sectionLabel: "Species",
         showRuleType: false,
       }),
     ).toMatchObject({ displayTitle: "Choose one", metaParts: [] });
@@ -138,7 +138,7 @@ describe("selection rule presentation", () => {
     // made — which callers can only know if the presentation says so.
     expect(
       getSelectionRulePresentation(rule({ name: "Race", type: "Race" }), {
-        sectionLabel: "Race",
+        sectionLabel: "Species",
         showRuleType: false,
       }).isPlaceholderTitle,
     ).toBe(true);

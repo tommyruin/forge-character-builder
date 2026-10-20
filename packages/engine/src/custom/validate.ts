@@ -356,7 +356,7 @@ export function customDraftIssues(draft: unknown): CustomDraftIssue[] {
   if (template === undefined) issues.push({ path: "template", message: "pick a template" });
   if (!isName(draft.name, 120)) issues.push({ path: "name", message: "give it a name (at most 120 characters)" });
   if (!SHOWS_UNDER.includes(draft.showsUnder as never)) {
-    issues.push({ path: "showsUnder", message: "pick where it shows: Race, Class, Feats or Other" });
+    issues.push({ path: "showsUnder", message: "pick where it shows: Species, Class, Feats or Other" });
   } else if (template !== undefined) {
     const allowed = CUSTOM_TEMPLATE_OPTIONS.find((option) => option.id === template)!.showsUnder;
     if (!allowed.includes(draft.showsUnder as never)) {

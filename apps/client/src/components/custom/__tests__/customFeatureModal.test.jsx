@@ -293,7 +293,7 @@ describe('the custom feature dialog: creating', () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Stag Mark');
-    await click(radio('Race'));
+    await click(radio('Species'));
     await click(buttonByText('Add feature'));
     await settle();
     expect(savedDraft(api)).toMatchObject({ name: 'Stag Mark', showsUnder: 'race', template: 'feature' });

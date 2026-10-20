@@ -31,10 +31,13 @@ const CONDITION_KINDS = [
   { id: 'stat', label: 'Another statistic at least', make: () => ({ kind: 'stat', key: 'proficiency', min: 1 }) },
 ];
 
+// The XML element types a requirement can name; the id stays the type the content uses, the label
+// is the app's word for it.
+const ELEMENT_TYPE_LABELS = { Race: 'Species', 'Racial Trait': 'Species trait', Archetype: 'Subclass', 'Archetype Feature': 'Subclass feature' };
 const ELEMENT_TYPES = [
   'Class', 'Race', 'Background', 'Archetype', 'Feat', 'Racial Trait', 'Class Feature', 'Archetype Feature',
   'Language', 'Proficiency',
-].map((type) => ({ id: type, label: type }));
+].map((type) => ({ id: type, label: ELEMENT_TYPE_LABELS[type] ?? type }));
 
 const STAT_OPTIONS = [
   ...CUSTOM_VALUE_REFERENCES.map((entry) => ({ id: entry.id, label: entry.label })),

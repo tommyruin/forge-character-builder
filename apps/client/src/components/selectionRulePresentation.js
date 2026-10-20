@@ -1,3 +1,5 @@
+import { elementTypeLabel } from "./elementTypeLabels.js";
+
 function normalizeLabel(value) {
   return (value ?? "").trim().toLowerCase();
 }
@@ -31,16 +33,19 @@ export function getSelectionRulePresentation(
 ) {
   const count = Math.max(1, rule.selectionCount ?? 1);
   const isMulti = count > 1;
-  const title = rule.name || rule.type || "Choice";
+  // A rule named after its own type ("Race") reads with the app's word for it ("Species").
+  const typeLabel = elementTypeLabel(rule.type);
+  const named = rule.name && rule.name !== rule.type ? rule.name : null;
+  const title = named || typeLabel || "Choice";
   const duplicatesSection =
     normalizeLabel(title) === normalizeLabel(sectionLabel) &&
-    normalizeLabel(rule.type) === normalizeLabel(sectionLabel);
+    normalizeLabel(typeLabel) === normalizeLabel(sectionLabel);
   const displayTitle = duplicatesSection ? "Choose one" : title;
   const includeRuleType =
     showRuleType &&
     rule.type &&
     !duplicatesSection &&
-    normalizeLabel(rule.type) !== normalizeLabel(displayTitle);
+    normalizeLabel(typeLabel) !== normalizeLabel(displayTitle);
 
   return {
     count,
@@ -51,7 +56,7 @@ export function getSelectionRulePresentation(
     // the answer instead should drop it once there is one.
     isPlaceholderTitle: duplicatesSection,
     metaParts: [
-      ...(includeRuleType ? [rule.type] : []),
+      ...(includeRuleType ? [typeLabel] : []),
       ...(rule.requiredLevel > 1 ? [`Level ${rule.requiredLevel}`] : []),
       ...(rule.isOptional ? ["Optional"] : []),
       ...(isMulti ? [`Pick ${count}`] : []),

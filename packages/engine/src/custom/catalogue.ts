@@ -160,7 +160,7 @@ export interface ShowsUnderOption {
 }
 
 export const CUSTOM_SHOWS_UNDER: readonly ShowsUnderOption[] = [
-  { id: "race", label: "Race", elementType: "Racial Trait", section: "race" },
+  { id: "race", label: "Species", elementType: "Racial Trait", section: "race" },
   { id: "class", label: "Class", elementType: "Class Feature", section: "class" },
   { id: "feats", label: "Feats", elementType: "Feat", section: "feats" },
   { id: "other", label: "Other", elementType: CUSTOM_OTHER_TYPE, section: "other" },
@@ -182,7 +182,7 @@ export const CUSTOM_TEMPLATE_OPTIONS: readonly TemplateOption[] = [
   { id: "boon", label: "Boon, blessing or gift", showsUnder: ["race", "class", "feats", "other"] },
   { id: "curse", label: "Curse or affliction", showsUnder: ["race", "class", "feats", "other"] },
   { id: "feat", label: "Feat", showsUnder: ["feats"] },
-  { id: "racialTrait", label: "Racial trait", showsUnder: ["race"] },
+  { id: "racialTrait", label: "Species trait", showsUnder: ["race"] },
   { id: "classFeature", label: "Class feature", showsUnder: ["class"] },
   { id: "transformation", label: "Transformation", showsUnder: ["race", "class", "feats", "other"] },
 ];

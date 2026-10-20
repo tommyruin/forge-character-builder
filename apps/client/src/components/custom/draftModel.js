@@ -77,7 +77,7 @@ export const equippedValueLabel = (value) =>
 export const TYPE_LABELS = {
   Feat: 'Feat',
   'Feat Feature': 'Feat feature',
-  'Racial Trait': 'Racial trait',
+  'Racial Trait': 'Species trait',
   'Class Feature': 'Class feature',
   'Archetype Feature': 'Subclass feature',
   'Custom Feature': 'Other feature',

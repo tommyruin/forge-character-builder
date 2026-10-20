@@ -624,17 +624,17 @@ export default function ManageTab() {
                   randomize.scope !== 'details' &&
                   (randomize.suggestion.heightWeightFromRace
                     ? `Height and weight are rolled on the ${randomize.suggestion.raceName} table. `
-                    : 'This race has no height/weight table, so height and weight stay unchanged. ')}
+                    : 'This species has no height/weight table, so height and weight stay unchanged. ')}
                 {randomize.scope !== 'alignment' &&
                   randomize.scope !== 'details' &&
                   (randomize.suggestion.ageFromRace
-                    ? 'Age uses the range from the race description. '
+                    ? 'Age uses the range from the species description. '
                     : 'Age uses a generic adult range. ')}
                 {randomize.scope !== 'appearance' &&
                   randomize.scope !== 'alignment' &&
                   (randomize.suggestion.nameFromRace
-                    ? `Names are drawn from the ${randomize.suggestion.raceName ?? 'race'} name lists.`
-                    : 'This race has no name lists, so a placeholder name is offered.')}
+                    ? `Names are drawn from the ${randomize.suggestion.raceName ?? 'species'} name lists.`
+                    : 'This species has no name lists, so a placeholder name is offered.')}
               </p>
             )}
             <div className="mt-4 flex justify-end gap-2">

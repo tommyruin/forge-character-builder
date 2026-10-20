@@ -441,7 +441,7 @@ describe("character sources panel", () => {
         keptSelections: [{ name: "Fighter", type: "Class" }],
       }),
     ).toBe(
-      "Removed from disabled books: Verdan (Race), Grinner (Background). Choose replacements in Build. " +
+      "Removed from disabled books: Verdan (Species), Grinner (Background). Choose replacements in Build. " +
         "Kept Fighter (Class): turn its book back on or change class in Build.",
     );
     expect(
@@ -488,7 +488,7 @@ describe("source apply message wording", () => {
         keptSelections: [{ name: "Artificer", type: "Multiclass" }],
       }),
     ).toBe(
-      "Removed from disabled books: Echo Knight (Subclass), Pallid Elf (Subrace), Draconblood (Race variant). " +
+      "Removed from disabled books: Echo Knight (Subclass), Pallid Elf (Subspecies), Draconblood (Species variant). " +
         "Choose replacements in Build. Kept Artificer (Class): turn its book back on or change class in Build.",
     );
   });

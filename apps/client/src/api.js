@@ -8,7 +8,7 @@ export const ENGINE_TRANSPORT = 'worker';
 export const BUILD_SECTIONS = [
   {
     key: 'race',
-    label: 'Race',
+    label: 'Species',
     types: ['Race', 'Race Variant', 'Sub Race', 'Racial Trait', 'Dragonmark', 'Dragonmark Feature'],
   },
   {

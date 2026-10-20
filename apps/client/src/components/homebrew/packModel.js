@@ -114,7 +114,7 @@ const FEATURE_KIND_LABELS = {
   curse: 'Curse',
   transformation: 'Transformation',
   feat: 'Feat',
-  racialTrait: 'Racial trait',
+  racialTrait: 'Species trait',
   classFeature: 'Class feature',
 };
 
@@ -197,7 +197,7 @@ export const NEW_ELEMENT_GROUPS = [
     label: 'Character options',
     items: [
       { id: 'species', label: 'Species', summary: 'Size, speeds, senses, languages, traits, ability choices', route: { kind: 'build', template: 'species' } },
-      { id: 'subspecies', label: 'Subspecies or variant', summary: 'Adds to a species; lineage or subrace', route: { kind: 'parent', template: 'subspecies' } },
+      { id: 'subspecies', label: 'Subspecies or variant', summary: 'Adds to a species: a lineage or subspecies', route: { kind: 'parent', template: 'subspecies' } },
       { id: 'class', label: 'Class', summary: 'Hit die, level table, spellcasting, multiclass rules', route: { kind: 'build', template: 'class' } },
       { id: 'subclass', label: 'Subclass', summary: 'Joins a class at its subclass level', route: { kind: 'parent', template: 'subclass' } },
       { id: 'background', label: 'Background', summary: 'Its feature, proficiencies, gear, trait, ideal, bond and flaw lists', route: { kind: 'build', template: 'background' } },

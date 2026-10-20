@@ -1,4 +1,5 @@
 import { normalizeRestrictedSourceIds } from "../../../sourcePreferences.js";
+import { elementTypeLabel } from "../../elementTypeLabels.js";
 
 const sourceDateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -139,20 +140,9 @@ function namedSelections(value) {
   );
 }
 
-/** Content types as players see them on the Build tab. */
-const SELECTION_TYPE_LABELS = {
-  Archetype: "Subclass",
-  "Archetype Feature": "Subclass feature",
-  Multiclass: "Class",
-  "Sub Race": "Subrace",
-  "Race Variant": "Race variant",
-  "Racial Trait": "Trait",
-  "Class Feature": "Class feature",
-};
-
 function selectionLabel(entry) {
   if (!entry.type) return entry.name;
-  return `${entry.name} (${SELECTION_TYPE_LABELS[entry.type] ?? entry.type})`;
+  return `${entry.name} (${elementTypeLabel(entry.type)})`;
 }
 
 /**

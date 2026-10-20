@@ -135,7 +135,7 @@ describe('SelectionRuleCard incomplete notifications', () => {
     // the picked name is the label from then on.
     const placeholder = { name: 'Race', type: 'Race' };
     const unanswered = renderRule(placeholder, [], {
-      sectionLabel: 'Race',
+      sectionLabel: 'Species',
       showRuleType: false,
     });
     expect(unanswered).toContain('>Choose one<');
@@ -148,7 +148,7 @@ describe('SelectionRuleCard incomplete notifications', () => {
         selectedElementNames: ['Bard'],
       },
       [],
-      { sectionLabel: 'Race', showRuleType: false, onClear: vi.fn() },
+      { sectionLabel: 'Species', showRuleType: false, onClear: vi.fn() },
     );
     expect(answered).not.toContain('>Choose one<');
     expect(answered).toContain('Bard');
