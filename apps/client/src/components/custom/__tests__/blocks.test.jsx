@@ -299,6 +299,14 @@ describe('LibraryPicker', () => {
     expect(document.querySelector('[role="listbox"]').hidden).toBe(true);
   });
 
+  it('says why a result from an unbuilt pack will not act yet', async () => {
+    const unbuilt = { search: async () => [{ id: 'ID_HB_X', name: 'Tide Mark', source: 'Moonwell', pending: 'Not in the builder yet: press Update builder on the pack' }] };
+    await mount(<LibraryPicker lookup={{ ...unbuilt, debounceMs: 0 }} type="Custom Feature" value="" label="Search feature entries" onPick={() => {}} />);
+    await type($('input[role="combobox"]'), 'tide');
+    await settle();
+    expect(document.querySelector('[role="option"]').textContent).toContain('press Update builder');
+  });
+
   it('shows results as option rows with the source in muted text', async () => {
     await mount(picker(() => {}));
     await type(byLabel('Search language entries') ?? $('input[role="combobox"]'), 'l');

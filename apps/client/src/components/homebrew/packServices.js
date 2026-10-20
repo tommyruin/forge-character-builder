@@ -6,7 +6,7 @@
 
 import { elementIdOf } from './packModel.js';
 
-function packEntries(pack, type, search) {
+export function packEntries(pack, type, search) {
   const query = search.trim().toLowerCase();
   return (pack?.elements ?? [])
     .filter((element) => (type === '' || element.type === type) && (query === '' || element.name?.toLowerCase().includes(query)))

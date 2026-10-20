@@ -5,6 +5,7 @@
 
 import { promoteCustomDraft } from '@forge-cb/engine/custom';
 import { saveCollection } from '../homebrew/homebrewStorage.js';
+import { packEntries } from '../homebrew/packServices.js';
 import { createCollection } from '../homebrew/xmlBuilder.js';
 
 // The collection a promoted entry lands in until packs exist; one per device, found by name.
@@ -73,6 +74,25 @@ export function makePackSpellServices({ api, store, collection, beforeSave }) {
   };
 }
 
+const PENDING_NOTE = 'Not in the builder yet: press Update builder on the pack';
+
+// What a pack defines that the library has not loaded: a feature made a moment ago exists only in
+// the pack's drafts until Update builder puts the file into the library. It is offered, marked, so
+// a grant can name it now; the mark says why it does nothing until the pack is updated.
+async function unbuiltPackEntries(store, type, search, taken) {
+  let packs;
+  try {
+    packs = (await store?.listHomebrew?.()) ?? [];
+  } catch {
+    return [];
+  }
+  return packs
+    .filter((pack) => pack.hasUnloadedChanges === true || !pack.ingestedAt)
+    .flatMap((pack) => packEntries(pack, type, search))
+    .filter((entry) => !taken.has(entry.id))
+    .map((entry) => ({ ...entry, pending: PENDING_NOTE }));
+}
+
 export function makeCustomServices({ api, store, id, run, ruleset }) {
   const characters = api.characters;
   return {
@@ -86,7 +106,9 @@ export function makeCustomServices({ api, store, id, run, ruleset }) {
           ruleset: ruleset ?? 'all',
           characterId: id,
         });
-        return (page.items ?? []).map((item) => ({ id: item.id, name: item.name, source: item.source }));
+        const found = (page.items ?? []).map((item) => ({ id: item.id, name: item.name, source: item.source }));
+        const unbuilt = await unbuiltPackEntries(store, type, search, new Set(found.map((item) => item.id)));
+        return [...found, ...unbuilt].slice(0, take);
       },
       name: async (elementId) => (await api.content.element(elementId))?.name,
     },

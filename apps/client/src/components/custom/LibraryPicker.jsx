@@ -125,6 +125,7 @@ export default function LibraryPicker({
             <span className="fcb-option-main">
               <span className="fcb-option-title">{item.name}</span>
               {item.source && <span className="fcb-option-subtitle">{item.source}</span>}
+              {item.pending && <span className="fcb-option-subtitle">{item.pending}</span>}
             </span>
           </li>
         ))}
