@@ -69,6 +69,9 @@ export default function GrantBlock({
     onChange(next);
   };
   const setSpell = (nextSpell) => emit({ spell: nextSpell && Object.keys(nextSpell).length > 0 ? nextSpell : undefined });
+  // An empty target is said once, on the field that is empty, in words the author uses.
+  const targetMissing = block.target.by === 'id' ? block.target.id === '' : block.target.name.trim() === '';
+  const otherIssues = (issues ?? []).filter((issue) => !/\.target\.(id|name)$/.test(issue.path));
   const modes = SPELL_MODES.filter((option) => option.id !== 'prepared' || casters.length > 0);
 
   const changeType = (next) =>
@@ -112,6 +115,12 @@ export default function GrantBlock({
             onChange={(event) => emit({ target: { by: 'name', type, name: event.target.value } })}
           />
         </Field>
+      )}
+
+      {targetMissing && (
+        <p className="fcb-custom-needs" data-testid="grant-target-hint">
+          {block.target.by === 'id' ? `Choose a ${typeLabel(type).toLowerCase()}` : 'Type its name'}
+        </p>
       )}
 
       {isSpell && (
@@ -181,7 +190,7 @@ export default function GrantBlock({
           />
         </div>
       </details>
-      <Issues issues={issues} />
+      <Issues issues={otherIssues} />
     </div>
   );
 }

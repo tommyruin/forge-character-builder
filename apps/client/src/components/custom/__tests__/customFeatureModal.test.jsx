@@ -226,10 +226,10 @@ describe('the custom feature dialog: creating', () => {
     await type($('input[placeholder="Type to search"]'), 'moon');
     await settle();
     await click(option('Moonbeam'));
-    await click(buttonByText('Add to Ilyana'));
-    await settle();
+    // The spell is there but not the ability to cast it with: the button waits, the field asks.
+    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
+    expect(byLabel('Casting ability').options[0].textContent).toBe('Choose an ability');
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
-    expect($('[role="alert"]').textContent).toContain('Pick the ability this spell is cast with.');
     await choose(byLabel('Casting ability'), 'charisma');
     await click(buttonByText('Add to Ilyana'));
     await settle();
@@ -246,17 +246,36 @@ describe('the custom feature dialog: creating', () => {
     expect(allByLabel('Casting ability').map((select) => select.value)).toEqual(['intelligence', 'intelligence']);
   });
 
-  it('refuses an incomplete form and names the field', async () => {
+  it('refuses an incomplete form, names the field in plain words and holds the button back', async () => {
     const api = fakeApi();
     await open(api);
+    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
     await click(buttonByText('+ Spell'));
-    await click(buttonByText('Add to Ilyana'));
-    await settle();
+    // The empty spell is flagged on the spell field itself, not under "Only when", and in plain words.
+    const grant = group('Spell');
+    const hint = grant.querySelector('[data-testid="grant-target-hint"]');
+    expect(hint.textContent).toBe('Choose a spell');
+    expect(grant.querySelector('.fcb-custom-gates').contains(hint)).toBe(false);
+    const field = [...grant.children].findIndex((child) => child.contains(hint));
+    const gates = [...grant.children].findIndex((child) => child.classList.contains('fcb-custom-gates'));
+    expect(field).toBeLessThan(gates);
+    expect(document.body.textContent).not.toContain('pick the element that is granted');
+    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
-    const alerts = [...document.querySelectorAll('[role="alert"]')].map((alert) => alert.textContent).join(' ');
-    expect(alerts).toContain('give it a name');
-    expect(alerts).toContain('pick the element that is granted');
     expect($('[role="dialog"]')).not.toBeNull();
+  });
+
+  it('turns the button on once the name and the spell are there', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Stag Mark');
+    await click(buttonByText('+ Spell'));
+    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
+    await type($('input[placeholder="Type to search"]'), 'Moon');
+    await settle();
+    await click(option('Moonbeam'));
+    expect(group('Spell').querySelector('[data-testid="grant-target-hint"]')).toBeNull();
+    expect(buttonByText('Add to Ilyana').disabled).toBe(false);
   });
 
   it('keeps the entry under the section the author picks', async () => {

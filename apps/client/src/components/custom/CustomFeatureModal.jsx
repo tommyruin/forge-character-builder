@@ -163,7 +163,7 @@ export default function CustomFeatureModal({
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || warning !== null}>
+          <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || warning !== null || issues.length > 0}>
             {saving ? 'Saving…' : editing ? 'Save changes' : `Add to ${characterName}`}
           </button>
         </div>

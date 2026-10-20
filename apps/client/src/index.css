@@ -8657,6 +8657,13 @@ html.fcb-busy-cursor * {
   gap: 1px;
 }
 
+.fcb-custom-needs {
+  margin: -4px 0 0;
+  color: var(--fcb-warning-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .fcb-custom-issues {
   margin: 4px 0 0;
   padding-left: 0;
