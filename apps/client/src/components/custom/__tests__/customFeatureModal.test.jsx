@@ -13,6 +13,7 @@ import {
   byLabel,
   choose,
   click,
+  clickEffect,
   group,
   mount,
   radio,
@@ -273,13 +274,13 @@ describe('the custom feature dialog: creating', () => {
     await open(api);
     await type(byLabel('Name'), 'Moonlit Form');
     await click(buttonByText('+ Ability score'));
-    await click(buttonByText('+ Limited uses'));
-    const uses = group('Limited uses');
+    await click(buttonByText('+ Uses per rest'));
+    const uses = group('Uses per rest');
     await type(uses.querySelector('[aria-label="Uses"]'), '2');
     await choose(uses.querySelector('[aria-label="Recharges on"]'), 'shortRest');
-    await click(buttonByText('+ Only while active'));
+    await clickEffect('+ Only while active');
     // More than one limited use can live on an entry, so the chip stays.
-    expect(buttonByText('+ Limited uses')).toBeDefined();
+    expect(buttonByText('+ Uses per rest')).toBeDefined();
     await click(buttonByText('Add to Ilyana'));
     await settle();
     const draft = savedDraft(api);
@@ -297,7 +298,7 @@ describe('the custom feature dialog: creating', () => {
     await open(api);
     await type(byLabel('Name'), 'Bladesong');
     expect(byLabel('Action to use it')).toBeNull();
-    await click(buttonByText('+ Limited uses'));
+    await click(buttonByText('+ Uses per rest'));
     expect(byLabel('Action to use it')).not.toBeNull();
     await choose(byLabel('Action to use it'), 'bonusAction');
     // It is the same setting as the sheet's Action type, so the two never disagree.
@@ -312,7 +313,7 @@ describe('the custom feature dialog: creating', () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Bladesong');
-    await click(buttonByText('+ Only while active'));
+    await clickEffect('+ Only while active');
     expect(byLabel('Action to use it')).not.toBeNull();
   });
 
@@ -321,9 +322,9 @@ describe('the custom feature dialog: creating', () => {
     await open(api);
     await type(byLabel('Name'), 'Moonlit Form');
     await click(buttonByText('+ Ability score'));
-    await click(buttonByText('+ Only while active'));
-    await click(buttonByText('+ Limited uses'));
-    const uses = group('Limited uses');
+    await clickEffect('+ Only while active');
+    await click(buttonByText('+ Uses per rest'));
+    const uses = group('Uses per rest');
     expect([...uses.querySelector('[aria-label="Recharges on"]').options].map((entry) => entry.textContent)).toEqual([
       'Short Rest', 'Long Rest', 'Dawn', 'Day', 'Never', 'Dice roll',
     ]);
@@ -343,21 +344,21 @@ describe('the custom feature dialog: creating', () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Moonlight');
-    await click(buttonByText('+ Scale value'));
-    const scale = group('Scale value');
+    await clickEffect('+ Grows with level');
+    const scale = group('Grows with level');
     await type(byLabel('Scale name'), 'Gaze count');
     await choose(byLabel('Scale kind'), 'number');
-    await type(byLabel('Scale value 1'), '1');
+    await type(byLabel('Value 1'), '1');
     await click(buttonByText('+ Level'));
     await type(byLabel('Scale level 2'), '5');
-    await type(byLabel('Scale value 2'), '3');
+    await type(byLabel('Value 2'), '3');
     expect(scale.textContent).toContain('{{scale:gaze count}}');
 
-    await click(buttonByText('+ Limited uses'));
-    const uses = group('Limited uses');
+    await click(buttonByText('+ Uses per rest'));
+    const uses = group('Uses per rest');
     await choose(uses.querySelector('[aria-label="Moonlight follows"]'), 'scale');
-    await click(buttonByText('+ Limited uses'));
-    const second = group('Limited uses 2');
+    await click(buttonByText('+ Uses per rest'));
+    const second = group('Uses per rest 2');
     await type(second.querySelector('[aria-label="Limited use name"]'), 'Ward');
     await choose(second.querySelector('[aria-label="Ward follows"]'), 'reference');
     await click(buttonByText('Add to Ilyana'));
@@ -375,9 +376,9 @@ describe('the custom feature dialog: creating', () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Moonlight');
-    await click(buttonByText('+ Other bonus'));
+    await clickEffect('+ Bonus to another stat');
     expect([...byLabel('Amount is').options].map((entry) => entry.value)).not.toContain('scale');
-    await click(buttonByText('+ Scale value'));
+    await clickEffect('+ Grows with level');
     expect([...byLabel('Amount is').options].map((entry) => entry.value)).not.toContain('scale');
     await choose(byLabel('Scale kind'), 'number');
     expect([...byLabel('Amount is').options].map((entry) => entry.value)).toContain('scale');
@@ -399,7 +400,7 @@ describe('the custom feature dialog: creating', () => {
     await api.characters.saveCustomDraft(CHARACTER, rage);
     await open(api);
     await type(byLabel('Name'), 'Second');
-    await click(buttonByText('+ Only while active'));
+    await clickEffect('+ Only while active');
     expect([...document.querySelectorAll('#custom-switch-names option')].map((entry) => entry.value)).toEqual(['Moonlit Form']);
   });
 
@@ -410,7 +411,7 @@ describe('the custom feature dialog: creating', () => {
     await open(api);
     await click(buttonByText('Edit'));
     await settle();
-    const uses = group('Limited uses');
+    const uses = group('Uses per rest');
     expect(uses.querySelector('[aria-label="Uses"]').value).toBe('2');
     expect(uses.querySelector('[aria-label="Recharges on"]').value).toBe('shortRest');
     await click(buttonByText('Save changes'));
@@ -425,7 +426,7 @@ describe('the custom feature dialog: creating', () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Gift of Tongues');
-    await click(buttonByText('+ Player picks'));
+    await click(buttonByText('+ Player choice'));
     await type(byLabel('Name of the choice'), 'Borrowed tongue');
     await click(buttonByText('+ Proficiency'));
     await click(radio('By name'));
@@ -503,7 +504,7 @@ describe('choice identity', () => {
   async function editChoice(api) {
     await open(api);
     await type(byLabel('Name'), 'Gift of Tongues');
-    await click(buttonByText('+ Player picks'));
+    await click(buttonByText('+ Player choice'));
     await type(byLabel('Name of the choice'), 'Borrowed tongue');
     await click(buttonByText('Add to Ilyana'));
     await settle();

@@ -52,7 +52,7 @@ describe('the summary and the sheet preview', () => {
     expect(summarizeDraft(draft)).toEqual([
       'Armor class bonus + Gaze count',
       'Gaze count: 1 from level 1',
-      'Limited uses — Gaze: Gaze count/Short Rest',
+      'Uses per rest — Gaze: Gaze count/Short Rest',
     ]);
   });
 

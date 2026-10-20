@@ -5,7 +5,7 @@
 // author drives them.
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { allByLabel, $, $$, buttonByText, byLabel, choose, click, mount, radio, settle, type } from '../../custom/__tests__/harness';
+import { allByLabel, $, $$, buttonByText, clickEffect, byLabel, choose, click, mount, radio, settle, type } from '../../custom/__tests__/harness';
 import { createCustomClassDraft, createCustomSpeciesDraft } from '@forge-cb/engine/custom';
 import ElementEditor from '../ElementEditor.jsx';
 import { createBuildDraft, createTemplateDraft, elementForDraft } from '../packModel.js';
@@ -91,8 +91,8 @@ describe('a class', () => {
 
   it('offers proficiencies, languages and picks for the first class, not ability scores', async () => {
     const changes = await open('class', 'Moonwalker');
-    const chips = [...$('[role="group"][aria-label="Add an effect"]').querySelectorAll('button')].map((button) => button.textContent.trim());
-    expect(chips).toEqual(['+ Proficiency', '+ Language', '+ Player picks']);
+    const chips = [...$('[role="group"][aria-label="Add an effect"]').querySelectorAll('.fcb-effect-chip-add')].map((button) => button.textContent.trim());
+    expect(chips).toEqual(['+ Proficiency', '+ Language', '+ Player choice']);
     await click(buttonByText('+ Proficiency'));
     expect(last(changes).customDraft.starting[0]).toMatchObject({ kind: 'grant', target: { type: 'Proficiency' } });
   });
@@ -139,7 +139,7 @@ describe("a class' level table", () => {
     await goTo('Progression');
     await choose(byLabel('Add a level'), '2');
     await click(byLabel('Add a feature at level 2'));
-    await click(buttonByText('+ Other bonus'));
+    await clickEffect('+ Bonus to another stat');
     await choose($('[aria-label="Bonus value is"]') ?? $$('select').find((select) => select.getAttribute('aria-label')?.endsWith('is')), 'scale');
     const bonus = last(changes).customDraft.features[0].draft.blocks[0];
     expect(bonus.value).toMatchObject({ kind: 'scale', scale: 'strikes' });

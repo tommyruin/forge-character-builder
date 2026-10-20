@@ -245,7 +245,7 @@ export default function ChoiceBlock({
   lookup,
   casters = [],
   issues,
-  ariaLabel = 'Player picks',
+  ariaLabel = 'Player choice',
   typeOptions = CHOICE_TYPE_OPTIONS,
   defaultCastAbility,
 }) {

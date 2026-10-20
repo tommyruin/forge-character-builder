@@ -82,7 +82,7 @@ export default function ProgressionTable({ draft, setDraft, services, issues = [
             <tr>
               <th scope="col">{levelWord(owner)}</th>
               <th scope="col">Features</th>
-              <th scope="col">Player picks</th>
+              <th scope="col">Player choice</th>
               {scales.map((scale) => (
                 <th key={scale.id} scope="col">
                   {scale.name.trim() || 'Value'}
@@ -224,7 +224,7 @@ export default function ProgressionTable({ draft, setDraft, services, issues = [
           <ChoiceBlock
             key={openChoice.id}
             block={openChoice}
-            ariaLabel="Player picks"
+            ariaLabel="Player choice"
             lookup={services.lookup}
             casters={[]}
             issues={issuesAt(`choices[${choiceIndex}]`)}

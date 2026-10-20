@@ -8,7 +8,7 @@ import { compileCustomElement, createCustomDraft, customDraftIssues } from '@for
 import EffectsEditor from '../EffectsEditor';
 import { sheetPreview, summarizeDraft } from '../draftModel';
 import { switchNamesIn } from '../trackerModel';
-import { buttonByText, byLabel, click, group, mount, settle, type } from './harness';
+import { buttonByText, clickEffect, byLabel, click, group, mount, settle, type } from './harness';
 
 const services = {
   lookup: async () => ({ items: [] }),
@@ -64,7 +64,7 @@ describe('the switch on a feature with no bonus', () => {
   it('gates a spell grant added after the switch is turned on', async () => {
     const seen = probe();
     await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
-    await click(buttonByText('+ Only while active'));
+    await clickEffect('+ Only while active');
     await click(buttonByText('+ Spell'));
     await settle();
     expect(seen.draft().blocks[0]).toMatchObject({ kind: 'grant', switch: 'Bladesong' });
@@ -73,7 +73,7 @@ describe('the switch on a feature with no bonus', () => {
   it('puts a switch turned on after the spell onto that spell grant, and renames it with the row', async () => {
     const seen = probe();
     await mount(<Host first={draftWith('Bladesong', [spellGrant()])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
-    await click(buttonByText('+ Only while active'));
+    await clickEffect('+ Only while active');
     expect(seen.draft().blocks[0].switch).toBe('Bladesong');
     await type(byLabel('Switch name'), 'Song');
     expect(seen.draft().blocks[0].switch).toBe('Song');
@@ -120,3 +120,31 @@ describe('moving to another entry', () => {
 async function act0(run) {
   await act(async () => run());
 }
+
+describe('the effect chips', () => {
+  const chipNames = () => [...document.querySelectorAll('.fcb-effect-chip-add')].map((button) => button.textContent.trim());
+
+  it('shows the common effects first and keeps the advanced ones behind More effects', async () => {
+    const seen = probe();
+    await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
+    expect(chipNames()).toEqual(['+ Ability score', '+ Spell', '+ Proficiency', '+ Language', '+ Player choice', '+ Uses per rest']);
+    await click(buttonByText('More effects ▸'));
+    expect(chipNames().slice(6)).toEqual(['+ Bonus to another stat', '+ Grows with level', '+ Only while active']);
+  });
+
+  it('explains each chip in an (i) tip that shows on hover and focus, with no inline hint text', async () => {
+    const seen = probe();
+    await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
+    const tip = byLabel('About Player choice');
+    await act(async () => {
+      tip.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true }));
+      tip.dispatchEvent(new window.FocusEvent('focusin', { bubbles: true }));
+    });
+    expect(document.querySelector('[role="tooltip"]').textContent).toContain('pick 2 skills');
+    await act(async () => {
+      tip.dispatchEvent(new window.FocusEvent('focusout', { bubbles: true }));
+    });
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
+  });
+});

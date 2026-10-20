@@ -78,7 +78,7 @@ export function trackerPreviewText(tracker, scales = []) {
 }
 
 export function describeTracker(tracker, scales = []) {
-  const name = tracker.label.trim() || 'Limited uses';
+  const name = tracker.label.trim() || 'Uses per rest';
   const pool = tracker.pool?.trim() ? `, shared pool "${tracker.pool.trim()}"` : '';
   const spend = tracker.spendOnSwitch?.trim() ? `; turning on ${tracker.spendOnSwitch.trim()} spends one` : '';
   return `${name}: ${trackerPreviewText(tracker, scales)}${pool}${spend}`;
@@ -86,7 +86,7 @@ export function describeTracker(tracker, scales = []) {
 
 export function describeScale(scale) {
   const steps = [...scale.steps].sort((left, right) => left.level - right.level);
-  return `${scale.name.trim() || 'Scale value'}: ${steps.map((step) => `${step.value} from level ${step.level}`).join(', ')}`;
+  return `${scale.name.trim() || 'Grows with level'}: ${steps.map((step) => `${step.value} from level ${step.level}`).join(', ')}`;
 }
 
 // The usage text the form used to write ("2/Short Rest") as a tracker, so an entry made before

@@ -19,7 +19,7 @@ export default function ScaleBlock({ scale, onChange, onRemove, issues }) {
   const last = scale.steps[scale.steps.length - 1];
   const named = scale.name.trim() !== '';
   return (
-    <div className="fcb-custom-block" role="group" aria-label="Scale value">
+    <div className="fcb-custom-block" role="group" aria-label="Grows with level">
       <div className="fcb-custom-row">
         <Field label="Name">
           <input
@@ -45,13 +45,13 @@ export default function ScaleBlock({ scale, onChange, onRemove, issues }) {
               {scale.kind === 'dice' ? (
                 <input
                   className="fcb-input"
-                  aria-label={`Scale value ${index + 1}`}
+                  aria-label={`Value ${index + 1}`}
                   placeholder="1d6"
                   value={step.value}
                   onChange={(event) => setStep(index, { value: event.target.value.trim() })}
                 />
               ) : (
-                <NumberInput label={`Scale value ${index + 1}`} min={0} max={999} value={step.value} onChange={(value) => setStep(index, { value: value ?? 0 })} />
+                <NumberInput label={`Value ${index + 1}`} min={0} max={999} value={step.value} onChange={(value) => setStep(index, { value: value ?? 0 })} />
               )}
             </Field>
             {scale.steps.length > 1 && (
@@ -71,7 +71,7 @@ export default function ScaleBlock({ scale, onChange, onRemove, issues }) {
       </div>
       <p className="fcb-muted-copy text-xs">
         {named
-          ? `Write ${scaleToken(scale)} in the sheet text to print it. Bonuses and limited uses can follow a count.`
+          ? `Write ${scaleToken(scale)} in the sheet text to print it. Bonuses and uses per rest can follow a count.`
           : 'Name it, then write its token in the sheet text to print it.'}
       </p>
       <Issues issues={issues} />

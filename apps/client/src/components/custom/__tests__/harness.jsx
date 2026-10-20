@@ -55,6 +55,13 @@ export async function click(element) {
   });
 }
 
+// An effect chip, opening "More effects" first when the chip is one of the advanced ones.
+export async function clickEffect(text) {
+  const chip = () => [...document.querySelectorAll('.fcb-effect-chip-add')].find((button) => button.textContent.trim() === text);
+  if (!chip()) await click(buttonStartingWith('More effects'));
+  await click(chip());
+}
+
 export async function press(element, key) {
   if (!element) throw new Error('press target not found');
   await act(async () => {

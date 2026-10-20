@@ -1,6 +1,7 @@
 // Small controlled form pieces the custom-content blocks share. They are plain labelled
 // elements, so every control has a name a screen reader announces and a tab stop.
 
+import { useId, useState } from 'react';
 import Icon from '../Icon';
 
 export function Field({ label, children, className = '' }) {
@@ -94,5 +95,53 @@ export function Issues({ issues }) {
         <li key={`${issue.path}:${issue.message}`}>{issue.message}</li>
       ))}
     </ul>
+  );
+}
+
+// A small (i) button that explains the control beside it. The text shows on hover, on keyboard
+// focus and when the button is pressed (so it works on touch too); it is placed against the
+// viewport, so a dialog's scroll area never clips it.
+export function InfoTip({ label, text }) {
+  const id = useId();
+  const [shown, setShown] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [place, setPlace] = useState(null);
+  const open = (target) => {
+    const box = target.getBoundingClientRect();
+    const width = Math.min(260, window.innerWidth - 24);
+    setPlace({ top: box.bottom + 6, left: Math.max(12, Math.min(box.left + box.width / 2 - width / 2, window.innerWidth - width - 12)), width });
+    setShown(true);
+  };
+  const close = () => {
+    setShown(false);
+    setPinned(false);
+  };
+  return (
+    <span className="fcb-info-button-wrap">
+      <button
+        type="button"
+        className="fcb-info-button"
+        aria-label={`About ${label}`}
+        aria-describedby={shown ? id : undefined}
+        aria-expanded={shown}
+        onMouseEnter={(event) => open(event.currentTarget)}
+        onMouseLeave={() => !pinned && setShown(false)}
+        onFocus={(event) => open(event.currentTarget)}
+        onBlur={close}
+        onKeyDown={(event) => event.key === 'Escape' && shown && (event.stopPropagation(), close())}
+        onClick={(event) => {
+          setPinned(!pinned);
+          if (pinned) setShown(false);
+          else open(event.currentTarget);
+        }}
+      >
+        <Icon name="info" className="fcb-info-tip-icon" />
+      </button>
+      {shown && place && (
+        <span id={id} role="tooltip" className="fcb-info-popover" style={{ top: place.top, left: place.left, width: place.width }}>
+          {text}
+        </span>
+      )}
+    </span>
   );
 }

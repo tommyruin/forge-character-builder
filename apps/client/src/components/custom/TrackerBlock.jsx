@@ -72,10 +72,10 @@ export default function TrackerBlock({
   switches = [],
   literalOnly = false,
   issues,
-  ariaLabel = 'Limited uses',
+  ariaLabel = 'Uses per rest',
 }) {
   const emit = (patch) => onChange(compact({ ...tracker, ...patch }));
-  const label = tracker.label.trim() || 'Limited uses';
+  const label = tracker.label.trim() || 'Uses per rest';
   const rolls = tracker.recharge === 'diceRoll';
   return (
     <div className="fcb-custom-block" role="group" aria-label={ariaLabel}>

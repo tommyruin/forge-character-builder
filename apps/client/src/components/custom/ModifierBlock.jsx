@@ -161,7 +161,7 @@ export default function ModifierBlock({
   lookup,
   allowedGroups,
   issues,
-  ariaLabel = 'Bonus',
+  ariaLabel = 'Bonus to another stat',
   scales = [],
   switches = [],
 }) {

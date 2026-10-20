@@ -1151,6 +1151,49 @@ button:disabled {
   height: 12px;
 }
 
+.fcb-info-button-wrap {
+  display: inline-flex;
+}
+
+.fcb-info-button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  cursor: help;
+}
+
+.fcb-info-button:hover,
+.fcb-info-button:focus-visible {
+  color: var(--fcb-text);
+}
+
+.fcb-info-button .fcb-info-tip-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.fcb-info-popover {
+  position: fixed;
+  z-index: 95;
+  padding: 8px 10px;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+  color: var(--fcb-text);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  pointer-events: none;
+}
+
 .fcb-sheet-colour-part {
   display: flex;
   align-items: center;
@@ -8921,4 +8964,50 @@ html.fcb-busy-cursor * {
   border-color: var(--fcb-border-soft);
   background: transparent;
   color: var(--fcb-text-muted);
+}
+
+/* "What it does" chips: one compact pill per effect, its (i) tip inside the pill. */
+.fcb-effect-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fcb-effect-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius-sm);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 68%, transparent);
+}
+
+.fcb-effect-chip:hover {
+  border-color: color-mix(in srgb, var(--fcb-primary) 62%, transparent);
+}
+
+.fcb-effect-chip-add {
+  height: 100%;
+  padding: 0 4px 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fcb-effect-chip-add:hover {
+  color: var(--fcb-text);
+}
+
+.fcb-effect-chip .fcb-info-button {
+  margin-right: 4px;
+}
+
+.fcb-effect-more {
+  height: 32px;
+  padding-block: 0;
+  white-space: nowrap;
 }

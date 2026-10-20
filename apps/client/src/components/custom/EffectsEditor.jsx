@@ -12,7 +12,7 @@ import GrantBlock from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
 import ScaleBlock from './ScaleBlock';
 import TrackerBlock from './TrackerBlock';
-import { Field, RemoveButton, SelectInput } from './fields';
+import { Field, InfoTip, RemoveButton, SelectInput } from './fields';
 import { SHEET_ACTION_OPTIONS } from '@forge-cb/engine/custom';
 import { tidySheet } from './SheetPresentation';
 import {
@@ -35,9 +35,9 @@ const isAbilityTarget = (target) =>
   targetGroups(ABILITY_TARGET_GROUPS).some((group) => group.targets.some((entry) => entry.id === target));
 
 function blockTitle(block) {
-  if (block.kind === 'modifier') return isAbilityTarget(block.target) ? 'Ability score' : 'Bonus';
+  if (block.kind === 'modifier') return isAbilityTarget(block.target) ? 'Ability score' : 'Bonus to another stat';
   if (block.kind === 'grant') return typeLabel(block.target.type);
-  return 'Player picks';
+  return 'Player choice';
 }
 
 // The switch a draft's modifiers and grants share, if any: "Only while active" is one name applied
@@ -94,6 +94,7 @@ function EffectsEditorBody({
   withActionType = false,
 }) {
   const [casters, setCasters] = useState([]);
+  const [moreOpen, setMoreOpen] = useState(false);
   // The character's own spellcasting ability, offered for a new spell effect; null when it has none.
   const [characterAbility, setCharacterAbility] = useState(null);
   const initialSwitch = sharedSwitch(draft.blocks);
@@ -144,28 +145,62 @@ function EffectsEditorBody({
   const setScales = (next) => patch({ scales: next.length > 0 ? next : undefined });
 
   const chips = [
-    { id: 'ability', label: 'Ability score', add: () => addBlock(makeModifier()) },
+    {
+      id: 'ability',
+      label: 'Ability score',
+      hint: 'Raise a score, or set a minimum. Example: +2 Strength, or Strength 19.',
+      add: () => addBlock(makeModifier()),
+    },
     ...(features
       ? [
           {
             id: 'spell',
             label: 'Spell',
+            hint: 'Grant a spell the character can cast. Example: Misty Step once per long rest.',
             add: () => addBlock(makeGrant('Spell', { spell: { usage: '1/Long Rest', ...(castDefault ? { castAbility: castDefault } : {}) } })),
           },
         ]
       : []),
-    { id: 'proficiency', label: 'Proficiency', add: () => addBlock(makeGrant('Proficiency')) },
-    { id: 'language', label: 'Language', add: () => addBlock(makeGrant('Language')) },
-    { id: 'choice', label: 'Player picks', add: () => addBlock(makeChoice()) },
-    { id: 'bonus', label: 'Other bonus', add: () => addBlock(makeModifier({ target: 'ac:misc' })) },
+    {
+      id: 'proficiency',
+      label: 'Proficiency',
+      hint: 'Grant a skill, tool, weapon, armor or saving throw proficiency.',
+      add: () => addBlock(makeGrant('Proficiency')),
+    },
+    { id: 'language', label: 'Language', hint: 'Grant a language the character can speak.', add: () => addBlock(makeGrant('Language')) },
+    {
+      id: 'choice',
+      label: 'Player choice',
+      hint: 'Let the player choose. Example: pick 2 skills from a list.',
+      add: () => addBlock(makeChoice()),
+    },
     ...(features
       ? [
           {
             id: 'uses',
-            label: 'Limited uses',
+            label: 'Uses per rest',
+            hint: 'A pool of uses that refills on a short rest, a long rest or at dawn. Example: 3 uses per long rest.',
             add: () => setTrackers([...trackers, makeTracker({ label: trackers.length === 0 ? draft.name.trim() : '' })]),
           },
-          { id: 'scale', label: 'Scale value', add: () => setScales([...scales, makeScale()]) },
+        ]
+      : []),
+  ];
+
+  const moreChips = [
+    {
+      id: 'bonus',
+      label: 'Bonus to another stat',
+      hint: 'A bonus to another stat: AC, speed, initiative, attack rolls, saving throws and so on.',
+      add: () => addBlock(makeModifier({ target: 'ac:misc' })),
+    },
+    ...(features
+      ? [
+          {
+            id: 'scale',
+            label: 'Grows with level',
+            hint: 'A die or number that changes at set levels. Example: 1d6 at level 1, 2d6 at level 5.',
+            add: () => setScales([...scales, makeScale()]),
+          },
         ]
       : []),
     ...(!features || switchOn
@@ -174,6 +209,7 @@ function EffectsEditorBody({
           {
             id: 'active',
             label: 'Only while active',
+            hint: 'The bonuses and spells apply only while you turn a switch on in Manage, Resources. Example: a rage or a transformation.',
             add: () => {
               const name = switchName.trim() || draft.name.trim() || 'Active';
               setSwitchOn(true);
@@ -185,6 +221,7 @@ function EffectsEditorBody({
   ];
 
   const shownChips = only === null ? chips : chips.filter((chip) => only.includes(chip.id));
+  const shownMore = only === null ? moreChips : moreChips.filter((chip) => only.includes(chip.id));
 
   return (
     <div>
@@ -233,7 +270,7 @@ function EffectsEditorBody({
             scales={readable}
             switches={switchOn && switchName.trim() ? [switchName.trim()] : []}
             issues={trackerIssuesAt(index)}
-            ariaLabel={trackers.length > 1 ? `Limited uses ${index + 1}` : 'Limited uses'}
+            ariaLabel={trackers.length > 1 ? `Uses per rest ${index + 1}` : 'Uses per rest'}
             onChange={(next) => setTrackers(trackers.map((entryTracker, at) => (at === index ? next : entryTracker)))}
             onRemove={() => setTrackers(trackers.filter((_, at) => at !== index))}
           />
@@ -289,13 +326,34 @@ function EffectsEditorBody({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Add an effect">
+      <div className="fcb-effect-chips mt-3" role="group" aria-label="Add an effect">
         {shownChips.map((chip) => (
-          <button key={chip.id} type="button" className="fcb-mode-button" onClick={chip.add}>
-            + {chip.label}
-          </button>
+          <EffectChip key={chip.id} chip={chip} />
         ))}
+        {shownMore.length > 0 && (
+          <button
+            type="button"
+            className="fcb-mode-button fcb-effect-more"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen(!moreOpen)}
+          >
+            More effects {moreOpen ? '\u25BE' : '\u25B8'}
+          </button>
+        )}
+        {moreOpen && shownMore.map((chip) => <EffectChip key={chip.id} chip={chip} />)}
       </div>
     </div>
+  );
+}
+
+// One effect to add: the chip and, beside it, an (i) that says what it does with an example.
+function EffectChip({ chip }) {
+  return (
+    <span className="fcb-effect-chip">
+      <button type="button" className="fcb-effect-chip-add" onClick={chip.add}>
+        + {chip.label}
+      </button>
+      <InfoTip label={chip.label} text={chip.hint} />
+    </span>
   );
 }

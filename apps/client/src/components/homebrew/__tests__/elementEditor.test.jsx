@@ -52,7 +52,7 @@ describe('a feature (boon, curse, transformation, feature, feat)', () => {
     const changes = [];
     await mount(<Host initial={elementForDraft({ ...createTemplateDraft('boon'), name: 'Tide Gift' }, pack)} changes={changes} />);
     await click(buttonByText('+ Ability score'));
-    await click(buttonByText('+ Player picks'));
+    await click(buttonByText('+ Player choice'));
     const draft = last(changes).customDraft;
     expect(draft.blocks.map((block) => block.kind)).toEqual(['modifier', 'choice']);
     expect(last(changes).rawXml).toContain('<stat');

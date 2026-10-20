@@ -270,7 +270,7 @@ export function summarizeDraft(draft) {
   const scales = draft.scales ?? [];
   const lines = draft.blocks.map((block) => describeBlock(block, scales));
   for (const scale of scales) lines.push(describeScale(scale));
-  for (const tracker of draft.trackers ?? []) lines.push(`Limited uses — ${describeTracker(tracker, scales)}`);
+  for (const tracker of draft.trackers ?? []) lines.push(`Uses per rest — ${describeTracker(tracker, scales)}`);
   if (draft.sheet?.usage) lines.push(`Limited uses: ${draft.sheet.usage}`);
   if (draft.requirements) lines.push(`Needs: ${describeRequirements(draft.requirements)}`);
   return lines;
