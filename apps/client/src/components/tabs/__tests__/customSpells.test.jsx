@@ -219,7 +219,7 @@ describe("creating a spell from Add a spell", () => {
     await pause();
     expect(document.body.textContent).toContain("Frost Lance isn't in your library. Create it?");
     await act(async () => byText("Create spell").click());
-    expect(dialog().getAttribute("aria-label")).toBe("Create spell");
+    expect(dialog().getAttribute("aria-label")).toBe("Custom spell");
     expect(byLabel("Name").value).toBe("Frost Lance");
     await act(async () => byText("Add spell").click());
     expect(characters.saveCustomDraft).toHaveBeenCalledTimes(1);

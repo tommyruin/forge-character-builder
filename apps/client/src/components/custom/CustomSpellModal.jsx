@@ -1,4 +1,4 @@
-// The "Create spell" dialog behind Magic's Add a spell and a missing spell's fix: one form that
+// The "Custom spell" dialog behind Magic's Add a spell and a missing spell's fix: one form that
 // makes (or edits) a spell for a character without XML. It asks for what a spell block holds (level,
 // school, time, range, duration, components), what the spell rolls (a spell attack, or a saving
 // throw, with its damage, healing and how it grows) and which class lists carry it. The draft that
@@ -275,7 +275,7 @@ export default function CustomSpellModal({
   const dealsDamageOrHeals = damage.length > 0 || Boolean(mechanics.healing?.trim());
 
   return (
-    <Modal open title={editing ? 'Edit custom spell' : 'Create spell'} onClose={onClose} size="wide">
+    <Modal open title={editing ? 'Edit custom spell' : 'Custom spell'} onClose={onClose} size="wide">
       <form
         className="fcb-custom-form"
         onSubmit={(event) => {
