@@ -159,6 +159,17 @@ project uses [Semantic Versioning](https://semver.org/).
   alignments, weapon properties, new base weapons and armor, additions to book
   elements and replacements of them.
 - A grant in a custom feature can be gated on a switch, like a bonus.
+- The custom feature form's "Only while active" switch covers spell and other
+  grants, not only bonuses, and the plain-words summary names it.
+- A value can be an ability modifier with a minimum ("Intelligence modifier,
+  minimum 1"); a reference value takes an optional `min` in the draft.
+- A choice among weapon proficiencies can be narrowed to melee, ranged,
+  one-handed or two-handed weapons, a category or a property, from menus.
+- The feature form asks for the action type (Bonus Action and so on) as soon as
+  the feature has limited uses or a switch.
+- A pack element that has not been updated into the builder yet can be picked
+  for a grant, with a note that it waits for Update builder.
+- Add a spell warns when the character already has the spell.
 
 ### Changed
 
@@ -191,6 +202,12 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Opening another feature in a class's table no longer keeps the first
+  feature's "Only while active" switch.
+- A rename made just before the Homebrew editor is left (another element, a
+  closed tab, a page unload) is saved.
+- An item's feature grant is named "Other feature" in its Kind menu, not "Feat".
+- A new custom spell starts with no components ticked.
 - A homebrew pack's languages, proficiencies, feats and ability score
   improvements now appear in Manage's Additional items; before, only the
   builder's own books had them.
