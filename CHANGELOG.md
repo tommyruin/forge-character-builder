@@ -40,7 +40,7 @@ project uses [Semantic Versioning](https://semver.org/).
   page. Background, companion and equipment boxes continue the same way.
 - An "All item cards" button in Sheet options.
 - The engine supports custom features made on a character: boons, curses,
-  feats, racial traits and class features with ability, save, skill, armor
+  feats, species traits and class features with ability, save, skill, armor
   class, speed and attack bonuses, spells, proficiencies, languages, player
   choices and sheet text. They are stored in the character file, travel with
   exports and packages, and can be edited, removed or copied into a homebrew
@@ -50,7 +50,7 @@ project uses [Semantic Versioning](https://semver.org/).
 - A change to a custom choice's name, level or count can be checked first: the
   engine says which picks would be lost.
 - Build has a [+] Custom button in every section. It opens a form where you name
-  a feature, say where it shows (Race, Class, Feats or Other), write its text
+  a feature, say where it shows (Species, Class, Feats or Other), write its text
   and add effects: ability scores, bonuses, spells, proficiencies, languages,
   player picks, limited uses and "only while active". The entry is listed with a
   Custom badge and Edit and Remove buttons, and the form can also copy it to My
@@ -175,11 +175,22 @@ project uses [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Custom content reads the same everywhere. The terms are: Bonus to another
-  stat, Damage resistance, Uses per rest, Grows with level, Player choice, Spell
-  and Other feature for effects; Add feature, Add item, Add spell, Add tracker
-  and Save changes for dialog buttons; Custom feature, Custom item and Custom
-  spell for the dialogs; Rename / notes with the fields Name, Notes and On the
-  sheet; Short rest and Long rest; Copy to a pack for packs.
+  stat, Uses per rest, Grows with level, Player choice, Spell and Other feature
+  for a feature's effects, and Bonus to a stat, Damage resistance and Charges for
+  an item's; Add feature, Add item, Add spell, Add tracker and Save changes for
+  dialog buttons, Keep it to back out of a Delete or Remove; Custom feature,
+  Custom item and Custom spell for the dialogs; Rename / notes with the fields
+  Name, Notes and On the sheet; Short rest and Long rest; Copy to a pack for
+  packs.
+- The app says Species instead of Race: the Build section, Shows under, trait
+  and requirement labels, the notices about removed choices and the randomize
+  help.
+- Manage coins is one slim row that shows what the character carries. It opens
+  to five small amounts on one line (two on a phone) and an Apply button, and
+  Enter in any amount applies too.
+- Every show-more section in the custom-content and Homebrew screens (More
+  options, More effects, Advanced, More pack tools) opens the same way, with
+  one chevron; More effects sits in its own row below the common effects.
 - The effect chips on a custom feature or item explain themselves in an (i) tip
   with an example, and the less common ones sit behind More effects.
 - A custom item's resistance is a damage-type picker with Resistance, Immunity
@@ -231,6 +242,23 @@ project uses [Semantic Versioning](https://semver.org/).
 - The stat pills stay grouped at the right at every width.
 - Inventory cards are compact on a narrow screen: name, summary and one row of
   quantity, storage and equipped, with the sheet choices in a More menu.
+- The custom feature, item and spell dialogs say what their Add button is
+  waiting for.
+- The base weapon and armor search works from the keyboard: the arrow keys move
+  through every entry, Enter picks one and Escape closes the list. A carried
+  item says plainly why its base stays.
+- The (i) tips on effects are read out with their button, stay open while the
+  pointer is on them, and close on a tap elsewhere or a scroll.
+- Confirmation toasts are read out, can be dismissed and wait while the pointer
+  rests on them; the Share pack message stays until it is dismissed.
+- The inventory's More panel works with Tab and Escape and closes when the list
+  scrolls. Rename / notes has its own icon, narrow cards keep full-size buttons,
+  and an item that can't be equipped no longer shows an empty Equipped line.
+- Dialog buttons stay on one line: a long pack name in a button is shortened
+  instead of widening the dialog, and a field reached with Tab is never hidden
+  behind the button row.
+- A custom item's damage block is named for what it grants, such as Damage
+  immunity.
 
 - Opening another feature in a class's table no longer keeps the first
   feature's "Only while active" switch.
