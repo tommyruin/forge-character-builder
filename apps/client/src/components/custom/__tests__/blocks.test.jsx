@@ -200,7 +200,7 @@ describe('GrantBlock', () => {
       </Controlled>,
     );
     await settle();
-    await type(byLabel('Search language entries') ?? $('input[placeholder="Type to search"]'), 'syl');
+    await type(byLabel('Find a language') ?? $('input[placeholder="Type to search"]'), 'syl');
     await settle();
     await click(option('Sylvan'));
     expect(lookup.search).toHaveBeenCalledWith(expect.objectContaining({ type: 'Language', search: 'syl' }));
@@ -287,7 +287,7 @@ describe('GrantBlock', () => {
 
 describe('LibraryPicker', () => {
   const picker = (onPick) => (
-    <LibraryPicker lookup={lookup} type="Language" value="" label="Search language entries" onPick={onPick} />
+    <LibraryPicker lookup={lookup} type="Language" value="" label="Find a language" onPick={onPick} />
   );
 
   it('lists nothing and searches nothing until the author types', async () => {
@@ -301,7 +301,7 @@ describe('LibraryPicker', () => {
 
   it('says why a result from an unbuilt pack will not act yet', async () => {
     const unbuilt = { search: async () => [{ id: 'ID_HB_X', name: 'Tide Mark', source: 'Moonwell', pending: 'Not in the builder yet: press Update builder on the pack' }] };
-    await mount(<LibraryPicker lookup={{ ...unbuilt, debounceMs: 0 }} type="Custom Feature" value="" label="Search feature entries" onPick={() => {}} />);
+    await mount(<LibraryPicker lookup={{ ...unbuilt, debounceMs: 0 }} type="Custom Feature" value="" label="Find a feature" onPick={() => {}} />);
     await type($('input[role="combobox"]'), 'tide');
     await settle();
     expect(document.querySelector('[role="option"]').textContent).toContain('press Update builder');
@@ -309,7 +309,7 @@ describe('LibraryPicker', () => {
 
   it('shows results as option rows with the source in muted text', async () => {
     await mount(picker(() => {}));
-    await type(byLabel('Search language entries') ?? $('input[role="combobox"]'), 'l');
+    await type(byLabel('Find a language') ?? $('input[role="combobox"]'), 'l');
     await settle();
     const rows = [...document.querySelectorAll('[role="option"]')];
     expect(rows.map((row) => row.querySelector('.fcb-option-title').textContent)).toEqual(['Sylvan', 'Elvish']);

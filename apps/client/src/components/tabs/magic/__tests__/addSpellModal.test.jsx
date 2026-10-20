@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Magic's "Add a spell (DM / homebrew grant)" dialog: it grants the spell to the caster it was
+// Magic's "Add a spell" dialog: it grants the spell to the caster it was
 // told, and offers to create a spell the library lacks.
 import { act } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

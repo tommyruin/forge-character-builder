@@ -453,6 +453,13 @@ export default function BuildTab() {
           onSaved={(saved) => {
             // Show the entry where it landed, so adding one never looks like nothing happened.
             if (saved?.section) setSection(saved.section);
+            if (saved) {
+              notify(
+                <>
+                  {customDialog.entry ? 'Saved' : 'Added'} <strong>{saved.draft.name}</strong>
+                </>,
+              );
+            }
           }}
         />
       )}

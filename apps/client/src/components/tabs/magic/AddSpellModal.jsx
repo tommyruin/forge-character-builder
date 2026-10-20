@@ -97,7 +97,7 @@ export default function AddSpellModal({
   return (
     <Modal
       open={open}
-      title="Add a spell (DM / homebrew grant)"
+      title="Add a spell"
       onClose={onClose}
     >
       <p className="fcb-muted-copy mb-3 text-xs">

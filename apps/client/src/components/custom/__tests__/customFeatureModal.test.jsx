@@ -160,7 +160,7 @@ describe('the custom feature dialog: creating', () => {
     expect($('[data-testid="custom-sheet-preview"]').textContent).toContain('Blessing of the Moonwell.');
     expect($('[data-testid="custom-sheet-preview"]').textContent).toContain('1/Long Rest');
 
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
 
     expect(api.characters.saveCustomDraft).toHaveBeenCalledTimes(1);
@@ -211,7 +211,7 @@ describe('the custom feature dialog: creating', () => {
     await type($('input[placeholder="Type to search"]'), 'moon');
     await settle();
     await click(option('Moonbeam'));
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     expect(savedDraft(api).blocks[0].spell).toEqual({ usage: '1/Long Rest', castAbility: 'wisdom' });
   });
@@ -227,11 +227,11 @@ describe('the custom feature dialog: creating', () => {
     await settle();
     await click(option('Moonbeam'));
     // The spell is there but not the ability to cast it with: the button waits, the field asks.
-    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
+    expect(buttonByText('Add feature').disabled).toBe(true);
     expect(byLabel('Casting ability').options[0].textContent).toBe('Choose an ability');
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
     await choose(byLabel('Casting ability'), 'charisma');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     expect(savedDraft(api).blocks[0].spell.castAbility).toBe('charisma');
   });
@@ -249,7 +249,7 @@ describe('the custom feature dialog: creating', () => {
   it('refuses an incomplete form, names the field in plain words and holds the button back', async () => {
     const api = fakeApi();
     await open(api);
-    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
+    expect(buttonByText('Add feature').disabled).toBe(true);
     await click(buttonByText('+ Spell'));
     // The empty spell is flagged on the spell field itself, not under "Only when", and in plain words.
     const grant = group('Spell');
@@ -260,7 +260,7 @@ describe('the custom feature dialog: creating', () => {
     const gates = [...grant.children].findIndex((child) => child.classList.contains('fcb-custom-gates'));
     expect(field).toBeLessThan(gates);
     expect(document.body.textContent).not.toContain('pick the element that is granted');
-    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
+    expect(buttonByText('Add feature').disabled).toBe(true);
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
     expect($('[role="dialog"]')).not.toBeNull();
   });
@@ -270,12 +270,12 @@ describe('the custom feature dialog: creating', () => {
     await open(api);
     await type(byLabel('Name'), 'Stag Mark');
     await click(buttonByText('+ Spell'));
-    expect(buttonByText('Add to Ilyana').disabled).toBe(true);
+    expect(buttonByText('Add feature').disabled).toBe(true);
     await type($('input[placeholder="Type to search"]'), 'Moon');
     await settle();
     await click(option('Moonbeam'));
     expect(group('Spell').querySelector('[data-testid="grant-target-hint"]')).toBeNull();
-    expect(buttonByText('Add to Ilyana').disabled).toBe(false);
+    expect(buttonByText('Add feature').disabled).toBe(false);
   });
 
   it('keeps the entry under the section the author picks', async () => {
@@ -283,7 +283,7 @@ describe('the custom feature dialog: creating', () => {
     await open(api);
     await type(byLabel('Name'), 'Stag Mark');
     await click(radio('Race'));
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     expect(savedDraft(api)).toMatchObject({ name: 'Stag Mark', showsUnder: 'race', template: 'feature' });
   });
@@ -300,7 +300,7 @@ describe('the custom feature dialog: creating', () => {
     await clickEffect('+ Only while active');
     // More than one limited use can live on an entry, so the chip stays.
     expect(buttonByText('+ Uses per rest')).toBeDefined();
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.trackers).toEqual([
@@ -312,28 +312,19 @@ describe('the custom feature dialog: creating', () => {
     expect(compileCustomElement(draft)).toContain('usage="2/Short Rest"');
   });
 
-  it('asks what action the feature takes as soon as it has limited uses or a switch, without opening More options', async () => {
+  it('has one place for the action a feature takes: Action type under More options', async () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Bladesong');
-    expect(byLabel('Action to use it')).toBeNull();
     await click(buttonByText('+ Uses per rest'));
-    expect(byLabel('Action to use it')).not.toBeNull();
-    await choose(byLabel('Action to use it'), 'bonusAction');
-    // It is the same setting as the sheet's Action type, so the two never disagree.
-    expect(byLabel('Action type').value).toBe('bonusAction');
+    await clickEffect('+ Only while active');
+    expect(byLabel('Action to use it')).toBeNull();
+    expect(allByLabel('Action type')).toHaveLength(1);
+    await choose(byLabel('Action type'), 'bonusAction');
     expect(document.querySelector('[data-testid="custom-sheet-preview"]').textContent).toContain('Bonus Action');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     expect(savedDraft(api).sheet).toEqual({ action: 'bonusAction' });
-  });
-
-  it('offers the action type beside an Only while active switch too', async () => {
-    const api = fakeApi();
-    await open(api);
-    await type(byLabel('Name'), 'Bladesong');
-    await clickEffect('+ Only while active');
-    expect(byLabel('Action to use it')).not.toBeNull();
   });
 
   it('offers every recharge, a dice-roll regain, a shared pool and a switch that spends a use', async () => {
@@ -352,7 +343,7 @@ describe('the custom feature dialog: creating', () => {
     await type(byLabel('Regains'), '1d6+1 at dawn');
     await type(byLabel('Shared pool'), 'Moon points');
     await choose(byLabel('Spent by switch'), 'Moonlit Form');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.trackers[0]).toMatchObject({ recharge: 'diceRoll', regain: '1d6+1 at dawn', pool: 'Moon points', spendOnSwitch: 'Moonlit Form' });
@@ -380,7 +371,7 @@ describe('the custom feature dialog: creating', () => {
     const second = group('Uses per rest 2');
     await type(second.querySelector('[aria-label="Limited use name"]'), 'Ward');
     await choose(second.querySelector('[aria-label="Ward follows"]'), 'reference');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.scales).toEqual([
@@ -403,7 +394,7 @@ describe('the custom feature dialog: creating', () => {
     expect([...byLabel('Amount is').options].map((entry) => entry.value)).toContain('scale');
     await type(byLabel('Scale name'), 'Ward bonus');
     await choose(byLabel('Amount is'), 'scale');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.blocks[0].value).toEqual({ kind: 'scale', scale: draft.scales[0].id });
@@ -450,7 +441,7 @@ describe('the custom feature dialog: creating', () => {
     await click(buttonByText('+ Proficiency'));
     await click(radio('By name'));
     await type(byLabel('Name of the element'), 'Skill Proficiency (Nature)');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.blocks.map((block) => block.kind)).toEqual(['choice', 'grant']);
@@ -463,7 +454,7 @@ describe('editing and removing', () => {
   async function withSavedEntry(api, store) {
     await open(api, store);
     await fillBlessing();
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
   }
 
@@ -525,7 +516,7 @@ describe('choice identity', () => {
     await type(byLabel('Name'), 'Gift of Tongues');
     await click(buttonByText('+ Player choice'));
     await type(byLabel('Name of the choice'), 'Borrowed tongue');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     api.characters.saveCustomDraft.mockClear();
     await click(byLabel('Edit Gift of Tongues'));
@@ -590,7 +581,7 @@ describe('saving to a homebrew pack', () => {
     await open(api);
     expect(document.body.textContent).toContain('Also save to a homebrew pack, so other characters can use it');
     await type(byLabel('Name'), 'Stag Mark');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     await click(byLabel('Edit Stag Mark'));
     await settle();
@@ -603,7 +594,7 @@ describe('saving to a homebrew pack', () => {
     await open(api, store);
     await type(byLabel('Name'), 'Gift of Tongues');
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('homebrew pack')));
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
 
     const draft = savedDraft(api);
@@ -620,7 +611,7 @@ describe('saving to a homebrew pack', () => {
     const store = fakeStore();
     await open(api, store);
     await type(byLabel('Name'), 'Gift of Tongues');
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     expect(api.characters.promoteCustomDraft).not.toHaveBeenCalled();
     expect(store.putHomebrew).not.toHaveBeenCalled();
@@ -632,7 +623,7 @@ describe('saving to a homebrew pack', () => {
     await open(api);
     await type(byLabel('Name'), 'Gift of Tongues');
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('homebrew pack')));
-    await click(buttonByText('Add to Ilyana'));
+    await click(buttonByText('Add feature'));
     await settle();
     expect(api.characters.saveCustomDraft).toHaveBeenCalledTimes(1);
     expect($('[role="alert"]').textContent).toContain('Added to Ilyana, but could not copy it to a homebrew pack: the store is full');

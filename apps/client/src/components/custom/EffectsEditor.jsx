@@ -13,9 +13,7 @@ import ModifierBlock from './ModifierBlock';
 import ScaleBlock from './ScaleBlock';
 import TrackerBlock from './TrackerBlock';
 import EffectChip from './EffectChip';
-import { Field, RemoveButton, SelectInput } from './fields';
-import { SHEET_ACTION_OPTIONS } from '@forge-cb/engine/custom';
-import { tidySheet } from './SheetPresentation';
+import { Field, RemoveButton } from './fields';
 import {
   ABILITY_TARGET_GROUPS,
   compactGates,
@@ -92,7 +90,6 @@ function EffectsEditorBody({
   startWithSwitch = false,
   inheritedScales = [],
   only = null,
-  withActionType = false,
 }) {
   const [casters, setCasters] = useState([]);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -312,20 +309,6 @@ function EffectsEditorBody({
           </div>
         )}
       </div>
-
-      {withActionType && (trackers.length > 0 || switchOn) && (
-        <div className="mt-3">
-          <Field label="Action to use it">
-            <SelectInput
-              label="Action to use it"
-              value={draft.sheet?.action ?? 'none'}
-              options={SHEET_ACTION_OPTIONS.map((option) => ({ id: option.id, label: option.label }))}
-              onChange={(action) => patch({ sheet: tidySheet({ ...draft.sheet, action }) })}
-            />
-          </Field>
-          <p className="fcb-muted-copy text-xs">Printed beside the feature on the sheet. The same setting as Action type under More options.</p>
-        </div>
-      )}
 
       <div className="fcb-effect-chips mt-3" role="group" aria-label="Add an effect">
         {shownChips.map((chip) => (

@@ -205,7 +205,7 @@ describe('the New element template picker', () => {
     await click($('[data-testid="hb-template-create"]'));
     expect(onCreate).not.toHaveBeenCalled();
     await type(byLabel('Name'), 'Frost Lance');
-    await click(buttonByText('Add to Moonwell Campaign'));
+    await click(buttonByText('Add spell'));
     await settle();
     const element = onCreate.mock.calls[0][0];
     expect(element).toMatchObject({ type: 'Spell', name: 'Frost Lance' });
@@ -222,12 +222,12 @@ describe('the New element template picker', () => {
     await type(byLabel('Name'), 'Signal Whistle');
     if (template === 'weapon') {
       // A magic weapon needs a base; the form asks for one before it saves.
-      await click(buttonByText('Add to Moonwell Campaign'));
+      await click(buttonByText('Add item'));
       await settle();
       expect(onCreate).not.toHaveBeenCalled();
       return;
     }
-    await click(buttonByText('Add to Moonwell Campaign'));
+    await click(buttonByText('Add item'));
     await settle();
     expect(onCreate.mock.calls[0][0].customDraft.template).toBe(template);
   });
@@ -403,7 +403,7 @@ describe('pack health', () => {
     await wait(800);
     await click(buttonByText('Create spell'));
     expect(byLabel('Name').value).toBe('Frost Lance');
-    await click(buttonByText('Add to Moonwell Campaign'));
+    await click(buttonByText('Add spell'));
     await settle();
     await wait(700);
     const stored = h.records.get('pack-1').elements;

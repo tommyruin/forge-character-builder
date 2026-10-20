@@ -275,3 +275,37 @@ describe('the custom spell dialog', () => {
     expect(store.putHomebrew).toHaveBeenCalled();
   });
 });
+
+describe('healing on a spell', () => {
+  it('is added like damage: a + Healing button, then a row with its own remove', async () => {
+    const api = fakeApi();
+    await open(api);
+    expect(byLabel('Healing dice')).toBeNull();
+    await type(byLabel('Name'), 'Mend');
+    await click(buttonByText('+ Healing'));
+    await type(byLabel('Healing dice'), '2d8');
+    await click(buttonByText('Add spell'));
+    await settle();
+    expect(api.characters.saveCustomDraft.mock.calls.at(-1)[1].mechanics.healing).toBe('2d8');
+    expect(buttonByText('+ Healing')).toBeUndefined();
+  });
+
+  it('goes away with its remove button', async () => {
+    const api = fakeApi();
+    await open(api);
+    await click(buttonByText('+ Healing'));
+    await type(byLabel('Healing dice'), '2d8');
+    await click(byLabel('Remove healing'));
+    expect(byLabel('Healing dice')).toBeNull();
+    expect(buttonByText('+ Healing')).toBeDefined();
+  });
+});
+
+describe('plain words in the spell dialog', () => {
+  it('says nothing about flags, pickers or rows', async () => {
+    const api = fakeApi();
+    await open(api);
+    const text = document.body.textContent;
+    for (const jargon of ['Components and flags', 'pickers', 'Attack row']) expect(text).not.toContain(jargon);
+  });
+});

@@ -53,7 +53,7 @@ export default function AddAsiModal({ id, open, onClose }) {
   };
 
   return (
-    <Modal open={open} title="Add an ability score improvement (DM / homebrew grant)" onClose={onClose}>
+    <Modal open={open} title="Add an ability score improvement" onClose={onClose}>
       <p className="fcb-muted-copy mb-3 text-xs">
         Grants an extra Ability Score Improvement outside your level-up ASIs — increase one
         ability by 2, or two abilities by 1. Applied immediately and saved with the character.

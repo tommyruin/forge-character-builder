@@ -214,7 +214,7 @@ describe("creating a spell from Add a spell", () => {
     characters.saveCustomDraft.mockImplementation(async (_id, draft) => ({ character: { id: "Ada" }, entry: { draft, elementId: draft.id }, diagnostics: [] }));
     await render();
     await act(async () => byText("Spell").click());
-    expect(dialog().getAttribute("aria-label")).toBe("Add a spell (DM / homebrew grant)");
+    expect(dialog().getAttribute("aria-label")).toBe("Add a spell");
     await typeInto(document.querySelector('input[placeholder="Search all spells…"]'), "Frost Lance");
     await pause();
     expect(document.body.textContent).toContain("Frost Lance isn't in your library. Create it?");

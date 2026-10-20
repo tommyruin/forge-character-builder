@@ -83,8 +83,8 @@ export default function GrantBlock({
   return (
     <div className="fcb-custom-block" role="group" aria-label={ariaLabel}>
       <div className="fcb-custom-row">
-        <Field label="Kind">
-          <SelectInput label="Kind of element granted" value={type} onChange={changeType} options={withCurrent(typeOptions, type, typeLabel(type))} />
+        <Field label="What it grants">
+          <SelectInput label="What it grants" value={type} onChange={changeType} options={withCurrent(typeOptions, type, typeLabel(type))} />
         </Field>
         <Segmented
           label="How to choose it"
@@ -103,7 +103,7 @@ export default function GrantBlock({
           type={type}
           value={block.target.id}
           valueLabel={block.target.label}
-          label={`Search ${typeLabel(type).toLowerCase()} entries`}
+          label={`Find a ${typeLabel(type).toLowerCase()}`}
           onPick={(item) => emit({ target: { by: 'id', type, id: item.id, label: item.name } })}
         />
       ) : (

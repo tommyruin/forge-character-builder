@@ -58,7 +58,7 @@ export default function AddFeatModal({ id, open, onClose }) {
   return (
     <Modal
       open={open}
-      title="Add a feat (DM / homebrew grant)"
+      title="Add a feat"
       onClose={onClose}
     >
       <p className="fcb-muted-copy mb-3 text-xs">

@@ -141,7 +141,7 @@ describe('the spell form made for a pack', () => {
     expect(byLabel('Cast with')).toBeNull();
     expect(document.body.textContent).not.toContain('Also save to a homebrew pack');
     await type(byLabel('Text'), 'A lance of ice.');
-    await click(buttonByText('Add to Moonwell Campaign'));
+    await click(buttonByText('Add spell'));
     await settle();
     expect(onSaved).toHaveBeenCalled();
     expect([...store.stored.values()][0].elements[0].id).toBe('ID_HB_MC_SPELL_FROST_LANCE');

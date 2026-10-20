@@ -85,7 +85,6 @@ export default function FeatureFields({
         issues={issues}
         attempted={attempted}
         startWithSwitch={draft.template === 'transformation'}
-        withActionType
         inheritedScales={inheritedScales}
       />
 

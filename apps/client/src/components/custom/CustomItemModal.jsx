@@ -651,7 +651,7 @@ export default function CustomItemModal({
           </div>
           {template === 'weapon' && (
             <div data-testid="item-attack-preview">
-              <h4 className="fcb-field-label">Attack row{draft.attunement ? ' (attuned)' : ''}</h4>
+              <h4 className="fcb-field-label">How the attack will read{draft.attunement ? ' (attuned)' : ''}</h4>
               {attack ? (
                 <p className="text-sm">
                   <strong>{attack.name}</strong> {attack.bonus.replace(' vs AC', '')} · {attack.damage}
@@ -713,11 +713,9 @@ export default function CustomItemModal({
               ? 'Saving…'
               : editing
                 ? 'Save changes'
-                : pack
-                  ? `Add to ${pack.name}`
-                  : template === 'gear'
-                    ? `Add ${quantity > 1 ? `${quantity} ` : ''}to inventory`
-                    : 'Add to inventory'}
+                : template === 'gear' && pack === null && quantity > 1
+                  ? `Add ${quantity} items`
+                  : 'Add item'}
           </button>
         </div>
       </form>

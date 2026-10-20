@@ -149,7 +149,7 @@ export function FeatureList({
 // whole, so the rail and the search box narrow it here rather than through the
 // engine.
 export default function AdditionalFeaturesPanel() {
-  const { id, busy, run, mutationTick, registerDetailsScroll, detail } =
+  const { id, busy, run, mutationTick, registerDetailsScroll, detail, notify } =
     useWorkspace();
   const [customOpen, setCustomOpen] = useState(false);
   const rulesetMode = detail?.rulesetMode;
@@ -283,7 +283,16 @@ export default function AdditionalFeaturesPanel() {
           characterName={detail?.name || 'your character'}
           initialShowsUnder="other"
           onClose={() => setCustomOpen(false)}
-          onSaved={() => void refresh()}
+          onSaved={(saved) => {
+            void refresh();
+            if (saved) {
+              notify(
+                <>
+                  Added <strong>{saved.draft.name}</strong>
+                </>,
+              );
+            }
+          }}
         />
       )}
       <DescriptionPanel

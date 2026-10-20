@@ -79,7 +79,7 @@ describe('the custom item dialog: a magic weapon', () => {
     await choose(byLabel('Rarity'), 'Rare');
     await type(byLabel('Text'), 'Rime gathers on the edge.');
 
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
 
     expect(api.characters.saveCustomDraft).toHaveBeenCalledTimes(1);
@@ -121,14 +121,14 @@ describe('the custom item dialog: a magic weapon', () => {
     await settle();
     // The character's spellcasting ability is the default, so it needs no choosing.
     expect(byLabel('Casting ability').value).toBe('wisdom');
-    await type(allByLabel('Search spell entries')[0] ?? $('input[placeholder="Type to search"]'), 'frost');
+    await type(allByLabel('Find a spell')[0] ?? $('input[placeholder="Type to search"]'), 'frost');
     await settle();
     await click(option('Ray of Frost'));
 
     await click(buttonByText('+ Bonus to another stat'));
     await choose(byLabel('What it changes'), 'spellcasting:attack');
 
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.blocks.map((block) => [block.kind, block.target?.id ?? block.target])).toEqual([
@@ -147,7 +147,7 @@ describe('the custom item dialog: a magic weapon', () => {
     const api = fakeApi();
     await open(api);
     await click(buttonByText('+ Other feature'));
-    const kind = byLabel('Kind of element granted');
+    const kind = byLabel('What it grants');
     expect(kind.value).toBe('Custom Feature');
     expect(kind.options[kind.selectedIndex].textContent).toBe('Other feature');
   });
@@ -181,7 +181,7 @@ describe('the custom item dialog: a magic weapon', () => {
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes("Replace the base weapon's properties")));
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.trim() === 'Finesse'));
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.trim() === 'Thrown'));
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.weapon).toEqual({
@@ -196,7 +196,7 @@ describe('the custom item dialog: a magic weapon', () => {
   it('refuses an incomplete form and names the field', async () => {
     const api = fakeApi();
     await open(api);
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
     const alerts = [...document.querySelectorAll('[role="alert"]')].map((node) => node.textContent).join(' ');
@@ -210,7 +210,7 @@ describe('the custom item dialog: a magic weapon', () => {
     await pickBase('Base weapon', LONGSWORD.name);
     await type(byLabel('Name'), 'Frostbite');
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('homebrew pack')));
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
     expect(api.characters.promoteCustomDraft).toHaveBeenCalledWith(CHARACTER, savedDraft(api).id, 'My homebrew');
   });
@@ -223,7 +223,7 @@ describe('the custom item dialog: other templates', () => {
     await pickBase('Base armor', SHIELD.name);
     await type(byLabel('Name'), 'Ward');
     await type(byLabel('Bonus to armor class'), '2');
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
     expect(savedDraft(api)).toMatchObject({ template: 'armor', base: { id: SHIELD.id, name: 'Shield', shield: true }, bonus: 2 });
   });
@@ -239,7 +239,7 @@ describe('the custom item dialog: other templates', () => {
     await type(charges.querySelector('[aria-label="Uses"]'), '3');
     await choose(charges.querySelector('[aria-label="Recharges on"]'), 'dawn');
     expect(document.body.textContent).toContain('While worn, also');
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
     const saved = savedDraft(api);
     expect(saved).toMatchObject({ template: 'worn', slot: 'ring' });
@@ -267,7 +267,7 @@ describe('the custom item dialog: other templates', () => {
     await type(byLabel('Weight in pounds'), '0.25');
     await type(byLabel('Notes'), 'Carved from bone.');
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('stack')));
-    await click(buttonByText('Add 3 to inventory'));
+    await click(buttonByText('Add 3 items'));
     await settle();
     expect(savedDraft(api)).toMatchObject({ template: 'gear', name: 'Signal Whistle', weight: 0.25, stackable: true, blocks: [] });
     expect(savedOptions(api)).toEqual({ amount: 3, notes: 'Carved from bone.' });
@@ -333,7 +333,7 @@ describe('a damage resistance on an item', () => {
     await click(radio('Immunity'));
     await choose(byLabel('Damage type'), 'fire');
     expect($('[data-testid="item-summary"]').textContent).toContain('Immunity to fire damage');
-    await click(buttonByText('Add to inventory'));
+    await click(buttonByText('Add item'));
     await settle();
     expect(savedDraft(api).blocks[0].target).toEqual({
       by: 'id',

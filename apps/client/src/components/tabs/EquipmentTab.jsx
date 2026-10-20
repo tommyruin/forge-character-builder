@@ -397,7 +397,7 @@ export default function EquipmentTab() {
             if (saved) {
               notify(
                 <>
-                  Saved <strong>{saved.draft.name}</strong>
+                  {customDialog.entry ? "Saved" : "Added"} <strong>{saved.draft.name}</strong>
                 </>,
               );
             }

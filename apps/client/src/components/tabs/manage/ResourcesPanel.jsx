@@ -152,7 +152,7 @@ function ManualTrackerModal({ draft, onChange, onSave, onClose, saving, error })
 }
 
 export default function ResourcesPanel() {
-  const { id, busy, run, mutationTick } = useWorkspace();
+  const { id, busy, run, mutationTick, notify } = useWorkspace();
   const [resources, setResources] = useState(null);
   const [error, setError] = useState(null);
   const [manual, setManual] = useState(null);
@@ -205,6 +205,7 @@ export default function ResourcesPanel() {
     setManualError(null);
     try {
       await run(() => api.characters.saveManualTracker(id, manual.tracker));
+      notify?.(`${manual.isNew ? 'Added' : 'Saved'} ${manual.tracker.label.trim()}`);
       setManual(null);
       await refresh();
     } catch (caught) {

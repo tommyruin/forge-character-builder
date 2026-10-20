@@ -155,6 +155,8 @@ export default function CustomSpellModal({
   const topIssues = attempted ? issues : [];
   const summary = summarizeSpell(tidied);
   const mechanics = draft.mechanics ?? { roll: 'none' };
+  // Healing is added like damage: absent until asked for, with a remove button once it is there.
+  const [healingOpen, setHealingOpen] = useState(Boolean(draft.mechanics?.healing));
   const roll = mechanics.roll;
   const isCantrip = draft.level === 0;
 
@@ -339,7 +341,7 @@ export default function CustomSpellModal({
         </div>
 
         <fieldset>
-          <legend className="fcb-field-label">Components and flags</legend>
+          <legend className="fcb-field-label">Components, concentration and ritual</legend>
           <div className="mt-1 flex flex-wrap gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={draft.components?.verbal === true} onChange={(event) => patchComponents({ verbal: event.target.checked })} />
@@ -418,15 +420,32 @@ export default function CustomSpellModal({
           <div className="mt-3 space-y-3">
             <DamageRows terms={damage} onChange={(next) => patchMechanics({ damage: next })} />
             <div className="fcb-custom-row">
-              <Field label="Healing">
-                <input
-                  className="fcb-input"
-                  aria-label="Healing dice"
-                  placeholder="2d8"
-                  value={mechanics.healing ?? ''}
-                  onChange={(event) => patchMechanics({ healing: event.target.value.trim() })}
-                />
-              </Field>
+              {healingOpen ? (
+                <div className="fcb-custom-row" role="group" aria-label="Healing">
+                  <Field label="Healing">
+                    <input
+                      className="fcb-input"
+                      aria-label="Healing dice"
+                      placeholder="2d8"
+                      value={mechanics.healing ?? ''}
+                      onChange={(event) => patchMechanics({ healing: event.target.value.trim() })}
+                    />
+                  </Field>
+                  <RemoveButton
+                    label="Remove healing"
+                    onClick={() => {
+                      setHealingOpen(false);
+                      patchMechanics({ healing: undefined });
+                    }}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <button type="button" className="fcb-mode-button" onClick={() => setHealingOpen(true)}>
+                    + Healing
+                  </button>
+                </div>
+              )}
               {dealsDamageOrHeals && (
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={mechanics.addsModifier === true} onChange={(event) => patchMechanics({ addsModifier: event.target.checked })} />
@@ -468,7 +487,7 @@ export default function CustomSpellModal({
         <fieldset>
           <legend className="fcb-field-label">Spell lists</legend>
           <p className="fcb-muted-copy text-xs">
-            A class's list offers the spell to that class's pickers. Leave them all off for a spell only this character has.
+            Tick a class to put the spell on that class's spell list. Leave them all off for a spell only this character has.
           </p>
           <div className="mt-1 flex flex-wrap gap-4">
             {classLists.map((name) => (
@@ -511,7 +530,7 @@ export default function CustomSpellModal({
           </div>
           {roll !== 'none' && pack === null && (
             <div data-testid="spell-attack-preview">
-              <h4 className="fcb-field-label">Attack row{previewCaster ? ` (${previewCaster})` : ''}</h4>
+              <h4 className="fcb-field-label">How the attack will read{previewCaster ? ` (${previewCaster})` : ''}</h4>
               {attack ? (
                 <>
                   <p className="text-sm">
@@ -566,7 +585,7 @@ export default function CustomSpellModal({
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" disabled={saving}>
-            {saving ? 'Saving…' : editing ? 'Save changes' : pack ? `Add to ${pack.name}` : 'Add spell'}
+            {saving ? 'Saving…' : editing ? 'Save changes' : 'Add spell'}
           </button>
         </div>
       </form>

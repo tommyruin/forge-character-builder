@@ -1175,7 +1175,7 @@ export default function MagicTab() {
             if (saved) {
               notify?.(
                 <>
-                  Saved <strong>{saved.draft.name}</strong>
+                  {spellDialog.entry ? 'Saved' : 'Added'} <strong>{saved.draft.name}</strong>
                 </>,
               );
             }
