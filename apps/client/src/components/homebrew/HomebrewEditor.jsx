@@ -685,7 +685,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
       refreshList();
       const done = [...outcome.added, ...outcome.replaced];
       notify(
-        `${done.join(", ")} ${done.length === 1 ? "is" : "are"} now in ${outcome.pack.name}. Open that pack and use Update builder to load it, or share it from there.`,
+        `${done.join(", ")} ${done.length === 1 ? "is" : "are"} now in ${outcome.pack.name}. Open that pack to load it into the builder or to share it.`,
         { ms: 6000 },
       );
       setPromotion(null);

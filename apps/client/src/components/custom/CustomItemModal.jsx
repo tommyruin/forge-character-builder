@@ -48,8 +48,10 @@ const CURRENCIES = [
 ];
 
 const blockTitle = (block) => {
-  if (block.kind === 'modifier') return 'Bonus to another stat';
-  if (damageResponseOf(block)) return 'Damage resistance';
+  if (block.kind === 'modifier') return 'Bonus to a stat';
+  // The block is named for what it grants: resistance, immunity or vulnerability.
+  const response = damageResponseOf(block);
+  if (response) return `Damage ${response.response}`;
   if (block.target.type === 'Spell') return 'Spell';
   return 'Other feature';
 };
@@ -312,7 +314,7 @@ export default function CustomItemModal({
   const chips = [
     {
       id: 'bonus',
-      label: 'Bonus to another stat',
+      label: 'Bonus to a stat',
       hint: 'A bonus to a stat: AC, speed, initiative, attack rolls, saving throws and so on.',
       add: () => addBlock(makeModifier({ target: 'ac:misc' })),
     },
@@ -337,8 +339,8 @@ export default function CustomItemModal({
     },
     {
       id: 'uses',
-      label: 'Uses per rest',
-      hint: 'A pool of charges or uses that refills at dawn or on a rest. Example: 7 charges, regained at dawn.',
+      label: 'Charges',
+      hint: 'A pool of charges that refills at dawn or on a rest. Example: 7 charges, regained at dawn.',
       add: () =>
         setTrackers([
           ...trackers,
@@ -614,10 +616,10 @@ export default function CustomItemModal({
                 />
               ))}
               {trackers.length === 0 && draft.uses?.trim() && (
-                <Field label="Uses per rest (text only)">
+                <Field label="Charges (text only)">
                   <input
                     className="fcb-input"
-                    aria-label="Uses per rest as text"
+                    aria-label="Charges as text"
                     value={draft.uses ?? ''}
                     onChange={(event) => patch({ uses: event.target.value })}
                   />

@@ -28,9 +28,14 @@ describe('dialog vocabulary', () => {
 
   it('uses the same effect terms in the feature and item dialogs, and the old ones nowhere', () => {
     const effects = sources['EffectsEditor.jsx'] + sources['CustomItemModal.jsx'];
-    for (const term of ['Bonus to another stat', 'Uses per rest', 'Grows with level', 'Player choice', 'Damage resistance']) {
-      expect(effects, term).toContain(term);
+    for (const term of ['Bonus to another stat', 'Uses per rest', 'Grows with level', 'Player choice']) {
+      expect(sources['EffectsEditor.jsx'], term).toContain(term);
     }
+    // An item's own words: its bonus has no ability chip beside it, and its pool is charges.
+    for (const term of ['Bonus to a stat', 'Damage resistance', "label: 'Charges'"]) {
+      expect(sources['CustomItemModal.jsx'], term).toContain(term);
+    }
+    expect(effects).not.toContain("label: 'Uses per rest',\n      hint: 'A pool of charges");
     const all = Object.values(sources).join('\n');
     // The preview sentences may still say "Player picks 2 skills"; a label, chip or group name never does.
     for (const old of ["label: 'Other bonus'", "label: 'Limited uses'", "label: 'Scale value'", "label: 'Player picks'", "ariaLabel = 'Player picks'", 'Charges or limited uses', 'Feature or other grant', "label: 'Bonus'"]) {
@@ -51,6 +56,13 @@ describe('dialog vocabulary', () => {
     const text = ['PromoteDialog.jsx', 'CharacterPackView.jsx', 'ElementEditor.jsx', 'HomebrewEditor.jsx'].map(homebrew).join('\n');
     expect(text).toContain('Copy to a pack…');
     for (const gone of ['Add to a pack', 'Copy to another pack', 'world pack', 'World pack', 'ids unchanged', 'same ids']) expect(text, gone).not.toContain(gone);
+  });
+
+  it('says Species wherever the app names the race section, keeping the XML type names', () => {
+    expect(read('../../../api.js')).toContain("label: 'Species'");
+    expect(read('../../../api.js')).toContain("types: ['Race', 'Race Variant', 'Sub Race', 'Racial Trait'");
+    expect(sources['draftModel.js']).toContain("'Racial Trait': 'Species trait'");
+    expect(homebrew('packModel.js')).toContain("racialTrait: 'Species trait'");
   });
 
   it('spells Reflavour the British way, matching Colours on the sheet settings', () => {

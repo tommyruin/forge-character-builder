@@ -45,7 +45,7 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
             value={destination}
             onChange={setDestination}
             options={[
-              ...packs.map((pack) => ({ id: pack.id, label: `${pack.name} (${pack.elements?.length ?? 0})${pack.world ? ' · shared pack' : ''}` })),
+              ...packs.map((pack) => ({ id: pack.id, label: `${pack.name} (${pack.elements?.length ?? 0})` })),
               { id: NEW_PACK, label: 'A new pack…' },
             ]}
           />

@@ -125,7 +125,7 @@ describe('the custom item dialog: a magic weapon', () => {
     await settle();
     await click(option('Ray of Frost'));
 
-    await click(buttonByText('+ Bonus to another stat'));
+    await click(buttonByText('+ Bonus to a stat'));
     await choose(byLabel('What it changes'), 'spellcasting:attack');
 
     await click(buttonByText('Add item'));
@@ -237,7 +237,7 @@ describe('the custom item dialog: other templates', () => {
     expect($('[data-testid="item-attack-preview"]')).toBeNull();
     await type(byLabel('Name'), 'Hearth Pendant');
     await choose(byLabel('Worn on'), 'ring');
-    await click(buttonByText('+ Uses per rest'));
+    await click(buttonByText('+ Charges'));
     const charges = group('Charges');
     await type(charges.querySelector('[aria-label="Uses"]'), '3');
     await choose(charges.querySelector('[aria-label="Recharges on"]'), 'dawn');
@@ -257,9 +257,9 @@ describe('the custom item dialog: other templates', () => {
     const api = fakeApi();
     const draft = { ...makeItemDraft('worn'), name: 'Old Pendant', slot: 'neck', uses: '3 charges, regains all at dawn' };
     await open(api, { entry: { kind: 'item', draft, elementId: draft.id, type: 'Magic Item', section: 'other', granted: true, installed: true } });
-    expect(byLabel('Uses per rest as text').value).toBe('3 charges, regains all at dawn');
-    await click(buttonByText('+ Uses per rest'));
-    expect(byLabel('Uses per rest as text')).toBeNull();
+    expect(byLabel('Charges as text').value).toBe('3 charges, regains all at dawn');
+    await click(buttonByText('+ Charges'));
+    expect(byLabel('Charges as text')).toBeNull();
   });
 
   it('takes plain gear on one line: a quantity, a weight and notes', async () => {
@@ -336,6 +336,9 @@ describe('a damage resistance on an item', () => {
     await click(radio('Immunity'));
     await choose(byLabel('Damage type'), 'fire');
     expect($('[data-testid="item-summary"]').textContent).toContain('Immunity to fire damage');
+    // The block is named for what it now grants.
+    expect(group('Damage immunity')).not.toBeNull();
+    expect(group('Damage resistance')).toBeNull();
     await click(buttonByText('Add item'));
     await settle();
     expect(savedDraft(api).blocks[0].target).toEqual({
