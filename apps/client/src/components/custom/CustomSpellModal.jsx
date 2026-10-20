@@ -16,6 +16,7 @@ import {
   CASTING_TIME_PRESETS,
   DAMAGE_TYPE_OPTIONS,
   DURATION_PRESETS,
+  PROMOTE_LABEL,
   RANGE_PRESETS,
   ROLL_OPTIONS,
   SPELL_LEVEL_OPTIONS,
@@ -534,7 +535,7 @@ export default function CustomSpellModal({
         {!editing && pack === null && (
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" checked={promote} onChange={(event) => setPromote(event.target.checked)} />
-            <span>Also save to a homebrew pack, so it can be used by other characters</span>
+            <span>{PROMOTE_LABEL}</span>
           </label>
         )}
 

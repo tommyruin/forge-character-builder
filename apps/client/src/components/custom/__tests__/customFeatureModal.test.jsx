@@ -552,6 +552,25 @@ describe('choice identity', () => {
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
   });
 
+  it('brings the warning into view, focuses it, and leaves only its two buttons', async () => {
+    const api = choiceEntryApi();
+    const scrolled = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrolled;
+    await editChoice(api);
+    await click(buttonByText('Save changes'));
+    await settle();
+    const warning = $('[data-testid="identity-warning"]');
+    expect(scrolled).toHaveBeenCalled();
+    expect(document.activeElement).toBe(warning);
+    // Two choices, not four: the footer's Cancel and Save wait while the warning asks.
+    expect(buttonByText('Cancel')).toBeUndefined();
+    expect(buttonByText('Save changes')).toBeUndefined();
+    expect(buttonByText('Save and clear those picks').className).toContain('fcb-button-danger');
+    expect(buttonByText('Keep editing')).toBeDefined();
+    await click(buttonByText('Keep editing'));
+    expect(buttonByText('Save changes')).toBeDefined();
+  });
+
   it('saves once the author accepts the warning', async () => {
     const api = choiceEntryApi();
     await editChoice(api);
@@ -566,6 +585,18 @@ describe('choice identity', () => {
 });
 
 describe('saving to a homebrew pack', () => {
+  it('offers the pack tick when adding, in the shared wording, and not when editing', async () => {
+    const api = fakeApi();
+    await open(api);
+    expect(document.body.textContent).toContain('Also save to a homebrew pack, so other characters can use it');
+    await type(byLabel('Name'), 'Stag Mark');
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    await click(byLabel('Edit Stag Mark'));
+    await settle();
+    expect(document.body.textContent).not.toContain('Also save to a homebrew pack');
+  });
+
   it('writes the promoted element to the homebrew drafts store and keeps its id', async () => {
     const api = fakeApi();
     const store = fakeStore();

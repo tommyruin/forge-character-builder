@@ -96,7 +96,7 @@ describe('the custom item dialog: a magic weapon', () => {
     expect(savedOptions(api)).toEqual({});
   });
 
-  it('offers the effects an item has while attuned: a bonus, a resistance, a spell and a feature', async () => {
+  it('offers the effects an item has while attuned: a bonus, a damage resistance, a spell and a feature', async () => {
     const api = fakeApi();
     await open(api);
     await choose(byLabel('Base weapon'), LONGSWORD.id);
@@ -104,10 +104,12 @@ describe('the custom item dialog: a magic weapon', () => {
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('Requires attunement')));
     expect(document.body.textContent).toContain('While attuned, also');
 
-    await click(buttonByText('+ Resistance'));
-    await type($('input[placeholder="Type to search"]'), 'cold');
-    await settle();
-    await click(option('Resistance (Cold)'));
+    await click(buttonByText('+ Damage resistance'));
+    // A damage-type picker, not a library search: no "Condition", no "Internal".
+    expect($('input[placeholder="Type to search"]')).toBeNull();
+    expect(document.body.textContent).not.toContain('Internal');
+    expect(document.body.textContent).not.toContain('Condition');
+    await choose(byLabel('Damage type'), 'cold');
 
     await click(buttonByText('+ Spell'));
     await settle();
@@ -117,27 +119,28 @@ describe('the custom item dialog: a magic weapon', () => {
     await settle();
     await click(option('Ray of Frost'));
 
-    await click(buttonByText('+ Bonus'));
+    await click(buttonByText('+ Bonus to another stat'));
     await choose(byLabel('What it changes'), 'spellcasting:attack');
 
     await click(buttonByText('Add to inventory'));
     await settle();
     const draft = savedDraft(api);
     expect(draft.blocks.map((block) => [block.kind, block.target?.id ?? block.target])).toEqual([
-      ['grant', COLD.id],
+      ['grant', 'ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_COLD'],
       ['grant', RAY.id],
       ['modifier', 'spellcasting:attack'],
     ]);
     expect(draft.blocks[1].spell).toEqual({ usage: '1/Long Rest', castAbility: 'wisdom' });
     expect(customEntryIssues(draft)).toEqual([]);
-    expect(group('Resistance')).not.toBeNull();
+    expect(group('Damage resistance')).not.toBeNull();
+    expect(draft.blocks[0].target.label).toBe('Resistance (Cold)');
     expect(group('Spell')).not.toBeNull();
   });
 
   it('names a feature grant "Other feature" in its Kind menu, not the first kind in the list', async () => {
     const api = fakeApi();
     await open(api);
-    await click(buttonByText('+ Feature or other grant'));
+    await click(buttonByText('+ Other feature'));
     const kind = byLabel('Kind of element granted');
     expect(kind.value).toBe('Custom Feature');
     expect(kind.options[kind.selectedIndex].textContent).toBe('Other feature');
@@ -225,7 +228,7 @@ describe('the custom item dialog: other templates', () => {
     expect($('[data-testid="item-attack-preview"]')).toBeNull();
     await type(byLabel('Name'), 'Hearth Pendant');
     await choose(byLabel('Worn on'), 'ring');
-    await click(buttonByText('+ Charges or limited uses'));
+    await click(buttonByText('+ Uses per rest'));
     const charges = group('Charges');
     await type(charges.querySelector('[aria-label="Uses"]'), '3');
     await choose(charges.querySelector('[aria-label="Recharges on"]'), 'dawn');
@@ -245,9 +248,9 @@ describe('the custom item dialog: other templates', () => {
     const api = fakeApi();
     const draft = { ...makeItemDraft('worn'), name: 'Old Pendant', slot: 'neck', uses: '3 charges, regains all at dawn' };
     await open(api, { entry: { kind: 'item', draft, elementId: draft.id, type: 'Magic Item', section: 'other', granted: true, installed: true } });
-    expect(byLabel('Limited uses or charges').value).toBe('3 charges, regains all at dawn');
-    await click(buttonByText('+ Charges or limited uses'));
-    expect(byLabel('Limited uses or charges')).toBeNull();
+    expect(byLabel('Uses per rest as text').value).toBe('3 charges, regains all at dawn');
+    await click(buttonByText('+ Uses per rest'));
+    expect(byLabel('Uses per rest as text')).toBeNull();
   });
 
   it('takes plain gear on one line: a quantity, a weight and notes', async () => {
@@ -310,5 +313,26 @@ describe('the custom item dialog: editing', () => {
     await click(buttonByText('Delete custom item', $('[data-testid="remove-confirm"]')));
     await settle();
     expect(api.characters.deleteCustomDraft).toHaveBeenCalledWith(CHARACTER, stored().id);
+  });
+});
+
+describe('a damage resistance on an item', () => {
+  it('switches between resistance, immunity and vulnerability, and reads in plain words', async () => {
+    const api = fakeApi();
+    await open(api);
+    await choose(byLabel('Base weapon'), LONGSWORD.id);
+    await type(byLabel('Name'), 'Frostbite');
+    await click(buttonByText('+ Damage resistance'));
+    await click(radio('Immunity'));
+    await choose(byLabel('Damage type'), 'fire');
+    expect($('[data-testid="item-summary"]').textContent).toContain('Immunity to fire damage');
+    await click(buttonByText('Add to inventory'));
+    await settle();
+    expect(savedDraft(api).blocks[0].target).toEqual({
+      by: 'id',
+      type: 'Condition',
+      id: 'ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_FIRE',
+      label: 'Immunity (Fire)',
+    });
   });
 });

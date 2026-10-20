@@ -7,11 +7,11 @@
 // under it (a choice is remembered by its name, type, level and count) and says so before it
 // writes anything.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createCustomDraft, customDraftIssues } from '@forge-cb/engine/custom';
 import Modal from '../Modal';
 import FeatureFields from './FeatureFields';
-import { castAbilityIssues, parseUsage } from './draftModel';
+import { PROMOTE_LABEL, castAbilityIssues, parseUsage } from './draftModel';
 import { trackerFromUsage } from './trackerModel';
 
 // An entry made before limited uses were tracked holds them as a sheet usage line ("2/Short Rest").
@@ -53,6 +53,14 @@ export default function CustomFeatureModal({
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [partial, setPartial] = useState(null);
+  const warningRef = useRef(null);
+
+  // The warning sits at the bottom of a long form: bring it into view and put the keyboard on it.
+  useEffect(() => {
+    if (warning === null) return;
+    warningRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    warningRef.current?.focus({ preventScroll: true });
+  }, [warning]);
 
   const issues = useMemo(() => [...customDraftIssues(draft), ...castAbilityIssues(draft)], [draft]);
 
@@ -133,15 +141,17 @@ export default function CustomFeatureModal({
       >
         <FeatureFields draft={draft} setDraft={setDraft} services={services} issues={issues} attempted={attempted} autoFocus />
 
-        <label className="flex items-start gap-2 text-sm">
-          <input type="checkbox" checked={promote} onChange={(event) => setPromote(event.target.checked)} />
-          <span>Also save to a homebrew pack, so it can be added to other characters</span>
-        </label>
+        {!editing && (
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" checked={promote} onChange={(event) => setPromote(event.target.checked)} />
+            <span>{PROMOTE_LABEL}</span>
+          </label>
+        )}
 
         {error && <p role="alert" className="fcb-alert">{error}</p>}
 
         {warning && (
-          <div role="alert" className="fcb-alert space-y-2" data-testid="identity-warning">
+          <div ref={warningRef} tabIndex={-1} role="alert" className="fcb-alert space-y-2" data-testid="identity-warning">
             <p className="font-semibold">Saving this would clear picks the character already made.</p>
             <ul className="list-disc pl-5">
               {warning.map((change) => (
@@ -159,14 +169,17 @@ export default function CustomFeatureModal({
           </div>
         )}
 
-        <div className="fcb-toolbar justify-end">
-          <button type="button" className="fcb-button" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || warning !== null || issues.length > 0}>
-            {saving ? 'Saving…' : editing ? 'Save changes' : `Add to ${characterName}`}
-          </button>
-        </div>
+        {/* While the warning is up, its two buttons are the only way forward. */}
+        {warning === null && (
+          <div className="fcb-toolbar justify-end">
+            <button type="button" className="fcb-button" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || issues.length > 0}>
+              {saving ? 'Saving…' : editing ? 'Save changes' : `Add to ${characterName}`}
+            </button>
+          </div>
+        )}
       </form>
     </Modal>
   );

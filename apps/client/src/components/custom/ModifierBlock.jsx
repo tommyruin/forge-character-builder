@@ -114,6 +114,11 @@ export function ValueEditor({ value, onChange, label, numberOnly = false, scales
   );
 }
 
+// The engine names the ability limits "Strength maximum"; in the menu that reads as a second way to
+// cap a score, so it says what choosing it does.
+const menuLabel = (entry) => (entry.id.endsWith(':max') ? `Raise the maximum of ${entry.label.replace(/ maximum$/, '')}` : entry.label);
+const menuGroupLabel = (label) => (label === 'Ability maximums' ? 'Raise an ability maximum' : label);
+
 function EquippedGates({ gates = [], onChange }) {
   const setGate = (index, patch) => onChange(gates.map((gate, at) => (at === index ? compact({ ...gate, ...patch }) : gate)));
   return (
@@ -207,10 +212,10 @@ export default function ModifierBlock({
             onChange={(event) => changeTarget(event.target.value)}
           >
             {groups.map((group) => (
-              <optgroup key={group.label} label={group.label}>
+              <optgroup key={group.label} label={menuGroupLabel(group.label)}>
                 {group.targets.map((entry) => (
                   <option key={entry.id} value={entry.id}>
-                    {entry.label}
+                    {menuLabel(entry)}
                   </option>
                 ))}
               </optgroup>
@@ -270,13 +275,13 @@ export default function ModifierBlock({
             <input
               type="checkbox"
               checked={block.cap !== undefined}
-              onChange={(event) => emit({ cap: event.target.checked ? { kind: 'number', value: 3 } : undefined })}
+              onChange={(event) => emit({ cap: event.target.checked ? { kind: 'number', value: 20 } : undefined })}
             />
-            Limit how large it can get
+            Stop the total going above a limit
           </label>
           {block.cap !== undefined && (
             <div className="mt-2">
-              <span className="fcb-field-label">At most</span>
+              <span className="fcb-field-label">Highest total allowed</span>
               <ValueEditor label="Limit" scales={scales} value={block.cap} onChange={(cap) => emit({ cap })} />
             </div>
           )}

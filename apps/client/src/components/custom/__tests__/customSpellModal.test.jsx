@@ -267,7 +267,7 @@ describe('the custom spell dialog', () => {
     const api = fakeApi();
     await open(api);
     await type(byLabel('Name'), 'Frost Lance');
-    await click(checkbox('Also save to a homebrew pack, so it can be used by other characters'));
+    await click(checkbox('Also save to a homebrew pack, so other characters can use it'));
     await click(buttonByText('Add spell'));
     await settle();
     const draft = savedDraft(api);

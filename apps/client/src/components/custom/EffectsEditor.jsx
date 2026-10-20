@@ -12,7 +12,8 @@ import GrantBlock from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
 import ScaleBlock from './ScaleBlock';
 import TrackerBlock from './TrackerBlock';
-import { Field, InfoTip, RemoveButton, SelectInput } from './fields';
+import EffectChip from './EffectChip';
+import { Field, RemoveButton, SelectInput } from './fields';
 import { SHEET_ACTION_OPTIONS } from '@forge-cb/engine/custom';
 import { tidySheet } from './SheetPresentation';
 import {
@@ -343,17 +344,5 @@ function EffectsEditorBody({
         {moreOpen && shownMore.map((chip) => <EffectChip key={chip.id} chip={chip} />)}
       </div>
     </div>
-  );
-}
-
-// One effect to add: the chip and, beside it, an (i) that says what it does with an example.
-function EffectChip({ chip }) {
-  return (
-    <span className="fcb-effect-chip">
-      <button type="button" className="fcb-effect-chip-add" onClick={chip.add}>
-        + {chip.label}
-      </button>
-      <InfoTip label={chip.label} text={chip.hint} />
-    </span>
   );
 }

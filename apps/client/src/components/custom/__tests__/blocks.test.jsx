@@ -49,10 +49,10 @@ describe('ModifierBlock', () => {
     const options = [...byLabel('What it changes').querySelectorAll('option')].map((option) => option.textContent);
     expect(options).toContain('Wisdom score');
     expect(options).toContain('Armor class bonus');
-    expect(options).toContain('Wisdom maximum');
+    expect(options).toContain('Raise the maximum of Wisdom');
     expect(options.some((text) => text.includes(':'))).toBe(false);
     const groups = [...byLabel('What it changes').querySelectorAll('optgroup')].map((entry) => entry.label);
-    expect(groups.slice(0, 2)).toEqual(['Ability scores', 'Ability maximums']);
+    expect(groups.slice(0, 2)).toEqual(['Ability scores', 'Raise an ability maximum']);
   });
 
   it('narrows the menu to the groups an effect row offers', async () => {
@@ -116,11 +116,11 @@ describe('ModifierBlock', () => {
     );
     await choose(byLabel('Amount is'), 'reference');
     await choose(byLabel('Amount value'), 'wisdom:modifier');
-    const limit = [...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('Limit how large'));
+    const limit = [...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('Stop the total going above a limit'));
     await click(limit);
     expect(emitted.at(-1)).toMatchObject({
       value: { kind: 'reference', ref: 'wisdom:modifier' },
-      cap: { kind: 'number', value: 3 },
+      cap: { kind: 'number', value: 20 },
     });
     expect(customDraftIssues(draftWith(emitted.at(-1)))).toEqual([]);
   });

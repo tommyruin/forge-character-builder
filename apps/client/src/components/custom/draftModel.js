@@ -91,6 +91,9 @@ export const TYPE_LABELS = {
   List: 'Your own list',
 };
 
+// One wording for the "also keep it in a pack" tick, wherever a custom dialog offers it.
+export const PROMOTE_LABEL = 'Also save to a homebrew pack, so other characters can use it';
+
 export const typeLabel = (type) => TYPE_LABELS[type] ?? type;
 
 export const blockId = () => newCustomBlockId();
@@ -243,7 +246,45 @@ function describeSpell(block) {
   return `Spell: ${name}${bits.length ? ` (${bits.join('; ')})` : ''}`;
 }
 
+// Resistance, immunity and vulnerability are library conditions named for a damage type. The menu
+// picks the kind and the type; the stored grant is the same condition element it always was.
+export const DAMAGE_RESPONSES = [
+  { id: 'resistance', label: 'Resistance', plain: 'Resistance to' },
+  { id: 'immunity', label: 'Immunity', plain: 'Immunity to' },
+  { id: 'vulnerability', label: 'Vulnerability', plain: 'Vulnerability to' },
+];
+
+export const damageResponseId = (response, type) => `ID_INTERNAL_CONDITION_DAMAGE_${response.toUpperCase()}_${type.toUpperCase()}`;
+
+export function damageResponseGrant(response, type, previous = {}) {
+  return {
+    ...previous,
+    kind: 'grant',
+    target: {
+      by: 'id',
+      type: 'Condition',
+      id: damageResponseId(response, type),
+      label: `${DAMAGE_RESPONSES.find((entry) => entry.id === response).label} (${titleCase(type)})`,
+    },
+  };
+}
+
+// The kind and the damage type of a grant that is one of those conditions, else null (an older
+// draft may name some other condition, which keeps the generic grant editor).
+export function damageResponseOf(block) {
+  if (block.kind !== 'grant' || block.target.by !== 'id' || block.target.type !== 'Condition') return null;
+  const found = /^ID_INTERNAL_CONDITION_DAMAGE_(RESISTANCE|IMMUNITY|VULNERABILITY)_([A-Z]+)$/.exec(block.target.id);
+  if (!found) return null;
+  const type = found[2].toLowerCase();
+  return DAMAGE_TYPES.includes(type) ? { response: found[1].toLowerCase(), type } : null;
+}
+
 export function describeGrant(block) {
+  const damage = damageResponseOf(block);
+  if (damage) {
+    const plain = DAMAGE_RESPONSES.find((entry) => entry.id === damage.response).plain;
+    return `${plain} ${damage.type} damage${describeGates({ level: block.level, requirements: block.requirements, switch: block.switch })}`;
+  }
   const gates = describeGates({ level: block.level, requirements: block.requirements, switch: block.switch });
   if (block.target.type === 'Spell') return `${describeSpell(block)}${gates}`;
   const name = block.target.by === 'name' ? block.target.name : block.target.label || block.target.id;

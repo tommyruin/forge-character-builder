@@ -11,6 +11,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { customEntryIssues } from '@forge-cb/engine/custom';
 import Modal from '../Modal';
+import DamageResponseBlock from './DamageResponseBlock';
+import EffectChip from './EffectChip';
 import GrantBlock, { GRANT_TYPE_OPTIONS } from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
 import TrackerBlock from './TrackerBlock';
@@ -22,11 +24,14 @@ import {
   RARITY_OPTIONS,
   WEAPON_PROPERTY_OPTIONS,
   WORN_SLOT_OPTIONS,
+  PROMOTE_LABEL,
   abilityOptions,
   baseLabel,
   castAbilityIssues,
   defaultCastAbility,
   isShieldOption,
+  damageResponseGrant,
+  damageResponseOf,
   makeGrant,
   makeItemDraft,
   makeModifier,
@@ -35,7 +40,6 @@ import {
 } from './draftModel';
 
 const ALL_TARGET_GROUPS = targetGroups().map((group) => group.label);
-const RESISTANCE_TYPES = GRANT_TYPE_OPTIONS.filter((option) => option.id === 'Condition');
 const CURRENCIES = [
   { id: 'cp', label: 'cp' },
   { id: 'sp', label: 'sp' },
@@ -43,10 +47,10 @@ const CURRENCIES = [
 ];
 
 const blockTitle = (block) => {
-  if (block.kind === 'modifier') return 'Bonus';
-  if (block.target.type === 'Condition') return 'Resistance';
+  if (block.kind === 'modifier') return 'Bonus to another stat';
+  if (damageResponseOf(block)) return 'Damage resistance';
   if (block.target.type === 'Spell') return 'Spell';
-  return 'Feature or other grant';
+  return 'Other feature';
 };
 
 // Drops the keys a form leaves empty, so a draft that was only opened compares equal to what the
@@ -299,15 +303,41 @@ export default function CustomItemModal({
   const setTrackers = (next) => patch({ trackers: next.length > 0 ? next : undefined });
 
   const chips = [
-    { id: 'bonus', label: 'Bonus', add: () => addBlock(makeModifier({ target: 'ac:misc' })) },
-    { id: 'resistance', label: 'Resistance', add: () => addBlock(makeGrant('Condition')) },
+    {
+      id: 'bonus',
+      label: 'Bonus to another stat',
+      hint: 'A bonus to a stat: AC, speed, initiative, attack rolls, saving throws and so on.',
+      add: () => addBlock(makeModifier({ target: 'ac:misc' })),
+    },
+    {
+      id: 'resistance',
+      label: 'Damage resistance',
+      hint: 'Resistance, immunity or vulnerability to a damage type. Example: resistance to cold.',
+      add: () => addBlock(damageResponseGrant('resistance', 'cold', makeGrant('Condition'))),
+    },
     {
       id: 'spell',
       label: 'Spell',
+      hint: 'Grant a spell the wearer can cast. Example: Misty Step once per long rest.',
       add: () =>
         addBlock(makeGrant('Spell', { spell: { usage: '1/Long Rest', ...(castDefault ? { castAbility: castDefault } : {}) } })),
     },
-    { id: 'feature', label: 'Feature or other grant', add: () => addBlock(makeGrant('Custom Feature')) },
+    {
+      id: 'feature',
+      label: 'Other feature',
+      hint: 'Give a feature or trait that already exists in your library.',
+      add: () => addBlock(makeGrant('Custom Feature')),
+    },
+    {
+      id: 'uses',
+      label: 'Uses per rest',
+      hint: 'A pool of charges or uses that refills at dawn or on a rest. Example: 7 charges, regained at dawn.',
+      add: () =>
+        setTrackers([
+          ...trackers,
+          makeTracker({ label: trackers.length === 0 ? 'Charges' : '', unit: 'charges', max: { kind: 'number', value: 7 }, recharge: 'dawn' }),
+        ]),
+    },
   ];
 
   const write = async () => {
@@ -561,22 +591,13 @@ export default function CustomItemModal({
                   ariaLabel: blockTitle(block),
                 };
                 if (block.kind === 'modifier') return <ModifierBlock key={block.id} {...shared} allowedGroups={ALL_TARGET_GROUPS} />;
-                return (
-                  <GrantBlock
-                    key={block.id}
-                    {...shared}
-                    casters={casters}
-                    defaultCastAbility={castDefault}
-                    typeOptions={block.target.type === 'Condition' ? RESISTANCE_TYPES : GRANT_TYPE_OPTIONS}
-                  />
-                );
+                if (damageResponseOf(block)) return <DamageResponseBlock key={block.id} {...shared} />;
+                return <GrantBlock key={block.id} {...shared} casters={casters} defaultCastAbility={castDefault} typeOptions={GRANT_TYPE_OPTIONS} />;
               })}
             </div>
-            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Add an effect">
+            <div className="fcb-effect-chips mt-3" role="group" aria-label="Add an effect">
               {chips.map((chip) => (
-                <button key={chip.id} type="button" className="fcb-mode-button" onClick={chip.add}>
-                  + {chip.label}
-                </button>
+                <EffectChip key={chip.id} chip={chip} />
               ))}
             </div>
             <div className="mt-3 space-y-3">
@@ -591,23 +612,11 @@ export default function CustomItemModal({
                   onRemove={() => setTrackers(trackers.filter((_, at) => at !== index))}
                 />
               ))}
-              <button
-                type="button"
-                className="fcb-mode-button"
-                onClick={() =>
-                  setTrackers([
-                    ...trackers,
-                    makeTracker({ label: trackers.length === 0 ? 'Charges' : '', unit: 'charges', max: { kind: 'number', value: 7 }, recharge: 'dawn' }),
-                  ])
-                }
-              >
-                + Charges or limited uses
-              </button>
               {trackers.length === 0 && draft.uses?.trim() && (
-                <Field label="Limited uses or charges (text only)">
+                <Field label="Uses per rest (text only)">
                   <input
                     className="fcb-input"
-                    aria-label="Limited uses or charges"
+                    aria-label="Uses per rest as text"
                     value={draft.uses ?? ''}
                     onChange={(event) => patch({ uses: event.target.value })}
                   />
@@ -667,7 +676,7 @@ export default function CustomItemModal({
         {!editing && pack === null && (
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" checked={promote} onChange={(event) => setPromote(event.target.checked)} />
-            <span>Also save to a homebrew pack, so it can be added to other characters</span>
+            <span>{PROMOTE_LABEL}</span>
           </label>
         )}
 
