@@ -9071,3 +9071,15 @@ html.fcb-busy-cursor * {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* The Modal body is the dialog's one scroller. Its action row sticks to the bottom of it, so Add and
+   Save are never below the fold of a long form. */
+.fcb-dialog-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 4px;
+  padding: 10px 0 2px;
+  border-top: 1px solid var(--fcb-border-soft);
+  background: var(--fcb-surface);
+}

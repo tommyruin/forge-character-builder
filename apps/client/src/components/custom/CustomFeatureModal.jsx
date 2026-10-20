@@ -171,7 +171,7 @@ export default function CustomFeatureModal({
 
         {/* While the warning is up, its two buttons are the only way forward. */}
         {warning === null && (
-          <div className="fcb-toolbar justify-end">
+          <div className="fcb-toolbar fcb-dialog-footer justify-end">
             <button type="button" className="fcb-button" onClick={onClose}>
               Cancel
             </button>

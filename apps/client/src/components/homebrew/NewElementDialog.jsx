@@ -64,8 +64,8 @@ function BookElementStep({ route, api, onBack, onPicked }) {
           {error}
         </p>
       )}
-      <div className="fcb-toolbar justify-end">
-        <button type="button" className="fcb-button" onClick={onBack}>
+      <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <button type="button" className="fcb-button mr-auto" onClick={onBack}>
           Back
         </button>
       </div>
@@ -94,12 +94,12 @@ function RawTypeStep({ onBack, onCreate }) {
           <input className="fcb-input" aria-label="Element name" value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
       </div>
-      <div className="fcb-toolbar justify-end">
-        <button type="button" className="fcb-button" onClick={onBack}>
+      <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <button type="button" className="fcb-button mr-auto" onClick={onBack}>
           Back
         </button>
         <button type="submit" className="fcb-button fcb-status-complete" disabled={type.trim() === '' || name.trim() === ''}>
-          Create
+          Add element
         </button>
       </div>
     </form>
@@ -113,6 +113,8 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
   const [ruleset, setRuleset] = useState('inherit');
   const template = templateId ? templateById(templateId) : null;
   const route = template?.route ?? null;
+  // A template that needs nothing more is added at once; the others go on to ask for it.
+  const makesNow = route !== null && (['feature', 'catalog', 'build'].includes(route.kind) || (route.kind === 'raw' && route.type !== ''));
 
   const finish = (element) => {
     onCreate(element);
@@ -211,12 +213,12 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
               </section>
             ))}
           </div>
-          <div className="fcb-toolbar justify-end">
-            <button type="button" className="fcb-button" onClick={onClose}>
+          <div className="fcb-toolbar fcb-dialog-footer justify-end">
+            <button type="button" className="fcb-button mr-auto" onClick={onClose}>
               Cancel
             </button>
             <button type="button" className="fcb-button fcb-status-complete" data-testid="hb-template-create" disabled={!route} onClick={create}>
-              Create
+              {makesNow ? 'Add element' : 'Next'}
             </button>
           </div>
         </div>
@@ -237,8 +239,8 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
       {step === 'parent' && route && (
         <div className="space-y-3" data-testid="hb-parent-step">
           <ParentPicker kind={route.template} pack={pack} api={api} lookup={parentLookup} value={null} onPick={createForParent} />
-          <div className="fcb-toolbar justify-end">
-            <button type="button" className="fcb-button" onClick={() => setStep('pick')}>
+          <div className="fcb-toolbar fcb-dialog-footer justify-end">
+            <button type="button" className="fcb-button mr-auto" onClick={() => setStep('pick')}>
               Back
             </button>
           </div>

@@ -138,7 +138,7 @@ function ManualTrackerModal({ draft, onChange, onSave, onClose, saving, error })
           onChange={(tracker) => onChange({ ...draft, tracker })}
         />
         {error && <p role="alert" className="fcb-alert">{error}</p>}
-        <div className="fcb-toolbar justify-end">
+        <div className="fcb-toolbar fcb-dialog-footer justify-end">
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>

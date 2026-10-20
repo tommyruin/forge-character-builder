@@ -79,7 +79,7 @@ export default function ItemDetailsModal({ item, busy = false, onClose, onSave }
         <p className="fcb-muted-copy text-xs">
           Rules unchanged: it still works as {item.defaultName}. Only the name and notes change, on this character only.
         </p>
-        <div className="fcb-toolbar justify-end">
+        <div className="fcb-toolbar fcb-dialog-footer justify-end">
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>

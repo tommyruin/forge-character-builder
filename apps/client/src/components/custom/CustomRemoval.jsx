@@ -70,7 +70,7 @@ export function CustomRemovalDialog({ removal }) {
           ))}
         </ul>
         {removal.error && <p role="alert" className="fcb-alert">{removal.error}</p>}
-        <div className="fcb-toolbar justify-end">
+        <div className="fcb-toolbar fcb-dialog-footer justify-end">
           <button type="button" className="fcb-button" onClick={removal.cancel}>
             Keep it
           </button>

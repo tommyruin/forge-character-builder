@@ -699,7 +699,7 @@ export default function CustomItemModal({
           </div>
         )}
 
-        <div className="fcb-toolbar justify-end">
+        <div className="fcb-toolbar fcb-dialog-footer justify-end">
           {editing && pack === null && (
             <button type="button" className="fcb-button fcb-button-danger mr-auto" disabled={saving} onClick={() => setConfirmRemove(true)}>
               Delete custom item

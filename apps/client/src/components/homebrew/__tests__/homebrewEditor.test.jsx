@@ -111,6 +111,32 @@ describe('the New element template picker', () => {
     return { onCreate, onClose };
   }
 
+  it('keeps Back or Cancel on the left and the one forward action on the right, in every step', async () => {
+    const { onCreate } = await pick('feature');
+    const footer = () => $('.fcb-dialog-footer');
+    const order = () => [...footer().querySelectorAll('button')].map((button) => button.textContent.trim());
+    expect(order()).toEqual(['Cancel', 'Add element']);
+    expect(footer().querySelector('button').className).toContain('mr-auto');
+
+    // A template that needs more asks for it first, so the forward action says Next.
+    await click($('[data-testid="hb-template-subclass"]'));
+    expect(order()).toEqual(['Cancel', 'Next']);
+    await click($('[data-testid="hb-template-create"]'));
+    expect(order()).toEqual(['Back']);
+    expect(footer().querySelector('button').className).toContain('mr-auto');
+
+    await click(buttonByText('Back'));
+    await click($('[data-testid="hb-template-raw"]'));
+    await click($('[data-testid="hb-template-create"]'));
+    expect(order()).toEqual(['Back', 'Add element']);
+    expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it('spells Reflavour the way the rest of the app does (Colours, not Colors)', async () => {
+    await mount(<NewElementDialog pack={pack} api={h.api} onClose={() => {}} onCreate={() => {}} />);
+    expect($('[data-testid="hb-template-reflavour"]').textContent).toContain('Reflavour');
+  });
+
   it('lists the five groups and offers a rules version', async () => {
     await mount(<NewElementDialog pack={pack} api={h.api} onClose={() => {}} onCreate={() => {}} />);
     expect($$('[data-testid="hb-new-element"] section').map((section) => section.getAttribute('aria-label'))).toEqual([
@@ -285,7 +311,7 @@ describe('the New element template picker', () => {
     await click($('[data-testid="hb-template-create"]'));
     await type(byLabel('Element type'), 'Race Variant');
     await type(byLabel('Element name'), 'Selkie Lineage');
-    await click(buttonByText('Create'));
+    await click(buttonByText('Add element'));
     const element = onCreate.mock.calls[0][0];
     expect(element).toMatchObject({ type: 'Race Variant', name: 'Selkie Lineage' });
     expect(element.rawXml).toContain('type="Race Variant"');
