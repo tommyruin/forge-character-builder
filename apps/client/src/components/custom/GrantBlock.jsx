@@ -3,7 +3,7 @@
 // it is cast with, and how it is cast (known, a number of times per rest with no slot, always
 // prepared by a class, or at will). The block emits the draft's `GrantBlock` shape.
 
-import { CUSTOM_GRANT_TYPES } from '@forge-cb/engine/custom';
+import { CUSTOM_GRANT_TYPES, CUSTOM_OTHER_TYPE } from '@forge-cb/engine/custom';
 import {
   RECHARGES,
   abilityOptions,
@@ -13,7 +13,7 @@ import {
   typeLabel,
   usageText,
 } from './draftModel';
-import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
+import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput, withCurrent } from './fields';
 import LibraryPicker from './LibraryPicker';
 import RequirementsBuilder from './RequirementsBuilder';
 
@@ -29,7 +29,8 @@ const SPELL_MODES = [
   { id: 'atWill', label: 'At will' },
 ];
 
-export const GRANT_TYPE_OPTIONS = CUSTOM_GRANT_TYPES.map((type) => ({ id: type, label: typeLabel(type) }));
+// A custom feature is a valid thing to grant (an item's feature, a pack's feature), so it is a kind here.
+export const GRANT_TYPE_OPTIONS = [...CUSTOM_GRANT_TYPES, CUSTOM_OTHER_TYPE].map((type) => ({ id: type, label: typeLabel(type) }));
 
 // Rebuilds the spell options for a mode, keeping the cast ability the author already chose.
 function spellFor(mode, previous, casters, uses) {
@@ -80,7 +81,7 @@ export default function GrantBlock({
     <div className="fcb-custom-block" role="group" aria-label={ariaLabel}>
       <div className="fcb-custom-row">
         <Field label="Kind">
-          <SelectInput label="Kind of element granted" value={type} onChange={changeType} options={typeOptions} />
+          <SelectInput label="Kind of element granted" value={type} onChange={changeType} options={withCurrent(typeOptions, type, typeLabel(type))} />
         </Field>
         <Segmented
           label="How to choose it"

@@ -39,6 +39,17 @@ export default function AddSpellModal({
     classCasters.some((o) => o.value === defaultCaster) ? defaultCaster : (classCasters[0]?.value ?? ''),
   );
 
+  // Spells a caster already lists, so the same spell is not granted twice without the player knowing.
+  const alreadyHas = useMemo(() => {
+    const found = new Map();
+    for (const c of casters ?? []) {
+      for (const spell of c.knownSpells ?? []) {
+        if (!found.has(spell.id)) found.set(spell.id, { caster: c.name, alwaysPrepared: spell.isAlwaysPrepared === true });
+      }
+    }
+    return found;
+  }, [casters]);
+
   useEffect(() => {
     if (!open) return undefined;
     const q = search.trim();
@@ -153,6 +164,13 @@ export default function AddSpellModal({
                         {spell.source}
                       </span>
                     )}
+                    {alreadyHas.has(spell.id) && (
+                      <p className="fcb-warning-note text-xs" data-testid="already-granted">
+                        Already on this character under {alreadyHas.get(spell.id).caster}
+                        {alreadyHas.get(spell.id).alwaysPrepared ? ', always prepared' : ''}. Adding it again grants
+                        it a second time.
+                      </p>
+                    )}
                   </td>
                   <td className="text-right">
                     <button
@@ -161,7 +179,7 @@ export default function AddSpellModal({
                       disabled={busy !== null}
                       onClick={() => add(spell)}
                     >
-                      {busy === spell.id ? "Adding…" : "Add"}
+                      {busy === spell.id ? "Adding…" : alreadyHas.has(spell.id) ? "Add anyway" : "Add"}
                     </button>
                   </td>
                 </tr>

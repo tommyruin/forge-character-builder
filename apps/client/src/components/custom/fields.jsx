@@ -31,6 +31,12 @@ export function NumberInput({ value, onChange, min, max, label, className = '', 
   );
 }
 
+// A menu that always lists the value it holds. A <select> whose value is missing from its options
+// silently shows the first option, which reads as a different choice than the one stored.
+export function withCurrent(options, value, label = value) {
+  return value === undefined || value === '' || options.some((option) => option.id === value) ? options : [...options, { id: value, label }];
+}
+
 export function SelectInput({ value, onChange, options, label, className = '', placeholder, children, ...rest }) {
   return (
     <select

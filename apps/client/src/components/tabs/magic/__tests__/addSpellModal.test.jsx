@@ -52,6 +52,29 @@ beforeEach(() => {
   content.elements.mockResolvedValue({ items: [FIRE_BOLT] });
 });
 
+describe('a spell the character already has', () => {
+  const withSpell = (knownSpell) => CASTERS.map((caster) => (caster.name === 'Magic Initiate' ? { ...caster, knownSpells: [knownSpell] } : { ...caster, knownSpells: [] }));
+
+  it('warns that a feature already grants it, and still lets the grant through', async () => {
+    await open({ casters: withSpell({ id: 'ID_FIRE_BOLT', name: 'Fire Bolt', isAlwaysPrepared: true }) });
+    await pause();
+    const note = document.querySelector('[data-testid="already-granted"]');
+    expect(note.textContent).toContain('Magic Initiate');
+    expect(note.textContent).toContain('Already on this character');
+    expect(buttonByText('Add')).toBeUndefined();
+    await click(buttonByText('Add anyway'));
+    await settle();
+    expect(characters.addSpell).toHaveBeenCalledWith('ilyana', 'ID_FIRE_BOLT', 'Wizard');
+  });
+
+  it('says nothing about a spell no caster lists', async () => {
+    await open({ casters: withSpell({ id: 'ID_OTHER', name: 'Other', isAlwaysPrepared: true }) });
+    await pause();
+    expect(document.querySelector('[data-testid="already-granted"]')).toBeNull();
+    expect(buttonByText('Add')).toBeDefined();
+  });
+});
+
 describe('adding a spell to a caster', () => {
   it('offers the character\'s class casters, not a feature\'s, and starts on the one it was opened from', async () => {
     await open({ defaultCaster: 'Warlock' });

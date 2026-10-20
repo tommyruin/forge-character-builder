@@ -14,7 +14,7 @@ import {
   weaponFilterTag,
 } from '@forge-cb/engine/custom';
 import { abilityOptions, compact, typeLabel } from './draftModel';
-import { Field, Issues, NumberInput, RemoveButton, SelectInput } from './fields';
+import { Field, Issues, NumberInput, RemoveButton, SelectInput, withCurrent } from './fields';
 import LibraryPicker from './LibraryPicker';
 import RequirementsBuilder from './RequirementsBuilder';
 
@@ -280,7 +280,7 @@ export default function ChoiceBlock({
           <NumberInput label="How many to pick" min={1} max={20} value={block.count} onChange={(count) => emit({ count: count ?? 1 })} />
         </Field>
         <Field label="Of">
-          <SelectInput label="What the player picks" value={block.type} onChange={changeType} options={typeOptions} />
+          <SelectInput label="What the player picks" value={block.type} onChange={changeType} options={withCurrent(typeOptions, block.type, typeLabel(block.type))} />
         </Field>
         <Field label="From level">
           <NumberInput label="Choice from level" min={1} max={20} value={block.level} onChange={(level) => emit({ level })} />

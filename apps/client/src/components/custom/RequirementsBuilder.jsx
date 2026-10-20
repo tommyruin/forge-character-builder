@@ -12,7 +12,7 @@ import {
   requirementIssues,
 } from '@forge-cb/engine/custom';
 import { abilityOptions } from './draftModel';
-import { Issues, NumberInput, RemoveButton, SelectInput } from './fields';
+import { Issues, NumberInput, RemoveButton, SelectInput, withCurrent } from './fields';
 import LibraryPicker from './LibraryPicker';
 
 const GROUP_OPS = [
@@ -68,7 +68,7 @@ function Condition({ node, onChange, lookup }) {
       return (
         <div className="fcb-custom-condition">
           <span>Has an element of the type</span>
-          <SelectInput label="Element type" value={node.type} onChange={(type) => onChange({ ...node, type })} options={ELEMENT_TYPES} />
+          <SelectInput label="Element type" value={node.type} onChange={(type) => onChange({ ...node, type })} options={withCurrent(ELEMENT_TYPES, node.type)} />
         </div>
       );
     case 'ability':

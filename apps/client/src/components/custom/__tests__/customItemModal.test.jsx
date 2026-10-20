@@ -134,6 +134,15 @@ describe('the custom item dialog: a magic weapon', () => {
     expect(group('Spell')).not.toBeNull();
   });
 
+  it('names a feature grant "Other feature" in its Kind menu, not the first kind in the list', async () => {
+    const api = fakeApi();
+    await open(api);
+    await click(buttonByText('+ Feature or other grant'));
+    const kind = byLabel('Kind of element granted');
+    expect(kind.value).toBe('Custom Feature');
+    expect(kind.options[kind.selectedIndex].textContent).toBe('Other feature');
+  });
+
   it('shows the attack row the engine works out, and says nothing until the draft is complete', async () => {
     const api = fakeApi();
     await open(api);
