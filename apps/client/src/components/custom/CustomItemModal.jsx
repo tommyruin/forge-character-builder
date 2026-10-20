@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { customEntryIssues } from '@forge-cb/engine/custom';
 import Modal from '../Modal';
+import BasePicker from './BasePicker';
 import DamageResponseBlock from './DamageResponseBlock';
 import EffectChip from './EffectChip';
 import GrantBlock, { GRANT_TYPE_OPTIONS } from './GrantBlock';
@@ -26,7 +27,6 @@ import {
   WORN_SLOT_OPTIONS,
   PROMOTE_LABEL,
   abilityOptions,
-  baseLabel,
   castAbilityIssues,
   defaultCastAbility,
   isShieldOption,
@@ -199,7 +199,7 @@ export default function CustomItemModal({
 }) {
   const editing = entry !== null;
   const [draft, setDraft] = useState(() => (entry ? structuredClone(entry.draft) : makeItemDraft(initialTemplate)));
-  const [bases, setBases] = useState([]);
+  const [bases, setBases] = useState({ template: null, list: [] });
   const [casters, setCasters] = useState([]);
   const [characterAbility, setCharacterAbility] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -222,9 +222,11 @@ export default function CustomItemModal({
     services
       .itemBases(template)
       .then((list) => {
-        if (alive) setBases(list ?? []);
+        if (alive) setBases({ template, list: list ?? [] });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (alive) setBases({ template, list: [] });
+      });
     return () => {
       alive = false;
     };
@@ -290,8 +292,11 @@ export default function CustomItemModal({
     setDraft({ ...fresh, name: draft.name, description: draft.description, cameFrom: draft.cameFrom });
   };
 
+  const baseList = bases.template === template ? bases.list : [];
+  const basesLoading = onBase && bases.template !== template;
+
   const chooseBase = (baseId) => {
-    const option = bases.find((candidate) => candidate.id === baseId);
+    const option = baseList.find((candidate) => candidate.id === baseId);
     if (!option) {
       patch({ base: undefined });
       return;
@@ -419,27 +424,22 @@ export default function CustomItemModal({
         )}
 
         {onBase && (
-          <Field label={template === 'weapon' ? `Base weapon (${bases.length})` : `Base armor (${bases.length})`}>
-            <SelectInput
-              label={template === 'weapon' ? 'Base weapon' : 'Base armor'}
-              value={draft.base?.id ?? ''}
-              placeholder="Choose a base"
+          <div>
+            <span className="fcb-field-label">{template === 'weapon' ? 'Base weapon' : 'Base armor'}</span>
+            <BasePicker
+              kind={template}
+              bases={baseList}
+              loading={basesLoading}
+              value={draft.base}
               disabled={carried}
-              onChange={chooseBase}
-            >
-              {bases.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {baseLabel(option, bases)} — {option.equipmentKind}
-                  {option.displayPrice ? ` · ${option.displayPrice}` : ''}
-                </option>
-              ))}
-            </SelectInput>
+              onPick={chooseBase}
+            />
             {carried && (
               <span className="fcb-muted-copy text-xs">
-                It is in the inventory on this base. Delete it from the inventory first to choose another.
+                This item is already in the inventory on this base, so the base cannot change. Delete the item from the inventory to start it on another.
               </span>
             )}
-          </Field>
+          </div>
         )}
 
         <div className="fcb-custom-row">

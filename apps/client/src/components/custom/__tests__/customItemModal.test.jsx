@@ -56,6 +56,12 @@ async function open(api, props = {}) {
   await settle();
 }
 
+// The base picker: type to narrow the list, then pick the row.
+async function pickBase(label, name) {
+  await type(byLabel(label), name);
+  await click(option(name));
+}
+
 const savedDraft = (api) => api.characters.saveCustomDraft.mock.calls.at(-1)[1];
 const savedOptions = (api) => api.characters.saveCustomDraft.mock.calls.at(-1)[2];
 
@@ -63,7 +69,7 @@ describe('the custom item dialog: a magic weapon', () => {
   it('starts from a real base and writes the weapon draft the engine accepts', async () => {
     const api = fakeApi();
     await open(api);
-    await choose(byLabel('Base weapon'), LONGSWORD.id);
+    await pickBase('Base weapon', LONGSWORD.name);
     await type(byLabel('Name'), 'Frostbite');
     await type(byLabel('Bonus to hit and damage'), '1');
     await click(buttonByText('+ Extra damage'));
@@ -99,7 +105,7 @@ describe('the custom item dialog: a magic weapon', () => {
   it('offers the effects an item has while attuned: a bonus, a damage resistance, a spell and a feature', async () => {
     const api = fakeApi();
     await open(api);
-    await choose(byLabel('Base weapon'), LONGSWORD.id);
+    await pickBase('Base weapon', LONGSWORD.name);
     await type(byLabel('Name'), 'Frostbite');
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('Requires attunement')));
     expect(document.body.textContent).toContain('While attuned, also');
@@ -152,7 +158,7 @@ describe('the custom item dialog: a magic weapon', () => {
     expect($('[data-testid="item-attack-preview"]').textContent).toContain('Choose a base and a name to see the row.');
     expect(api.characters.previewCustomItem).not.toHaveBeenCalled();
 
-    await choose(byLabel('Base weapon'), LONGSWORD.id);
+    await pickBase('Base weapon', LONGSWORD.name);
     await type(byLabel('Name'), 'Frostbite');
     await settle();
     await settle();
@@ -166,7 +172,7 @@ describe('the custom item dialog: a magic weapon', () => {
   it('lets the author change the ability, die, range and properties of the base', async () => {
     const api = fakeApi();
     await open(api);
-    await choose(byLabel('Base weapon'), RAPIER.id);
+    await pickBase('Base weapon', RAPIER.name);
     await type(byLabel('Name'), 'Spellblade');
     await choose(byLabel('Attack and damage with'), 'intelligence');
     await click(document.querySelector('summary'));
@@ -201,7 +207,7 @@ describe('the custom item dialog: a magic weapon', () => {
   it('can also copy the new item to a homebrew pack', async () => {
     const api = fakeApi();
     await open(api);
-    await choose(byLabel('Base weapon'), LONGSWORD.id);
+    await pickBase('Base weapon', LONGSWORD.name);
     await type(byLabel('Name'), 'Frostbite');
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('homebrew pack')));
     await click(buttonByText('Add to inventory'));
@@ -214,7 +220,7 @@ describe('the custom item dialog: other templates', () => {
   it('marks a shield base so its bonus goes on the shield', async () => {
     const api = fakeApi();
     await open(api, { template: 'armor' });
-    await choose(byLabel('Base armor'), SHIELD.id);
+    await pickBase('Base armor', SHIELD.name);
     await type(byLabel('Name'), 'Ward');
     await type(byLabel('Bonus to armor class'), '2');
     await click(buttonByText('Add to inventory'));
@@ -294,8 +300,9 @@ describe('the custom item dialog: editing', () => {
   it('saves changes to a carried item without letting its base move', async () => {
     const api = fakeApi();
     await open(api, { entry: { kind: 'item', draft: stored(), elementId: stored().id, granted: true, installed: true } });
-    expect(byLabel('Base weapon').disabled).toBe(true);
-    expect(document.body.textContent).toContain('It is in the inventory on this base');
+    expect($('[data-testid="base-picked"]').textContent).toContain('Longsword');
+    expect(buttonByText('Change')).toBeUndefined();
+    expect(document.body.textContent).toContain('This item is already in the inventory on this base, so the base cannot change.');
     await type(byLabel('Bonus to hit and damage'), '2');
     await click(buttonByText('Save changes'));
     await settle();
@@ -320,7 +327,7 @@ describe('a damage resistance on an item', () => {
   it('switches between resistance, immunity and vulnerability, and reads in plain words', async () => {
     const api = fakeApi();
     await open(api);
-    await choose(byLabel('Base weapon'), LONGSWORD.id);
+    await pickBase('Base weapon', LONGSWORD.name);
     await type(byLabel('Name'), 'Frostbite');
     await click(buttonByText('+ Damage resistance'));
     await click(radio('Immunity'));
@@ -334,5 +341,41 @@ describe('a damage resistance on an item', () => {
       id: 'ID_INTERNAL_CONDITION_DAMAGE_IMMUNITY_FIRE',
       label: 'Immunity (Fire)',
     });
+  });
+});
+
+describe('the base picker', () => {
+  it('says it is loading, not "(0)" or "Choose a base", until the library list arrives', async () => {
+    const api = fakeApi();
+    let release;
+    const content = api.content.elements;
+    api.content.elements = vi.fn(
+      (query) => new Promise((resolve) => {
+        release = () => resolve(content(query));
+      }),
+    );
+    await mount(<Host api={api} />);
+    expect($('[data-testid="base-loading"]').textContent).toBe('Loading weapons…');
+    expect(document.body.textContent).not.toContain('(0)');
+    expect($('[data-testid="base-loading"]').parentElement.textContent).not.toContain('Choose a base');
+    release();
+    await settle();
+    expect($('[data-testid="base-loading"]')).toBeNull();
+    expect(byLabel('Base weapon')).not.toBeNull();
+  });
+
+  it('groups the entries by the book they come from and narrows as you type', async () => {
+    const api = fakeApi();
+    const content = api.content.elements;
+    const older = { ...LONGSWORD, id: 'ID_OLD_LONGSWORD', source: 'Older Book' };
+    api.content.elements = vi.fn(async (query) => {
+      const result = await content(query);
+      return query.type === 'Weapon' ? { items: [...result.items, older] } : result;
+    });
+    await open(api);
+    const groups = [...document.querySelectorAll('.fcb-base-group')].map((group) => group.getAttribute('aria-label'));
+    expect(groups).toEqual(['Older Book', 'Test Book']);
+    await type(byLabel('Base weapon'), 'rapier');
+    expect([...document.querySelectorAll('[role="option"]')].map((row) => row.textContent)).toEqual(['RapierMartial melee weapon · 25 gp']);
   });
 });

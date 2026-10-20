@@ -9052,3 +9052,22 @@ html.fcb-busy-cursor * {
   font-size: 0.75rem;
   white-space: nowrap;
 }
+
+/* The base weapon or armor picker: results grouped under the book each entry is from. */
+.fcb-base-results {
+  max-height: 14rem;
+}
+
+.fcb-base-group {
+  display: grid;
+  gap: 2px;
+}
+
+.fcb-base-group-heading {
+  padding: 4px 8px;
+  color: var(--fcb-text-faint);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
