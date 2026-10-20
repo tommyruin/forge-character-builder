@@ -236,7 +236,8 @@ export function createCustomSpellDraft(name = ""): CustomSpellDraft {
     castingTime: "1 action",
     range: "60 feet",
     duration: "Instantaneous",
-    components: { verbal: true, somatic: true },
+    // Unticked: whether a spell is spoken, gestured or neither is the author's call, and a pre-ticked box is easy to leave wrong.
+    components: {},
     mechanics: { roll: "none" },
   };
 }

@@ -85,7 +85,9 @@ describe('the custom spell dialog', () => {
       castingTime: '1 action',
       range: '120 feet',
       duration: 'Instantaneous',
-      components: { verbal: true, somatic: true },
+      // Components start unticked: a spell with none is common (a thought, a word on a scroll), and
+      // a pre-ticked box is easy to leave wrong.
+      components: {},
       mechanics: { roll: 'attackRanged', damage: [{ dice: '2d8', type: 'cold' }] },
     });
     expect(customEntryIssues(draft)).toEqual([]);

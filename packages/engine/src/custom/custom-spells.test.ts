@@ -57,6 +57,12 @@ const optionFor = (service: CharacterService, id: string, spellId: string): Magi
 const tokensOf = (rows: Array<{ kind: string; tokens?: readonly string[] }>): string =>
   rows.flatMap((row) => (row.kind === "tokens" ? [...(row.tokens ?? [])] : [])).join(" ");
 
+describe("a blank spell draft", () => {
+  it("starts with no components ticked", () => {
+    expect(createCustomSpellDraft("Nothing yet").components).toEqual({});
+  });
+});
+
 describe("a created ranged-attack spell", () => {
   it("is known to the chosen caster and prepared, with the attack bonus and damage its fields give", () => {
     const { service, id } = wizard();
