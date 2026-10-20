@@ -19,6 +19,7 @@ import {
   InspectableItemButton,
 } from "../InspectableItemControls";
 import Modal from "../Modal";
+import Disclosure from "../Disclosure";
 import { baseOptionLabel, resolveMagicBaseAction } from "../magicBaseAction";
 import {
   newItemCardOptions,
@@ -95,6 +96,15 @@ function equipLocationsFor(item) {
 // EQUIPMENT tab: the catalog sub-tab browses content and adds items (toast + "×N owned"
 // badge confirm each add); the Inventory sub-tab is the single management surface,
 // so the catalog carries no inventory dock of its own.
+// The five coins, smallest first: the record key, the abbreviation and the coin's name.
+const COIN_KINDS = [
+  ["copper", "CP", "Copper"],
+  ["silver", "SP", "Silver"],
+  ["electrum", "EP", "Electrum"],
+  ["gold", "GP", "Gold"],
+  ["platinum", "PP", "Platinum"],
+];
+
 export default function EquipmentTab() {
   const {
     id,
@@ -1671,24 +1681,45 @@ function Inventory({
             </table>
           </div>
 
-          <div className="mt-4 fcb-card fcb-inventory-coins p-3">
-            <h4 className="fcb-card-title mb-3 text-sm">Manage coins</h4>
-            <div className="fcb-inventory-coin-grid">
-              {[
-                ["copper", "CP"],
-                ["silver", "SP"],
-                ["electrum", "EP"],
-                ["gold", "GP"],
-                ["platinum", "PP"],
-              ].map(([key, label]) => (
-                <label
-                  key={key}
-                  className="fcb-field-label fcb-inventory-coin-field"
-                >
+          {/* Coins: one slim closed row that shows what the character carries; opening it gives
+              the five amounts on one line (two on a phone) and a standard Apply, which writes all
+              five and clears what was typed. Enter in any field applies too. */}
+          <Disclosure
+            className="mt-4 fcb-inventory-coins"
+            data-testid="inventory-coins"
+            summary={
+              <>
+                <span className="fcb-inventory-coins-title">Manage coins</span>
+                <span className="fcb-inventory-coin-totals" data-testid="coin-totals">
+                  {COIN_KINDS.some(([key]) => (inventory.coins?.[key] ?? 0) > 0) ? (
+                    COIN_KINDS.filter(([key]) => (inventory.coins?.[key] ?? 0) > 0).map(([key, label]) => (
+                      <span key={key} className="fcb-meta-pill">
+                        <strong>{inventory.coins[key]}</strong> {label}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="fcb-muted-copy">No coins</span>
+                  )}
+                </span>
+              </>
+            }
+          >
+            <form
+              className="fcb-inventory-coin-grid"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (busy) return;
+                Promise.resolve(onSetCoins(coins)).then(() => setCoinDraft({}));
+              }}
+            >
+              {COIN_KINDS.map(([key, label, name]) => (
+                <label key={key} className="fcb-field-label fcb-inventory-coin-field" title={name}>
                   <span>{label}</span>
                   <input
                     type="number"
                     min={0}
+                    inputMode="numeric"
+                    aria-label={`${name} (${label})`}
                     className="fcb-input fcb-inventory-coin-input"
                     value={coins[key]}
                     onChange={(e) =>
@@ -1701,19 +1732,14 @@ function Inventory({
                 </label>
               ))}
               <button
-                type="button"
+                type="submit"
                 disabled={busy}
-                onClick={() =>
-                  Promise.resolve(onSetCoins(coins)).then(() =>
-                    setCoinDraft({}),
-                  )
-                }
                 className="fcb-button fcb-button-primary fcb-inventory-coin-apply"
               >
                 Apply
               </button>
-            </div>
-          </div>
+            </form>
+          </Disclosure>
           </div>
         </div>
       </section>

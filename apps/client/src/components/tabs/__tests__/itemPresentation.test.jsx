@@ -7,6 +7,7 @@ const { characters } = vi.hoisted(() => ({
   characters: {
     inventory: vi.fn(),
     setItemPresentation: vi.fn(),
+    setCoins: vi.fn(),
   },
 }));
 
@@ -188,5 +189,50 @@ describe("item presentation toggles", () => {
     await act(async () => button("Sheet notes for Longsword").click());
     expect(characters.setItemPresentation).toHaveBeenLastCalledWith("Ada", "sword-1", { sidebar: true });
     expect(button("Sheet notes for Longsword").getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+describe("manage coins", () => {
+  const withCoins = (coins) => ({ ...inventoryWith([inventoryItem({})]), coins: { copper: 0, silver: 0, electrum: 0, gold: 0, platinum: 0, ...coins } });
+  const setValue = async (input, value) => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    await act(async () => {
+      setter.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  };
+
+  it("is one closed row that shows what the character carries", async () => {
+    characters.inventory.mockResolvedValue(withCoins({ gold: 15, silver: 4 }));
+    await openInventory();
+    const coins = host.querySelector('[data-testid="inventory-coins"]');
+    expect(coins.tagName).toBe("DETAILS");
+    expect(coins.open).toBe(false);
+    expect(coins.querySelector("summary").textContent).toContain("Manage coins");
+    expect([...coins.querySelectorAll(".fcb-meta-pill")].map((pill) => pill.textContent)).toEqual(["4 SP", "15 GP"]);
+  });
+
+  it("says when there are no coins", async () => {
+    characters.inventory.mockResolvedValue(withCoins({}));
+    await openInventory();
+    expect(host.querySelector('[data-testid="coin-totals"]').textContent).toBe("No coins");
+  });
+
+  it("applies all five amounts at once and clears what was typed", async () => {
+    characters.inventory.mockResolvedValue(withCoins({ gold: 15 }));
+    // The stored amounts come back from the character, so the field shows them once the typed draft clears.
+    characters.setCoins.mockImplementation(async (_id, coins) => withCoins({ ...coins, gold: coins.gold + 1 }));
+    await openInventory();
+    const coins = host.querySelector('[data-testid="inventory-coins"]');
+    const gold = coins.querySelector('[aria-label="Gold (GP)"]');
+    const copper = coins.querySelector('[aria-label="Copper (CP)"]');
+    await setValue(gold, "20");
+    await setValue(copper, "7");
+    const apply = [...coins.querySelectorAll("button")].find((button) => button.textContent === "Apply");
+    expect(apply.type).toBe("submit");
+    await act(async () => apply.click());
+    expect(characters.setCoins).toHaveBeenLastCalledWith("Ada", { copper: 7, silver: 0, electrum: 0, gold: 20, platinum: 0 });
+    expect(coins.querySelector('[aria-label="Gold (GP)"]').value).toBe("21");
+    expect([...coins.querySelectorAll(".fcb-meta-pill")].map((pill) => pill.textContent)).toEqual(["7 CP", "21 GP"]);
   });
 });

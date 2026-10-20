@@ -5443,25 +5443,61 @@ button:disabled {
   margin-left: auto;
 }
 
+/* Coins: a slim closed row (the title with what the character carries beside it, as stat pills),
+   opening to the five amounts on one line with a standard Apply. */
+.fcb-inventory-coins {
+  padding: 8px 12px;
+  border: 1px solid var(--fcb-border-soft);
+  border-radius: var(--fcb-radius);
+  background: color-mix(in srgb, var(--fcb-bg-soft) 50%, transparent);
+}
+
+.fcb-inventory-coins > summary {
+  flex-wrap: wrap;
+  min-height: 32px;
+}
+
+.fcb-inventory-coins-title {
+  font-weight: 800;
+}
+
+.fcb-inventory-coin-totals {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+.fcb-inventory-coin-totals .fcb-meta-pill {
+  min-height: 24px;
+  padding: 1px 7px;
+}
+
 .fcb-inventory-coin-grid {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 8px 12px;
 }
 
 .fcb-inventory-coin-field {
-  display: block;
-}
-
-.fcb-inventory-coin-field > span {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
 }
 
 .fcb-inventory-coin-input {
-  display: block;
-  width: 5rem;
-  margin-top: 6px;
+  width: 4.75rem;
+  min-height: 36px;
+  padding: 4px 8px;
+}
+
+.fcb-inventory-coin-apply {
+  min-height: 36px;
+  padding-block: 0;
+  white-space: nowrap;
 }
 
 .fcb-inventory-qty {
@@ -5707,45 +5743,32 @@ button:disabled {
     grid-area: equipped;
     text-align: right;
   }
+}
 
-  .fcb-inventory-coins {
-    margin-top: 12px;
-    padding: 10px;
-  }
-
-  .fcb-inventory-coins .fcb-card-title {
-    margin-bottom: 8px;
-  }
-
+/* On a phone the five amounts and Apply sit on two compact rows of three. */
+@container fcb-inventory-primary (max-width: 560px) {
   .fcb-inventory-coins .fcb-inventory-coin-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
 
   .fcb-inventory-coins .fcb-inventory-coin-field {
-    display: flex;
     min-width: 0;
-    align-items: center;
-    gap: 6px;
   }
 
   .fcb-inventory-coins .fcb-inventory-coin-field > span {
-    flex: 0 0 1.6rem;
+    flex: 0 0 1.5rem;
   }
 
   .fcb-inventory-coins .fcb-inventory-coin-input {
     min-width: 0;
     width: auto;
-    min-height: 36px;
     flex: 1 1 auto;
-    margin-top: 0;
-    padding: 5px 8px;
   }
 
   .fcb-inventory-coins .fcb-inventory-coin-apply {
     width: 100%;
-    min-height: 36px;
     padding-inline: 8px;
   }
 }
