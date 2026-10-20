@@ -292,6 +292,30 @@ describe('the custom feature dialog: creating', () => {
     expect(compileCustomElement(draft)).toContain('usage="2/Short Rest"');
   });
 
+  it('asks what action the feature takes as soon as it has limited uses or a switch, without opening More options', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Bladesong');
+    expect(byLabel('Action to use it')).toBeNull();
+    await click(buttonByText('+ Limited uses'));
+    expect(byLabel('Action to use it')).not.toBeNull();
+    await choose(byLabel('Action to use it'), 'bonusAction');
+    // It is the same setting as the sheet's Action type, so the two never disagree.
+    expect(byLabel('Action type').value).toBe('bonusAction');
+    expect(document.querySelector('[data-testid="custom-sheet-preview"]').textContent).toContain('Bonus Action');
+    await click(buttonByText('Add to Ilyana'));
+    await settle();
+    expect(savedDraft(api).sheet).toEqual({ action: 'bonusAction' });
+  });
+
+  it('offers the action type beside an Only while active switch too', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Bladesong');
+    await click(buttonByText('+ Only while active'));
+    expect(byLabel('Action to use it')).not.toBeNull();
+  });
+
   it('offers every recharge, a dice-roll regain, a shared pool and a switch that spends a use', async () => {
     const api = fakeApi();
     await open(api);
