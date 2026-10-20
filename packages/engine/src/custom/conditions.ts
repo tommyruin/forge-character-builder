@@ -14,7 +14,7 @@
  */
 
 import { requirementsSyntaxError } from "../selection/expr.js";
-import { modifierTarget, valueReference } from "./catalogue.js";
+import { modifierTarget, valueReference, weaponFilterTag } from "./catalogue.js";
 import { CUSTOM_ABILITIES, type CustomAbility, type FilterNode, type RequirementNode } from "./schema.js";
 
 /** The deepest a tree may nest; far beyond any form, and a guard against hostile JSON. */
@@ -257,7 +257,7 @@ export function describeFilter(node: FilterNode | undefined): string {
       return `${word} ${parts.join(", ")}`;
     }
     if (current.kind === "level") return current.value === 0 ? "cantrips" : `level ${current.value}`;
-    return current.value.trim();
+    return weaponFilterTag(current.value.trim())?.label ?? current.value.trim();
   };
   return describe(node);
 }

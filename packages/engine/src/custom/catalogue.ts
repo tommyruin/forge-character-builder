@@ -7,15 +7,18 @@
  * the rule that realises them.
  */
 
+import { WEAPON_CATEGORY_IDS } from "./base-items.js";
 import {
   CUSTOM_ABILITIES,
   CUSTOM_OTHER_TYPE,
   type CustomAbility,
   type CustomCatalogTemplate,
   type CustomTemplate,
+  type FilterNode,
   type ModifierMode,
   type SheetAction,
   type ShowsUnder,
+  WEAPON_PROPERTY_IDS,
 } from "./schema.js";
 
 export interface ModifierTarget {
@@ -297,3 +300,66 @@ export function catalogTemplateOption(id: CustomCatalogTemplate): CatalogTemplat
 export function catalogElementType(template: CustomCatalogTemplate): string {
   return catalogTemplateOption(template).elementType;
 }
+
+
+// ---- weapon filters ------------------------------------------------------------
+
+export interface WeaponFilterTag {
+  /** The tag a weapon proficiency (or weapon) carries in its `supports`. */
+  id: string;
+  label: string;
+  group: "Category" | "Property";
+}
+
+const PROPERTY_FILTER_LABELS: Readonly<Record<string, string>> = {
+  ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED: "Two-handed",
+};
+
+/**
+ * The tags a choice over weapon proficiencies can filter on. The names mean what the
+ * ids mean in the shipped content, so an author picks "Two-handed" and never types an id.
+ */
+export const WEAPON_FILTER_TAGS: readonly WeaponFilterTag[] = [
+  { id: WEAPON_CATEGORY_IDS.simpleMelee, label: "Simple melee", group: "Category" },
+  { id: WEAPON_CATEGORY_IDS.simpleRanged, label: "Simple ranged", group: "Category" },
+  { id: WEAPON_CATEGORY_IDS.martialMelee, label: "Martial melee", group: "Category" },
+  { id: WEAPON_CATEGORY_IDS.martialRanged, label: "Martial ranged", group: "Category" },
+  ...WEAPON_PROPERTY_IDS.map((id) => ({
+    id,
+    label: PROPERTY_FILTER_LABELS[id] ?? titleCase(id.replace("ID_INTERNAL_WEAPON_PROPERTY_", "").toLowerCase()),
+    group: "Property" as const,
+  })),
+];
+
+export const weaponFilterTag = (id: string): WeaponFilterTag | undefined => WEAPON_FILTER_TAGS.find((tag) => tag.id === id);
+
+const weaponTag = (id: string): FilterNode => ({ kind: "tag", value: id });
+
+export interface WeaponFilterPreset {
+  id: string;
+  label: string;
+  node: FilterNode;
+}
+
+/**
+ * Filters for the words an author uses. Melee and ranged span both categories, and there is no
+ * "one-handed" tag in the content: a weapon is one-handed when it lacks the two-handed property.
+ */
+export const WEAPON_FILTER_PRESETS: readonly WeaponFilterPreset[] = [
+  {
+    id: "melee",
+    label: "Melee weapon",
+    node: { kind: "group", op: "any", items: [weaponTag(WEAPON_CATEGORY_IDS.simpleMelee), weaponTag(WEAPON_CATEGORY_IDS.martialMelee)] },
+  },
+  {
+    id: "ranged",
+    label: "Ranged weapon",
+    node: { kind: "group", op: "any", items: [weaponTag(WEAPON_CATEGORY_IDS.simpleRanged), weaponTag(WEAPON_CATEGORY_IDS.martialRanged)] },
+  },
+  {
+    id: "oneHanded",
+    label: "One-handed weapon",
+    node: { kind: "group", op: "none", items: [weaponTag("ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED")] },
+  },
+  { id: "twoHanded", label: "Two-handed weapon", node: weaponTag("ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED") },
+];

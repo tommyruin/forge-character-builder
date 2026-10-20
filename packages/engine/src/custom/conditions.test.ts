@@ -14,6 +14,7 @@ import {
   filterIssues,
   requirementIssues,
 } from "./conditions.js";
+import { WEAPON_FILTER_PRESETS, WEAPON_FILTER_TAGS } from "./catalogue.js";
 import type { FilterNode, RequirementNode } from "./schema.js";
 
 const context = (have: string[], scores: Record<string, number> = {}, level = 5) => ({
@@ -142,3 +143,34 @@ describe("filter trees", () => {
     ).toBe("any of cantrips, Wizard");
   });
 });
+
+describe("weapon filters", () => {
+  // The supports tags the shipped weapon proficiencies carry (a dagger, a greatclub, a longbow).
+  const dagger = new Set(["Weapon", "ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE", "ID_INTERNAL_WEAPON_PROPERTY_FINESSE", "ID_INTERNAL_WEAPON_PROPERTY_LIGHT"]);
+  const greatclub = new Set(["Weapon", "ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE", "ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED"]);
+  const longbow = new Set(["Weapon", "ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED", "ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED"]);
+  const longsword = new Set(["Weapon", "ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE", "ID_INTERNAL_WEAPON_PROPERTY_VERSATILE"]);
+  const preset = (id: string): FilterNode => WEAPON_FILTER_PRESETS.find((entry) => entry.id === id)!.node;
+
+  it("offers the category and property tags a weapon proficiency carries, with labels", () => {
+    expect(WEAPON_FILTER_TAGS.map((tag) => tag.id)).toContain("ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE");
+    expect(WEAPON_FILTER_TAGS.map((tag) => tag.id)).toContain("ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED");
+    expect(WEAPON_FILTER_TAGS.every((tag) => tag.label !== "" && !tag.label.startsWith("ID_"))).toBe(true);
+  });
+
+  it("expresses one one-handed melee weapon as a filter the engine evaluates", () => {
+    const tree: FilterNode = { kind: "group", op: "all", items: [preset("melee"), preset("oneHanded")] };
+    expect(filterIssues(tree)).toEqual([]);
+    const expression = compileFilter(tree);
+    expect(evaluateSupportsExpression(expression, dagger)).toBe(true);
+    expect(evaluateSupportsExpression(expression, longsword)).toBe(true);
+    expect(evaluateSupportsExpression(expression, greatclub)).toBe(false);
+    expect(evaluateSupportsExpression(expression, longbow)).toBe(false);
+  });
+
+  it("reads a weapon tag by its label, not its id", () => {
+    const tree: FilterNode = { kind: "group", op: "all", items: [preset("melee"), preset("oneHanded")] };
+    expect(describeFilter(tree)).toBe("all of any of Simple melee, Martial melee, none of Two-handed");
+  });
+});
+

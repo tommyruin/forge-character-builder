@@ -380,6 +380,50 @@ describe('ChoiceBlock', () => {
     });
   });
 
+  it('builds "one one-handed melee weapon" from weapon categories and hands, without typing an id', async () => {
+    const emitted = [];
+    const initial = makeChoice({
+      id: 'c1',
+      name: 'Bonded weapon',
+      type: 'Proficiency',
+      supports: { kind: 'group', op: 'all', items: [{ kind: 'tag', value: 'Weapon' }] },
+    });
+    await mount(
+      <Controlled initial={initial} emitted={emitted}>
+        {(block, onChange) => <ChoiceBlock block={block} onChange={onChange} lookup={lookup} />}
+      </Controlled>,
+    );
+    await choose(byLabel('Filter to add'), 'preset:melee');
+    await choose(allByLabel('Filter to add').at(-1), 'preset:oneHanded');
+    const supports = emitted.at(-1).supports;
+    expect(supports.items.slice(1)).toEqual([
+      {
+        kind: 'group',
+        op: 'any',
+        items: [
+          { kind: 'tag', value: 'ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE' },
+          { kind: 'tag', value: 'ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE' },
+        ],
+      },
+      { kind: 'group', op: 'none', items: [{ kind: 'tag', value: 'ID_INTERNAL_WEAPON_PROPERTY_TWOHANDED' }] },
+    ]);
+    expect(customDraftIssues(draftWith(emitted.at(-1)))).toEqual([]);
+    expect(document.body.textContent).toContain('none of Two-handed');
+    // A property is picked from names too.
+    await choose(allByLabel('Filter to add').at(-1), 'weaponTag');
+    await choose(allByLabel('Weapon category or property').at(-1), 'ID_INTERNAL_WEAPON_PROPERTY_FINESSE');
+    expect(emitted.at(-1).supports.items.at(-1)).toEqual({ kind: 'tag', value: 'ID_INTERNAL_WEAPON_PROPERTY_FINESSE' });
+  });
+
+  it('keeps the weapon filters to the choices where they mean something', async () => {
+    await mount(
+      <Controlled initial={makeChoice({ id: 'c1', name: 'Tongue', type: 'Language', supports: { kind: 'group', op: 'all', items: [{ kind: 'tag', value: 'Standard' }] } })}>
+        {(block, onChange) => <ChoiceBlock block={block} onChange={onChange} lookup={lookup} />}
+      </Controlled>,
+    );
+    expect(byLabel('Filter to add').querySelector('option[value="preset:melee"]')).toBeNull();
+  });
+
   it('lets the player leave an optional choice unpicked', async () => {
     const emitted = [];
     await mount(

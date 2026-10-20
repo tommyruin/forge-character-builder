@@ -4,7 +4,15 @@
 // what the character's picks are remembered by, which is why the modal warns before they
 // change. The block emits the draft's `ChoiceBlock` shape.
 
-import { CUSTOM_GRANT_TYPES, MAX_CONDITION_DEPTH, describeFilter, filterIssues } from '@forge-cb/engine/custom';
+import {
+  CUSTOM_GRANT_TYPES,
+  MAX_CONDITION_DEPTH,
+  WEAPON_FILTER_PRESETS,
+  WEAPON_FILTER_TAGS,
+  describeFilter,
+  filterIssues,
+  weaponFilterTag,
+} from '@forge-cb/engine/custom';
 import { abilityOptions, compact, typeLabel } from './draftModel';
 import { Field, Issues, NumberInput, RemoveButton, SelectInput } from './fields';
 import LibraryPicker from './LibraryPicker';
@@ -31,9 +39,41 @@ const LEAVES = [
   { id: 'school', label: 'School of magic', make: () => ({ kind: 'school', value: 'Evocation' }), spellOnly: true },
 ];
 
+// Weapon proficiencies carry their category and properties as tags, so a choice among them can be
+// narrowed in the words a weapon is described in ("melee", "one-handed", "finesse").
+const WEAPON_LEAVES = [
+  ...WEAPON_FILTER_PRESETS.map((preset) => ({
+    id: `preset:${preset.id}`,
+    label: preset.label,
+    make: () => structuredClone(preset.node),
+    weaponOnly: true,
+  })),
+  { id: 'weaponTag', label: 'Weapon category or property', make: () => ({ kind: 'tag', value: WEAPON_FILTER_TAGS[0].id }), weaponOnly: true },
+];
+
+const WEAPON_TAG_GROUPS = ['Category', 'Property'];
+
 function Leaf({ node, onChange, type, lookup }) {
   switch (node.kind) {
     case 'tag':
+      if (weaponFilterTag(node.value)) {
+        return (
+          <div className="fcb-custom-condition">
+            <span>Weapon</span>
+            <SelectInput label="Weapon category or property" value={node.value} onChange={(value) => onChange({ ...node, value })}>
+              {WEAPON_TAG_GROUPS.map((groupName) => (
+                <optgroup key={groupName} label={groupName === 'Category' ? 'Category' : 'Property'}>
+                  {WEAPON_FILTER_TAGS.filter((tag) => tag.group === groupName).map((tag) => (
+                    <option key={tag.id} value={tag.id}>
+                      {tag.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </SelectInput>
+          </div>
+        );
+      }
       return (
         <div className="fcb-custom-condition">
           <span>Has the tag</span>
@@ -85,7 +125,7 @@ function Leaf({ node, onChange, type, lookup }) {
 function FilterGroup({ node, onChange, onRemove, type, lookup, depth }) {
   const setItem = (index, item) => onChange({ ...node, items: node.items.map((entry, at) => (at === index ? item : entry)) });
   const removeItem = (index) => onChange({ ...node, items: node.items.filter((_, at) => at !== index) });
-  const leaves = LEAVES.filter((leaf) => !leaf.spellOnly || type === 'Spell');
+  const leaves = [...LEAVES, ...WEAPON_LEAVES].filter((leaf) => (!leaf.spellOnly || type === 'Spell') && (!leaf.weaponOnly || type === 'Proficiency'));
   return (
     <div className="fcb-custom-group" role="group" aria-label={`${GROUP_OPS.find((op) => op.id === node.op).label} filter group`}>
       <div className="flex items-center gap-2">
@@ -120,7 +160,7 @@ function FilterGroup({ node, onChange, onRemove, type, lookup, depth }) {
           placeholder="Add a filter..."
           options={leaves}
           onChange={(id) => {
-            const leaf = LEAVES.find((entry) => entry.id === id);
+            const leaf = [...LEAVES, ...WEAPON_LEAVES].find((entry) => entry.id === id);
             if (leaf) onChange({ ...node, items: [...node.items, leaf.make()] });
           }}
         />
