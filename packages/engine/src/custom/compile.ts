@@ -90,12 +90,32 @@ export const ABILITY_TITLE: Record<string, string> = {
 
 export { escapeText, escapeAttribute };
 
+/**
+ * The private statistic a floored reference reads: it holds the larger of the reference and the
+ * floor, the way a tracker's maximum does, so the rule that uses it needs no new syntax.
+ */
+const flooredKey = (ref: string, min: number): string => `floor ${ref} ${min}`;
+
+/** The rules that define the statistics a block's values read; repeated definitions give the same result. */
+function flooredRules(values: ReadonlyArray<CustomValue | undefined>, gates: ReadonlyArray<readonly [string, string | number | undefined]>): string[] {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const value of values) {
+    if (value?.kind !== "reference" || value.min === undefined) continue;
+    const key = flooredKey(value.ref, value.min);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(statLine(key, value.ref, [["bonus", "base"], ...gates]), statLine(key, String(value.min), [["bonus", "base"], ...gates]));
+  }
+  return lines;
+}
+
 export function valueText(value: CustomValue, scales: readonly ScaleValue[]): string {
   switch (value.kind) {
     case "number":
       return String(value.value);
     case "reference":
-      return `${value.negate === true ? "-" : ""}${value.ref}`;
+      return `${value.negate === true ? "-" : ""}${value.min === undefined ? value.ref : flooredKey(value.ref, value.min)}`;
     case "classLevel":
       return `${value.negate === true ? "-" : ""}level:${value.className.toLowerCase()}`;
     case "scale": {
@@ -143,7 +163,7 @@ export function modifierRules(block: ModifierBlock, scales: readonly ScaleValue[
     // formula, and the `calculation` bucket keeps the best candidate against
     // the armor and unarmored chains. The helper key is private to this block.
     const key = `ac:custom ${block.id.toLowerCase().replaceAll(/[^a-z0-9]/g, "")}`;
-    const lines = [statLine(key, valueText(block.value, scales), gates)];
+    const lines = [...flooredRules([block.value], gates), statLine(key, valueText(block.value, scales), gates)];
     for (const ability of block.addAbilities ?? []) lines.push(statLine(key, `${ability}:modifier`, gates));
     lines.push(statLine("ac:calculation", key, [["bonus", "calculation"], ...gates, ...alt]));
     return lines;
@@ -157,6 +177,7 @@ export function modifierRules(block: ModifierBlock, scales: readonly ScaleValue[
     if (target.group === "Ability scores") name = `${block.target}:score:set`;
   }
   return [
+    ...flooredRules([block.value, block.cap], gates),
     statLine(name, valueText(block.value, scales), [
       ["maximum", block.cap === undefined ? undefined : valueText(block.cap, scales)],
       ["bonus", bonus],

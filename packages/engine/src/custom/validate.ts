@@ -97,9 +97,12 @@ export function valueIssues(value: unknown, path: string, scales: Scales, number
   }
   if (numberOnly) return [{ path, message: "this target takes a plain number" }];
   if (value.kind === "reference") {
-    return typeof value.ref === "string" && valueReference(value.ref) !== undefined
+    if (typeof value.ref !== "string" || valueReference(value.ref) === undefined) {
+      return [{ path: `${path}.ref`, message: "pick a value from the menu" }];
+    }
+    return value.min === undefined || (isWholeNumber(value.min) && value.min >= -1000 && value.min <= 1000)
       ? []
-      : [{ path: `${path}.ref`, message: "pick a value from the menu" }];
+      : [{ path: `${path}.min`, message: "the lowest the value can be is a whole number from -1000 to 1000" }];
   }
   if (value.kind === "classLevel") {
     return typeof value.className === "string" && WORDS.test(value.className)

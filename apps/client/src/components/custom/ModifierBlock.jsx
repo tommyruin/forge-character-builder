@@ -14,6 +14,8 @@ import {
   compactGates,
   defaultBucket,
   equippedValueLabel,
+  referenceFromOption,
+  referenceOptionId,
   referenceOptions,
   targetGroups,
 } from './draftModel';
@@ -57,8 +59,8 @@ export function ValueEditor({ value, onChange, label, numberOnly = false, scales
         <>
           <SelectInput
             label={`${label} value`}
-            value={value.ref}
-            onChange={(ref) => onChange(compact({ ...value, ref }))}
+            value={referenceOptionId(value)}
+            onChange={(id) => onChange(referenceFromOption(id, value))}
             options={referenceOptions}
           />
           <label className="flex items-center gap-2 text-xs">

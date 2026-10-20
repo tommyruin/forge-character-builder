@@ -8,7 +8,7 @@ import ModifierBlock from '../ModifierBlock';
 import RequirementsBuilder from '../RequirementsBuilder';
 import SheetPresentation from '../SheetPresentation';
 import TagPicker from '../TagPicker';
-import { makeChoice, makeGrant, makeModifier } from '../draftModel';
+import { describeModifier, makeChoice, makeGrant, makeModifier } from '../draftModel';
 import {
   $,
   Controlled,
@@ -123,6 +123,28 @@ describe('ModifierBlock', () => {
       cap: { kind: 'number', value: 3 },
     });
     expect(customDraftIssues(draftWith(emitted.at(-1)))).toEqual([]);
+  });
+
+  it('offers an ability modifier with a minimum of 1 and writes it as a floored reference', async () => {
+    const emitted = [];
+    await mount(
+      <Controlled initial={makeModifier({ id: 'm1', target: 'ac:misc' })} emitted={emitted}>
+        {(block, onChange) => <ModifierBlock block={block} onChange={onChange} lookup={lookup} />}
+      </Controlled>,
+    );
+    await choose(byLabel('Amount is'), 'reference');
+    const labels = [...byLabel('Amount value').querySelectorAll('option')].map((entry) => entry.textContent);
+    expect(labels).toContain('Intelligence modifier (minimum 1)');
+    await choose(byLabel('Amount value'), 'intelligence:modifier#min:1');
+    expect(emitted.at(-1).value).toEqual({ kind: 'reference', ref: 'intelligence:modifier', min: 1 });
+    expect(customDraftIssues(draftWith(emitted.at(-1)))).toEqual([]);
+    expect(byLabel('Amount value').value).toBe('intelligence:modifier#min:1');
+    expect(describeModifier(emitted.at(-1))).toContain('Intelligence modifier (minimum 1)');
+    // Subtracting keeps the floor, and going back to the plain modifier drops it.
+    await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('Subtract it')));
+    expect(emitted.at(-1).value).toEqual({ kind: 'reference', ref: 'intelligence:modifier', min: 1, negate: true });
+    await choose(byLabel('Amount value'), 'intelligence:modifier');
+    expect(emitted.at(-1).value).toEqual({ kind: 'reference', ref: 'intelligence:modifier', negate: true });
   });
 
   it('writes the gates: level, equipment, a switch', async () => {

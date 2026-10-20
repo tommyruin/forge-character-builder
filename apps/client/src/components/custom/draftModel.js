@@ -177,7 +177,8 @@ export function describeValue(value, scales = []) {
   const sign = value.negate ? '-' : '';
   if (value.kind === 'classLevel') return `${sign}${value.className} level`;
   if (value.kind === 'scale') return `${sign}${scales.find((scale) => scale.id === value.scale)?.name || 'a scale value'}`;
-  return `${sign}${valueReference(value.ref)?.label ?? value.ref}`;
+  const floor = value.min === undefined ? '' : ` (minimum ${value.min})`;
+  return `${sign}${valueReference(value.ref)?.label ?? value.ref}${floor}`;
 }
 
 const signedValue = (value, scales) => {
@@ -320,7 +321,26 @@ export const abilityOptions = CUSTOM_ABILITIES.map((ability) => ({
   label: ABILITY_LABELS[ability],
 }));
 
-export const referenceOptions = CUSTOM_VALUE_REFERENCES;
+// The value menu: the engine's references, and each ability modifier again with a floor of 1, the
+// way features word it ("your Intelligence modifier, minimum 1"). A floored entry's id carries the
+// floor after a `#`, which `referenceFromOption` takes apart again.
+const FLOORED = 1;
+export const referenceOptions = CUSTOM_VALUE_REFERENCES.flatMap((reference) =>
+  reference.id.endsWith(':modifier')
+    ? [reference, { id: `${reference.id}#min:${FLOORED}`, label: `${reference.label} (minimum ${FLOORED})` }]
+    : [reference],
+);
+
+export const referenceOptionId = (value) => (value.min === undefined ? value.ref : `${value.ref}#min:${value.min}`);
+
+// The reference value a menu entry stands for, keeping the "subtract it" choice already made.
+export function referenceFromOption(id, previous = {}) {
+  const [ref, floor] = id.split('#min:');
+  const next = { kind: 'reference', ref };
+  if (floor !== undefined) next.min = Number(floor);
+  if (previous.negate === true) next.negate = true;
+  return next;
+}
 
 // A bonus group name for "best of" when the target names none, in the words the engine accepts
 // (lowercase letters, digits, spaces; never "base").

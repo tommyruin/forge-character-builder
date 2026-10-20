@@ -46,10 +46,13 @@ export type RequirementNode =
   /** Any statistic at or above `min`; `key` comes from the target catalogue. */
   | { kind: "stat"; key: string; min: number; label?: string };
 
-/** B1 values: a number, or a reference the engine resolves against the final statistics. */
+/**
+ * B1 values: a number, or a reference the engine resolves against the final statistics.
+ * A reference's `min` is a floor ("Intelligence modifier, at least 1"), applied before `negate`.
+ */
 export type CustomValue =
   | { kind: "number"; value: number }
-  | { kind: "reference"; ref: string; negate?: boolean }
+  | { kind: "reference"; ref: string; negate?: boolean; min?: number }
   | { kind: "classLevel"; className: string; negate?: boolean }
   /** A scale value of the same draft (B9), by its id: the value the table gives at the owning level. */
   | { kind: "scale"; scale: string; negate?: boolean };

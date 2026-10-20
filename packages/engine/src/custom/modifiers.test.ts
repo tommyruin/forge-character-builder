@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { ElementLibrary } from "../content/library.js";
 import { computeStatistics, type StatisticsValues } from "../statistics/calculator.js";
 import { buildFighter3, sharedLibrary } from "../testing/character-factory.js";
+import { customDraftIssues } from "./validate.js";
 import { createCustomDraft, type ModifierBlock, type CustomDraft } from "./schema.js";
 
 let library: ElementLibrary;
@@ -89,6 +90,24 @@ describe("values", () => {
     ]);
     expect(before["strength:modifier"]).toBeGreaterThan(1);
     expect(after.initiative).toBe(before.initiative! + 1);
+  });
+
+  it("a reference with a floor reads 'ability modifier, at least 1' and never goes below it", () => {
+    const { before, after } = withFeatures([
+      { target: "initiative", mode: "add", value: { kind: "reference", ref: "charisma:modifier", min: 1 } },
+      { target: "melee:attack", mode: "add", value: { kind: "reference", ref: "strength:modifier", min: 1 } },
+    ]);
+    expect(before["charisma:modifier"]).toBeLessThan(1);
+    expect(after.initiative).toBe(before.initiative! + 1);
+    // A modifier above the floor counts as it is.
+    expect(before["strength:modifier"]).toBeGreaterThan(1);
+    expect(after["melee:attack"]).toBe((before["melee:attack"] ?? 0) + before["strength:modifier"]!);
+  });
+
+  it("refuses a floor that is not a whole number", () => {
+    const draft = createCustomDraft("feature", "Floor");
+    draft.blocks = [{ kind: "modifier", id: "b0", target: "initiative", mode: "add", value: { kind: "reference", ref: "charisma:modifier", min: 1.5 } }];
+    expect(customDraftIssues(draft).map((issue) => issue.path)).toEqual(["blocks[0].value.min"]);
   });
 
   it("a negated reference subtracts and a class level reference counts that class", () => {
