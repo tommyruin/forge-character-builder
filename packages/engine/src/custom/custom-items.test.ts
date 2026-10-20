@@ -296,6 +296,52 @@ describe("plain gear", () => {
     expect(values.join("\n")).toContain("Signal Whistle x3");
   });
 
+  it("prints on the equipment page's gear table, as book gear does", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: {
+        ...createCustomItemDraft("gear", "Signal Whistle"),
+        description: "As an action, blow the whistle; creatures within 60 feet make a DC 12 Wisdom saving throw.",
+        weight: 0.25,
+        stackable: true,
+      },
+      amount: 3,
+    });
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", canonical: false, inventoryNotes: true });
+    const fields: Record<string, unknown> = {};
+    const walk = (node: unknown): void => {
+      if (node === null || typeof node !== "object") return;
+      for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+        if (key.startsWith("equipment_page_")) fields[key] = value;
+        else walk(value);
+      }
+    };
+    walk(model);
+    const slot = Object.entries(fields).find(([key, value]) => key.startsWith("equipment_page_gear_name.") && value === "Signal Whistle");
+    expect(slot, JSON.stringify(Object.entries(fields).filter(([key]) => key.includes("gear") || key.includes("magic")).slice(0, 12))).toBeDefined();
+    const at = slot![0].split(".")[1];
+    expect(fields[`equipment_page_gear_count.${at}`]).toBe("3");
+    // Rules text earns the notes column a line, as the book's useful gear does.
+    expect(String(fields.equipment_page_magic_items)).toContain("Signal Whistle");
+  });
+
+  it("prints a bare quick-gear line (a name and a count) in the gear table too", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, { draft: { ...createCustomItemDraft("gear", "Torches"), stackable: true }, amount: 5 });
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", canonical: false });
+    const names: Record<string, unknown> = {};
+    const walk = (node: unknown): void => {
+      if (node === null || typeof node !== "object") return;
+      for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+        if (key.startsWith("equipment_page_gear_")) names[key] = value;
+        else walk(value);
+      }
+    };
+    walk(model);
+    expect(names["equipment_page_gear_name.0"]).toBe("Torches");
+    expect(names["equipment_page_gear_count.0"]).toBe("5");
+  });
+
   it("keeps a stack's count when the quantity changes", () => {
     const { service, id } = fighter();
     const saved = service.saveCustomDraft(id, {
