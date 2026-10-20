@@ -150,6 +150,13 @@ const PATHS = {
       <path d="M14 3v4h4M9 11h6M9 15h6" />
     </>
   ),
+  // Rename / notes: lines of text with a text cursor, so it never reads as the pencil of Edit.
+  rename: (
+    <>
+      <path d="M4 7h9M4 12h6M4 17h9" />
+      <path d="M18 5v14M16 5h4M16 19h4" />
+    </>
+  ),
   extract: (
     <>
       <path d="m4 9 3-5h10l3 5-3 3H7L4 9Z" />

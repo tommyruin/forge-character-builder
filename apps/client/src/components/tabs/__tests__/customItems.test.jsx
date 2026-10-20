@@ -182,11 +182,14 @@ describe("the inventory", () => {
     characters.customContent.mockResolvedValue({ entries: [FROSTBITE], problems: [] });
     await openInventory();
 
-    expect(byLabel("Rename or add notes to Scimitar")).not.toBeNull();
+    expect(byLabel("Rename / notes for Scimitar")).not.toBeNull();
     expect(byLabel("Notes for Scimitar")).toBeNull();
     expect(byLabel("Edit Scimitar")).toBeNull();
     expect(byLabel("Edit Frostbite")).not.toBeNull();
-    expect(byLabel("Rename or add notes to Frostbite")).not.toBeNull();
+    expect(byLabel("Rename / notes for Frostbite")).not.toBeNull();
+    // Rename / notes has its own icon, so it never reads as a second Edit pencil.
+    const iconOf = (label) => byLabel(label).querySelector("svg").innerHTML;
+    expect(iconOf("Rename / notes for Frostbite")).not.toBe(iconOf("Edit Frostbite"));
     const rows = [...document.querySelectorAll(".fcb-inventory-table tbody tr")];
     expect(rows[0].querySelector(".fcb-custom-badge")).toBeNull();
     expect(rows[1].querySelector(".fcb-custom-badge").textContent).toBe("Custom");
@@ -210,7 +213,7 @@ describe("the inventory", () => {
       inventoryWith([record({ name: "Grandfather's Blade", customName: "Grandfather's Blade", notes: "Green leather." })]),
     );
     await openInventory();
-    await act(async () => byLabel("Rename or add notes to Scimitar").click());
+    await act(async () => byLabel("Rename / notes for Scimitar").click());
     expect(document.querySelector('[role="dialog"]').getAttribute("aria-label")).toBe("Rename or add notes to Scimitar");
     await typeInto(byLabel("Name"), "Grandfather's Blade");
     await typeInto(byLabel("Notes"), "Green leather.");
@@ -226,7 +229,7 @@ describe("the inventory", () => {
   it("opens one dialog with both the name and the notes from Rename / notes", async () => {
     characters.inventory.mockResolvedValue(inventoryWith([record({})]));
     await openInventory();
-    await act(async () => byLabel("Rename or add notes to Scimitar").click());
+    await act(async () => byLabel("Rename / notes for Scimitar").click());
     const dialog = document.querySelector('[role="dialog"]');
     expect(dialog.getAttribute("aria-label")).toBe("Rename or add notes to Scimitar");
     expect(dialog.querySelector('[aria-label="Name"]')).not.toBeNull();

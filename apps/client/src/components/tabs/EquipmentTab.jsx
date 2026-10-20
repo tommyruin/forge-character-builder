@@ -2,6 +2,7 @@ import {
   useCallback,
   useDeferredValue,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -1604,7 +1605,10 @@ function Inventory({
                         }
                       />
                     </td>
-                    <td className="text-xs" data-label="Equipped">
+                    <td
+                      className={`text-xs${item.isEquipped || item.isEquippable ? "" : " fcb-inventory-cannot-equip"}`}
+                      data-label="Equipped"
+                    >
                       {item.isEquipped ? (
                         <span className="fcb-success-note">
                           {item.equippedLocation}
@@ -1618,6 +1622,7 @@ function Inventory({
                     <td className="text-xs" data-label="Storage">
                       <select
                         className="fcb-input fcb-inventory-storage-select"
+                        aria-label={`Storage for ${item.name}`}
                         value={item.storage ?? ""}
                         disabled={busy}
                         onChange={(e) =>
@@ -1850,8 +1855,8 @@ export function InventoryActionButtons({
       {!compact && onRename && (
         <ActionButton
           label="Rename / notes"
-          ariaLabel={`Rename or add notes to ${item.name}`}
-          icon="edit"
+          ariaLabel={`Rename / notes for ${item.name}`}
+          icon="rename"
           disabled={busy}
           onClick={() => onRename(item)}
         />
@@ -1876,27 +1881,46 @@ export function InventoryActionButtons({
   );
 }
 
-// The narrow card's overflow menu: what a record prints on the sheet, Edit and Rename / notes.
-// The menu is placed against the viewport, so the scrolling inventory never clips it.
+// The narrow card's overflow: what a record prints on the sheet, Edit and Rename / notes. It is a
+// disclosure of ordinary buttons (not an application menu), so Tab and screen readers work as they
+// do everywhere else: opening it moves focus to its first button, Escape or Tab-ing out closes it and
+// returns focus to "More", and scrolling or resizing closes it rather than leaving it adrift. It is
+// placed against the viewport, so the scrolling inventory never clips it.
 function InventoryMoreMenu({ item, busy, onSetPresentation, customEntry, onEditCustom, onRename }) {
   const [place, setPlace] = useState(null);
   const root = useRef(null);
-  const close = () => setPlace(null);
+  const trigger = useRef(null);
+  const panel = useRef(null);
+  const panelId = useId();
+  const close = useCallback((refocus = false) => {
+    setPlace(null);
+    if (refocus) trigger.current?.focus();
+  }, []);
   useEffect(() => {
     if (!place) return undefined;
+    panel.current?.querySelector("button:not(:disabled)")?.focus();
     const onDown = (event) => {
       if (root.current && !root.current.contains(event.target)) close();
     };
     const onKey = (event) => {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape") close(true);
     };
-    document.addEventListener("mousedown", onDown);
+    // Scrolling the page or the inventory would leave a fixed panel beside the wrong row.
+    const onMove = (event) => {
+      if (panel.current && event.target instanceof Node && panel.current.contains(event.target)) return;
+      close();
+    };
+    document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
     return () => {
-      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
     };
-  }, [place]);
+  }, [place, close]);
   const hasEdit = customEntry && onEditCustom;
   if (!onSetPresentation && !hasEdit && !onRename) return null;
   const toggle = (event) => {
@@ -1909,30 +1933,43 @@ function InventoryMoreMenu({ item, busy, onSetPresentation, customEntry, onEditC
     });
   };
   const run = (action) => () => {
-    close();
+    close(true);
     action();
   };
   return (
-    <span className="fcb-inventory-more" ref={root}>
-      <ActionButton
-        label="More"
-        ariaLabel={`More actions for ${item.name}`}
-        icon="more"
-        aria-haspopup="menu"
+    <span
+      className="fcb-inventory-more"
+      ref={root}
+      onBlur={(event) => {
+        // Tab-ing past the last button (or back past "More") closes the panel.
+        if (place && !root.current?.contains(event.relatedTarget)) close();
+      }}
+    >
+      <button
+        ref={trigger}
+        type="button"
+        aria-label={`More actions for ${item.name}`}
+        title={`More actions for ${item.name}`}
         aria-expanded={place !== null}
+        aria-controls={place ? panelId : undefined}
+        className="fcb-button fcb-inventory-action-button px-2 py-1 text-xs"
         disabled={busy}
         onClick={toggle}
-      />
+      >
+        <Icon name="more" className="fcb-inventory-action-icon" />
+        <span className="fcb-inventory-action-label">More</span>
+      </button>
       {place && (
-        <div role="menu" className="fcb-inventory-more-list" style={place} aria-label={`Actions for ${item.name}`}>
+        <div id={panelId} ref={panel} role="group" className="fcb-inventory-more-list" style={place} aria-label={`More actions for ${item.name}`}>
           {onSetPresentation && (
             <>
               <button
                 type="button"
-                role="menuitemcheckbox"
-                aria-checked={item.card === true}
-                aria-label={`Print a card for ${item.name}`}
+                aria-pressed={item.card === true}
+                aria-label={`Card for ${item.name}`}
+                title="Print a card for it on the sheet's card pages"
                 className="fcb-inventory-more-item"
+                disabled={busy}
                 onClick={() => onSetPresentation(item.identifier, { card: item.card !== true })}
               >
                 <Icon name="card" className="fcb-inventory-more-icon" />
@@ -1941,10 +1978,11 @@ function InventoryMoreMenu({ item, busy, onSetPresentation, customEntry, onEditC
               </button>
               <button
                 type="button"
-                role="menuitemcheckbox"
-                aria-checked={item.sidebar === true}
-                aria-label={`Print notes for ${item.name} on the sheet`}
+                aria-pressed={item.sidebar === true}
+                aria-label={`Sheet notes for ${item.name}`}
+                title="Print its description in the sheet's inventory notes"
                 className="fcb-inventory-more-item"
+                disabled={busy}
                 onClick={() => onSetPresentation(item.identifier, { sidebar: item.sidebar !== true })}
               >
                 <Icon name="notes" className="fcb-inventory-more-icon" />
@@ -1956,9 +1994,9 @@ function InventoryMoreMenu({ item, busy, onSetPresentation, customEntry, onEditC
           {hasEdit && (
             <button
               type="button"
-              role="menuitem"
               aria-label={`Edit ${item.name}`}
               className="fcb-inventory-more-item"
+              disabled={busy}
               onClick={run(() => onEditCustom(customEntry))}
             >
               <Icon name="edit" className="fcb-inventory-more-icon" />
@@ -1968,12 +2006,12 @@ function InventoryMoreMenu({ item, busy, onSetPresentation, customEntry, onEditC
           {onRename && (
             <button
               type="button"
-              role="menuitem"
-              aria-label={`Rename or add notes to ${item.name}`}
+              aria-label={`Rename / notes for ${item.name}`}
               className="fcb-inventory-more-item"
+              disabled={busy}
               onClick={run(() => onRename(item))}
             >
-              <Icon name="edit" className="fcb-inventory-more-icon" />
+              <Icon name="rename" className="fcb-inventory-more-icon" />
               Rename / notes
             </button>
           )}
@@ -2007,7 +2045,8 @@ function ItemPresentationButtons({ item, busy, onSetPresentation }) {
     <>
       <ActionButton
         label="Card"
-        ariaLabel={`Print a card for ${item.name}`}
+        ariaLabel={`Card for ${item.name}`}
+        title="Print a card for it on the sheet's card pages"
         icon="card"
         aria-pressed={item.card === true}
         disabled={busy}
@@ -2017,7 +2056,8 @@ function ItemPresentationButtons({ item, busy, onSetPresentation }) {
       />
       <ActionButton
         label="Sheet notes"
-        ariaLabel={`Print notes for ${item.name} on the sheet`}
+        ariaLabel={`Sheet notes for ${item.name}`}
+        title="Print its description in the sheet's inventory notes"
         icon="notes"
         aria-pressed={item.sidebar === true}
         disabled={busy}
@@ -2224,13 +2264,13 @@ export function StowQuantityModal({ move, busy, onClose, onConfirm }) {
   );
 }
 
-function ActionButton({ label, ariaLabel, icon, ...props }) {
+function ActionButton({ label, ariaLabel, icon, title, ...props }) {
   return (
     <button
       type="button"
       {...props}
       aria-label={ariaLabel ?? label}
-      title={ariaLabel ?? label}
+      title={title ?? ariaLabel ?? label}
       className="fcb-button fcb-inventory-action-button px-2 py-1 text-xs"
     >
       <Icon name={icon} className="fcb-inventory-action-icon" />

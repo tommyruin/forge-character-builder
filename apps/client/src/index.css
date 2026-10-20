@@ -1327,7 +1327,7 @@ button:disabled {
 }
 
 .fcb-export-menu-item:hover:not(:disabled) {
-  background: var(--fcb-surface-hover, rgb(255 255 255 / 6%));
+  background: var(--fcb-control-hover);
 }
 
 .fcb-export-menu-item:disabled {
@@ -5419,11 +5419,25 @@ button:disabled {
   cursor: pointer;
 }
 
-.fcb-inventory-more-item:hover {
-  background: var(--fcb-surface-hover, rgb(255 255 255 / 6%));
+.fcb-inventory-more-item {
+  min-height: 36px;
 }
 
-.fcb-inventory-more-item[aria-checked="true"] {
+.fcb-inventory-more-item:hover:not(:disabled) {
+  background: var(--fcb-control-hover);
+}
+
+.fcb-inventory-more-item:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: -2px;
+}
+
+.fcb-inventory-more-item:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.fcb-inventory-more-item[aria-pressed="true"] {
   color: var(--fcb-primary);
 }
 
@@ -5622,17 +5636,32 @@ button:disabled {
     min-width: 0;
     align-items: center;
     flex: 0 0 auto;
-    gap: 2px;
+    gap: 6px;
     margin-left: auto;
   }
 
+  /* The narrow card's actions keep the standard 36px target, and Delete stands a little apart from
+     its neighbours so a tap meant for "More" never lands on it. */
   .fcb-inventory-mobile-actions .fcb-inventory-info,
   .fcb-inventory-mobile-actions .fcb-inventory-action-button {
-    width: 30px;
-    min-width: 30px;
-    height: 30px;
-    min-height: 30px;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
     padding: 0;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-actions--mobile {
+    gap: 6px;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-actions--mobile > :last-child {
+    margin-left: 6px;
+  }
+
+  /* A record that cannot be equipped has nothing to say on the Equipped line. */
+  .fcb-inventory-table td.fcb-inventory-cannot-equip {
+    display: none;
   }
 
   .fcb-inventory-mobile-actions .fcb-inventory-info {
@@ -7854,7 +7883,7 @@ button:disabled {
 
 .fcb-global-equipment-result:focus-within,
 .fcb-global-equipment-result:hover {
-  background: var(--fcb-surface-hover, rgb(255 255 255 / 6%));
+  background: var(--fcb-control-hover);
 }
 
 .fcb-global-equipment-copy {
