@@ -2914,20 +2914,31 @@ button:disabled {
   align-items: start;
 }
 
+/* The pack bar is a wrapping row: every control keeps its own size and one line, and the row
+   breaks between controls instead of squeezing a label onto two lines or letting one control
+   sit over its neighbour. */
 .fcb-homebrew-toolbar {
-  display: grid;
-  grid-template-columns: minmax(260px, 1.2fr) auto minmax(220px, 0.8fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px 12px;
   padding: 12px;
   overflow: visible;
 }
 
+.fcb-homebrew-toolbar .fcb-button,
+.fcb-homebrew-toolbar .fcb-icon-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .fcb-homebrew-collection-picker {
   display: grid;
+  flex: 1 1 300px;
   grid-template-columns: auto minmax(180px, 1fr);
   align-items: center;
   gap: 10px;
+  max-width: 460px;
   min-width: 0;
   color: var(--fcb-text-muted);
   font-size: 0.72rem;
@@ -2938,6 +2949,7 @@ button:disabled {
 
 .fcb-homebrew-status {
   display: flex;
+  flex: 1 1 160px;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -2976,30 +2988,21 @@ button:disabled {
 
 .fcb-homebrew-toolbar-actions {
   display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  margin-left: auto;
 }
 
-.fcb-homebrew-new-collection,
-.fcb-homebrew-download-button {
+.fcb-homebrew-new-collection {
   gap: 6px;
 }
 
 .fcb-homebrew-new-symbol {
   font-size: 1rem;
   line-height: 1;
-}
-
-.fcb-homebrew-download-icon {
-  display: none;
-  width: 19px;
-  height: 19px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 
 .fcb-homebrew-delete-collection {
@@ -3208,6 +3211,14 @@ button:disabled {
   min-width: 0;
 }
 
+.fcb-homebrew-pack-tools {
+  margin-top: 16px;
+}
+
+.fcb-homebrew-pack-tools > summary {
+  list-style: none;
+}
+
 .fcb-homebrew-mobile-back {
   display: none;
   margin-bottom: 10px;
@@ -3369,11 +3380,6 @@ button:disabled {
 }
 
 @media (max-width: 1100px) {
-  .fcb-homebrew-toolbar {
-    grid-template-columns: minmax(210px, 1fr) auto minmax(110px, auto) auto;
-    gap: 8px;
-  }
-
   .fcb-homebrew-workspace {
     grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
   }
@@ -3388,65 +3394,18 @@ button:disabled {
   }
 }
 
-@media (max-width: 1000px) and (min-width: 701px) {
-  .fcb-homebrew-toolbar {
-    grid-template-columns: minmax(190px, 1fr) 42px 12px auto;
-  }
-
-  .fcb-homebrew-collection-picker {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .fcb-homebrew-collection-label,
-  .fcb-homebrew-save-label,
-  .fcb-homebrew-builder-state,
-  .fcb-homebrew-new-label,
-  .fcb-homebrew-download-label {
-    display: none;
-  }
-
-  .fcb-homebrew-new-collection,
-  .fcb-homebrew-download-button {
-    width: 42px;
-    min-width: 42px;
-    padding-right: 0;
-    padding-left: 0;
-  }
-
-  .fcb-homebrew-new-symbol {
-    font-size: 1.25rem;
-  }
-
-  .fcb-homebrew-download-icon {
-    display: block;
-  }
-
-  .fcb-homebrew-status {
-    width: 12px;
-    justify-content: center;
-  }
-}
-
 @media (max-width: 700px) {
-  .fcb-homebrew-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-  }
-
-  .fcb-homebrew-collection-picker,
-  .fcb-homebrew-status,
-  .fcb-homebrew-toolbar-actions {
-    grid-column: 1 / -1;
-  }
-
   .fcb-homebrew-collection-picker {
+    flex-basis: 100%;
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
+    max-width: none;
   }
 
   .fcb-homebrew-toolbar-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
   }
 
   .fcb-homebrew-workspace {

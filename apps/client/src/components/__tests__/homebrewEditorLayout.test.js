@@ -68,51 +68,38 @@ describe('Homebrew Editor workspace layout', () => {
     );
   });
 
-  it('keeps pack actions on one row at the reported medium viewport', () => {
-    const mediumStyles = styles.match(
-      /@media \(max-width:\s*1100px\)\s*\{([\s\S]*?)\n\}/,
-    )?.[1];
-
-    expect(mediumStyles).toBeTruthy();
-    expect(mediumStyles).not.toMatch(
-      /\.fcb-homebrew-toolbar-actions\s*\{[^}]*grid-column:\s*1\s*\/\s*-1;/s,
-    );
-    expect(mediumStyles).toMatch(
-      /\.fcb-homebrew-toolbar\s*\{[^}]*grid-template-columns:[^}]*auto;/s,
-    );
-    const baseToolbarStyles = styles.match(
-      /\.fcb-homebrew-toolbar\s*\{([^}]*)\}/,
-    )?.[1];
+  it('lays the pack bar out as a wrapping row of one-line standard buttons', () => {
+    const baseToolbarStyles = styles.match(/\.fcb-homebrew-toolbar\s*\{([^}]*)\}/)?.[1];
+    expect(baseToolbarStyles).toContain('display: flex;');
+    expect(baseToolbarStyles).toContain('flex-wrap: wrap;');
     expect(baseToolbarStyles).toContain('align-items: center;');
-    const statusStyles = styles.match(
-      /\.fcb-homebrew-status\s*\{([^}]*)\}/,
-    )?.[1];
+    expect(styles).toMatch(
+      /\.fcb-homebrew-toolbar \.fcb-button,\s*\.fcb-homebrew-toolbar \.fcb-icon-button\s*\{[^}]*flex:\s*0 0 auto;[^}]*white-space:\s*nowrap;/s,
+    );
+    const statusStyles = styles.match(/\.fcb-homebrew-status\s*\{([^}]*)\}/)?.[1];
     expect(statusStyles).toContain('display: flex;');
     expect(statusStyles).toContain('white-space: nowrap;');
+    // The pack select keeps a floor so "+ New" never lands on top of it.
+    expect(styles).toMatch(/\.fcb-homebrew-collection-picker\s*\{[^}]*grid-template-columns:\s*auto minmax\(180px, 1fr\);/s);
   });
 
-  it('uses compact accessible toolbar controls below 1000px', () => {
+  it('never collapses toolbar labels into icons: every action keeps its words', () => {
     expect(editorSource).toContain('aria-label="Pack"');
     expect(editorSource).toContain('aria-label="Create new pack"');
     expect(editorSource).toContain('aria-label="Download pack XML"');
     expect(editorSource).toContain('aria-label="Delete pack"');
     expect(editorSource).not.toContain('aria-label="More pack actions"');
-    expect(editorSource).toContain('fcb-homebrew-download-label');
+    expect(editorSource).not.toContain('fcb-homebrew-download-label');
+    expect(styles).not.toContain('fcb-homebrew-download-label');
+    expect(styles).not.toContain('fcb-homebrew-new-label');
+  });
 
-    const compactStyles = styles.match(
-      /@media \(max-width:\s*1000px\) and \(min-width:\s*701px\)\s*\{([\s\S]*?)@media \(max-width:\s*700px\)/,
-    )?.[1];
-
-    expect(compactStyles).toBeTruthy();
-    expect(compactStyles).toMatch(
-      /\.fcb-homebrew-collection-label[\s\S]*display:\s*none;/s,
-    );
-    expect(compactStyles).toMatch(
-      /\.fcb-homebrew-save-label[\s\S]*display:\s*none;/s,
-    );
-    expect(compactStyles).toMatch(
-      /\.fcb-homebrew-download-label[\s\S]*display:\s*none;/s,
-    );
+  it('keeps the pack tools inside the editor column, closed, and not as a full-width bar', () => {
+    expect(editorSource).toContain('fcb-homebrew-pack-tools');
+    expect(editorSource).not.toContain('fcb-homebrew-advanced-page');
+    expect(styles).not.toContain('fcb-homebrew-advanced-page');
+    const editorSection = editorSource.slice(editorSource.indexOf('fcb-homebrew-editor min-w-0'), editorSource.indexOf('<HomebrewInspector'));
+    expect(editorSection).toContain('<HomebrewPackTools');
   });
 
   it('exposes element deletion as a direct accessible icon action', () => {

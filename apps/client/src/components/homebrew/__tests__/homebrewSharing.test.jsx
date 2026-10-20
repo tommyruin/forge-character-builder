@@ -296,15 +296,17 @@ describe('pack health: Find a source', () => {
   });
 });
 
-describe('XML under Advanced', () => {
-  it('keeps pack import, an XML element, the plain XML and Manage files together', async () => {
+describe('XML under More pack tools', () => {
+  it('keeps an XML element and Manage files together, inside the editor, without repeating the pack bar', async () => {
     const onOpenContent = vi.fn();
     await openPack({ ...pack, elements: [] }, { onOpenContent });
-    const advanced = $('[data-testid="hb-advanced"]');
-    expect(advanced.textContent).toContain('Import a pack file');
-    await click($('[data-testid="hb-advanced-manage-files"]'));
+    const tools = $('[data-testid="hb-pack-tools"]');
+    expect($('[data-testid="hb-main-editor"]').contains(tools)).toBe(true);
+    expect(tools.textContent).not.toContain('Import');
+    expect(tools.textContent).not.toContain('Download');
+    await click($('[data-testid="hb-pack-tools-manage-files"]'));
     expect(onOpenContent).toHaveBeenCalledWith();
-    await click($('[data-testid="hb-advanced-raw"]'));
+    await click($('[data-testid="hb-pack-tools-raw"]'));
     expect($('[data-testid="hb-raw-step"]')).not.toBeNull();
   });
 

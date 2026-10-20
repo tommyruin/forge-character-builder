@@ -884,6 +884,13 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
               onCopyToPack={() => startElementPromotion(selectedElement)}
             />
           )}
+          {draft && !characterView && (
+            <HomebrewPackTools
+              busy={busy || packImport.busy}
+              onRawElement={() => setRawStart(true)}
+              onOpenContent={onOpenContent ? () => onOpenContent() : undefined}
+            />
+          )}
         </section>
 
         <HomebrewInspector
@@ -953,15 +960,6 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
           onClose={() => setPromotion(null)}
         />
       )}
-
-      <HomebrewAdvanced
-        hasPack={Boolean(draft) && !characterView}
-        busy={busy || packImport.busy}
-        onImport={() => importInput.current?.click()}
-        onRawElement={() => setRawStart(true)}
-        onDownload={download}
-        onOpenContent={onOpenContent ? () => onOpenContent() : undefined}
-      />
 
       {spellFix && spellServices && (
         <CustomSpellModal
@@ -1087,17 +1085,13 @@ function HomebrewToolbar({
         <button
           type="button"
           data-testid="hb-download"
-          className="fcb-button fcb-homebrew-download-button"
+          className="fcb-button"
           onClick={onDownload}
           disabled={busy || !draft}
           aria-label="Download pack XML"
           title="Download pack XML"
         >
-          <svg className="fcb-homebrew-download-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v12m0 0 5-5m-5 5-5-5" />
-            <path d="M5 20h14" />
-          </svg>
-          <span className="fcb-homebrew-download-label">Download XML</span>
+          Download XML
         </button>
         <button
           type="button"
@@ -1119,13 +1113,14 @@ function HomebrewToolbar({
   );
 }
 
-// The XML side of the editor, kept out of the way: a pack file someone shared, an element written as
-// XML, the plain pack XML, and the content files that arrive from Content › Manage files.
-function HomebrewAdvanced({ hasPack, busy, onImport, onRawElement, onDownload, onOpenContent }) {
+// The rarely needed tools, kept inside the editor column and closed: an element written as XML, and
+// the content files that arrive from Content › Manage files. Importing and downloading a pack are in
+// the pack bar above, so they are not repeated here.
+function HomebrewPackTools({ busy, onRawElement, onOpenContent }) {
   return (
-    <details className="fcb-panel fcb-homebrew-advanced-page" data-testid="hb-advanced">
+    <details className="fcb-panel fcb-homebrew-pack-tools" data-testid="hb-pack-tools">
       <summary className="fcb-panel-header cursor-pointer">
-        <span className="fcb-panel-title">Advanced</span>
+        <span className="fcb-panel-title">More pack tools</span>
       </summary>
       <div className="fcb-panel-body space-y-3 text-sm">
         <p>
@@ -1133,24 +1128,18 @@ function HomebrewAdvanced({ hasPack, busy, onImport, onRawElement, onDownload, o
           as it always could.
         </p>
         <div className="fcb-toolbar">
-          <button type="button" className="fcb-button" data-testid="hb-advanced-import" disabled={busy} onClick={onImport}>
-            Import a pack file
-          </button>
-          <button type="button" className="fcb-button" data-testid="hb-advanced-raw" disabled={busy || !hasPack} onClick={onRawElement}>
+          <button type="button" className="fcb-button" data-testid="hb-pack-tools-raw" disabled={busy} onClick={onRawElement}>
             New element written as XML
           </button>
-          <button type="button" className="fcb-button" data-testid="hb-advanced-download" disabled={busy || !hasPack} onClick={onDownload}>
-            Download the pack&apos;s XML
-          </button>
           {onOpenContent && (
-            <button type="button" className="fcb-button" data-testid="hb-advanced-manage-files" onClick={onOpenContent}>
-              Content › Manage files
+            <button type="button" className="fcb-button" data-testid="hb-pack-tools-manage-files" onClick={onOpenContent}>
+              Open Content › Manage files
             </button>
           )}
         </div>
         <p className="fcb-muted-copy text-xs">
-          To change an element&apos;s XML, open it and use Advanced › Edit raw XML. That works for every element, including a change to a book
-          element. Content › Manage files takes XML files, ZIPs, folders and web addresses, and a pack file shared from here.
+          To change one element&apos;s XML, open it and use Advanced › Edit raw XML. Content › Manage files takes XML files, ZIPs, folders and
+          web addresses, and a pack file shared from here.
         </p>
       </div>
     </details>
