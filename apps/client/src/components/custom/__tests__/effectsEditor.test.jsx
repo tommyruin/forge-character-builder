@@ -2,7 +2,7 @@
 // The "What it does" editor on its own: the "Only while active" switch reaches spell grants as well
 // as bonuses, and an editor handed a different entry starts with that entry's switch, not the last
 // one's.
-import { useState } from 'react';
+import { act, useEffect, useState } from 'react';
 import { describe, expect, it } from 'vitest';
 import { compileCustomElement, createCustomDraft, customDraftIssues } from '@forge-cb/engine/custom';
 import EffectsEditor from '../EffectsEditor';
@@ -26,12 +26,14 @@ const spellGrant = (extra = {}) => ({
 });
 
 // Keeps the draft the editor edits, and exposes it to the test.
-function Host({ first, second, seen }) {
+function Host({ first, second, onProbe }) {
   const [which, setWhich] = useState(0);
   const [drafts, setDrafts] = useState([first, second]);
   const draft = drafts[which];
-  seen.draft = () => drafts[which];
-  seen.show = (index) => setWhich(index);
+  // The test reads the draft and switches entries through this object, set after the render.
+  useEffect(() => {
+    onProbe(drafts[which], setWhich);
+  }, [onProbe, drafts, which]);
   return (
     <EffectsEditor
       draft={draft}
@@ -43,12 +45,25 @@ function Host({ first, second, seen }) {
   );
 }
 
+// What the host reports after each render: the current draft and a way to show the other entry.
+function probe() {
+  const seen = {
+    draft: () => null,
+    show: () => {},
+    onProbe: (draft, show) => {
+      seen.draft = () => draft;
+      seen.show = show;
+    },
+  };
+  return seen;
+}
+
 const draftWith = (name, blocks, extra = {}) => ({ ...createCustomDraft('feature', name), id: `ID_CUSTOM_${name.replace(/\W/g, '').toUpperCase()}`, blocks, ...extra });
 
 describe('the switch on a feature with no bonus', () => {
   it('gates a spell grant added after the switch is turned on', async () => {
-    const seen = {};
-    await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} seen={seen} />);
+    const seen = probe();
+    await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
     await click(buttonByText('+ Only while active'));
     await click(buttonByText('+ Spell'));
     await settle();
@@ -56,8 +71,8 @@ describe('the switch on a feature with no bonus', () => {
   });
 
   it('puts a switch turned on after the spell onto that spell grant, and renames it with the row', async () => {
-    const seen = {};
-    await mount(<Host first={draftWith('Bladesong', [spellGrant()])} second={draftWith('Other', [])} seen={seen} />);
+    const seen = probe();
+    await mount(<Host first={draftWith('Bladesong', [spellGrant()])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
     await click(buttonByText('+ Only while active'));
     expect(seen.draft().blocks[0].switch).toBe('Bladesong');
     await type(byLabel('Switch name'), 'Song');
@@ -66,14 +81,14 @@ describe('the switch on a feature with no bonus', () => {
   });
 
   it('keeps the switch row open when a saved feature is reopened with only a gated grant', async () => {
-    const seen = {};
-    await mount(<Host first={draftWith('Bladesong', [spellGrant({ switch: 'Song' })])} second={draftWith('Other', [])} seen={seen} />);
+    const seen = probe();
+    await mount(<Host first={draftWith('Bladesong', [spellGrant({ switch: 'Song' })])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
     expect(byLabel('Switch name').value).toBe('Song');
   });
 
   it('removing the switch row clears it from the grants', async () => {
-    const seen = {};
-    await mount(<Host first={draftWith('Bladesong', [spellGrant({ switch: 'Song' })])} second={draftWith('Other', [])} seen={seen} />);
+    const seen = probe();
+    await mount(<Host first={draftWith('Bladesong', [spellGrant({ switch: 'Song' })])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
     await click(byLabel('Remove only while active'));
     expect(seen.draft().blocks[0].switch).toBeUndefined();
   });
@@ -90,9 +105,9 @@ describe('the switch on a feature with no bonus', () => {
 
 describe('moving to another entry', () => {
   it('does not carry the first entry\'s switch over', async () => {
-    const seen = {};
+    const seen = probe();
     const first = draftWith('Bladesong', [spellGrant({ switch: 'Song' })]);
-    await mount(<Host first={first} second={draftWith('Plain', [])} seen={seen} />);
+    await mount(<Host first={first} second={draftWith('Plain', [])} onProbe={seen.onProbe} />);
     expect(byLabel('Switch name').value).toBe('Song');
     await click(buttonByText('+ Ability score'));
     await act0(() => seen.show(1));
@@ -103,6 +118,5 @@ describe('moving to another entry', () => {
 });
 
 async function act0(run) {
-  const { act } = await import('react');
   await act(async () => run());
 }
