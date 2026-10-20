@@ -214,10 +214,11 @@ describe('the custom spell dialog', () => {
   it('refuses a draft the engine would refuse, naming the field', async () => {
     const api = fakeApi();
     await open(api);
+    expect(buttonByText('Add spell').disabled).toBe(true);
     await click(buttonByText('Add spell'));
     await settle();
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain('give it a name');
+    expect($('[data-testid="add-needs"]').textContent).toContain('To add it: give it a name');
   });
 
   it('reads the spell back in plain words as it is filled in', async () => {
@@ -255,7 +256,7 @@ describe('the custom spell dialog', () => {
       draft: { schemaVersion: 1, template: 'spell', id: 'ID_CUSTOM_AAAAAAAAAAAAAAAAAAAA', name: 'Frost Lance', description: '', level: 1, school: 'Evocation', castingTime: '1 action', range: '60 feet', duration: 'Instantaneous', components: { verbal: true }, mechanics: { roll: 'none' } },
     };
     await open(api, { entry, onClose });
-    await click(buttonByText('Delete spell'));
+    await click(buttonByText('Delete custom spell'));
     expect(api.characters.deleteCustomDraft).not.toHaveBeenCalled();
     await click(buttonByText('Delete custom spell'));
     await settle();

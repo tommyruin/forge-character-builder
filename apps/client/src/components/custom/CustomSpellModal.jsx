@@ -8,10 +8,10 @@
 // on how the text is worded. The attack row is worked out by the engine on a scratch copy of the
 // character, so the numbers are never a second implementation in the browser.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { customEntryIssues } from '@forge-cb/engine/custom';
 import Modal, { DialogFooter } from '../Modal';
-import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
+import { Field, HeldBackNote, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
 import {
   CASTING_TIME_PRESETS,
   DAMAGE_TYPE_OPTIONS,
@@ -122,6 +122,7 @@ export default function CustomSpellModal({
   const [castWith, setCastWith] = useState(null);
   const [promote, setPromote] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const needsId = useId();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -578,13 +579,20 @@ export default function CustomSpellModal({
         <DialogFooter>
           {editing && pack === null && (
             <button type="button" className="fcb-button fcb-button-danger mr-auto" disabled={saving} onClick={() => setConfirmRemove(true)}>
-              Delete spell
+              Delete custom spell
             </button>
           )}
+          {/* The button waits until the form is complete; this says what it is waiting for. */}
+          <HeldBackNote id={needsId} issues={issues} editing={editing} />
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="fcb-button fcb-status-complete" disabled={saving}>
+          <button
+            type="submit"
+            className="fcb-button fcb-status-complete"
+            disabled={saving || issues.length > 0}
+            aria-describedby={issues.length > 0 ? needsId : undefined}
+          >
             {saving ? 'Saving…' : editing ? 'Save changes' : 'Add spell'}
           </button>
         </DialogFooter>

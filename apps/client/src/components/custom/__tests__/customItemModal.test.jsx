@@ -193,15 +193,18 @@ describe('the custom item dialog: a magic weapon', () => {
     expect(customEntryIssues(draft)).toEqual([]);
   });
 
-  it('refuses an incomplete form and names the field', async () => {
+  it('holds Add back on an incomplete form and says what it is waiting for', async () => {
     const api = fakeApi();
     await open(api);
-    await click(buttonByText('Add item'));
+    const add = buttonByText('Add item');
+    expect(add.disabled).toBe(true);
+    const needs = $('[data-testid="add-needs"]');
+    expect(needs.textContent).toMatch(/^To add it: /);
+    expect(needs.textContent).toContain('more)');
+    expect(add.getAttribute('aria-describedby')).toBe(needs.id);
+    await click(add);
     await settle();
     expect(api.characters.saveCustomDraft).not.toHaveBeenCalled();
-    const alerts = [...document.querySelectorAll('[role="alert"]')].map((node) => node.textContent).join(' ');
-    expect(alerts).toContain('pick the weapon it is made from');
-    expect(alerts).toContain('give it a name');
   });
 
   it('can also copy the new item to a homebrew pack', async () => {

@@ -8,7 +8,7 @@
 // A weapon shows its attack row as the engine would print it (the engine computes it on a scratch
 // copy of the character), so the numbers are never a second implementation in the browser.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { customEntryIssues } from '@forge-cb/engine/custom';
 import Modal, { DialogFooter } from '../Modal';
 import BasePicker from './BasePicker';
@@ -18,7 +18,7 @@ import GrantBlock, { GRANT_TYPE_OPTIONS } from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
 import TrackerBlock from './TrackerBlock';
 import { makeTracker } from './trackerModel';
-import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
+import { Field, HeldBackNote, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
 import {
   DAMAGE_TYPE_OPTIONS,
   ITEM_TEMPLATE_OPTIONS,
@@ -206,6 +206,7 @@ export default function CustomItemModal({
   const [notes, setNotes] = useState('');
   const [promote, setPromote] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const needsId = useId();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -705,10 +706,17 @@ export default function CustomItemModal({
               Delete custom item
             </button>
           )}
+          {/* The button waits until the form is complete; this says what it is waiting for. */}
+          <HeldBackNote id={needsId} issues={issues} editing={editing} />
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="fcb-button fcb-status-complete" disabled={saving}>
+          <button
+            type="submit"
+            className="fcb-button fcb-status-complete"
+            disabled={saving || issues.length > 0}
+            aria-describedby={issues.length > 0 ? needsId : undefined}
+          >
             {saving
               ? 'Saving…'
               : editing

@@ -98,6 +98,20 @@ export function Issues({ issues }) {
   );
 }
 
+// What a dialog's held-back Add (or Save changes) button is waiting for: the first thing missing, in
+// the author's words, and how many more. The button names this note as its description.
+export function HeldBackNote({ id, issues, editing = false }) {
+  if (issues.length === 0) return null;
+  const first = issues[0].message;
+  return (
+    <p id={id} className="fcb-custom-needs mr-auto" data-testid="add-needs">
+      {editing ? 'To save: ' : 'To add it: '}
+      {first.charAt(0).toLowerCase() + first.slice(1)}
+      {issues.length > 1 ? ` (and ${issues.length - 1} more)` : ''}
+    </p>
+  );
+}
+
 // A small (i) button that explains the control beside it. The text shows on hover, on keyboard
 // focus and when the button is pressed (so it works on touch too); it is placed against the
 // viewport, so a dialog's scroll area never clips it.

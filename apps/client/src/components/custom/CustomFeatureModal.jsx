@@ -7,10 +7,11 @@
 // under it (a choice is remembered by its name, type, level and count) and says so before it
 // writes anything.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createCustomDraft, customDraftIssues } from '@forge-cb/engine/custom';
 import Modal, { DialogFooter } from '../Modal';
 import FeatureFields from './FeatureFields';
+import { HeldBackNote } from './fields';
 import { PROMOTE_LABEL, castAbilityIssues, parseUsage } from './draftModel';
 import { trackerFromUsage } from './trackerModel';
 
@@ -54,6 +55,7 @@ export default function CustomFeatureModal({
   const [warning, setWarning] = useState(null);
   const [partial, setPartial] = useState(null);
   const warningRef = useRef(null);
+  const needsId = useId();
 
   // The warning sits at the bottom of a long form: bring it into view and put the keyboard on it.
   useEffect(() => {
@@ -173,16 +175,11 @@ export default function CustomFeatureModal({
         {warning === null && (
           <DialogFooter>
             {/* The button waits until the form is complete; this says what it is waiting for. */}
-            {issues.length > 0 && (
-              <p id="feature-add-needs" className="fcb-custom-needs mr-auto" data-testid="add-needs">
-                To add it: {issues[0].message.charAt(0).toLowerCase() + issues[0].message.slice(1)}
-                {issues.length > 1 ? ` (and ${issues.length - 1} more)` : ''}
-              </p>
-            )}
+            <HeldBackNote id={needsId} issues={issues} editing={editing} />
             <button type="button" className="fcb-button" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || issues.length > 0} aria-describedby={issues.length > 0 ? 'feature-add-needs' : undefined}>
+            <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || issues.length > 0} aria-describedby={issues.length > 0 ? needsId : undefined}>
               {saving ? 'Saving…' : editing ? 'Save changes' : 'Add feature'}
             </button>
           </DialogFooter>
