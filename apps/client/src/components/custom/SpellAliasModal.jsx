@@ -1,4 +1,4 @@
-// Rename and note for one spell on one character, book or custom. The name is this character's
+// Rename / notes for one spell on one character, book or custom. The name is this character's
 // own: the spell keeps its rules and numbers, the Magic tab leads with the name and keeps the real
 // one beside it, and the sheet prints it. An empty name goes back to the spell's own.
 
@@ -30,7 +30,7 @@ export default function SpellAliasModal({ spell, busy = false, onClose, onSave }
   };
 
   return (
-    <Modal open title={`Rename ${spell.name}`} onClose={onClose}>
+    <Modal open title={`Rename or add notes to ${spell.name}`} onClose={onClose}>
       <form
         className="fcb-custom-form"
         onSubmit={(event) => {
@@ -38,10 +38,10 @@ export default function SpellAliasModal({ spell, busy = false, onClose, onSave }
           submit();
         }}
       >
-        <Field label="Display name">
+        <Field label="Name">
           <input
             className="fcb-input"
-            aria-label="Display name"
+            aria-label="Name"
             autoFocus
             placeholder={spell.name}
             value={name}
@@ -49,24 +49,25 @@ export default function SpellAliasModal({ spell, busy = false, onClose, onSave }
             onChange={(event) => setName(event.target.value)}
           />
         </Field>
-        <Field label="Note">
+        <Field label="Notes">
           <textarea
             className="fcb-textarea"
-            aria-label="Note"
+            aria-label="Notes"
             rows={3}
-            placeholder="Optional. Printed with the spell's card."
+            placeholder="Optional. Printed with the spell card."
             value={note}
             onChange={(event) => setNote(event.target.value)}
           />
         </Field>
         {(nameTooLong || noteTooLong) && (
           <p role="alert" className="fcb-custom-issues">
-            {nameTooLong ? `The name is at most ${MAX_ALIAS_NAME} characters.` : `The note is at most ${MAX_ALIAS_NOTE} characters.`}
+            {nameTooLong ? `The name is at most ${MAX_ALIAS_NAME} characters.` : `The notes are at most ${MAX_ALIAS_NOTE} characters.`}
           </p>
         )}
         <div className="fcb-custom-summary" data-testid="spell-alias-preview">
           <div>
-            <h4 className="fcb-field-label">Where it shows</h4>
+            <h4 className="fcb-field-label">On the sheet</h4>
+            <p className="text-sm">Original name: {spell.name}</p>
             {aliasLines(spell.name, name).map((line) => (
               <p key={line} className="text-sm">
                 {line}
@@ -75,14 +76,14 @@ export default function SpellAliasModal({ spell, busy = false, onClose, onSave }
           </div>
         </div>
         <p className="fcb-muted-copy text-xs">
-          The rules stay {spell.name}'s. Only the name and note change, on this character only.
+          Rules unchanged: it still works as {spell.name}. Only the name and notes change, on this character only.
         </p>
         <div className="fcb-toolbar justify-end">
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" disabled={busy || unchanged || nameTooLong || noteTooLong}>
-            {busy ? 'Saving…' : 'Save'}
+            {busy ? 'Saving…' : 'Save changes'}
           </button>
         </div>
       </form>

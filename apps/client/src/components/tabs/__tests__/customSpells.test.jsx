@@ -180,10 +180,10 @@ describe("a spell's own name", () => {
     characters.setSpellAlias.mockResolvedValue([caster([spell({ alias: { name: "Moonlit Ward", note: "" } })])]);
     characters.spellcasting.mockResolvedValue([caster([spell({})])]);
     await render();
-    await act(async () => byLabel("Rename Barkskin").click());
-    expect(dialog().getAttribute("aria-label")).toBe("Rename Barkskin");
-    await typeInto(byLabel("Display name"), "Moonlit Ward");
-    await act(async () => byText("Save").click());
+    await act(async () => byLabel("Rename or add notes to Barkskin").click());
+    expect(dialog().getAttribute("aria-label")).toBe("Rename or add notes to Barkskin");
+    await typeInto(byLabel("Name"), "Moonlit Ward");
+    await act(async () => byText("Save changes").click());
     expect(characters.setSpellAlias).toHaveBeenCalledWith("Ada", "ID_BARKSKIN", { name: "Moonlit Ward", note: "" });
     expect(dialog()).toBeNull();
     expect(document.querySelector(".fcb-table tbody tr").textContent).toContain("Moonlit Ward");

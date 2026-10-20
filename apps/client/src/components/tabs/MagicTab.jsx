@@ -987,19 +987,20 @@ export default function MagicTab() {
                                   {canCustom && (
                                     <button
                                       type="button"
-                                      className="fcb-icon-button"
-                                      title="Give this spell your own name and a note"
-                                      aria-label={`Rename ${spell.name}`}
+                                      className="fcb-button fcb-row-action"
+                                      title="Give this spell your own name and notes"
+                                      aria-label={`Rename or add notes to ${spell.name}`}
                                       disabled={busy}
                                       onClick={() => setAliasDialog(spell)}
                                     >
-                                      <Icon name="edit" />
+                                      Rename
                                     </button>
                                   )}
                                   {customSpellsById.has(spell.id) && (
                                     <button
                                       type="button"
-                                      className="fcb-button"
+                                      className="fcb-button fcb-row-action"
+                                      title="Change this custom spell"
                                       aria-label={`Edit ${spell.name}`}
                                       disabled={busy}
                                       onClick={() =>
@@ -1012,7 +1013,7 @@ export default function MagicTab() {
                                   {isDmGranted && (
                                     <button
                                       type="button"
-                                      className="fcb-icon-button fcb-button-danger"
+                                      className="fcb-button fcb-button-danger fcb-row-action"
                                       title="Remove this granted spell"
                                       aria-label={`Remove ${spell.name}`}
                                       disabled={busy}
@@ -1020,7 +1021,7 @@ export default function MagicTab() {
                                         removeGrantedSpell(activeCaster, spell)
                                       }
                                     >
-                                      <Icon name="close" />
+                                      Remove
                                     </button>
                                   )}
                                 </span>

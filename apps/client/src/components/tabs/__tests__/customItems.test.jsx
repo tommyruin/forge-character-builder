@@ -172,7 +172,7 @@ describe("the catalog", () => {
 });
 
 describe("the inventory", () => {
-  it("offers Rename and Notes on every record and Edit only on a custom item, with a Custom badge", async () => {
+  it("offers one Rename / notes action on every record and Edit only on a custom item, with a Custom badge", async () => {
     characters.inventory.mockResolvedValue(
       inventoryWith([
         record({}),
@@ -182,11 +182,11 @@ describe("the inventory", () => {
     characters.customContent.mockResolvedValue({ entries: [FROSTBITE], problems: [] });
     await openInventory();
 
-    expect(byLabel("Rename Scimitar")).not.toBeNull();
-    expect(byLabel("Notes for Scimitar")).not.toBeNull();
+    expect(byLabel("Rename or add notes to Scimitar")).not.toBeNull();
+    expect(byLabel("Notes for Scimitar")).toBeNull();
     expect(byLabel("Edit Scimitar")).toBeNull();
     expect(byLabel("Edit Frostbite")).not.toBeNull();
-    expect(byLabel("Rename Frostbite")).not.toBeNull();
+    expect(byLabel("Rename or add notes to Frostbite")).not.toBeNull();
     const rows = [...document.querySelectorAll(".fcb-inventory-table tbody tr")];
     expect(rows[0].querySelector(".fcb-custom-badge")).toBeNull();
     expect(rows[1].querySelector(".fcb-custom-badge").textContent).toBe("Custom");
@@ -210,11 +210,11 @@ describe("the inventory", () => {
       inventoryWith([record({ name: "Grandfather's Blade", customName: "Grandfather's Blade", notes: "Green leather." })]),
     );
     await openInventory();
-    await act(async () => byLabel("Rename Scimitar").click());
-    expect(document.querySelector('[role="dialog"]').getAttribute("aria-label")).toBe("Rename Scimitar");
+    await act(async () => byLabel("Rename or add notes to Scimitar").click());
+    expect(document.querySelector('[role="dialog"]').getAttribute("aria-label")).toBe("Rename or add notes to Scimitar");
     await typeInto(byLabel("Name"), "Grandfather's Blade");
     await typeInto(byLabel("Notes"), "Green leather.");
-    await act(async () => byText("Save").click());
+    await act(async () => byText("Save changes").click());
 
     expect(characters.setItemDetails).toHaveBeenCalledWith("Ada", "rec-1", { name: "Grandfather's Blade", notes: "Green leather." });
     expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -223,11 +223,14 @@ describe("the inventory", () => {
     expect(row.querySelector(".fcb-inventory-record-names").textContent).toBe("Scimitar");
   });
 
-  it("opens the notes dialog from Notes", async () => {
+  it("opens one dialog with both the name and the notes from Rename / notes", async () => {
     characters.inventory.mockResolvedValue(inventoryWith([record({})]));
     await openInventory();
-    await act(async () => byLabel("Notes for Scimitar").click());
-    expect(document.querySelector('[role="dialog"]').getAttribute("aria-label")).toBe("Notes for Scimitar");
+    await act(async () => byLabel("Rename or add notes to Scimitar").click());
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog.getAttribute("aria-label")).toBe("Rename or add notes to Scimitar");
+    expect(dialog.querySelector('[aria-label="Name"]')).not.toBeNull();
+    expect(dialog.querySelector('[aria-label="Notes"]')).not.toBeNull();
   });
 
   it("opens the custom item dialog on Edit, with the item's own settings", async () => {

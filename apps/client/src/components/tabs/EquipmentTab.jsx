@@ -406,9 +406,8 @@ export default function EquipmentTab() {
       )}
       {detailsDialog && (
         <ItemDetailsModal
-          key={`${detailsDialog.item.identifier}:${detailsDialog.focus}`}
+          key={detailsDialog.item.identifier}
           item={detailsDialog.item}
-          focus={detailsDialog.focus}
           busy={busy}
           onClose={() => setDetailsDialog(null)}
           onSave={saveDetails}
@@ -465,7 +464,7 @@ export default function EquipmentTab() {
         }
         onRename={
           canRename
-            ? (item, focus) => setDetailsDialog({ item, focus })
+            ? (item) => setDetailsDialog({ item })
             : undefined
         }
         onAddGear={canCustom ? addCustomGear : undefined}
@@ -1576,6 +1575,7 @@ function Inventory({
                             onExtract={onExtract}
                             onRemove={onRemove}
                             onAddAttack={onAddAttack}
+                            onSetPresentation={onSetPresentation}
                             customEntry={customEntryOf?.(item) ?? null}
                             onEditCustom={onEditCustom}
                             onRename={onRename}
@@ -1585,15 +1585,6 @@ function Inventory({
                       </div>
                       <RecordNames item={item} />
                       <EquipmentSummary item={item} />
-                      {/* The narrow layout's header row has no room for two
-                          more actions, so the sheet choices get a row of
-                          their own there. */}
-                      <ItemPresentationToggles
-                        item={item}
-                        busy={busy}
-                        onSetPresentation={onSetPresentation}
-                        className="fcb-inventory-presentation--narrow"
-                      />
                       {item.notes ? (
                         <div className="text-xs italic text-[var(--fcb-text-faint)]">
                           {item.notes}
@@ -1788,6 +1779,9 @@ export function InventoryActionButtons({
   onRename,
   variant,
 }) {
+  // The narrow card keeps the everyday actions as small icons and moves the rest (the sheet
+  // choices, Edit and Rename / notes) into one overflow menu, so the row stays on one line.
+  const compact = variant === "mobile";
   return (
     <span
       className={`fcb-inventory-actions fcb-inventory-actions--${variant}`}
@@ -1821,7 +1815,7 @@ export function InventoryActionButtons({
           onClick={() => onAttune(item.identifier, !item.isAttuned)}
         />
       )}
-      {onSetPresentation && (
+      {!compact && onSetPresentation && (
         <ItemPresentationButtons
           item={item}
           busy={busy}
@@ -1844,7 +1838,7 @@ export function InventoryActionButtons({
           onClick={() => onAddAttack(item.identifier)}
         />
       )}
-      {customEntry && onEditCustom && (
+      {!compact && customEntry && onEditCustom && (
         <ActionButton
           label="Edit"
           ariaLabel={`Edit ${item.name}`}
@@ -1853,23 +1847,24 @@ export function InventoryActionButtons({
           onClick={() => onEditCustom(customEntry)}
         />
       )}
-      {onRename && (
-        <>
-          <ActionButton
-            label="Rename"
-            ariaLabel={`Rename ${item.name}`}
-            icon="edit"
-            disabled={busy}
-            onClick={() => onRename(item, "name")}
-          />
-          <ActionButton
-            label="Notes"
-            ariaLabel={`Notes for ${item.name}`}
-            icon="notes"
-            disabled={busy}
-            onClick={() => onRename(item, "notes")}
-          />
-        </>
+      {!compact && onRename && (
+        <ActionButton
+          label="Rename / notes"
+          ariaLabel={`Rename or add notes to ${item.name}`}
+          icon="edit"
+          disabled={busy}
+          onClick={() => onRename(item)}
+        />
+      )}
+      {compact && (
+        <InventoryMoreMenu
+          item={item}
+          busy={busy}
+          onSetPresentation={onSetPresentation}
+          customEntry={customEntry}
+          onEditCustom={onEditCustom}
+          onRename={onRename}
+        />
       )}
       <ActionButton
         label="Delete"
@@ -1877,6 +1872,113 @@ export function InventoryActionButtons({
         disabled={busy}
         onClick={() => onRemove(item.identifier)}
       />
+    </span>
+  );
+}
+
+// The narrow card's overflow menu: what a record prints on the sheet, Edit and Rename / notes.
+// The menu is placed against the viewport, so the scrolling inventory never clips it.
+function InventoryMoreMenu({ item, busy, onSetPresentation, customEntry, onEditCustom, onRename }) {
+  const [place, setPlace] = useState(null);
+  const root = useRef(null);
+  const close = () => setPlace(null);
+  useEffect(() => {
+    if (!place) return undefined;
+    const onDown = (event) => {
+      if (root.current && !root.current.contains(event.target)) close();
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") close();
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [place]);
+  const hasEdit = customEntry && onEditCustom;
+  if (!onSetPresentation && !hasEdit && !onRename) return null;
+  const toggle = (event) => {
+    if (place) return close();
+    const box = event.currentTarget.getBoundingClientRect();
+    const below = window.innerHeight - box.bottom;
+    setPlace({
+      right: Math.max(8, window.innerWidth - box.right),
+      ...(below > 220 ? { top: box.bottom + 4 } : { bottom: window.innerHeight - box.top + 4 }),
+    });
+  };
+  const run = (action) => () => {
+    close();
+    action();
+  };
+  return (
+    <span className="fcb-inventory-more" ref={root}>
+      <ActionButton
+        label="More"
+        ariaLabel={`More actions for ${item.name}`}
+        icon="more"
+        aria-haspopup="menu"
+        aria-expanded={place !== null}
+        disabled={busy}
+        onClick={toggle}
+      />
+      {place && (
+        <div role="menu" className="fcb-inventory-more-list" style={place} aria-label={`Actions for ${item.name}`}>
+          {onSetPresentation && (
+            <>
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked={item.card === true}
+                aria-label={`Print a card for ${item.name}`}
+                className="fcb-inventory-more-item"
+                onClick={() => onSetPresentation(item.identifier, { card: item.card !== true })}
+              >
+                <Icon name="card" className="fcb-inventory-more-icon" />
+                Card
+                {item.card === true && <Icon name="check" className="fcb-inventory-more-check" />}
+              </button>
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked={item.sidebar === true}
+                aria-label={`Print notes for ${item.name} on the sheet`}
+                className="fcb-inventory-more-item"
+                onClick={() => onSetPresentation(item.identifier, { sidebar: item.sidebar !== true })}
+              >
+                <Icon name="notes" className="fcb-inventory-more-icon" />
+                Sheet notes
+                {item.sidebar === true && <Icon name="check" className="fcb-inventory-more-check" />}
+              </button>
+            </>
+          )}
+          {hasEdit && (
+            <button
+              type="button"
+              role="menuitem"
+              aria-label={`Edit ${item.name}`}
+              className="fcb-inventory-more-item"
+              onClick={run(() => onEditCustom(customEntry))}
+            >
+              <Icon name="edit" className="fcb-inventory-more-icon" />
+              Edit
+            </button>
+          )}
+          {onRename && (
+            <button
+              type="button"
+              role="menuitem"
+              aria-label={`Rename or add notes to ${item.name}`}
+              className="fcb-inventory-more-item"
+              onClick={run(() => onRename(item))}
+            >
+              <Icon name="edit" className="fcb-inventory-more-icon" />
+              Rename / notes
+            </button>
+          )}
+        </div>
+      )}
     </span>
   );
 }
@@ -1926,21 +2028,6 @@ function ItemPresentationButtons({ item, busy, onSetPresentation }) {
         }
       />
     </>
-  );
-}
-
-function ItemPresentationToggles({ item, busy, onSetPresentation, className }) {
-  if (!onSetPresentation) return null;
-  return (
-    <span
-      className={`fcb-inventory-actions fcb-inventory-presentation ${className}`}
-    >
-      <ItemPresentationButtons
-        item={item}
-        busy={busy}
-        onSetPresentation={onSetPresentation}
-      />
-    </span>
   );
 }
 

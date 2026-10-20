@@ -1,4 +1,4 @@
-// Rename and Notes for one inventory record, book or custom. The name is this character's own for
+// Rename / notes for one inventory record, book or custom. The name is this character's own for
 // this record: the item keeps its rules, and the preview shows the lines the sheet will print. An
 // empty name goes back to the item's own.
 
@@ -20,7 +20,7 @@ export function sheetLines(item, name) {
   return lines;
 }
 
-export default function ItemDetailsModal({ item, focus = 'name', busy = false, onClose, onSave }) {
+export default function ItemDetailsModal({ item, busy = false, onClose, onSave }) {
   const [name, setName] = useState(item.customName ?? '');
   const [notes, setNotes] = useState(item.notes ?? '');
   const nameTooLong = name.trim().length > MAX_ITEM_NAME;
@@ -33,7 +33,7 @@ export default function ItemDetailsModal({ item, focus = 'name', busy = false, o
   };
 
   return (
-    <Modal open title={`${focus === 'notes' ? 'Notes for' : 'Rename'} ${item.defaultName}`} onClose={onClose}>
+    <Modal open title={`Rename or add notes to ${item.defaultName}`} onClose={onClose}>
       <form
         className="fcb-custom-form"
         onSubmit={(event) => {
@@ -45,7 +45,7 @@ export default function ItemDetailsModal({ item, focus = 'name', busy = false, o
           <input
             className="fcb-input"
             aria-label="Name"
-            autoFocus={focus === 'name'}
+            autoFocus
             placeholder={item.defaultName}
             value={name}
             maxLength={MAX_ITEM_NAME + 20}
@@ -57,7 +57,6 @@ export default function ItemDetailsModal({ item, focus = 'name', busy = false, o
             className="fcb-textarea"
             aria-label="Notes"
             rows={3}
-            autoFocus={focus === 'notes'}
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
           />
@@ -78,14 +77,14 @@ export default function ItemDetailsModal({ item, focus = 'name', busy = false, o
           </div>
         </div>
         <p className="fcb-muted-copy text-xs">
-          The rules stay the {item.defaultName}'s. Only the name and notes change, on this character only.
+          Rules unchanged: it still works as {item.defaultName}. Only the name and notes change, on this character only.
         </p>
         <div className="fcb-toolbar justify-end">
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" disabled={busy || unchanged || nameTooLong || notesTooLong}>
-            {busy ? 'Saving…' : 'Save'}
+            {busy ? 'Saving…' : 'Save changes'}
           </button>
         </div>
       </form>

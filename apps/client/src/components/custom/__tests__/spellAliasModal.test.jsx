@@ -23,11 +23,11 @@ describe('the spell rename dialog', () => {
   it('sends the trimmed name and note, and previews the lines as they are typed', async () => {
     const onSave = vi.fn();
     await mount(<SpellAliasModal spell={barkskin} onClose={() => {}} onSave={onSave} />);
-    expect(buttonByText('Save').disabled).toBe(true);
-    await type(byLabel('Display name'), '  Moonlit Ward ');
-    await type(byLabel('Note'), 'Silver light, not bark.');
+    expect(buttonByText('Save changes').disabled).toBe(true);
+    await type(byLabel('Name'), '  Moonlit Ward ');
+    await type(byLabel('Notes'), 'Silver light, not bark.');
     expect($('[data-testid="spell-alias-preview"]').textContent).toContain('Spell list: Moonlit Ward');
-    await click(buttonByText('Save'));
+    await click(buttonByText('Save changes'));
     expect(onSave).toHaveBeenCalledWith(barkskin, { name: 'Moonlit Ward', note: 'Silver light, not bark.' });
   });
 
@@ -35,25 +35,26 @@ describe('the spell rename dialog', () => {
     const onSave = vi.fn();
     const named = { ...barkskin, alias: { name: 'Moonlit Ward', note: 'Old.' } };
     await mount(<SpellAliasModal spell={named} onClose={() => {}} onSave={onSave} />);
-    expect(byLabel('Display name').value).toBe('Moonlit Ward');
-    expect(byLabel('Note').value).toBe('Old.');
-    await type(byLabel('Display name'), '');
-    await click(buttonByText('Save'));
+    expect(byLabel('Name').value).toBe('Moonlit Ward');
+    expect(byLabel('Notes').value).toBe('Old.');
+    await type(byLabel('Name'), '');
+    await click(buttonByText('Save changes'));
     expect(onSave).toHaveBeenCalledWith(named, { name: '', note: 'Old.' });
   });
 
   it('says what changes and what does not', async () => {
     await mount(<SpellAliasModal spell={barkskin} onClose={() => {}} onSave={vi.fn()} />);
-    expect(document.body.textContent).toContain("The rules stay Barkskin's");
+    expect(document.body.textContent).toContain('Rules unchanged: it still works as Barkskin.');
+    expect(document.body.textContent).toContain('Original name: Barkskin');
   });
 
   it('refuses a name or note the engine would refuse', async () => {
     await mount(<SpellAliasModal spell={barkskin} onClose={() => {}} onSave={vi.fn()} />);
-    await type(byLabel('Display name'), 'x'.repeat(MAX_ALIAS_NAME + 1));
-    expect(buttonByText('Save').disabled).toBe(true);
+    await type(byLabel('Name'), 'x'.repeat(MAX_ALIAS_NAME + 1));
+    expect(buttonByText('Save changes').disabled).toBe(true);
     expect(document.body.textContent).toContain(`at most ${MAX_ALIAS_NAME} characters`);
-    await type(byLabel('Display name'), 'ok');
-    await type(byLabel('Note'), 'y'.repeat(MAX_ALIAS_NOTE + 1));
-    expect(buttonByText('Save').disabled).toBe(true);
+    await type(byLabel('Name'), 'ok');
+    await type(byLabel('Notes'), 'y'.repeat(MAX_ALIAS_NOTE + 1));
+    expect(buttonByText('Save changes').disabled).toBe(true);
   });
 });

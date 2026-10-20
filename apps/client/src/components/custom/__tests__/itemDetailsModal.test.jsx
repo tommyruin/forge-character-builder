@@ -30,11 +30,11 @@ describe('the rename and notes dialog', () => {
   it('sends the trimmed name and notes, and previews the sheet as they are typed', async () => {
     const onSave = vi.fn();
     await mount(<ItemDetailsModal item={scimitar} onClose={() => {}} onSave={onSave} />);
-    expect(buttonByText('Save').disabled).toBe(true);
+    expect(buttonByText('Save changes').disabled).toBe(true);
     await type(byLabel('Name'), "  Grandfather's Blade ");
     await type(byLabel('Notes'), 'Hilt wrapped in green leather.');
     expect($('[data-testid="item-sheet-preview"]').textContent).toContain("Equipment: Grandfather's Blade (Scimitar)");
-    await click(buttonByText('Save'));
+    await click(buttonByText('Save changes'));
     expect(onSave).toHaveBeenCalledWith(scimitar, { name: "Grandfather's Blade", notes: 'Hilt wrapped in green leather.' });
   });
 
@@ -45,19 +45,20 @@ describe('the rename and notes dialog', () => {
     expect(byLabel('Name').value).toBe('Blade');
     expect(byLabel('Notes').value).toBe('Old.');
     await type(byLabel('Name'), '');
-    await click(buttonByText('Save'));
+    await click(buttonByText('Save changes'));
     expect(onSave).toHaveBeenCalledWith(named, { name: '', notes: 'Old.' });
   });
 
   it('refuses a name the engine would refuse', async () => {
     await mount(<ItemDetailsModal item={scimitar} onClose={() => {}} onSave={vi.fn()} />);
     await type(byLabel('Name'), 'x'.repeat(MAX_ITEM_NAME + 1));
-    expect(buttonByText('Save').disabled).toBe(true);
+    expect(buttonByText('Save changes').disabled).toBe(true);
     expect(document.body.textContent).toContain(`at most ${MAX_ITEM_NAME} characters`);
   });
 
-  it('is titled for what was pressed', async () => {
-    await mount(<ItemDetailsModal item={scimitar} focus="notes" onClose={() => {}} onSave={vi.fn()} />);
-    expect($('[role="dialog"]').getAttribute('aria-label')).toBe('Notes for Scimitar');
+  it('is one dialog for the name and the notes', async () => {
+    await mount(<ItemDetailsModal item={scimitar} onClose={() => {}} onSave={vi.fn()} />);
+    expect($('[role="dialog"]').getAttribute('aria-label')).toBe('Rename or add notes to Scimitar');
+    expect(document.body.textContent).toContain('Rules unchanged: it still works as Scimitar.');
   });
 });

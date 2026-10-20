@@ -137,6 +137,13 @@ const PATHS = {
       <path d="M8 8h8M8 12h8M8 16h5" />
     </>
   ),
+  more: (
+    <>
+      <circle cx="5" cy="12" r="1.2" />
+      <circle cx="12" cy="12" r="1.2" />
+      <circle cx="19" cy="12" r="1.2" />
+    </>
+  ),
   notes: (
     <>
       <path d="M6 3h9l3 3v15H6V3Z" />

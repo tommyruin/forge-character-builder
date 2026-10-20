@@ -5350,11 +5350,6 @@ button:disabled {
   width: auto;
 }
 
-/* The sheet choices' own row, used only by the narrow inventory layout. */
-.fcb-inventory-presentation--narrow {
-  display: none;
-}
-
 .fcb-inventory-action-button[aria-pressed="true"],
 .fcb-inventory-action-button[aria-pressed="true"]:hover {
   border-color: var(--fcb-primary);
@@ -5364,6 +5359,59 @@ button:disabled {
 
 .fcb-inventory-action-label {
   display: inline;
+}
+
+/* The narrow card's overflow menu. */
+.fcb-inventory-more {
+  display: inline-flex;
+}
+
+.fcb-inventory-more-list {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  min-width: 11rem;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
+.fcb-inventory-more-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--fcb-radius-sm);
+  background: transparent;
+  color: var(--fcb-text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fcb-inventory-more-item:hover {
+  background: var(--fcb-surface-hover, rgb(255 255 255 / 6%));
+}
+
+.fcb-inventory-more-item[aria-checked="true"] {
+  color: var(--fcb-primary);
+}
+
+.fcb-inventory-more-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.fcb-inventory-more-check {
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
 }
 
 .fcb-inventory-coin-grid {
@@ -5470,10 +5518,10 @@ button:disabled {
 
   .fcb-inventory-table tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      "item item"
-      "qty equipped";
+      "item item item"
+      "qty storage equipped";
     align-items: center;
     column-gap: 10px;
     row-gap: 0;
@@ -5555,10 +5603,10 @@ button:disabled {
 
   .fcb-inventory-mobile-actions .fcb-inventory-info,
   .fcb-inventory-mobile-actions .fcb-inventory-action-button {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    min-height: 36px;
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
     padding: 0;
   }
 
@@ -5574,12 +5622,6 @@ button:disabled {
 
   .fcb-inventory-mobile-actions .fcb-inventory-action-label {
     display: none;
-  }
-
-  .fcb-inventory-presentation--narrow {
-    display: flex;
-    justify-content: flex-start;
-    margin-top: 4px;
   }
 
   .fcb-inventory-mobile-actions .fcb-inventory-action-icon {
@@ -5598,6 +5640,23 @@ button:disabled {
 
   .fcb-inventory-table td[data-label="Qty"] {
     grid-area: qty;
+  }
+
+  /* The storage menu shares the Qty line, so a card is name, summary and one control row. */
+  .fcb-inventory-table td[data-label="Storage"] {
+    grid-area: storage;
+    min-width: 0;
+  }
+
+  .fcb-inventory-table td[data-label="Storage"]::before {
+    display: none;
+  }
+
+  .fcb-inventory-table td[data-label="Storage"] .fcb-inventory-storage-select {
+    width: 100%;
+    min-height: 28px;
+    padding: 2px 24px 2px 8px;
+    font-size: 0.78rem;
   }
 
   .fcb-inventory-table td[data-label="Equipped"] {
@@ -5835,16 +5894,23 @@ button:disabled {
   /* The live stat pills ride one compact row on phones, so HP, AC and the
      Initiative ADV marker stay visible. Abbreviated labels fit five pills at
      iPhone width; a longer value (a second speed) scrolls this row alone
-     rather than the page. */
+     rather than the page. The pills stay grouped at the right with a small
+     gap, as on desktop: the first pill's auto margin pushes the group right
+     and collapses when the row overflows, so every pill stays reachable by
+     scrolling (flex-end alone would clip the left ones). */
   .fcb-subbar-stats {
     flex: 1 1 100%;
     flex-wrap: nowrap;
-    justify-content: space-between;
-    gap: 4px;
+    justify-content: flex-start;
+    gap: 6px;
     margin-left: 0;
     overflow-x: auto;
     padding: 6px 0;
     scrollbar-width: none;
+  }
+
+  .fcb-subbar-stats > :first-child {
+    margin-left: auto;
   }
 
   .fcb-subbar-stats::-webkit-scrollbar {
@@ -8968,5 +9034,14 @@ html.fcb-busy-cursor * {
 .fcb-effect-more {
   height: 32px;
   padding-block: 0;
+  white-space: nowrap;
+}
+
+/* A small text action on a list row (Rename, Edit, Remove): a standard button, one line, with the
+   word on it, so a row never holds an unlabelled icon. */
+.fcb-row-action {
+  min-height: 28px;
+  padding: 3px 9px;
+  font-size: 0.75rem;
   white-space: nowrap;
 }

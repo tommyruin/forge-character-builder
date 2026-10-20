@@ -121,12 +121,30 @@ describe("item presentation toggles", () => {
     expect(button("Print notes for Longsword on the sheet").getAttribute("aria-pressed")).toBe("false");
     expect(button("Print a card for Rope").getAttribute("aria-pressed")).toBe("false");
     expect(button("Print notes for Rope on the sheet").getAttribute("aria-pressed")).toBe("true");
-    // One pair in the desktop Actions cell, one in the narrow layout's own row.
-    expect(host.querySelectorAll('[aria-label="Print a card for Longsword"]')).toHaveLength(2);
-    expect(host.querySelector(".fcb-inventory-presentation--narrow [aria-label=\"Print a card for Longsword\"]")).not.toBeNull();
+    // The pair sits in the desktop Actions cell; the narrow card keeps it in its overflow menu.
+    expect(host.querySelectorAll('[aria-label="Print a card for Longsword"]')).toHaveLength(1);
     expect(host.querySelector(".fcb-inventory-actions--desktop [aria-label=\"Print a card for Longsword\"]")).not.toBeNull();
     expect(button("Print a card for Longsword").textContent).toContain("Card");
     expect(button("Print notes for Longsword on the sheet").textContent).toContain("Sheet notes");
+  });
+
+  it("keeps the narrow card to one row of small actions, with the sheet choices in an overflow menu", async () => {
+    characters.inventory.mockResolvedValue(inventoryWith([inventoryItem({})]));
+    characters.setItemPresentation.mockImplementation(async (_id, identifier, presentation) =>
+      inventoryWith([inventoryItem({ identifier, ...presentation })]),
+    );
+    await openInventory();
+
+    const narrow = host.querySelector(".fcb-inventory-mobile-actions");
+    expect(narrow.querySelector('[aria-label="Print a card for Longsword"]')).toBeNull();
+    expect(narrow.querySelector(".fcb-inventory-actions--mobile").children.length).toBeLessThanOrEqual(4);
+    await act(async () => narrow.querySelector('[aria-label="More actions for Longsword"]').click());
+    const menu = host.querySelector('[role="menu"]');
+    const card = menu.querySelector('[role="menuitemcheckbox"][aria-label="Print a card for Longsword"]');
+    expect(card.getAttribute("aria-checked")).toBe("true");
+    expect(menu.querySelector('[aria-label="Print notes for Longsword on the sheet"]').getAttribute("aria-checked")).toBe("false");
+    await act(async () => card.click());
+    expect(characters.setItemPresentation).toHaveBeenLastCalledWith("Ada", "sword-1", { card: false });
   });
 
   it("switches a record's card and sheet notes through the inventory API", async () => {
