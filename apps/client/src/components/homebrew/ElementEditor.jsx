@@ -155,7 +155,7 @@ export default function ElementEditor({ element, pack, api, disabled = false, sh
         </div>
         {onCopyToPack && (
           <button type="button" className="fcb-button" data-testid="hb-copy-to-pack" disabled={disabled} onClick={onCopyToPack}>
-            Copy to another pack…
+            Copy to a pack…
           </button>
         )}
       </header>

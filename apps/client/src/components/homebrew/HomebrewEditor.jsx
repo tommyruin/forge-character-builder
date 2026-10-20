@@ -32,6 +32,7 @@ import { planPromotion, promoteToPack, refsOfDraft, refsOfElement } from "./prom
 import { CHARACTER_PACK_PREFIX, convertToFeature, elementForDraft, elementIdOf, elementMeta, loadedPack, migratePack } from "./packModel";
 import { makePackFormServices } from "./packServices";
 import Icon from "../Icon";
+import { ToastStack, useToasts } from "../Toasts";
 import {
   buildCollectionXml,
   buildElementXml,
@@ -85,7 +86,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
   const [characterEdit, setCharacterEdit] = useState(null);
   const [promotion, setPromotion] = useState(null);
   const [rawStart, setRawStart] = useState(false);
-  const [shareNotice, setShareNotice] = useState(null);
+  const { toasts, notify } = useToasts();
   const importInput = useRef(null);
   const draftRef = useRef(draft);
   const persistTimerRef = useRef(null);
@@ -532,8 +533,9 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     const record = draftRef.current ?? draft;
     const filename = `${fileSlug(record.slug || record.name) || "pack"}.pack.xml`;
     saveFile(buildPackFile(record), filename);
-    setShareNotice(
-      `${record.name} was saved as ${filename}. Whoever gets it adds it under Homebrew › Import pack, or Content › Manage files, and has it with the same ids and the drafts to edit.`,
+    notify(
+      `${record.name} was saved as ${filename}. Send that file to anyone who should have the pack: they add it under Homebrew › Import pack or Content › Manage files, and can edit it just as you do.`,
+      { ms: 8000 },
     );
   };
 
@@ -558,11 +560,10 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    setShareNotice(null);
     try {
       const kind = await packImport.start(file);
       if (kind === "not-pack") {
-        setShareNotice(`${file.name} is a plain content file, not a pack file. Add it under Content › Manage files.`);
+        notify(`${file.name} is a plain content file, not a pack file. Add it under Content › Manage files.`, { ms: 6000 });
       }
     } catch (error) {
       setIngestResult({ ok: false, errors: [{ where: "Import", message: error.message }] });
@@ -681,8 +682,9 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
       const outcome = await promoteToPack({ store: localStore, target, items, sourcePack: promotion?.sourcePack ?? null });
       refreshList();
       const done = [...outcome.added, ...outcome.replaced];
-      setShareNotice(
-        `${done.join(", ")} ${done.length === 1 ? "is" : "are"} in ${outcome.pack.name} with the same ${done.length === 1 ? "id" : "ids"}. Open that pack and update the builder to load it, or share it from there.`,
+      notify(
+        `${done.join(", ")} ${done.length === 1 ? "is" : "are"} now in ${outcome.pack.name}. Open that pack and use Update builder to load it, or share it from there.`,
+        { ms: 6000 },
       );
       setPromotion(null);
     } catch (e) {
@@ -767,11 +769,6 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
         onChange={chooseImportFile}
       />
 
-      {shareNotice && (
-        <p role="status" className="fcb-status-badge fcb-status-complete" data-testid="hb-share-notice">
-          {shareNotice}
-        </p>
-      )}
       <PackImportPanel
         plan={packImport.plan}
         outcome={packImport.outcome}
@@ -971,6 +968,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
           onClose={() => setSpellFix(null)}
         />
       )}
+      <ToastStack toasts={toasts} />
     </div>
   );
 });

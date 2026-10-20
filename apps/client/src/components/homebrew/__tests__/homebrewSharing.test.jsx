@@ -121,17 +121,17 @@ describe("editing the open character's own entries", () => {
   });
 });
 
-describe('adding a character entry to a world pack', () => {
+describe('copying a character entry to a pack', () => {
   it('offers the elements it refers to, creates the pack with a name and author, and keeps the ids', async () => {
     withCharacterEntries({ ...entryOf(wand, 'item'), type: 'Magic Item' }, entryOf(gift, 'feature'));
     await openCharacterPack();
-    await click(byLabel('Add Tide Wand to a pack'));
+    await click(byLabel('Copy Tide Wand to a pack'));
     const items = $$('[data-testid="hb-promote-items"] li').map((row) => row.textContent);
     expect(items).toHaveLength(2);
     expect(items[0]).toContain('Tide Wand');
     expect(items[1]).toContain('Tide Gift');
     expect(items[1]).toContain('Used by Tide Wand');
-    await type(byLabel('World pack name'), 'Moon World');
+    await type(byLabel('Pack name'), 'Moon World');
     await type(byLabel('Author'), 'Dana');
     await click($('[data-testid="hb-promote-confirm"]'));
     await settle();
@@ -139,14 +139,16 @@ describe('adding a character entry to a world pack', () => {
     expect(made).toMatchObject({ author: 'Dana', world: true });
     expect(made.elements.map((element) => element.id).sort()).toEqual([gift.id, wand.id].sort());
     expect(made.elements.every((element) => element.customDraft && element.rawXml.includes('source="Moon World"'))).toBe(true);
-    expect($('[data-testid="hb-share-notice"]').textContent).toContain('same ids');
+    const toast = $('.fcb-toast-stack .fcb-toast');
+    expect(toast.textContent).toContain('now in Moon World');
+    expect(toast.textContent).not.toMatch(/\bids?\b/);
   });
 
   it('adds only the entry when the author leaves the linked one out', async () => {
     withCharacterEntries({ ...entryOf(wand, 'item'), type: 'Magic Item' }, entryOf(gift, 'feature'));
     h.records.set('pack-1', pack);
     await openCharacterPack();
-    await click(byLabel('Add Tide Wand to a pack'));
+    await click(byLabel('Copy Tide Wand to a pack'));
     await choose($('[data-testid="hb-promote-pack"]'), 'pack-1');
     await click(byLabel('Copy Tide Gift'));
     await click($('[data-testid="hb-promote-confirm"]'));
@@ -182,7 +184,11 @@ describe('sharing a pack as one file', () => {
     const text = await downloads[0].text();
     expect(text).toContain('urn:forge-cb:pack:1');
     expect(text).toContain(`id="${gift.id}"`);
-    expect($('[data-testid="hb-share-notice"]').textContent).toContain('moonwell-campaign.pack.xml');
+    const shared = $('.fcb-toast-stack .fcb-toast').textContent;
+    expect(shared).toContain('moonwell-campaign.pack.xml');
+    expect(shared).not.toMatch(/\bids?\b/);
+    // A toast, not a line in the page: sharing never moves the layout.
+    expect($('[data-testid="hb-share-notice"]')).toBeNull();
   });
 
   it('does not share a pack with a blocking problem', async () => {
@@ -266,7 +272,7 @@ describe('adding a shared pack file', () => {
     await mount(<HomebrewEditor />);
     await settle();
     await choosePackFile(new File(['<elements></elements>'], 'plain.xml'));
-    expect($('[data-testid="hb-share-notice"]').textContent).toContain('plain content file');
+    expect($('.fcb-toast-stack .fcb-toast').textContent).toContain('plain content file');
     expect(h.records.size).toBe(0);
   });
 });

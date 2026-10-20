@@ -61,10 +61,10 @@ export default function CharacterPackView({ characterName, content, busy, notice
                     type="button"
                     className="fcb-button px-2 py-1 text-xs"
                     disabled={busy}
-                    aria-label={`Add ${entry.draft.name} to a pack`}
+                    aria-label={`Copy ${entry.draft.name} to a pack`}
                     onClick={() => onPromote(entry)}
                   >
-                    Add to a pack…
+                    Copy to a pack…
                   </button>
                 )}
                 <button

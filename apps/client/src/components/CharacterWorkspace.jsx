@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { api, MAGIC_RULE_TYPES } from "../api";
 import { applyLibraryRevision } from "../libraryLifecycle.js";
+import { ToastStack, useToasts } from "./Toasts";
 import { WorkspaceContext } from "./WorkspaceContext";
 import BuildTab from "./tabs/BuildTab";
 import { useMigrationIssues } from "../hooks/useMigrationIssues";
@@ -147,8 +148,7 @@ export default function CharacterWorkspace({
   const [splitFits, setSplitFits] = useState(false);
   // Bumped after every successful mutation; the live sheet preview regenerates from it.
   const [mutationTick, setMutationTick] = useState(0);
-  const [toasts, setToasts] = useState([]);
-  const toastId = useRef(0);
+  const { toasts, notify } = useToasts();
   const resourceCache = useRef(new Map());
   const workspaceRef = useRef(null);
   const mainRef = useRef(null);
@@ -268,15 +268,6 @@ export default function CharacterWorkspace({
     const observer = new ResizeObserver(apply);
     observer.observe(subbar);
     return () => observer.disconnect();
-  }, []);
-
-  // Transient confirmation messages (e.g. "Added Longsword to your inventory").
-  const notify = useCallback((message) => {
-    const nextId = ++toastId.current;
-    setToasts((current) => [...current.slice(-3), { id: nextId, message }]);
-    window.setTimeout(() => {
-      setToasts((current) => current.filter((t) => t.id !== nextId));
-    }, 2800);
   }, []);
 
   const refresh = useCallback(() => {
@@ -872,15 +863,7 @@ export default function CharacterWorkspace({
           </Suspense>
         )}
 
-        {toasts.length > 0 && (
-          <div className="fcb-toast-stack" role="status" aria-live="polite">
-            {toasts.map((toast) => (
-              <div key={toast.id} className="fcb-toast">
-                {toast.message}
-              </div>
-            ))}
-          </div>
-        )}
+        <ToastStack toasts={toasts} />
       </div>
     </WorkspaceContext.Provider>
   );

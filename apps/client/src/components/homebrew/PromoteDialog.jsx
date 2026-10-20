@@ -1,5 +1,5 @@
-// "Add to a pack": where a finished entry goes, and what comes with it. The destination is a pack
-// already on the device or a new world pack (a pack made to share with a table). The entry is
+// "Copy to a pack": where a finished entry goes, and what comes with it. The destination is a pack
+// already on the device or a new pack (to share with a table). The entry is
 // always copied; what it refers to (an item's granted feature, a subclass's class) is listed so the
 // author sees the pack will hold everything the entry needs, and can leave a piece out knowingly.
 
@@ -29,7 +29,7 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
     });
 
   return (
-    <Modal open title={`Add ${subject} to a pack`} onClose={onClose} size="wide">
+    <Modal open title={`Copy ${subject} to a pack`} onClose={onClose} size="wide">
       <form
         className="space-y-4"
         data-testid="hb-promote"
@@ -45,15 +45,15 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
             value={destination}
             onChange={setDestination}
             options={[
-              ...packs.map((pack) => ({ id: pack.id, label: `${pack.name} (${pack.elements?.length ?? 0})${pack.world ? ' · world pack' : ''}` })),
-              { id: NEW_PACK, label: 'A new world pack…' },
+              ...packs.map((pack) => ({ id: pack.id, label: `${pack.name} (${pack.elements?.length ?? 0})${pack.world ? ' · shared pack' : ''}` })),
+              { id: NEW_PACK, label: 'A new pack…' },
             ]}
           />
         </Field>
         {creating && (
           <div className="fcb-custom-row" data-testid="hb-promote-new">
-            <Field label="World pack name">
-              <input className="fcb-input normal-case" aria-label="World pack name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Moonwell Campaign" />
+            <Field label="Pack name">
+              <input className="fcb-input normal-case" aria-label="Pack name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Moonwell Campaign" />
             </Field>
             <Field label="Author">
               <input className="fcb-input normal-case" aria-label="Author" value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="Who is sharing it" />
@@ -61,7 +61,7 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
           </div>
         )}
         <div>
-          <p className="fcb-field-label mb-1">Copied into the pack, ids unchanged</p>
+          <p className="fcb-field-label mb-1">Copied into the pack as they are</p>
           <ul className="space-y-1" data-testid="hb-promote-items">
             {plan.items.map((item) => (
               <li key={item.id} className="fcb-custom-entry flex flex-wrap items-center gap-2 text-sm">
@@ -98,7 +98,7 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" data-testid="hb-promote-confirm" disabled={!ready}>
-            {creating ? 'Create pack and add' : `Add to ${target?.name ?? 'pack'}`}
+            {creating ? 'Create pack and copy' : `Copy to ${target?.name ?? 'pack'}`}
           </button>
         </div>
       </form>
