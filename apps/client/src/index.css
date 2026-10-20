@@ -1191,7 +1191,6 @@ button:disabled {
   font-weight: 500;
   line-height: 1.35;
   text-align: left;
-  pointer-events: none;
 }
 
 .fcb-sheet-colour-part {
@@ -7139,8 +7138,14 @@ button:disabled {
 }
 
 .fcb-toast {
-  max-width: min(340px, 80vw);
-  padding: 9px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(360px, 86vw);
+  padding: 9px 8px 9px 14px;
+  /* A message takes the pointer so it can wait while read and be dismissed; the stack around it
+     still lets clicks through. */
+  pointer-events: auto;
   border: 1px solid color-mix(in srgb, var(--fcb-primary) 55%, transparent);
   border-radius: var(--fcb-radius);
   background: color-mix(in srgb, var(--fcb-surface) 96%, transparent);
@@ -7152,6 +7157,36 @@ button:disabled {
 
 .fcb-toast strong {
   color: var(--fcb-cyan);
+}
+
+.fcb-toast-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.fcb-toast-dismiss {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fcb-radius-sm);
+  background: transparent;
+  color: var(--fcb-text-muted);
+  cursor: pointer;
+}
+
+.fcb-toast-dismiss:hover,
+.fcb-toast-dismiss:focus-visible {
+  color: var(--fcb-text);
+}
+
+.fcb-toast-dismiss svg {
+  width: 14px;
+  height: 14px;
 }
 
 .fcb-fast-start-notice {

@@ -86,7 +86,8 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
   const [characterEdit, setCharacterEdit] = useState(null);
   const [promotion, setPromotion] = useState(null);
   const [rawStart, setRawStart] = useState(false);
-  const { toasts, notify } = useToasts();
+  const toastState = useToasts();
+  const { notify } = toastState;
   const importInput = useRef(null);
   const draftRef = useRef(draft);
   const persistTimerRef = useRef(null);
@@ -535,7 +536,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     saveFile(buildPackFile(record), filename);
     notify(
       `${record.name} was saved as ${filename}. Send that file to anyone who should have the pack: they add it under Homebrew › Import pack or Content › Manage files, and can edit it just as you do.`,
-      { ms: 8000 },
+      { sticky: true },
     );
   };
 
@@ -968,7 +969,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
           onClose={() => setSpellFix(null)}
         />
       )}
-      <ToastStack toasts={toasts} />
+      <ToastStack {...toastState} />
     </div>
   );
 });

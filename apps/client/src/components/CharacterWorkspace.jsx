@@ -148,7 +148,8 @@ export default function CharacterWorkspace({
   const [splitFits, setSplitFits] = useState(false);
   // Bumped after every successful mutation; the live sheet preview regenerates from it.
   const [mutationTick, setMutationTick] = useState(0);
-  const { toasts, notify } = useToasts();
+  const toastState = useToasts();
+  const { notify } = toastState;
   const resourceCache = useRef(new Map());
   const workspaceRef = useRef(null);
   const mainRef = useRef(null);
@@ -863,7 +864,7 @@ export default function CharacterWorkspace({
           </Suspense>
         )}
 
-        <ToastStack toasts={toasts} />
+        <ToastStack {...toastState} />
       </div>
     </WorkspaceContext.Provider>
   );

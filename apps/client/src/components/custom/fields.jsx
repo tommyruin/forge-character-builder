@@ -1,7 +1,7 @@
 // Small controlled form pieces the custom-content blocks share. They are plain labelled
 // elements, so every control has a name a screen reader announces and a tab stop.
 
-import { useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import Icon from '../Icon';
 
 export function Field({ label, children, className = '' }) {
@@ -112,47 +112,104 @@ export function HeldBackNote({ id, issues, editing = false }) {
   );
 }
 
-// A small (i) button that explains the control beside it. The text shows on hover, on keyboard
-// focus and when the button is pressed (so it works on touch too); it is placed against the
-// viewport, so a dialog's scroll area never clips it.
+// Only one (i) tip is open at a time: opening one closes the last.
+let closeOpenTip = null;
+
+// A small (i) button that explains the control beside it. Its text is the button's description, so a
+// screen reader reads it with the button whether or not the visible tip is open. The visible tip
+// shows on hover, on keyboard focus and when the button is pressed (so it works on touch too); the
+// pointer can move onto it without it vanishing; it closes on Escape, on a tap elsewhere, and when
+// the page or the dialog scrolls. It is placed against the viewport, so a dialog's scroll area never
+// clips it, and it opens above the button when there is no room below.
 export function InfoTip({ label, text }) {
   const id = useId();
-  const [shown, setShown] = useState(false);
-  const [pinned, setPinned] = useState(false);
   const [place, setPlace] = useState(null);
+  const pinned = useRef(false);
+  const leaveTimer = useRef(null);
+  const wrap = useRef(null);
+  const close = useCallback(() => {
+    window.clearTimeout(leaveTimer.current);
+    pinned.current = false;
+    setPlace(null);
+  }, []);
   const open = (target) => {
+    window.clearTimeout(leaveTimer.current);
+    if (closeOpenTip && closeOpenTip !== close) closeOpenTip();
+    closeOpenTip = close;
     const box = target.getBoundingClientRect();
     const width = Math.min(260, window.innerWidth - 24);
-    setPlace({ top: box.bottom + 6, left: Math.max(12, Math.min(box.left + box.width / 2 - width / 2, window.innerWidth - width - 12)), width });
-    setShown(true);
+    const left = Math.max(12, Math.min(box.left + box.width / 2 - width / 2, window.innerWidth - width - 12));
+    const roomBelow = window.innerHeight - box.bottom;
+    setPlace(roomBelow > 120 ? { top: box.bottom + 6, left, width } : { bottom: window.innerHeight - box.top + 6, left, width });
   };
-  const close = () => {
-    setShown(false);
-    setPinned(false);
+  // Leaving for the tip itself (or back) within a moment keeps it open.
+  const leaveSoon = () => {
+    if (pinned.current) return;
+    window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(close, 150);
   };
+  useEffect(() => {
+    if (!place) return undefined;
+    const onDown = (event) => {
+      if (wrap.current && !wrap.current.contains(event.target)) close();
+    };
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [place, close]);
+  useEffect(
+    () => () => {
+      window.clearTimeout(leaveTimer.current);
+      if (closeOpenTip === close) closeOpenTip = null;
+    },
+    [close],
+  );
   return (
-    <span className="fcb-info-button-wrap">
+    <span className="fcb-info-button-wrap" ref={wrap}>
       <button
         type="button"
         className="fcb-info-button"
         aria-label={`About ${label}`}
-        aria-describedby={shown ? id : undefined}
-        aria-expanded={shown}
+        aria-describedby={id}
         onMouseEnter={(event) => open(event.currentTarget)}
-        onMouseLeave={() => !pinned && setShown(false)}
+        onMouseLeave={leaveSoon}
         onFocus={(event) => open(event.currentTarget)}
         onBlur={close}
-        onKeyDown={(event) => event.key === 'Escape' && shown && (event.stopPropagation(), close())}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && place) {
+            // Escape closes the tip only; the dialog stays open.
+            event.stopPropagation();
+            close();
+          }
+        }}
         onClick={(event) => {
-          setPinned(!pinned);
-          if (pinned) setShown(false);
-          else open(event.currentTarget);
+          if (pinned.current) {
+            close();
+            return;
+          }
+          open(event.currentTarget);
+          pinned.current = true;
         }}
       >
         <Icon name="info" className="fcb-info-tip-icon" />
       </button>
-      {shown && place && (
-        <span id={id} role="tooltip" className="fcb-info-popover" style={{ top: place.top, left: place.left, width: place.width }}>
+      <span id={id} className="sr-only">
+        {text}
+      </span>
+      {place && (
+        <span
+          aria-hidden="true"
+          className="fcb-info-popover"
+          data-testid="info-tip"
+          style={place}
+          onMouseEnter={() => window.clearTimeout(leaveTimer.current)}
+          onMouseLeave={leaveSoon}
+        >
           {text}
         </span>
       )}

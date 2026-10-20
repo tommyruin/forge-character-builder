@@ -132,19 +132,39 @@ describe('the effect chips', () => {
     expect(chipNames().slice(6)).toEqual(['+ Bonus to another stat', '+ Grows with level', '+ Only while active']);
   });
 
-  it('explains each chip in an (i) tip that shows on hover and focus, with no inline hint text', async () => {
+  it('explains each chip in an (i) tip: always the button description, shown on hover and focus', async () => {
     const seen = probe();
     await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
-    expect(document.querySelector('[role="tooltip"]')).toBeNull();
     const tip = byLabel('About Player choice');
+    // A screen reader hears the hint with the button, open or not.
+    expect(document.getElementById(tip.getAttribute('aria-describedby')).textContent).toContain('pick 2 skills');
+    expect(tip.hasAttribute('aria-expanded')).toBe(false);
+    expect(document.querySelector('[data-testid="info-tip"]')).toBeNull();
     await act(async () => {
       tip.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true }));
       tip.dispatchEvent(new window.FocusEvent('focusin', { bubbles: true }));
     });
-    expect(document.querySelector('[role="tooltip"]').textContent).toContain('pick 2 skills');
+    expect(document.querySelector('[data-testid="info-tip"]').textContent).toContain('pick 2 skills');
     await act(async () => {
       tip.dispatchEvent(new window.FocusEvent('focusout', { bubbles: true }));
     });
-    expect(document.querySelector('[role="tooltip"]')).toBeNull();
+    expect(document.querySelector('[data-testid="info-tip"]')).toBeNull();
   });
+
+  it('keeps one tip open at a time, and closes it on a tap elsewhere or a scroll', async () => {
+    const seen = probe();
+    await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
+    const shown = () => [...document.querySelectorAll('[data-testid="info-tip"]')].map((node) => node.textContent);
+    await click(byLabel('About Player choice'));
+    await click(byLabel('About Language'));
+    expect(shown()).toHaveLength(1);
+    expect(shown()[0]).toContain('language');
+    await act(async () => document.body.dispatchEvent(new window.Event('pointerdown', { bubbles: true })));
+    expect(shown()).toHaveLength(0);
+    await click(byLabel('About Language'));
+    expect(shown()).toHaveLength(1);
+    await act(async () => window.dispatchEvent(new window.Event('scroll')));
+    expect(shown()).toHaveLength(0);
+  });
+
 });
