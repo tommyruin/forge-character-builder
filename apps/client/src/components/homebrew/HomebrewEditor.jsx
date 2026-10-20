@@ -166,6 +166,28 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
 
   useImperativeHandle(ref, () => ({ flushPendingDraft }), [flushPendingDraft]);
 
+  // Saves only when an edit is waiting out the debounce, for the moments an author leaves the
+  // editor: a field losing focus, another element opening, the page unloading, the editor closing.
+  const flushIfPending = useCallback(() => {
+    if (persistTimerRef.current === null) return;
+    void flushPendingDraft().catch(() => {});
+  }, [flushPendingDraft]);
+
+  // The debounce effect below cancels its timer in its cleanup, and that cleanup also runs when the
+  // editor unmounts, so without this a rename made just before the tab closed was never stored.
+  useEffect(() => {
+    window.addEventListener("beforeunload", flushIfPending);
+    return () => {
+      window.removeEventListener("beforeunload", flushIfPending);
+      flushIfPending();
+    };
+  }, [flushIfPending]);
+
+  // Every way of opening another element (or the pack's own page) goes through the selection.
+  useEffect(() => {
+    flushIfPending();
+  }, [selectedElementId, flushIfPending]);
+
   // Debounce-persist the working draft so edits survive tab switches without an
   // explicit save (Update builder additionally regenerates + uploads the XML).
   useEffect(() => {
@@ -174,6 +196,7 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
     persistTimerRef.current = window.setTimeout(() => {
       void flushPendingDraft().catch(() => {});
     }, 600);
+    // Left set, not nulled: the unmount flush above reads it to know an edit is still waiting.
     return () => window.clearTimeout(persistTimerRef.current);
   }, [draft, flushPendingDraft]);
 
@@ -809,7 +832,13 @@ const HomebrewEditor = forwardRef(function HomebrewEditor(
           onRemoveElement={removeElement}
         />
 
-        <section id="hb-main-editor" className="fcb-homebrew-editor min-w-0" data-testid="hb-main-editor" aria-label="Homebrew editor">
+        <section
+          id="hb-main-editor"
+          className="fcb-homebrew-editor min-w-0"
+          data-testid="hb-main-editor"
+          aria-label="Homebrew editor"
+          onBlur={flushIfPending}
+        >
           <button
             type="button"
             data-testid="hb-mobile-back"

@@ -4,7 +4,7 @@
 // characters have picked under is changed.
 import { act } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { $, $$, buttonByText, byLabel, choose, click, mount, settle, type } from '../../custom/__tests__/harness';
+import { $, $$, buttonByText, byLabel, choose, click, mount, settle, type, unmountAll } from '../../custom/__tests__/harness';
 
 const h = vi.hoisted(() => {
   const records = new Map();
@@ -470,6 +470,61 @@ describe('changing a choice characters have picked under', () => {
     await settle();
     expect($('[data-testid="hb-risk-prompt"]')).toBeNull();
     expect(h.api.content.upload).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('edits made just before the editor is left', () => {
+  const gift = {
+    schemaVersion: 1, id: 'ID_CUSTOM_RENAMETEST01', template: 'boon', name: 'Tide Gift', showsUnder: 'other', description: 'The tide answers.', blocks: [],
+  };
+  const other = { ...gift, id: 'ID_CUSTOM_RENAMETEST02', name: 'Moon Gift' };
+  const savedNames = () => h.records.get('pack-1').elements.map((element) => element.customDraft.name);
+
+  // Root cause: the debounced save was cancelled by the effect cleanup, which also runs when the
+  // editor unmounts, so a rename inside the debounce window never reached the store.
+  it('saves a rename when the editor closes before the debounce fires', async () => {
+    await openPack({ ...pack, elements: [elementForDraft(gift, pack)] });
+    await click(elementRow('Tide Gift'));
+    h.store.putHomebrew.mockClear();
+    await type(byLabel('Name'), 'Tide Gift, renamed');
+    expect(h.store.putHomebrew).not.toHaveBeenCalled();
+    await unmountAll();
+    expect(savedNames()).toEqual(['Tide Gift, renamed']);
+  });
+
+  it('saves a rename as soon as the field loses focus', async () => {
+    await openPack({ ...pack, elements: [elementForDraft(gift, pack)] });
+    await click(elementRow('Tide Gift'));
+    h.store.putHomebrew.mockClear();
+    await type(byLabel('Name'), 'Tide Gift, renamed');
+    await act(async () => {
+      byLabel('Name').dispatchEvent(new window.FocusEvent('focusout', { bubbles: true }));
+    });
+    await settle();
+    expect(savedNames()).toEqual(['Tide Gift, renamed']);
+  });
+
+  it('saves a rename when another element is opened', async () => {
+    await openPack({ ...pack, elements: [elementForDraft(gift, pack), elementForDraft(other, pack)] });
+    await click(elementRow('Tide Gift'));
+    await type(byLabel('Name'), 'Tide Gift, renamed');
+    h.store.putHomebrew.mockClear();
+    await click(elementRow('Moon Gift'));
+    await settle();
+    expect(h.store.putHomebrew).toHaveBeenCalled();
+    expect(savedNames()).toEqual(['Tide Gift, renamed', 'Moon Gift']);
+  });
+
+  it('saves a rename when the page is about to unload', async () => {
+    await openPack({ ...pack, elements: [elementForDraft(gift, pack)] });
+    await click(elementRow('Tide Gift'));
+    h.store.putHomebrew.mockClear();
+    await type(byLabel('Name'), 'Tide Gift, renamed');
+    await act(async () => {
+      window.dispatchEvent(new window.Event('beforeunload'));
+    });
+    await settle();
+    expect(savedNames()).toEqual(['Tide Gift, renamed']);
   });
 });
 

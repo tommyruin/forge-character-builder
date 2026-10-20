@@ -9,12 +9,17 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const mounted = [];
 
-afterEach(async () => {
+// Unmounts every root the test mounted, as closing a tab or leaving a page does.
+export async function unmountAll() {
   while (mounted.length > 0) {
     const { root, host } = mounted.pop();
     await act(async () => root.unmount());
     host.remove();
   }
+}
+
+afterEach(async () => {
+  await unmountAll();
   document.body.innerHTML = '';
 });
 
