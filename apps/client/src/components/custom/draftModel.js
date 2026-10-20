@@ -243,10 +243,11 @@ function describeSpell(block) {
 }
 
 export function describeGrant(block) {
-  if (block.target.type === 'Spell') return `${describeSpell(block)}${describeGates({ level: block.level, requirements: block.requirements })}`;
+  const gates = describeGates({ level: block.level, requirements: block.requirements, switch: block.switch });
+  if (block.target.type === 'Spell') return `${describeSpell(block)}${gates}`;
   const name = block.target.by === 'name' ? block.target.name : block.target.label || block.target.id;
   const label = typeLabel(block.target.type);
-  return `${label}: ${name || 'not picked yet'}${describeGates({ level: block.level, requirements: block.requirements })}`;
+  return `${label}: ${name || 'not picked yet'}${gates}`;
 }
 
 export function describeChoice(block) {

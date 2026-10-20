@@ -204,6 +204,7 @@ export default function ProgressionTable({ draft, setDraft, services, issues = [
             />
           </div>
           <FeatureFields
+            key={openFeature.draft.id}
             draft={openFeature.draft}
             setDraft={(updater) =>
               setDraft((current) => setFeatureDraft(current, openFeature.draft.id, (feature) => (typeof updater === 'function' ? updater(feature) : updater)))
@@ -221,6 +222,7 @@ export default function ProgressionTable({ draft, setDraft, services, issues = [
       {openChoice && (
         <section className="fcb-progression-detail" aria-label="Choice" data-testid="hb-progression-choice">
           <ChoiceBlock
+            key={openChoice.id}
             block={openChoice}
             ariaLabel="Player picks"
             lookup={services.lookup}

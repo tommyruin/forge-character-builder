@@ -114,7 +114,7 @@ export function switchNamesIn(entries) {
   const seen = new Map();
   for (const entry of entries ?? []) {
     for (const block of entry.draft?.blocks ?? []) {
-      const name = block.kind === 'modifier' ? block.gates?.switch?.trim() : undefined;
+      const name = (block.kind === 'modifier' ? block.gates?.switch : block.kind === 'grant' ? block.switch : undefined)?.trim();
       if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
     }
   }

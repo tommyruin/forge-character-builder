@@ -38,20 +38,31 @@ function blockTitle(block) {
   return 'Player picks';
 }
 
-// The switch a draft's modifiers share, if any: "Only while active" is one name applied to all
-// of them, so the row can show and edit it.
+// The switch a draft's modifiers and grants share, if any: "Only while active" is one name applied
+// to all of them, so the row can show and edit it. A grant carries it as `switch`, a modifier as
+// `gates.switch`; player picks have no gate, so a choice never holds one.
 export function sharedSwitch(blocks) {
-  return blocks.find((block) => block.kind === 'modifier' && block.gates?.switch)?.gates.switch;
+  for (const block of blocks) {
+    const name = block.kind === 'modifier' ? block.gates?.switch : block.kind === 'grant' ? block.switch : undefined;
+    if (name?.trim()) return name;
+  }
+  return undefined;
 }
 
 export function withSwitch(blocks, name) {
   return blocks.map((block) => {
+    if (block.kind === 'grant') {
+      const { switch: _switch, ...rest } = block;
+      return name?.trim() ? { ...rest, switch: name } : rest;
+    }
     if (block.kind !== 'modifier') return block;
     const gates = compactGates({ ...block.gates, switch: name });
     const { gates: _gates, ...rest } = block;
     return gates ? { ...rest, gates } : rest;
   });
 }
+
+const takesSwitch = (block) => block.kind === 'modifier' || block.kind === 'grant';
 
 /**
  * `draft` and `setDraft` are the draft and a state setter for it (a function of the current draft
@@ -62,7 +73,13 @@ export function withSwitch(blocks, name) {
  * where they belong. `only` narrows the chips to the ones named (a class' starting proficiencies
  * offer proficiencies, languages and picks, not ability scores).
  */
-export default function EffectsEditor({
+export default function EffectsEditor(props) {
+  // The switch row and the caster list belong to one entry. Editors that show several entries one
+  // after another (a class table's features) reuse this component, so a new entry starts clean.
+  return <EffectsEditorBody key={props.draft.id} {...props} />;
+}
+
+function EffectsEditorBody({
   draft,
   setDraft,
   services,
@@ -119,7 +136,7 @@ export default function EffectsEditor({
   const setBlock = (index, block) => setBlocks(draft.blocks.map((entryBlock, at) => (at === index ? block : entryBlock)));
   const removeBlock = (index) => setBlocks(draft.blocks.filter((_, at) => at !== index));
   const addBlock = (block) =>
-    setBlocks([...draft.blocks, switchOn && switchName.trim() !== '' && block.kind === 'modifier' ? withSwitch([block], switchName)[0] : block]);
+    setBlocks([...draft.blocks, switchOn && switchName.trim() !== '' && takesSwitch(block) ? withSwitch([block], switchName)[0] : block]);
   const setTrackers = (next) => patch({ trackers: next.length > 0 ? next : undefined });
   const setScales = (next) => patch({ scales: next.length > 0 ? next : undefined });
 
@@ -248,7 +265,7 @@ export default function EffectsEditor({
               />
             </div>
             <p className="fcb-muted-copy text-xs">
-              The bonuses above apply only while this switch is on. It starts off; turn it on from Manage › Resources.
+              The bonuses and spells above apply only while this switch is on. It starts off; turn it on from Manage › Resources.
               {knownSwitches.length > 0 ? ' Pick a switch another entry uses, or name a new one.' : ''}
             </p>
           </div>
