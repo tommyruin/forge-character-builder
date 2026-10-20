@@ -3,7 +3,7 @@
 // one beside it, and the sheet prints it. An empty name goes back to the spell's own.
 
 import { useState } from 'react';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 import { Field } from './fields';
 
 export const MAX_ALIAS_NAME = 80;
@@ -78,14 +78,14 @@ export default function SpellAliasModal({ spell, busy = false, onClose, onSave }
         <p className="fcb-muted-copy text-xs">
           Rules unchanged: it still works as {spell.name}. Only the name and notes change, on this character only.
         </p>
-        <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <DialogFooter>
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" disabled={busy || unchanged || nameTooLong || noteTooLong}>
             {busy ? 'Saving…' : 'Save changes'}
           </button>
-        </div>
+        </DialogFooter>
       </form>
     </Modal>
   );

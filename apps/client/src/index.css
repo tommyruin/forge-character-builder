@@ -1500,16 +1500,22 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+/* The title takes the room left beside the actions; the actions drop below only when the title would
+   be squeezed under about nine characters' width, so a header with one small action stays one line. */
 .fcb-panel-header > :first-child:not(.fcb-panel-actions) {
-  flex: 1 1 14rem;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: min(100%, 9rem);
 }
 
-/* Buttons in a toolbar or a panel's actions keep their one-line, standard-height label; the row
-   wraps between buttons instead. */
-.fcb-toolbar > .fcb-button,
-.fcb-panel-actions > .fcb-button {
+/* Buttons in a panel's actions or a dialog's action row keep their one-line, standard-height label;
+   the row wraps between buttons instead. A label that carries a user's text (a pack's name) is cut
+   with an ellipsis rather than pushing the dialog sideways. */
+.fcb-panel-actions > .fcb-button,
+.fcb-dialog-footer > .fcb-button {
   flex: 0 0 auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -9092,7 +9098,13 @@ html.fcb-busy-cursor * {
 }
 
 /* The Modal body is the dialog's one scroller. Its action row sticks to the bottom of it, so Add and
-   Save are never below the fold of a long form. */
+   Save are never below the fold of a long form; the scroll padding keeps a field reached with Tab
+   (or scrolled into view) clear of that row. */
+.fcb-modal-body {
+  overscroll-behavior: contain;
+  scroll-padding-bottom: 72px;
+}
+
 .fcb-dialog-footer {
   position: sticky;
   bottom: 0;

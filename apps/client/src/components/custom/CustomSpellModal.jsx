@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { customEntryIssues } from '@forge-cb/engine/custom';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from './fields';
 import {
   CASTING_TIME_PRESETS,
@@ -575,7 +575,7 @@ export default function CustomSpellModal({
           </div>
         )}
 
-        <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <DialogFooter>
           {editing && pack === null && (
             <button type="button" className="fcb-button fcb-button-danger mr-auto" disabled={saving} onClick={() => setConfirmRemove(true)}>
               Delete spell
@@ -587,7 +587,7 @@ export default function CustomSpellModal({
           <button type="submit" className="fcb-button fcb-status-complete" disabled={saving}>
             {saving ? 'Saving…' : editing ? 'Save changes' : 'Add spell'}
           </button>
-        </div>
+        </DialogFooter>
       </form>
     </Modal>
   );

@@ -3,7 +3,7 @@
 // (naming them), and says what it did either way. The shared Undo button brings it back.
 
 import { useCallback, useState } from 'react';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 
 export function useCustomRemoval({ services, notify }) {
   const [pending, setPending] = useState(null);
@@ -70,14 +70,14 @@ export function CustomRemovalDialog({ removal }) {
           ))}
         </ul>
         {removal.error && <p role="alert" className="fcb-alert">{removal.error}</p>}
-        <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <DialogFooter>
           <button type="button" className="fcb-button" onClick={removal.cancel}>
             Keep it
           </button>
           <button type="button" className="fcb-button fcb-button-danger" disabled={removal.saving} onClick={() => void removal.confirm()}>
             Remove and clear those picks
           </button>
-        </div>
+        </DialogFooter>
       </div>
     </Modal>
   );

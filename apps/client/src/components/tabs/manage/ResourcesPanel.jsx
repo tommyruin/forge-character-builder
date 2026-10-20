@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../api';
 import { useWorkspace } from '../../WorkspaceContext';
 import Icon from '../../Icon';
-import Modal from '../../Modal';
+import Modal, { DialogFooter } from '../../Modal';
 import { CustomBadge } from '../../custom/CustomEntries';
 import TrackerBlock from '../../custom/TrackerBlock';
 import { makeTracker } from '../../custom/trackerModel';
@@ -138,14 +138,14 @@ function ManualTrackerModal({ draft, onChange, onSave, onClose, saving, error })
           onChange={(tracker) => onChange({ ...draft, tracker })}
         />
         {error && <p role="alert" className="fcb-alert">{error}</p>}
-        <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <DialogFooter>
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || problems.length > 0}>
             {saving ? 'Saving…' : draft.isNew ? 'Add tracker' : 'Save changes'}
           </button>
-        </div>
+        </DialogFooter>
       </form>
     </Modal>
   );

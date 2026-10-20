@@ -4,7 +4,7 @@
 // first asks which element; "Custom type or raw XML" starts any other element as XML.
 
 import { useMemo, useState } from 'react';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 import CustomItemModal from '../custom/CustomItemModal';
 import CustomSpellModal from '../custom/CustomSpellModal';
 import LibraryPicker from '../custom/LibraryPicker';
@@ -64,11 +64,11 @@ function BookElementStep({ route, api, onBack, onPicked }) {
           {error}
         </p>
       )}
-      <div className="fcb-toolbar fcb-dialog-footer justify-end">
+      <DialogFooter>
         <button type="button" className="fcb-button mr-auto" onClick={onBack}>
           Back
         </button>
-      </div>
+      </DialogFooter>
     </div>
   );
 }
@@ -94,14 +94,14 @@ function RawTypeStep({ onBack, onCreate }) {
           <input className="fcb-input" aria-label="Element name" value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
       </div>
-      <div className="fcb-toolbar fcb-dialog-footer justify-end">
+      <DialogFooter>
         <button type="button" className="fcb-button mr-auto" onClick={onBack}>
           Back
         </button>
         <button type="submit" className="fcb-button fcb-status-complete" disabled={type.trim() === '' || name.trim() === ''}>
           Add element
         </button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
@@ -213,14 +213,14 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
               </section>
             ))}
           </div>
-          <div className="fcb-toolbar fcb-dialog-footer justify-end">
+          <DialogFooter>
             <button type="button" className="fcb-button mr-auto" onClick={onClose}>
               Cancel
             </button>
             <button type="button" className="fcb-button fcb-status-complete" data-testid="hb-template-create" disabled={!route} onClick={create}>
               {makesNow ? 'Add element' : 'Next'}
             </button>
-          </div>
+          </DialogFooter>
         </div>
       )}
 
@@ -239,11 +239,11 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
       {step === 'parent' && route && (
         <div className="space-y-3" data-testid="hb-parent-step">
           <ParentPicker kind={route.template} pack={pack} api={api} lookup={parentLookup} value={null} onPick={createForParent} />
-          <div className="fcb-toolbar fcb-dialog-footer justify-end">
+          <DialogFooter>
             <button type="button" className="fcb-button mr-auto" onClick={() => setStep('pick')}>
               Back
             </button>
-          </div>
+          </DialogFooter>
         </div>
       )}
 

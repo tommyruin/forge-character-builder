@@ -3,11 +3,24 @@
 import { useEffect } from 'react';
 import Icon from './Icon';
 
+// A dialog's action row (Cancel, Add, Save changes). It sticks to the bottom of the dialog's one
+// scroll area, so the buttons stay in view on a long form; the body keeps room above it, so a field
+// reached with Tab never sits hidden behind the row. A form dialog puts it last inside its <form>
+// (so its submit button still submits); a dialog without a form passes its buttons as `footer`.
+export function DialogFooter({ children, className = '', ...props }) {
+  return (
+    <div className={`fcb-toolbar fcb-dialog-footer justify-end ${className}`.trim()} {...props}>
+      {children}
+    </div>
+  );
+}
+
 export default function Modal({
   open,
   title,
   onClose,
   children,
+  footer = null,
   size = 'default',
 }) {
   useEffect(() => {
@@ -42,7 +55,10 @@ export default function Modal({
         </div>
         {/* Cap the dialog at 90vh and scroll the body so tall content stays reachable on
             short/phone viewports (the header + close button stay pinned). */}
-        <div className="space-y-3 overflow-y-auto text-sm text-[var(--fcb-text)]">{children}</div>
+        <div className="fcb-modal-body space-y-3 overflow-y-auto text-sm text-[var(--fcb-text)]">
+          {children}
+          {footer && <DialogFooter>{footer}</DialogFooter>}
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 // empty name goes back to the item's own.
 
 import { useState } from 'react';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 import { Field } from './fields';
 
 export const MAX_ITEM_NAME = 120;
@@ -79,14 +79,14 @@ export default function ItemDetailsModal({ item, busy = false, onClose, onSave }
         <p className="fcb-muted-copy text-xs">
           Rules unchanged: it still works as {item.defaultName}. Only the name and notes change, on this character only.
         </p>
-        <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <DialogFooter>
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" disabled={busy || unchanged || nameTooLong || notesTooLong}>
             {busy ? 'Saving…' : 'Save changes'}
           </button>
-        </div>
+        </DialogFooter>
       </form>
     </Modal>
   );

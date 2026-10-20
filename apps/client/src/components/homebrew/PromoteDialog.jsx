@@ -4,7 +4,7 @@
 // author sees the pack will hold everything the entry needs, and can leave a piece out knowingly.
 
 import { useState } from 'react';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 import { Field, SelectInput } from '../custom/fields';
 
 const NEW_PACK = '__new__';
@@ -93,14 +93,14 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
             {error}
           </p>
         )}
-        <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <DialogFooter>
           <button type="button" className="fcb-button" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="fcb-button fcb-status-complete" data-testid="hb-promote-confirm" disabled={!ready}>
             {creating ? 'Create pack and copy' : `Copy to ${target?.name ?? 'pack'}`}
           </button>
-        </div>
+        </DialogFooter>
       </form>
     </Modal>
   );

@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createCustomDraft, customDraftIssues } from '@forge-cb/engine/custom';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 import FeatureFields from './FeatureFields';
 import { PROMOTE_LABEL, castAbilityIssues, parseUsage } from './draftModel';
 import { trackerFromUsage } from './trackerModel';
@@ -171,7 +171,7 @@ export default function CustomFeatureModal({
 
         {/* While the warning is up, its two buttons are the only way forward. */}
         {warning === null && (
-          <div className="fcb-toolbar fcb-dialog-footer justify-end">
+          <DialogFooter>
             {/* The button waits until the form is complete; this says what it is waiting for. */}
             {issues.length > 0 && (
               <p id="feature-add-needs" className="fcb-custom-needs mr-auto" data-testid="add-needs">
@@ -185,7 +185,7 @@ export default function CustomFeatureModal({
             <button type="submit" className="fcb-button fcb-status-complete" disabled={saving || issues.length > 0} aria-describedby={issues.length > 0 ? 'feature-add-needs' : undefined}>
               {saving ? 'Saving…' : editing ? 'Save changes' : 'Add feature'}
             </button>
-          </div>
+          </DialogFooter>
         )}
       </form>
     </Modal>

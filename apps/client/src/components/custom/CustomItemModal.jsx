@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { customEntryIssues } from '@forge-cb/engine/custom';
-import Modal from '../Modal';
+import Modal, { DialogFooter } from '../Modal';
 import BasePicker from './BasePicker';
 import DamageResponseBlock from './DamageResponseBlock';
 import EffectChip from './EffectChip';
@@ -699,7 +699,7 @@ export default function CustomItemModal({
           </div>
         )}
 
-        <div className="fcb-toolbar fcb-dialog-footer justify-end">
+        <DialogFooter>
           {editing && pack === null && (
             <button type="button" className="fcb-button fcb-button-danger mr-auto" disabled={saving} onClick={() => setConfirmRemove(true)}>
               Delete custom item
@@ -717,7 +717,7 @@ export default function CustomItemModal({
                   ? `Add ${quantity} items`
                   : 'Add item'}
           </button>
-        </div>
+        </DialogFooter>
       </form>
     </Modal>
   );
