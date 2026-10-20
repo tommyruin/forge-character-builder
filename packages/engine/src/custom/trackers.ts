@@ -55,12 +55,12 @@ export interface RechargeOption {
 }
 
 export const TRACKER_RECHARGE_OPTIONS: readonly RechargeOption[] = [
-  { id: "shortRest", label: "Short Rest", word: "Short Rest" },
-  { id: "longRest", label: "Long Rest", word: "Long Rest" },
+  { id: "shortRest", label: "Short rest", word: "Short Rest" },
+  { id: "longRest", label: "Long rest", word: "Long Rest" },
   { id: "dawn", label: "Dawn", word: "Dawn" },
   { id: "day", label: "Day", word: "Day" },
   { id: "never", label: "Never", word: "" },
-  { id: "diceRoll", label: "Dice roll", word: "" },
+  { id: "diceRoll", label: "Dice roll (regains 1d6+1 at dawn)", word: "" },
 ];
 
 export const TRACKER_UNIT_OPTIONS: ReadonlyArray<{ id: TrackerUnit; label: string; singular: string }> = [
@@ -81,9 +81,9 @@ export const REST_RECHARGES: Readonly<Record<"short" | "long", readonly TrackerR
 export function rechargeLabel(tracker: Pick<TrackerDef, "recharge" | "regain">): string {
   switch (tracker.recharge) {
     case "shortRest":
-      return "per Short Rest";
+      return "per short rest";
     case "longRest":
-      return "per Long Rest";
+      return "per long rest";
     case "dawn":
       return "regained at dawn";
     case "day":

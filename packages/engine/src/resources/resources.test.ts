@@ -128,7 +128,7 @@ describe("custom trackers and rests", () => {
     const { service, id } = built();
     const resources = service.getResources(id);
     expect(byLabel(resources, "Moonbeam")).toMatchObject({
-      id: "moonbeam", max: 2, used: 0, remaining: 2, unit: "uses", recharge: "shortRest", rechargeLabel: "per Short Rest", isCustom: true, manual: false,
+      id: "moonbeam", max: 2, used: 0, remaining: 2, unit: "uses", recharge: "shortRest", rechargeLabel: "per short rest", isCustom: true, manual: false,
       sources: [{ name: "Moonwell Gift", kind: "custom" }],
     });
     expect(byLabel(resources, "Embers")).toMatchObject({ unit: "charges", max: 7, rechargeLabel: "regained at dawn" });

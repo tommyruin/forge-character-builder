@@ -39,7 +39,7 @@ describe("parseUsageText", () => {
 describe("resourceSheetText", () => {
   const dto = (extra: Partial<TrackerDto>): TrackerDto => ({
     id: "t", label: "Gift", sources: [], isCustom: true, manual: false, max: 2, used: 1, remaining: 1, unit: "uses",
-    recharge: "longRest", rechargeLabel: "per Long Rest", ...extra,
+    recharge: "longRest", rechargeLabel: "per long rest", ...extra,
   });
 
   it("is absent when there is nothing to print", () => {

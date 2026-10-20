@@ -345,7 +345,7 @@ describe('the custom feature dialog: creating', () => {
     await click(buttonByText('+ Uses per rest'));
     const uses = group('Uses per rest');
     expect([...uses.querySelector('[aria-label="Recharges on"]').options].map((entry) => entry.textContent)).toEqual([
-      'Short Rest', 'Long Rest', 'Dawn', 'Day', 'Never', 'Dice roll',
+      'Short rest', 'Long rest', 'Dawn', 'Day', 'Never', 'Dice roll (regains 1d6+1 at dawn)',
     ]);
     expect(byLabel('Regains')).toBeNull();
     await choose(uses.querySelector('[aria-label="Recharges on"]'), 'diceRoll');

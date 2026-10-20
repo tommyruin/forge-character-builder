@@ -145,7 +145,7 @@ export default function TrackerBlock({
       )}
       <p className="fcb-muted-copy text-xs">
         {literalOnly
-          ? 'Counted on the Resources page, with a box or a blank on the sheet.'
+          ? 'Counted on the Resources page: tap a pip or counter to spend a use, and the rest you choose refills it.'
           : `Counted on the Resources page, and printed on the sheet as ${tracker.max.kind === 'number' ? 'the usage line' : `the usage line (${describeMax(tracker.max, scales)})`}.`}
       </p>
       <Issues issues={issues} />

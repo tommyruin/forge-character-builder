@@ -45,12 +45,12 @@ export const modeLabel = (mode) =>
   MODE_OPTIONS.find((option) => option.id === mode)?.label ?? mode;
 
 export const RECHARGES = [
-  { id: 'Short Rest', label: 'Short Rest' },
-  { id: 'Long Rest', label: 'Long Rest' },
+  { id: 'Short Rest', label: 'Short rest' },
+  { id: 'Long Rest', label: 'Long rest' },
   { id: 'Dawn', label: 'Dawn' },
   { id: 'Day', label: 'Day' },
   { id: 'Never', label: 'Never' },
-  { id: 'Dice roll', label: 'Dice roll' },
+  { id: 'Dice roll', label: 'Dice roll (regains 1d6+1 at dawn)' },
 ];
 
 // How the equipment gates read: the engine's slot and value words in an author's language.
