@@ -20,6 +20,7 @@ function spellGrantDeclared(draft: { id: string; name: string }, block: GrantBlo
     kind: "spell",
     def: found.def,
     ...(found.spellId === undefined ? {} : { spellId: found.spellId }),
+    ...(block.switch?.trim() ? { switch: block.switch.trim() } : {}),
   };
 }
 

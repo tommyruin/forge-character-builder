@@ -21,6 +21,7 @@ import type { CharacterState } from "../character/state.js";
 import type { ElementLibrary } from "../content/library.js";
 import { rechargeLabel, REST_RECHARGES, trackerStatKey } from "../custom/trackers.js";
 import { isCustomElementId } from "../custom/schema.js";
+import { grantSwitchOpen } from "../custom/switch-gate.js";
 import { elementTrackers } from "../custom/tracker-setters.js";
 import { spellInfo } from "../magic/spelllist.js";
 import { parseUsageText } from "./usage.js";
@@ -106,10 +107,26 @@ function elementTrackerCarriers(state: CharacterState, library: ElementLibrary):
   return new Set(elementDeclared(state, library).map((declared) => declared.ownerId));
 }
 
+/**
+ * Whether the spell a tracker frees a cast of is granted right now. A grant gated on a switch
+ * registers only while the switch is on, so its free casts are not a resource until then; what was
+ * spent stays recorded and comes back with the switch. A pack's element carries the gate on its
+ * grant rule, a draft in the character's file on the tracker it declared.
+ */
+function spellGrantActive(state: CharacterState, library: ElementLibrary, declared: DeclaredTracker): boolean {
+  if (declared.spellId === undefined) return true;
+  const fromDraft = declared.switch;
+  if (fromDraft !== undefined) return grantSwitchOpen(state, declared.ownerId, fromDraft);
+  const owner = library.byId.get(declared.ownerId);
+  const grant = owner?.rules.find((rule) => rule.kind === "grant" && rule.id === declared.spellId);
+  return grant?.kind !== "grant" || grantSwitchOpen(state, declared.ownerId, grant.condition);
+}
+
 function declaredCandidates(state: CharacterState, library: ElementLibrary, values: Statistics): Candidate[] {
   const out: Candidate[] = [];
   for (const declared of [...state.resources.declared.trackers, ...elementDeclared(state, library)]) {
     if (!ownerActive(state, declared)) continue;
+    if (!spellGrantActive(state, library, declared)) continue;
     const max = resolvedMax(declared.def, values);
     if (max < 1) continue;
     let label = declared.def.label;

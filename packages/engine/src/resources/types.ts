@@ -22,6 +22,8 @@ export interface DeclaredTracker {
   def: TrackerDef;
   /** `spell` only: the spell's element id, when the grant names one. */
   spellId?: string;
+  /** `spell` only: the switch the granting block is gated on, when it has one. */
+  switch?: string;
 }
 
 /** A switch a custom entry's modifiers name. */

@@ -373,6 +373,47 @@ describe("spell grants with a free cast", () => {
   });
 });
 
+describe("a spell granted only while a switch is on", () => {
+  const gated = (): CustomDraft =>
+    feature("Moon Blessing", {
+      blocks: [
+        {
+          kind: "grant",
+          id: "g1",
+          target: { by: "id", type: "Spell", id: "ID_PHB_SPELL_BLESS", label: "Bless" },
+          spell: { castAbility: "wisdom", usage: "1/Long Rest" },
+          switch: "Moon form",
+        },
+      ] as CustomBlock[],
+    });
+
+  it("has no tracker while the switch is off, and the same tracker while it is on", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, { draft: gated() });
+    // The switch is listed so the player can turn it on, but the spell it grants is not there to count.
+    const off = service.getResources(id);
+    expect(off.switches.map((entry) => entry.name)).toEqual(["Moon form"]);
+    expect(off.trackers.some((entry) => entry.label === "Bless")).toBe(false);
+
+    const on = service.setResourceSwitch(id, { name: "Moon form", on: true });
+    expect(byLabel(on, "Bless")).toMatchObject({ max: 1, used: 0 });
+
+    // What was spent while it was on is still spent when it comes back.
+    service.setTrackerUsed(id, { trackerId: byLabel(on, "Bless").id, used: 1 });
+    expect(service.setResourceSwitch(id, { name: "Moon form", on: false }).trackers.some((entry) => entry.label === "Bless")).toBe(false);
+    expect(byLabel(service.setResourceSwitch(id, { name: "Moon form", on: true }), "Bless").used).toBe(1);
+  });
+
+  it("keeps an ungated spell grant's tracker on at all times", () => {
+    const { service, id } = fighter();
+    const draft = gated();
+    const [block] = draft.blocks;
+    const { switch: _switch, ...plain } = block as CustomBlock & { switch?: string };
+    service.saveCustomDraft(id, { draft: { ...draft, blocks: [plain] as CustomBlock[] } });
+    expect(byLabel(service.getResources(id), "Bless").max).toBe(1);
+  });
+});
+
 describe("item charges", () => {
   it("are a tracker while the item is carried", () => {
     const { service, id } = fighter();
