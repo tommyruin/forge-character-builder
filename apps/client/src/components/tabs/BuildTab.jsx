@@ -264,7 +264,7 @@ export default function BuildTab() {
                   title="Make a feature of your own (a boon, a trait, a gift) without writing XML"
                 >
                   <Icon name="add" />
-                  Custom
+                  Custom feature
                 </button>
               )}
             </div>

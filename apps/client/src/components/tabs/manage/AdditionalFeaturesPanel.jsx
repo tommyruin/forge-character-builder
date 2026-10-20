@@ -15,6 +15,12 @@ import {
   InspectableItemButton,
 } from '../../InspectableItemControls';
 import Icon from '../../Icon';
+import CustomFeatureModal from '../../custom/CustomFeatureModal';
+import { makeCustomServices } from '../../custom/customServices';
+import { localStore } from '../../../transport/localStore';
+
+// A feature of the character's own, the same capability as Build's [+] Custom feature.
+const canCustom = typeof api.characters.saveCustomDraft === 'function';
 
 /** The rail entry that gathers what is already on the character. */
 export const ACTIVE_KEY = '__active';
@@ -143,8 +149,14 @@ export function FeatureList({
 // whole, so the rail and the search box narrow it here rather than through the
 // engine.
 export default function AdditionalFeaturesPanel() {
-  const { id, busy, run, mutationTick, registerDetailsScroll } =
+  const { id, busy, run, mutationTick, registerDetailsScroll, detail } =
     useWorkspace();
+  const [customOpen, setCustomOpen] = useState(false);
+  const rulesetMode = detail?.rulesetMode;
+  const customServices = useMemo(
+    () => (canCustom ? makeCustomServices({ api, store: localStore, id, run, ruleset: rulesetMode }) : null),
+    [id, run, rulesetMode],
+  );
   const [features, setFeatures] = useState(null);
   const [error, setError] = useState(null);
   const [pendingKey, setPendingKey] = useState(null);
@@ -216,6 +228,20 @@ export default function AdditionalFeaturesPanel() {
                 this character can take on.
               </p>
             </div>
+            {customServices && (
+              <div className="fcb-panel-actions">
+                <button
+                  type="button"
+                  className="fcb-button"
+                  disabled={busy}
+                  onClick={() => setCustomOpen(true)}
+                  title="Make a feature of your own (a boon, a trait, a gift) without writing XML"
+                >
+                  <Icon name="add" />
+                  Custom feature
+                </button>
+              </div>
+            )}
           </header>
           <div className="fcb-panel-body space-y-3">
             <label className="fcb-field-label">
@@ -251,6 +277,15 @@ export default function AdditionalFeaturesPanel() {
           </div>
         </section>
       </div>
+      {customOpen && customServices && (
+        <CustomFeatureModal
+          services={customServices}
+          characterName={detail?.name || 'your character'}
+          initialShowsUnder="other"
+          onClose={() => setCustomOpen(false)}
+          onSaved={() => void refresh()}
+        />
+      )}
       <DescriptionPanel
         {...descriptionPanelProps}
         elementId={inspected}

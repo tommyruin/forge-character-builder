@@ -59,6 +59,23 @@ const renderList = (props) =>
     }),
   );
 
+const panelSource = readFileSync(new URL('../tabs/manage/AdditionalFeaturesPanel.jsx', import.meta.url), 'utf8');
+const buildSource = readFileSync(new URL('../tabs/BuildTab.jsx', import.meta.url), 'utf8');
+
+describe('Custom feature buttons', () => {
+  it('Manage > Additional features offers [+] Custom feature, which opens the dialog under Other', () => {
+    expect(panelSource).toMatch(/<Icon name="add" \/>\s*Custom feature/);
+    expect(panelSource).toContain('initialShowsUnder="other"');
+    expect(panelSource).toContain('<CustomFeatureModal');
+  });
+
+  it('Build says what its [+] adds, with the same icon pattern as [+] Feat', () => {
+    expect(buildSource).toMatch(/<Icon name="add" \/>\s*Custom feature/);
+    expect(buildSource).not.toMatch(/<Icon name="add" \/>\s*Custom\s*<\/button>/);
+    expect(buildSource).toMatch(/<Icon name="add" \/>\s*Feat\s*<\/button>/);
+  });
+});
+
 describe('Additional features sub-tab', () => {
   it('follows Optional rules in the Manage rail', () => {
     expect(manage).toMatch(
