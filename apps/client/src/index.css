@@ -1494,6 +1494,25 @@ button:disabled {
   padding: 15px 16px;
 }
 
+/* A header that cannot hold its title and its actions on one line wraps the actions below, instead
+   of squeezing a button's label onto two lines. */
+.fcb-panel-header {
+  flex-wrap: wrap;
+}
+
+.fcb-panel-header > :first-child:not(.fcb-panel-actions) {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+/* Buttons in a toolbar or a panel's actions keep their one-line, standard-height label; the row
+   wraps between buttons instead. */
+.fcb-toolbar > .fcb-button,
+.fcb-panel-actions > .fcb-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 /* A panel's header actions sit together at its right edge, however many there are. */
 .fcb-panel-actions {
   display: flex;
