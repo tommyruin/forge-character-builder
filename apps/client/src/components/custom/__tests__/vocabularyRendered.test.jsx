@@ -19,7 +19,7 @@ import FeatureFields from '../FeatureFields';
 import { CustomRemovalDialog } from '../CustomRemoval';
 import { makeCustomServices } from '../customServices';
 import PromoteDialog from '../../homebrew/PromoteDialog';
-import { $, $$, mount, settle } from './harness';
+import { $, mount, settle } from './harness';
 
 const services = {
   lookup: async () => ({ items: [] }),
