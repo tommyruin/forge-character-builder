@@ -127,9 +127,13 @@ describe('the effect chips', () => {
   it('shows the common effects first and keeps the advanced ones behind More effects', async () => {
     const seen = probe();
     await mount(<Host first={draftWith('Bladesong', [])} second={draftWith('Other', [])} onProbe={seen.onProbe} />);
-    expect(chipNames()).toEqual(['+ Ability score', '+ Spell', '+ Proficiency', '+ Language', '+ Player choice', '+ Uses per rest']);
-    await click(buttonByText('More effects ▸'));
+    const common = () => [...document.querySelectorAll('[aria-label="Add an effect"] .fcb-effect-chip-add')].map((button) => button.textContent.trim());
+    expect(common()).toEqual(['+ Ability score', '+ Spell', '+ Proficiency', '+ Language', '+ Player choice', '+ Uses per rest']);
+    const more = document.querySelector('details.fcb-effect-more');
+    expect(more.open).toBe(false);
+    expect(more.querySelector('summary').textContent).toBe('More effects');
     expect(chipNames().slice(6)).toEqual(['+ Bonus to another stat', '+ Grows with level', '+ Only while active']);
+    expect(more.querySelectorAll('.fcb-effect-chip-add')).toHaveLength(3);
   });
 
   it('explains each chip in an (i) tip: always the button description, shown on hover and focus', async () => {

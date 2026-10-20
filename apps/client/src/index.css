@@ -3239,9 +3239,6 @@ button:disabled {
   margin-top: 16px;
 }
 
-.fcb-homebrew-pack-tools > summary {
-  list-style: none;
-}
 
 .fcb-homebrew-mobile-back {
   display: none;
@@ -3256,12 +3253,6 @@ button:disabled {
 
 .fcb-homebrew-advanced > summary {
   padding: 12px;
-  color: var(--fcb-text-muted);
-  cursor: pointer;
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .fcb-homebrew-advanced-grid {
@@ -8667,12 +8658,6 @@ html.fcb-busy-cursor * {
   gap: 6px;
 }
 
-.fcb-custom-gates > summary {
-  cursor: pointer;
-  color: var(--fcb-text-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
 
 .fcb-custom-gates-body {
   display: grid;
@@ -9127,10 +9112,66 @@ html.fcb-busy-cursor * {
   margin-right: 4px;
 }
 
-.fcb-effect-more {
-  height: 32px;
-  padding-block: 0;
-  white-space: nowrap;
+/* Every "show more" section (Disclosure.jsx): one sentence-case label with one chevron that points
+   right when closed and down when open. The browser's own marker is hidden so it never doubles up. */
+.fcb-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.fcb-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fcb-disclosure > summary::before {
+  flex: 0 0 auto;
+  width: 0.45em;
+  height: 0.45em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+}
+
+.fcb-disclosure[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.fcb-disclosure--inline > summary {
+  width: fit-content;
+  color: var(--fcb-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.fcb-disclosure--inline > summary:hover {
+  color: var(--fcb-text);
+}
+
+.fcb-disclosure > summary:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: 2px;
+}
+
+/* A panel's summary is its header: the chevron leads the title. */
+.fcb-disclosure--panel > summary {
+  justify-content: flex-start;
+}
+
+.fcb-disclosure--panel:not([open]) > summary {
+  border-bottom: 0;
+}
+
+.fcb-disclosure-body {
+  padding-top: 10px;
+}
+
+.fcb-effect-more .fcb-disclosure-body {
+  padding-top: 8px;
 }
 
 /* A small text action on a list row (Rename, Edit, Remove): a standard button, one line, with the

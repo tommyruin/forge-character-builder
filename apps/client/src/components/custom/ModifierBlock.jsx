@@ -21,6 +21,7 @@ import {
 } from './draftModel';
 import { Field, Issues, NumberInput, RemoveButton, SelectInput } from './fields';
 import RequirementsBuilder from './RequirementsBuilder';
+import Disclosure from '../Disclosure';
 
 const VALUE_KINDS = [
   { id: 'number', label: 'A number' },
@@ -288,8 +289,7 @@ export default function ModifierBlock({
         </div>
       )}
 
-      <details className="fcb-custom-gates">
-        <summary>When it applies</summary>
+      <Disclosure className="fcb-custom-gates" summary="When it applies" bare>
         <div className="fcb-custom-gates-body">
           <Field label="From level">
             <NumberInput
@@ -331,7 +331,7 @@ export default function ModifierBlock({
             )}
           </Field>
         </div>
-      </details>
+      </Disclosure>
 
       <Field label="Shown on the sheet as">
         <input

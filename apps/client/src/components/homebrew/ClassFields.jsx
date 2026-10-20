@@ -9,6 +9,7 @@ import EffectsEditor from '../custom/EffectsEditor';
 import RequirementsBuilder from '../custom/RequirementsBuilder';
 import { Field, Issues, NumberInput, Segmented } from '../custom/fields';
 import { SKILL_OPTIONS, makeSkillChoice, skillIdsOf, splitSkillChoice } from './buildModel';
+import Disclosure from '../Disclosure';
 
 const HIT_DIE_OPTIONS = HIT_DICE.map((die) => ({ id: String(die), label: `d${die}` }));
 const PROFICIENCY_CHIPS = ['proficiency', 'language', 'choice'];
@@ -148,8 +149,7 @@ export function ClassBasics({ draft, setDraft, services, issues = [], attempted 
         <LevelList label="Ability score improvement levels" value={draft.asiLevels} onChange={(asiLevels) => patch({ asiLevels })} />
       </Field>
 
-      <details open className="fcb-custom-gates">
-        <summary>Starting proficiencies (the first class only)</summary>
+      <Disclosure open className="fcb-custom-gates" summary="Starting proficiencies (the first class only)" bare>
         <div className="fcb-custom-gates-body">
           <StartingProficiencies
             ownerName={draft.name}
@@ -161,7 +161,7 @@ export function ClassBasics({ draft, setDraft, services, issues = [], attempted 
             path="starting"
           />
         </div>
-      </details>
+      </Disclosure>
       <Issues issues={shown} />
     </div>
   );

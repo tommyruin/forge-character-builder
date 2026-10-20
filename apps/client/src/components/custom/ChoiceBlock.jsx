@@ -17,6 +17,7 @@ import { abilityOptions, compact, typeLabel } from './draftModel';
 import { Field, Issues, NumberInput, RemoveButton, SelectInput, withCurrent } from './fields';
 import LibraryPicker from './LibraryPicker';
 import RequirementsBuilder from './RequirementsBuilder';
+import Disclosure from '../Disclosure';
 
 const GROUP_OPS = [
   { id: 'all', label: 'All of' },
@@ -324,8 +325,7 @@ export default function ChoiceBlock({
         </div>
       )}
 
-      <details className="fcb-custom-gates">
-        <summary>Only when</summary>
+      <Disclosure className="fcb-custom-gates" summary="Only when" bare>
         <div className="fcb-custom-gates-body">
           <RequirementsBuilder
             label="Requirements for this choice"
@@ -334,7 +334,7 @@ export default function ChoiceBlock({
             onChange={(requirements) => emit({ requirements })}
           />
         </div>
-      </details>
+      </Disclosure>
 
       <label className="flex items-center gap-2 text-sm">
         <input

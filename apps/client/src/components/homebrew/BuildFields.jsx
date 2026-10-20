@@ -15,6 +15,7 @@ import ParentPicker from './ParentPicker';
 import ProgressionTable from './ProgressionTable';
 import SpellcastingPanel, { SubclassSpellsPanel } from './SpellcastingPanel';
 import { TABS, summarizeBuild } from './buildModel';
+import Disclosure from '../Disclosure';
 
 const TITLES = {
   species: 'Species',
@@ -29,8 +30,7 @@ const TITLES = {
 function OtherEffects({ draft, setDraft, services, issues, attempted }) {
   const view = { name: draft.name, blocks: draft.blocks };
   return (
-    <details className="fcb-custom-gates" open={draft.blocks.length > 0}>
-      <summary>Other effects of the {TITLES[draft.template].toLowerCase()}</summary>
+    <Disclosure className="fcb-custom-gates" open={draft.blocks.length > 0} summary={<>Other effects of the {TITLES[draft.template].toLowerCase()}</>} bare>
       <div className="fcb-custom-gates-body">
         <EffectsEditor
           draft={view}
@@ -41,7 +41,7 @@ function OtherEffects({ draft, setDraft, services, issues, attempted }) {
           features={false}
         />
       </div>
-    </details>
+    </Disclosure>
   );
 }
 

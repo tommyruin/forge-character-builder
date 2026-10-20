@@ -16,6 +16,7 @@ import {
 import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput, withCurrent } from './fields';
 import LibraryPicker from './LibraryPicker';
 import RequirementsBuilder from './RequirementsBuilder';
+import Disclosure from '../Disclosure';
 
 const TARGET_MODES = [
   { id: 'id', label: 'From the library' },
@@ -179,8 +180,7 @@ export default function GrantBlock({
           <NumberInput label="Grant from level" min={1} max={20} value={block.level} onChange={(level) => emit({ level })} />
         </Field>
       </div>
-      <details className="fcb-custom-gates">
-        <summary>Only when</summary>
+      <Disclosure className="fcb-custom-gates" summary="Only when" bare>
         <div className="fcb-custom-gates-body">
           <RequirementsBuilder
             label="Requirements for this grant"
@@ -189,7 +189,7 @@ export default function GrantBlock({
             onChange={(requirements) => emit({ requirements })}
           />
         </div>
-      </details>
+      </Disclosure>
       <Issues issues={otherIssues} />
     </div>
   );

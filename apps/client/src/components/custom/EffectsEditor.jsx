@@ -12,6 +12,7 @@ import GrantBlock from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
 import ScaleBlock from './ScaleBlock';
 import TrackerBlock from './TrackerBlock';
+import Disclosure from '../Disclosure';
 import EffectChip from './EffectChip';
 import { Field, RemoveButton } from './fields';
 import {
@@ -92,7 +93,6 @@ function EffectsEditorBody({
   only = null,
 }) {
   const [casters, setCasters] = useState([]);
-  const [moreOpen, setMoreOpen] = useState(false);
   // The character's own spellcasting ability, offered for a new spell effect; null when it has none.
   const [characterAbility, setCharacterAbility] = useState(null);
   const initialSwitch = sharedSwitch(draft.blocks);
@@ -314,18 +314,16 @@ function EffectsEditorBody({
         {shownChips.map((chip) => (
           <EffectChip key={chip.id} chip={chip} />
         ))}
-        {shownMore.length > 0 && (
-          <button
-            type="button"
-            className="fcb-mode-button fcb-effect-more"
-            aria-expanded={moreOpen}
-            onClick={() => setMoreOpen(!moreOpen)}
-          >
-            More effects {moreOpen ? '\u25BE' : '\u25B8'}
-          </button>
-        )}
-        {moreOpen && shownMore.map((chip) => <EffectChip key={chip.id} chip={chip} />)}
       </div>
+      {shownMore.length > 0 && (
+        <Disclosure className="fcb-effect-more mt-3" summary="More effects">
+          <div className="fcb-effect-chips" role="group" aria-label="More effects">
+            {shownMore.map((chip) => (
+              <EffectChip key={chip.id} chip={chip} />
+            ))}
+          </div>
+        </Disclosure>
+      )}
     </div>
   );
 }

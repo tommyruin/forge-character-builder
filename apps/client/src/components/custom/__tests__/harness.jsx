@@ -58,8 +58,17 @@ export async function click(element) {
 // An effect chip, opening "More effects" first when the chip is one of the advanced ones.
 export async function clickEffect(text) {
   const chip = () => [...document.querySelectorAll('.fcb-effect-chip-add')].find((button) => button.textContent.trim() === text);
-  if (!chip()) await click(buttonStartingWith('More effects'));
+  const closed = chip()?.closest('details:not([open])');
+  if (closed) await openDisclosure(closed);
   await click(chip());
+}
+
+// Opens a closed "show more" section, as a click on its summary does in a browser.
+export async function openDisclosure(details) {
+  if (!details) throw new Error('disclosure not found');
+  await act(async () => {
+    details.open = true;
+  });
 }
 
 export async function press(element, key) {

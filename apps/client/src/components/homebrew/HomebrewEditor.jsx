@@ -32,6 +32,7 @@ import { planPromotion, promoteToPack, refsOfDraft, refsOfElement } from "./prom
 import { CHARACTER_PACK_PREFIX, convertToFeature, elementForDraft, elementIdOf, elementMeta, loadedPack, migratePack } from "./packModel";
 import { makePackFormServices } from "./packServices";
 import Icon from "../Icon";
+import Disclosure from "../Disclosure";
 import { ToastStack, useToasts } from "../Toasts";
 import {
   buildCollectionXml,
@@ -1117,10 +1118,14 @@ function HomebrewToolbar({
 // the pack bar above, so they are not repeated here.
 function HomebrewPackTools({ busy, onRawElement, onOpenContent }) {
   return (
-    <details className="fcb-panel fcb-homebrew-pack-tools" data-testid="hb-pack-tools">
-      <summary className="fcb-panel-header cursor-pointer">
-        <span className="fcb-panel-title">More pack tools</span>
-      </summary>
+    <Disclosure
+      variant="panel"
+      className="fcb-panel fcb-homebrew-pack-tools"
+      data-testid="hb-pack-tools"
+      summaryClassName="fcb-panel-header"
+      summary={<span className="fcb-panel-title">More pack tools</span>}
+      bare
+    >
       <div className="fcb-panel-body space-y-3 text-sm">
         <p>
           Everything here is also reachable from the forms: any element can be edited as XML, and a content file you already have can be added
@@ -1141,7 +1146,7 @@ function HomebrewPackTools({ busy, onRawElement, onOpenContent }) {
           web addresses, and a pack file shared from here.
         </p>
       </div>
-    </details>
+    </Disclosure>
   );
 }
 

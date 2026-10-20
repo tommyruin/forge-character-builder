@@ -10,6 +10,7 @@ import SheetPresentation from './SheetPresentation';
 import TagPicker from './TagPicker';
 import { Field, Issues, Segmented } from './fields';
 import { showsUnderLabel, sheetPreview, summarizeDraft } from './draftModel';
+import Disclosure from '../Disclosure';
 
 const SHOWS_UNDER_OPTIONS = CUSTOM_SHOWS_UNDER.map((option) => ({ id: option.id, label: option.label }));
 
@@ -88,8 +89,7 @@ export default function FeatureFields({
         inheritedScales={inheritedScales}
       />
 
-      <details className="fcb-custom-gates">
-        <summary>More options</summary>
+      <Disclosure className="fcb-custom-gates" summary="More options" bare>
         <div className="fcb-custom-gates-body">
           <div>
             <span className="fcb-field-label">Requirements to take it</span>
@@ -114,7 +114,7 @@ export default function FeatureFields({
             <SheetPresentation value={draft.sheet} placeholderTitle={draft.name} onChange={(sheet) => patch({ sheet })} />
           </div>
         </div>
-      </details>
+      </Disclosure>
 
       <div className="fcb-custom-summary" aria-live="polite">
         <div>

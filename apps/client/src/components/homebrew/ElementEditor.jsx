@@ -23,6 +23,7 @@ import RawXmlEditor, { readElementXml } from './RawXmlEditor';
 import { makePackFormServices } from './packServices';
 import { draftFamily, elementIdOf, elementKind, elementMeta, legacyXml, updateElementDraft } from './packModel';
 import { ELEMENT_RULESET_OPTIONS, normalizeElementRuleset } from './xmlBuilder';
+import Disclosure from '../Disclosure';
 
 function IdentityWarning({ report }) {
   const changes = (report?.changes ?? []).filter((change) => change.picks.length > 0);
@@ -208,8 +209,7 @@ export default function ElementEditor({ element, pack, api, disabled = false, sh
         )}
         {kind === 'form' && (family === 'spell' || family === 'item') && <Issues issues={showIssues ? issues : []} />}
 
-        <details className="fcb-homebrew-advanced" data-testid="hb-element-advanced">
-          <summary>Advanced</summary>
+        <Disclosure className="fcb-homebrew-advanced" data-testid="hb-element-advanced" summary="Advanced" bare>
           <div className="fcb-homebrew-advanced-grid">
             <p className="fcb-homebrew-element-id">
               Element id: <code>{elementIdOf(element, pack)}</code>
@@ -249,7 +249,7 @@ export default function ElementEditor({ element, pack, api, disabled = false, sh
               </div>
             )}
           </div>
-        </details>
+        </Disclosure>
       </div>
     </section>
   );

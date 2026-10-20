@@ -10,6 +10,7 @@ import { Field, Issues, NumberInput, RemoveButton, SelectInput } from '../custom
 import { abilityOptions } from '../custom/draftModel';
 import { StartingProficiencies } from './ClassFields';
 import LinesInput from './LinesInput';
+import Disclosure from '../Disclosure';
 
 const LIST_HELP = {
   'Personality Trait': 'The player picks this many; the sheet joins them.',
@@ -37,8 +38,7 @@ export function BackgroundBasics({ draft, setDraft, services, issues = [], attem
         <LinesInput label="Equipment" value={draft.equipment} onChange={(equipment) => patch({ equipment })} placeholder="A brass lantern" />
       </Field>
 
-      <details className="fcb-custom-gates" open={Boolean(ability || draft.originFeat)}>
-        <summary>2024 rules: ability increase and origin feat</summary>
+      <Disclosure className="fcb-custom-gates" open={Boolean(ability || draft.originFeat)} summary="2024 rules: ability increase and origin feat" bare>
         <div className="fcb-custom-gates-body space-y-3">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -80,7 +80,7 @@ export function BackgroundBasics({ draft, setDraft, services, issues = [], attem
             )}
           </div>
         </div>
-      </details>
+      </Disclosure>
       <Issues issues={shown} />
     </div>
   );

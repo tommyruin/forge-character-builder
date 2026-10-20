@@ -3,6 +3,7 @@
 // path the pack is stored under, so it is locked once the pack has been loaded.
 
 import { RULESET_OPTIONS, collectionFileName, normalizeCollectionRuleset } from './xmlBuilder';
+import Disclosure from '../Disclosure';
 
 export default function PackDetails({ pack, busy, onFieldChange, onOpenContent }) {
   return (
@@ -97,8 +98,7 @@ export default function PackDetails({ pack, busy, onFieldChange, onOpenContent }
           />
           Playtest material (listed after finished sources)
         </label>
-        <details className="fcb-homebrew-advanced">
-          <summary>Advanced</summary>
+        <Disclosure className="fcb-homebrew-advanced" summary="Advanced" bare>
           <div className="fcb-homebrew-advanced-grid">
             <label className="fcb-field-label">
               File slug
@@ -122,7 +122,7 @@ export default function PackDetails({ pack, busy, onFieldChange, onOpenContent }
               )}
             </div>
           </div>
-        </details>
+        </Disclosure>
       </div>
     </section>
   );

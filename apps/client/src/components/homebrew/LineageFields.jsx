@@ -7,6 +7,7 @@ import { CREATURE_SIZES, CUSTOM_ABILITIES, SPEED_MODES } from '@forge-cb/engine/
 import LibraryPicker from '../custom/LibraryPicker';
 import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput } from '../custom/fields';
 import { ABILITY_LABELS, abilityOptions } from '../custom/draftModel';
+import Disclosure from '../Disclosure';
 
 const SIZE_OPTIONS = CREATURE_SIZES.map((size) => ({ id: size, label: size }));
 const SPEED_MODE_OPTIONS = SPEED_MODES.map((mode) => ({ id: mode, label: mode[0].toUpperCase() + mode.slice(1) }));
@@ -285,12 +286,11 @@ export default function LineageFields({ draft, setDraft, services, issues = [], 
         </div>
       )}
 
-      <details className="fcb-homebrew-advanced" data-testid="hb-lineage-advanced">
-        <summary>Advanced: names, height and weight</summary>
+      <Disclosure className="fcb-homebrew-advanced" data-testid="hb-lineage-advanced" summary="Advanced: names, height and weight" bare>
         <div className="fcb-homebrew-advanced-grid">
           <Appearance value={draft.appearance} onChange={(appearance) => patch({ appearance: appearance.names || appearance.namesFormat || appearance.height || appearance.weight ? appearance : undefined })} />
         </div>
-      </details>
+      </Disclosure>
       <Issues issues={shown} />
     </div>
   );

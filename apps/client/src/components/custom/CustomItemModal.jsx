@@ -38,6 +38,7 @@ import {
   summarizeItem,
   targetGroups,
 } from './draftModel';
+import Disclosure from '../Disclosure';
 
 const ALL_TARGET_GROUPS = targetGroups().map((group) => group.label);
 const CURRENCIES = [
@@ -481,10 +482,9 @@ export default function CustomItemModal({
               </Field>
             </div>
             <ExtraDamage terms={draft.weapon?.extraDamage ?? []} onChange={(extraDamage) => patchWeapon({ extraDamage })} />
-            <details className="fcb-custom-gates">
-              <summary>Different damage, range or properties</summary>
+            <Disclosure className="fcb-custom-gates" summary="Different damage, range or properties" bare>
               <WeaponShape weapon={draft.weapon ?? {}} onChange={patchWeapon} />
-            </details>
+            </Disclosure>
           </>
         )}
 
