@@ -16,7 +16,7 @@ project uses [Semantic Versioning](https://semver.org/).
   the same form as on Build, Equipment or Magic. The character's page picks up
   the change.
 - An entry from a character, or an element from a pack, can be added to any
-  pack or to a new world pack (a name and an author). It keeps its id, and the
+  pack or to a new pack (a name and an author). It keeps its id, and the
   elements it refers to (an item's granted feature, a subclass's class) are
   listed to bring along or leave out.
 - Share pack saves a pack as one XML file. Other tools load its elements as
@@ -30,9 +30,10 @@ project uses [Semantic Versioning](https://semver.org/).
   earlier versions still open.
 - Pack health has Find a source for a grant or addition whose target is not in
   the library: it opens Content > Manage files and names the id to import.
-- The XML tools sit together under Homebrew > Advanced: import a pack file,
-  start an element as XML, download the pack's XML and open Manage files. Any
-  element, including a change to a book element, can still be edited as XML.
+- Starting an element as XML, and opening Manage files, sit under More pack
+  tools in the Homebrew editor; Import pack and Download XML are in the pack
+  bar. Any element, including a change to a book element, can still be edited
+  as XML.
 
 - Text a box can't hold continues on a plain "(continued)" page under the box's
   own name, re-wrapped at full width, instead of on a reprint of the character
@@ -173,6 +174,25 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Custom content reads the same everywhere. The terms are: Bonus to another
+  stat, Damage resistance, Uses per rest, Grows with level, Player choice, Spell
+  and Other feature for effects; Add feature, Add item, Add spell, Add tracker
+  and Save changes for dialog buttons; Custom feature, Custom item and Custom
+  spell for the dialogs; Rename / notes with the fields Name, Notes and On the
+  sheet; Short rest and Long rest; Copy to a pack for packs.
+- The effect chips on a custom feature or item explain themselves in an (i) tip
+  with an example, and the less common ones sit behind More effects.
+- A custom item's resistance is a damage-type picker with Resistance, Immunity
+  and Vulnerability; the base weapon or armor is a search grouped by book.
+- Ability maximums read "Raise the maximum of <ability>", and a limit starts at
+  20.
+- Dialogs keep their Add and Save buttons in view while the form scrolls.
+- Adding or saving a custom feature, item, spell or tracker confirms with a
+  toast, and so does Share pack and copying to a pack.
+- The Homebrew pack bar keeps its buttons on one line and wraps as a row; the
+  XML tools are a closed "More pack tools" section in the editor.
+- Manage > Additional features has Custom feature, and Build's button says what
+  it adds.
 - The 2024 and Hybrid character pages are redesigned: one Armor Class box holds
   armor, AC sources, resistances and the Shield and Stealth ticks; ability
   blocks put the modifier in a circle with the score beside it; Encounter Notes
@@ -201,6 +221,16 @@ project uses [Semantic Versioning](https://semver.org/).
   level.
 
 ### Fixed
+
+- A spell granted only while a switch is on no longer shows as available on
+  Resources while the switch is off.
+- Removing a custom feat asks first when it would clear picks, and says what it
+  did.
+- An empty spell grant asks "Choose a spell" on the spell field, and Add stays
+  off until the form is complete.
+- The stat pills stay grouped at the right at every width.
+- Inventory cards are compact on a narrow screen: name, summary and one row of
+  quantity, storage and equipped, with the sheet choices in a More menu.
 
 - Opening another feature in a class's table no longer keeps the first
   feature's "Only while active" switch.
