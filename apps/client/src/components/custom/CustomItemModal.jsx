@@ -437,7 +437,7 @@ export default function CustomItemModal({
             />
             {carried && (
               <span className="fcb-muted-copy text-xs">
-                This item is already in the inventory on this base, so the base cannot change. Delete the item from the inventory to start it on another.
+                It is already in the inventory, so its base stays {draft.base?.name ?? 'as it is'}. To build it on another base, make a new custom item.
               </span>
             )}
           </div>

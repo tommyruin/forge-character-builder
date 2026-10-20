@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
-import { useMemo } from 'react';
+import { act, useMemo } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { compileCustomElement, customEntryIssues } from '@forge-cb/engine/custom';
 import CustomItemModal from '../CustomItemModal';
 import { makeCustomServices } from '../customServices';
 import { makeItemDraft } from '../draftModel';
-import { $, allByLabel, buttonByText, byLabel, choose, click, group, mount, option, radio, settle, type } from './harness';
+import { $, allByLabel, buttonByText, byLabel, choose, click, group, mount, option, press, radio, settle, type } from './harness';
 
 const CHARACTER = 'ilyana';
 
@@ -305,7 +305,7 @@ describe('the custom item dialog: editing', () => {
     await open(api, { entry: { kind: 'item', draft: stored(), elementId: stored().id, granted: true, installed: true } });
     expect($('[data-testid="base-picked"]').textContent).toContain('Longsword');
     expect(buttonByText('Change')).toBeUndefined();
-    expect(document.body.textContent).toContain('This item is already in the inventory on this base, so the base cannot change.');
+    expect(document.body.textContent).toContain('It is already in the inventory, so its base stays Longsword.');
     await type(byLabel('Bonus to hit and damage'), '2');
     await click(buttonByText('Save changes'));
     await settle();
@@ -367,6 +367,35 @@ describe('the base picker', () => {
     expect(byLabel('Base weapon')).not.toBeNull();
   });
 
+  it('is a combobox the keyboard can drive: arrows move, Enter picks the highlighted entry, Escape closes', async () => {
+    const api = fakeApi();
+    const content = api.content.elements;
+    const older = { ...LONGSWORD, id: 'ID_OLD_LONGSWORD', source: 'Older Book' };
+    api.content.elements = vi.fn(async (query) => {
+      const result = await content(query);
+      return query.type === 'Weapon' ? { items: [...result.items, older] } : result;
+    });
+    const onClose = vi.fn();
+    await open(api, { onClose });
+    const field = byLabel('Base weapon');
+    expect(field.getAttribute('aria-expanded')).toBe('false');
+    await act(async () => field.focus());
+    expect(field.getAttribute('aria-expanded')).toBe('true');
+    await type(field, 'longsword');
+    // Two editions of one name: the second one is reachable from the keyboard.
+    await press(field, 'ArrowDown');
+    await press(field, 'ArrowDown');
+    const active = document.getElementById(field.getAttribute('aria-activedescendant'));
+    expect(active.getAttribute('aria-selected')).toBe('true');
+    expect(active.closest('[role="group"]').getAttribute('aria-label')).toBe('Test Book');
+    await press(field, 'Enter');
+    expect($('[data-testid="base-picked"]').textContent).toContain('Test Book');
+    await click(byLabel('Change base weapon'));
+    await press(byLabel('Base weapon'), 'Escape');
+    expect(onClose).not.toHaveBeenCalled();
+    expect($('[data-testid="base-picked"]')).not.toBeNull();
+  });
+
   it('groups the entries by the book they come from and narrows as you type', async () => {
     const api = fakeApi();
     const content = api.content.elements;
@@ -376,6 +405,7 @@ describe('the base picker', () => {
       return query.type === 'Weapon' ? { items: [...result.items, older] } : result;
     });
     await open(api);
+    await act(async () => byLabel('Base weapon').focus());
     const groups = [...document.querySelectorAll('.fcb-base-group')].map((group) => group.getAttribute('aria-label'));
     expect(groups).toEqual(['Older Book', 'Test Book']);
     await type(byLabel('Base weapon'), 'rapier');

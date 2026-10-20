@@ -9078,9 +9078,32 @@ html.fcb-busy-cursor * {
   white-space: nowrap;
 }
 
-/* The base weapon or armor picker: results grouped under the book each entry is from. */
+/* The base weapon or armor picker: results grouped under the book each entry is from. The list
+   grows inside the dialog's scroll area instead of scrolling on its own. */
+.fcb-base-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fcb-base-search > .fcb-input {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
 .fcb-base-results {
-  max-height: 14rem;
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.fcb-base-results[hidden] {
+  display: none;
+}
+
+.fcb-base-results [role="option"][aria-selected="true"] {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-primary) 14%, transparent);
 }
 
 .fcb-base-group {
