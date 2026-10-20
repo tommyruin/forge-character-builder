@@ -19,7 +19,8 @@ describe('Build tab custom features', () => {
   it('lists a custom feat with Edit and Remove for its draft, not as a DM grant', () => {
     expect(source).toMatch(/e\.type === 'Feat' && !customIds\.has\(e\.id\)/);
     expect(source).toMatch(/<CustomEntryRows[\s\S]{0,120}customIn\('feats'\)/);
-    expect(source).toContain('customServices.remove(entry.elementId)');
+    expect(source).toContain('customRemoval.request(entry)');
+    expect(source).toContain('<CustomRemovalDialog removal={customRemoval} />');
   });
 
   it('keeps the Other section in the nav while it holds a custom entry', () => {

@@ -31,6 +31,7 @@ import {
   useCustomContent,
 } from '../custom/CustomEntries';
 import { makeCustomServices } from '../custom/customServices';
+import { CustomRemovalDialog, useCustomRemoval } from '../custom/CustomRemoval';
 import { localStore } from '../../transport/localStore';
 
 // DM/homebrew grants are a local-engine-only capability.
@@ -59,6 +60,7 @@ export default function BuildTab() {
     registerPrimaryScroll,
     registerDetailsScroll,
     resetPrimaryScroll,
+    notify,
   } = useWorkspace();
   const [section, setSection] = useState('race');
   const [inspected, setInspected] = useState(null);
@@ -181,7 +183,8 @@ export default function BuildTab() {
     run(() => api.characters.removeFeat(id, featId));
   const removeAsi = (abilityElementId) =>
     run(() => api.characters.removeAbilityScore(id, abilityElementId));
-  const removeCustom = (entry) => customServices.remove(entry.elementId);
+  const customRemoval = useCustomRemoval({ services: customServices, notify });
+  const removeCustom = (entry) => customRemoval.request(entry);
   const customRows = {
     onInspect: inspectItem,
     onEdit: (entry) =>
@@ -438,6 +441,7 @@ export default function BuildTab() {
         open={addAsiOpen}
         onClose={() => setAddAsiOpen(false)}
       />
+      <CustomRemovalDialog removal={customRemoval} />
       {customDialog && customServices && (
         <CustomFeatureModal
           key={customDialog.entry?.elementId ?? 'new'}
