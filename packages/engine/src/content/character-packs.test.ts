@@ -123,6 +123,7 @@ describe("rebuilds and snapshots", () => {
     expect(characterPackIds(library, "Ada")).toEqual([]);
   });
 
+  // Serialising and digesting the whole library takes seconds under coverage instrumentation.
   it("is left out of the serialized library, whatever is installed", async () => {
     const library = await libraryWithBook();
     const digest = () => contentLibraryDigest(serializeContentLibrary(library));
@@ -132,7 +133,7 @@ describe("rebuilds and snapshots", () => {
     expect(library.byId.has("ID_CUSTOM_A")).toBe(true);
     expect(withoutCharacterPacks(library, () => library.byId.has("ID_CUSTOM_A"))).toBe(false);
     expect(library.byId.has("ID_CUSTOM_A")).toBe(true);
-  });
+  }, 60_000);
 
   it("goes back on top after a Fast Start boot replaces the library's maps", async () => {
     const source = await libraryWithBook();

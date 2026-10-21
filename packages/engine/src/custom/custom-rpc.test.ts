@@ -245,6 +245,7 @@ describe("the library overlay", () => {
     expect(library.typeCounts["Custom Feature"]).toBe(library.byType.get("Custom Feature")!.length);
   });
 
+  // Serialising and digesting the whole library takes seconds under coverage instrumentation.
   it("is not part of any snapshot: the library digest does not move, and a character restores from its snapshot", async () => {
     const { service, id } = fighter();
     const digest = () => contentLibraryDigest(serializeContentLibrary(library));
@@ -272,5 +273,5 @@ describe("the library overlay", () => {
     expect(computeStatistics(device.getCharacter(id), otherLibrary).initiative).toBe(
       computeStatistics(service.getCharacter(id), library).initiative,
     );
-  });
+  }, 60_000);
 });
