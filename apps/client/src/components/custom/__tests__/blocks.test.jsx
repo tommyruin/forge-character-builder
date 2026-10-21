@@ -8,7 +8,7 @@ import ModifierBlock from '../ModifierBlock';
 import RequirementsBuilder from '../RequirementsBuilder';
 import SheetPresentation from '../SheetPresentation';
 import TagPicker from '../TagPicker';
-import { describeModifier, makeChoice, makeGrant, makeModifier } from '../draftModel';
+import { describeModifier, makeChoice, makeGrant, makeModifier, withArticle } from '../draftModel';
 import {
   $,
   Controlled,
@@ -191,7 +191,29 @@ describe('ModifierBlock', () => {
   });
 });
 
+describe('the article before a kind of thing', () => {
+  it('says another, an or a as English does', () => {
+    expect(withArticle('other feature')).toBe('another feature');
+    expect(withArticle('item')).toBe('an item');
+    expect(withArticle('Axe')).toBe('an Axe');
+    expect(withArticle('spell')).toBe('a spell');
+    expect(withArticle('subclass feature')).toBe('a subclass feature');
+    expect(withArticle('unicorn horn')).toBe('a unicorn horn');
+    expect(withArticle('hour glass')).toBe('an hour glass');
+  });
+});
+
 describe('GrantBlock', () => {
+  it('asks for every kind with the right article', async () => {
+    await mount(
+      <Controlled initial={makeGrant('Custom Feature')}>
+        {(block, onChange) => <GrantBlock block={block} onChange={onChange} lookup={lookup} />}
+      </Controlled>,
+    );
+    expect(document.body.textContent).toContain('Choose another feature');
+    expect(document.body.textContent).not.toMatch(/\ba other\b|\ba [aeiou]/i);
+  });
+
   it('searches the library by kind and emits the picked element', async () => {
     const emitted = [];
     await mount(

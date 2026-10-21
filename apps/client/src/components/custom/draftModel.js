@@ -73,6 +73,17 @@ export const EQUIPPED_VALUE_LABELS = {
 export const equippedValueLabel = (value) =>
   EQUIPPED_VALUE_LABELS[value] ?? value;
 
+// "a spell", "an item", "another feature": the article a label needs, so a generated sentence never
+// reads "a other feature". Words that start with a vowel letter but a consonant sound (unicorn, use,
+// one) take "a"; a silent h (hour, honest, heir) takes "an".
+export function withArticle(noun) {
+  const text = String(noun ?? '').trim();
+  if (/^other\b/i.test(text)) return `an${text}`;
+  if (/^(uni|use|usu|eu|one\b|once)/i.test(text)) return `a ${text}`;
+  if (/^(hour|honest|honou?r|heir)/i.test(text) || /^[aeiou]/i.test(text)) return `an ${text}`;
+  return `a ${text}`;
+}
+
 // The element types a grant or choice may name, as the author reads them.
 export const TYPE_LABELS = {
   Feat: 'Feat',
@@ -469,7 +480,7 @@ export function summarizeItem(draft) {
   const lines = [];
   if (draft.base) {
     const bonus = draft.bonus ? ` +${draft.bonus}` : '';
-    lines.push(`${draft.name.trim() || 'Untitled'} is a ${draft.base.name}${bonus}`);
+    lines.push(`${draft.name.trim() || 'Untitled'} is ${withArticle(draft.base.name)}${bonus}`);
   } else if (draft.template === 'worn') {
     const slot = WORN_SLOT_OPTIONS.find((option) => option.id === draft.slot)?.label.toLowerCase();
     lines.push(`Worn item${slot ? ` (${slot})` : ''}`);

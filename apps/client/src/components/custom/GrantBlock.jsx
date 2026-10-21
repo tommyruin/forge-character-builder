@@ -12,6 +12,7 @@ import {
   spellMode,
   typeLabel,
   usageText,
+  withArticle,
 } from './draftModel';
 import { Field, Issues, NumberInput, RemoveButton, Segmented, SelectInput, withCurrent } from './fields';
 import LibraryPicker from './LibraryPicker';
@@ -104,7 +105,7 @@ export default function GrantBlock({
           type={type}
           value={block.target.id}
           valueLabel={block.target.label}
-          label={`Find a ${typeLabel(type).toLowerCase()}`}
+          label={`Find ${withArticle(typeLabel(type).toLowerCase())}`}
           onPick={(item) => emit({ target: { by: 'id', type, id: item.id, label: item.name } })}
         />
       ) : (
@@ -120,7 +121,7 @@ export default function GrantBlock({
 
       {targetMissing && (
         <p className="fcb-custom-needs" data-testid="grant-target-hint">
-          {block.target.by === 'id' ? `Choose a ${typeLabel(type).toLowerCase()}` : 'Type its name'}
+          {block.target.by === 'id' ? `Choose ${withArticle(typeLabel(type).toLowerCase())}` : 'Type its name'}
         </p>
       )}
 

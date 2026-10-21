@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import LibraryPicker from '../custom/LibraryPicker';
 import { Field } from '../custom/fields';
+import { withArticle } from '../custom/draftModel';
 import { PARENT_KINDS, findPickTag, packParents } from './parentLookup';
 
 export default function ParentPicker({ kind, pack, api, lookup, value, onPick }) {
@@ -62,7 +63,7 @@ export default function ParentPicker({ kind, pack, api, lookup, value, onPick })
 
       <div className="space-y-1">
         <span className="fcb-field-label">From the library</span>
-        <LibraryPicker lookup={lookup} type={spec.parentType} label={`Find a ${spec.noun}`} onPick={pickBook} />
+        <LibraryPicker lookup={lookup} type={spec.parentType} label={`Find ${withArticle(spec.noun)}`} onPick={pickBook} />
         {busy && <p className="fcb-muted-copy text-xs">Looking up its pick list…</p>}
       </div>
 

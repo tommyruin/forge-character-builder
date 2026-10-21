@@ -21,6 +21,7 @@ import { compileCustomElement, customPackDraftIssues } from '@forge-cb/engine/cu
 import { requirementsSyntaxError } from '@forge-cb/engine/requirements';
 import { contentStoragePath } from '../../transport/contentStorage.js';
 import { plainDraftIssue } from '../custom/issueWords.js';
+import { withArticle } from '../custom/draftModel.js';
 
 export { plainDraftIssue };
 
@@ -862,7 +863,7 @@ export function validateDraft(draft) {
       if (!field.required || field.fixed != null) continue;
       if (field.showIf && !field.showIf(element.setters ?? {})) continue;
       const value = String(element.setters?.[field.key] ?? '').trim();
-      if (!value) errors.push({ where: label, message: `${field.label ?? field.key} is required for a ${element.type}.` });
+      if (!value) errors.push({ where: label, message: `${field.label ?? field.key} is required for ${withArticle(element.type)}.` });
     }
 
     if (spec.requirements) {
