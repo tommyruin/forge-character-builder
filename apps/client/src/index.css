@@ -5405,12 +5405,9 @@ button:disabled {
   color: var(--fcb-text);
   font: inherit;
   font-size: 0.85rem;
+  min-height: 36px;
   text-align: left;
   cursor: pointer;
-}
-
-.fcb-inventory-more-item {
-  min-height: 36px;
 }
 
 .fcb-inventory-more-item:hover:not(:disabled) {

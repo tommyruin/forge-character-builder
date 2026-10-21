@@ -15,7 +15,9 @@ import { brotliDecompressSync, gzipSync } from "node:zlib";
 const DIST = resolve(process.cwd(), "apps/client/dist");
 const SIBLING_MIN_BYTES = 10 * 1024;
 const ENTRY_GZIP_BUDGET = 100 * 1024;
-const ENGINE_WORKER_GZIP_BUDGET = 320 * 1024;
+// The custom-content compiler, templates and resource trackers run in the
+// worker; 2.6 measured about 347 KiB, so the budget keeps a little headroom.
+const ENGINE_WORKER_GZIP_BUDGET = 368 * 1024;
 const COMPRESSIBLE = /\.(?:js|mjs|css|xml|json|svg)$/i;
 
 const failures = [];
