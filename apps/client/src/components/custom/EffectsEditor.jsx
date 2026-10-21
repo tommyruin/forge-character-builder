@@ -6,7 +6,7 @@
 // The "only while active" switch is one name applied to every modifier, so its state lives here
 // next to the rows that show it.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ChoiceBlock from './ChoiceBlock';
 import GrantBlock from './GrantBlock';
 import ModifierBlock from './ModifierBlock';
@@ -140,6 +140,35 @@ function EffectsEditorBody({
   const addBlock = (block) =>
     setBlocks([...draft.blocks, switchOn && switchName.trim() !== '' && takesSwitch(block) ? withSwitch([block], switchName)[0] : block]);
   const setTrackers = (next) => patch({ trackers: next.length > 0 ? next : undefined });
+
+  // Renames the switch everywhere it is written: the gated bonuses and grants, and any use a
+  // tracker spends when the switch is turned on.
+  const renameSwitch = (from, to) => {
+    setSwitchName(to);
+    setDraft((current) => ({
+      ...current,
+      blocks: withSwitch(current.blocks, to),
+      ...(current.trackers
+        ? {
+            trackers: current.trackers.map((tracker) =>
+              from.trim() !== '' && tracker.spendOnSwitch === from.trim() ? { ...tracker, spendOnSwitch: to.trim() || undefined } : tracker,
+            ),
+          }
+        : {}),
+    }));
+  };
+
+  // A switch named after the element (the default) follows the element's name until the author
+  // types a switch name of their own: a rename never leaves "Switch One" behind on "Renamed One".
+  const previousName = useRef(draft.name);
+  useEffect(() => {
+    const before = previousName.current;
+    previousName.current = draft.name;
+    if (!switchOn || before === draft.name) return;
+    // The draft's own gates are the switch's name of record.
+    const current = sharedSwitch(draft.blocks) ?? switchName;
+    if (before.trim() !== '' && current.trim() === before.trim() && draft.name.trim() !== '') renameSwitch(current, draft.name.trim());
+  }, [draft.name]); // eslint-disable-line react-hooks/exhaustive-deps
   const setScales = (next) => patch({ scales: next.length > 0 ? next : undefined });
 
   const chips = [
@@ -283,10 +312,7 @@ function EffectsEditorBody({
                   aria-label="Switch name"
                   list="custom-switch-names"
                   value={switchName}
-                  onChange={(event) => {
-                    setSwitchName(event.target.value);
-                    setBlocks(withSwitch(draft.blocks, event.target.value));
-                  }}
+                  onChange={(event) => renameSwitch(switchName, event.target.value)}
                 />
                 <datalist id="custom-switch-names">
                   {knownSwitches.map((name) => (

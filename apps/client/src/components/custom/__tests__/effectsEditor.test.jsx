@@ -172,3 +172,41 @@ describe('the effect chips', () => {
   });
 
 });
+
+// The default switch name is the element's name; it keeps following the name until the author
+// types a switch name of their own.
+function NamedHost({ initial, onDraft }) {
+  const [draft, setDraft] = useState(initial);
+  useEffect(() => onDraft(draft), [draft, onDraft]);
+  return (
+    <>
+      <input aria-label="Element name" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
+      <EffectsEditor draft={draft} setDraft={setDraft} services={services} features />
+    </>
+  );
+}
+
+describe('the switch name follows the element name', () => {
+  const gated = (name) =>
+    draftWith(name, [{ kind: 'modifier', id: 'm1', target: 'ac:misc', value: { kind: 'number', value: 1 }, gates: { switch: name } }], {
+      trackers: [{ id: 't1', label: name, max: { kind: 'number', value: 2 }, recharge: 'long', spendOnSwitch: name }],
+    });
+
+  it('renames a default switch, and the use it spends, with the element', async () => {
+    let latest = null;
+    await mount(<NamedHost initial={gated('Switch One')} onDraft={(draft) => { latest = draft; }} />);
+    await type(byLabel('Element name'), 'Renamed One');
+    expect(byLabel('Switch name').value).toBe('Renamed One');
+    expect(latest.blocks[0].gates.switch).toBe('Renamed One');
+    expect(latest.trackers[0].spendOnSwitch).toBe('Renamed One');
+  });
+
+  it('keeps a switch name the author typed', async () => {
+    let latest = null;
+    await mount(<NamedHost initial={gated('Switch One')} onDraft={(draft) => { latest = draft; }} />);
+    await type(byLabel('Switch name'), 'Battle trance');
+    await type(byLabel('Element name'), 'Renamed One');
+    expect(byLabel('Switch name').value).toBe('Battle trance');
+    expect(latest.blocks[0].gates.switch).toBe('Battle trance');
+  });
+});
