@@ -184,9 +184,15 @@ describe('sharing a pack as one file', () => {
     const text = await downloads[0].text();
     expect(text).toContain('urn:forge-cb:pack:1');
     expect(text).toContain(`id="${gift.id}"`);
-    const shared = $('.fcb-toast-stack .fcb-toast').textContent;
-    expect(shared).toContain('moonwell-campaign.pack.xml');
-    expect(shared).not.toMatch(/\bids?\b/);
+    const toast = $('.fcb-toast-stack .fcb-toast');
+    const shared = toast.querySelector('.fcb-toast-message').textContent;
+    // Plain words: what was saved, under which file name, and what the other person does with it.
+    expect(shared).toBe(
+      'Moonwell Campaign was saved as moonwell-campaign.pack.xml. Send that file to anyone who should have the pack: they add it under Homebrew › Import pack or Content › Manage files, and can edit it just as you do.',
+    );
+    expect(shared).not.toMatch(/\bids?\b|drafts?|XML/);
+    // It holds a file name the reader needs, so it stays until dismissed.
+    expect(toast.querySelector('[aria-label="Dismiss"]')).not.toBeNull();
     // A toast, not a line in the page: sharing never moves the layout.
     expect($('[data-testid="hb-share-notice"]')).toBeNull();
   });
