@@ -259,6 +259,28 @@ project uses [Semantic Versioning](https://semver.org/).
   behind the button row.
 - A custom item's damage block is named for what it grants, such as Damage
   immunity.
+- Pack health lists what keeps an element from loading (an unnamed choice, an
+  empty filter) in plain words, instead of saying no problems were found, and
+  Load into builder names the same problems.
+- Narrow the list opens an empty filter builder instead of adding a blank "Has
+  the tag" filter.
+- Copy to a pack refuses an unfinished element and says which one and what it
+  is missing.
+- Validation messages read plainly everywhere: an empty grant says which thing
+  to choose, and no message talks about elements or names a place in the draft.
+- The New element dialog says what a template does in plain words, asks for a
+  book entry to reflavour, and the spell and item templates are a step of the
+  same dialog with Back on the left.
+- Generated labels use the right article: "Find another feature", "an item".
+- A switch named after its feature follows the feature's name until you type a
+  switch name of your own, and renaming a switch renames the use it spends.
+- The builder's own rules no longer show "Internal" as their source in searches,
+  the Content library and the spell, feat, equipment and rule lists; the source
+  filters call them Built in.
+- The inventory description shows a renamed item under its own name, and a
+  custom item's own text instead of "No description available".
+- On a phone, an equipped item's card keeps its storage menu full width and
+  shows where it is worn on its own line.
 
 - Opening another feature in a class's table no longer keeps the first
   feature's "Only while active" switch.
