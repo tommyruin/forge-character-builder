@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import Modal, { DialogFooter } from '../Modal';
+import { promotionProblems } from './promotion';
 import { Field, SelectInput } from '../custom/fields';
 
 const NEW_PACK = '__new__';
@@ -18,7 +19,9 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
   const target = creating ? null : packs.find((pack) => pack.id === destination);
   const held = new Set((target?.elements ?? []).map((element) => element.id));
   const chosen = plan.items.filter((item) => !item.linked || !skipped.has(item.id));
-  const ready = !busy && chosen.length > 0 && (!creating || name.trim() !== '');
+  // An unfinished entry cannot be copied: it would stop the pack loading.
+  const unfinished = chosen.map((item) => ({ item, problems: promotionProblems(item) })).filter((entry) => entry.problems.length > 0);
+  const ready = !busy && chosen.length > 0 && unfinished.length === 0 && (!creating || name.trim() !== '');
 
   const toggle = (id) =>
     setSkipped((current) => {
@@ -87,6 +90,20 @@ export default function PromoteDialog({ subject, plan, packs, defaultPackId = ''
             {subject} also refers to {plan.notFound.join(', ')}, which is not in this {plan.sourceNoun ?? 'list'}. If it is in your library from
             another source, the pack still works there; otherwise import it too.
           </p>
+        )}
+        {unfinished.length > 0 && (
+          <div className="fcb-alert text-sm" data-testid="hb-promote-problems">
+            <p className="font-semibold">Finish these first; a pack with them in it cannot load.</p>
+            <ul className="list-disc pl-5">
+              {unfinished.flatMap(({ item, problems }) =>
+                problems.map((problem, index) => (
+                  <li key={`${item.id}-${index}`}>
+                    {item.name}: {problem}
+                  </li>
+                )),
+              )}
+            </ul>
+          </div>
         )}
         {error && (
           <p role="alert" className="fcb-alert">

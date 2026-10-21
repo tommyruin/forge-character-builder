@@ -4,9 +4,9 @@
 // needs. Only the pack's drafts are written; the pack reaches the library when it is loaded from
 // the Homebrew page, which keeps an entry's id from resolving twice in one library.
 
-import { linkedCustomIds, packElementFor } from '@forge-cb/engine/custom';
+import { customPackDraftIssues, linkedCustomIds, packElementFor } from '@forge-cb/engine/custom';
 import { elementIdOf } from './packModel.js';
-import { buildElementXml, createCollection } from './xmlBuilder.js';
+import { buildElementXml, createCollection, plainDraftIssue } from './xmlBuilder.js';
 
 /** A new pack made for sharing with the table. */
 export function createWorldPack({ name, author = '' }) {
@@ -77,11 +77,26 @@ export function refsOfElement(element) {
 }
 
 /**
+ * What keeps an entry from being copied: the issues of its draft (a form-made element or a
+ * character's entry), in plain words. An element written as XML has no draft and is copied as it is.
+ */
+export function promotionProblems(item) {
+  const draft = item.draft ?? item.element?.customDraft;
+  if (!draft || typeof draft !== 'object') return [];
+  return customPackDraftIssues(draft).map((issue) => plainDraftIssue(draft, issue));
+}
+
+/**
  * Writes the chosen entries into the target pack, creating it when `target.create` says so. An
  * entry whose id the pack already holds replaces that copy in place. Returns the stored pack and
  * which entries were added or replaced.
  */
 export async function promoteToPack({ store, target, items, sourcePack = null, now = Date.now() }) {
+  // An unfinished entry would land in the pack and stop it loading, so nothing is written.
+  for (const item of items) {
+    const problems = promotionProblems(item);
+    if (problems.length > 0) throw new Error(`${item.name} is not finished: ${problems.join(' ')}`);
+  }
   const records = await store.listHomebrew();
   const pack = target.create ? createWorldPack(target.create) : records.find((record) => record.id === target.packId);
   if (!pack) throw new Error('That pack no longer exists.');
