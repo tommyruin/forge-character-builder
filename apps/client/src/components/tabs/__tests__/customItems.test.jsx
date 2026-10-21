@@ -21,6 +21,7 @@ const { characters, content } = vi.hoisted(() => ({
   content: {
     equipmentCategories: vi.fn(),
     elements: vi.fn(),
+    element: vi.fn(),
     clearCache: vi.fn(),
   },
 }));
@@ -205,6 +206,33 @@ describe("the inventory", () => {
     const row = document.querySelector(".fcb-inventory-table tbody tr");
     expect(row.querySelector(".fcb-inventory-record-names").textContent).toBe("Scimitar");
     expect(row.textContent).toContain("Green leather.");
+  });
+
+  it("describes a renamed record under its own name, with the item it is", async () => {
+    characters.inventory.mockResolvedValue(inventoryWith([record({ name: "Grandfather's Blade", customName: "Grandfather's Blade" })]));
+    content.element.mockResolvedValue({ id: "ID_SCIMITAR", name: "Scimitar", type: "Weapon", description: "<p>A curved blade.</p>" });
+    await openInventory();
+    await act(async () => document.querySelector(".fcb-inventory-desktop-info [aria-label=\"About Grandfather's Blade\"]").click());
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+    const panel = document.querySelector(".fcb-description-panel");
+    expect(panel.textContent).toContain("Grandfather's Blade");
+    expect(panel.textContent).toContain("Scimitar");
+    expect(panel.textContent).toContain("A curved blade.");
+  });
+
+  it("describes a custom item with its own text, not No description available", async () => {
+    const wand = { ...FROSTBITE, draft: { ...FROSTBITE.draft, description: "Rime clings to the blade." } };
+    characters.inventory.mockResolvedValue(
+      inventoryWith([record({ itemId: "ID_LONGSWORD", displayElementId: FROSTBITE.elementId, name: "Frostbite", defaultName: "Frostbite", baseName: "Longsword", isCustom: true })]),
+    );
+    characters.customContent.mockResolvedValue({ entries: [wand], problems: [] });
+    content.element.mockResolvedValue({ id: FROSTBITE.elementId, name: "Frostbite", type: "Weapon", description: "" });
+    await openInventory();
+    await act(async () => document.querySelector('.fcb-inventory-desktop-info [aria-label="About Frostbite"]').click());
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+    const panel = document.querySelector(".fcb-description-panel");
+    expect(panel.textContent).toContain("Rime clings to the blade.");
+    expect(panel.textContent).not.toContain("No description available.");
   });
 
   it("renames a record through the dialog and refreshes the row", async () => {

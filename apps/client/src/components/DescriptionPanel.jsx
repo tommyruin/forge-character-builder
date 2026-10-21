@@ -5,6 +5,9 @@ import ContentRenderer from './ContentRenderer';
 // The right-hand description pane shown next to every selection surface.
 // Element descriptions are parsed into a safe React tree by ContentRenderer
 // instead of injected as raw HTML.
+const hasOwnText = (element) =>
+  [element?.generatedDescription, element?.description].some((value) => String(value ?? '').replace(/<[^>]*>/g, '').trim() !== '');
+
 export default function DescriptionPanel({
   elementId,
   placeholder,
@@ -14,6 +17,11 @@ export default function DescriptionPanel({
   onContentReady,
   returnLabel = 'Back to list',
   detailsLabel = 'Details',
+  // A record the user renamed reads under its own name (`title`), with the item it is (`renamedFrom`);
+  // `fallbackContent` (HTML) stands in when the element has no text of its own, as for a custom item.
+  title,
+  renamedFrom,
+  fallbackContent,
 }) {
   const [state, setState] = useState({ id: null, element: null, error: null });
   const panelRef = useRef(null);
@@ -104,7 +112,16 @@ export default function DescriptionPanel({
       )}
       {element && (
         <div className="fcb-panel-body">
-          <ContentRenderer element={element} />
+          <ContentRenderer
+            element={element}
+            title={title}
+            content={hasOwnText(element) ? undefined : fallbackContent || undefined}
+          />
+          {renamedFrom && (
+            <p className="fcb-muted-copy text-xs" data-testid="description-renamed-from">
+              Your name for {renamedFrom}.
+            </p>
+          )}
         </div>
       )}
       </div>

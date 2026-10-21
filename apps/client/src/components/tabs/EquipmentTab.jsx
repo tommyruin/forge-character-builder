@@ -20,6 +20,7 @@ import {
 } from "../InspectableItemControls";
 import Modal from "../Modal";
 import Disclosure from "../Disclosure";
+import { summarizeItem } from "../custom/draftModel";
 import { baseOptionLabel, resolveMagicBaseAction } from "../magicBaseAction";
 import {
   newItemCardOptions,
@@ -97,6 +98,23 @@ function equipLocationsFor(item) {
 // EQUIPMENT tab: the catalog sub-tab browses content and adds items (toast + "×N owned"
 // badge confirm each add); the Inventory sub-tab is the single management surface,
 // so the catalog carries no inventory dock of its own.
+const escapeHtml = (text) =>
+  String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// A custom item's own text for the description panel: what its author wrote, or, when they wrote
+// nothing, what the item does in plain words.
+export function customItemText(draft) {
+  const written = String(draft?.description ?? "").trim();
+  if (written) {
+    return written
+      .split(/\n\s*\n/)
+      .map((paragraph) => `<p>${escapeHtml(paragraph.trim()).replace(/\n/g, "<br>")}</p>`)
+      .join("");
+  }
+  const lines = summarizeItem(draft);
+  return lines.length > 0 ? `<ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>` : undefined;
+}
+
 // The five coins, smallest first: the record key, the abbreviation and the coin's name.
 const COIN_KINDS = [
   ["copper", "CP", "Copper"],
@@ -1449,10 +1467,21 @@ function Inventory({
   onAddGear,
 }) {
   const { registerPrimaryScroll, registerDetailsScroll } = useWorkspace();
+  // The record behind the description panel, so it can read under the record's own name.
+  const [inspectedRecord, setInspectedRecord] = useState(null);
   const [coinDraft, setCoinDraft] = useState({});
   const [gearName, setGearName] = useState("");
   const [gearAmount, setGearAmount] = useState(1);
   const coins = { ...inventory.coins, ...coinDraft };
+  const inspectRecord = (item, elementId, target) => {
+    setInspectedRecord(item.identifier);
+    inspectItem(elementId, target);
+  };
+  const describedRecord =
+    (inventory.items ?? []).find(
+      (item) => item.identifier === inspectedRecord && (item.displayElementId ?? item.itemId) === inspected,
+    ) ?? null;
+  const describedEntry = describedRecord ? (customEntryOf?.(describedRecord) ?? null) : null;
   const { inspect: inspectItem, descriptionPanelProps } =
     useMobileDescriptionNavigation({
       onInspect,
@@ -1555,7 +1584,7 @@ function Inventory({
                       <div className="fcb-inventory-item-header">
                         <InspectableItemButton
                           elementId={item.displayElementId ?? item.itemId}
-                          onInspect={inspectItem}
+                          onInspect={(elementId, target) => inspectRecord(item, elementId, target)}
                           className="fcb-inventory-item-name text-left"
                         >
                           <EquipmentName item={item} />
@@ -1568,7 +1597,7 @@ function Inventory({
                           <InformationButton
                             elementId={item.displayElementId ?? item.itemId}
                             label={item.name}
-                            onInspect={inspectItem}
+                            onInspect={(elementId, target) => inspectRecord(item, elementId, target)}
                             className="fcb-inventory-info"
                           />
                         </span>
@@ -1576,7 +1605,7 @@ function Inventory({
                           <InformationButton
                             elementId={item.displayElementId ?? item.itemId}
                             label={item.name}
-                            onInspect={inspectItem}
+                            onInspect={(elementId, target) => inspectRecord(item, elementId, target)}
                             className="fcb-inventory-info"
                           />
                           <InventoryActionButtons
@@ -1751,6 +1780,9 @@ function Inventory({
         placeholder="Inventory"
         returnLabel="Back to inventory"
         detailsLabel="Inventory item details"
+        title={describedRecord?.customName ? describedRecord.name : undefined}
+        renamedFrom={describedRecord?.customName ? describedRecord.defaultName : undefined}
+        fallbackContent={describedEntry ? customItemText(describedEntry.draft) : undefined}
       />
       {modals}
     </WorkspaceTabLayout>
