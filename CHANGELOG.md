@@ -6,6 +6,11 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The two engine tests that digest the whole content library allow the same
+  time as the snapshot tests, so the coverage run in CI no longer times out.
+
 ## [2.6.0] - 2026-10-21
 
 ### Added
