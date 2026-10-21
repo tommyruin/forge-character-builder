@@ -2,7 +2,7 @@
 // fix the editor can offer for each kind of problem. The engine names the pack element behind every
 // finding, so the card can open it.
 
-import { buildCollectionXml, collectionStoragePath } from './xmlBuilder.js';
+import { buildCollectionXml, collectionStoragePath, draftIssuesOf } from './xmlBuilder.js';
 import { elementForFinding, elementIdOf } from './packModel.js';
 
 // Ids the pack replaces on purpose: a changed book element keeps the book's id, so it is not a
@@ -13,21 +13,37 @@ function overriddenIds(pack) {
     .map((element) => elementIdOf(element, pack));
 }
 
-/** The engine's findings for a pack's current file. */
+/**
+ * What keeps a form-made element from loading (an unnamed choice, an empty filter), as findings of
+ * kind `incomplete`. Load into builder and Share pack refuse a pack with any of them, so the card
+ * lists them first instead of saying the pack is fine.
+ */
+export function incompleteFindings(pack) {
+  return draftIssuesOf(pack).map(({ element, message }) => ({
+    kind: 'incomplete',
+    message,
+    elementId: elementIdOf(element, pack),
+    elementName: element.name?.trim() || 'An unnamed element',
+  }));
+}
+
+/** The pack's findings: what stops it loading, then the engine's findings for its current file. */
 export async function checkPackHealth(api, pack) {
-  if (typeof api.content?.checkPack !== 'function') return [];
+  const incomplete = incompleteFindings(pack);
+  if (typeof api.content?.checkPack !== 'function') return incomplete;
   const findings = await api.content.checkPack({
     path: collectionStoragePath(pack),
     xml: buildCollectionXml(pack),
     overrides: overriddenIds(pack),
   });
-  return findings ?? [];
+  return [...incomplete, ...(findings ?? [])];
 }
 
 /** Findings that are faults; an `overrides` finding only says the pack replaces a book element. */
 export const problemsIn = (findings) => findings.filter((finding) => finding.kind !== 'overrides');
 
 const KIND_TITLES = {
+  incomplete: 'Not finished, so it cannot load',
   'missing-grant': 'Grants something that is not in your library',
   'duplicate-id': 'Defined twice',
   unattachable: 'Cannot be added to anyone',

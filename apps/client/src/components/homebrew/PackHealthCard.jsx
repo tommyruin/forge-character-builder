@@ -29,7 +29,10 @@ export default function PackHealthCard({ pack, health, busy, onFix }) {
               <li key={`${finding.kind}-${finding.elementId ?? ''}-${finding.missingId ?? ''}-${index}`} className="fcb-pack-health-item" data-kind={finding.kind}>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{findingTitle(finding)}</p>
-                  <p className="text-sm">{finding.message}</p>
+                  <p className="text-sm">
+                    {finding.kind === 'incomplete' && <strong>{finding.elementName}. </strong>}
+                    {finding.message}
+                  </p>
                 </div>
                 <div className="fcb-toolbar">
                   {fix && fix.action !== 'open' && (

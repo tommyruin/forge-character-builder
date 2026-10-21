@@ -389,9 +389,10 @@ describe('pack health', () => {
     await openPack(full);
     await wait(800);
     const card = $('[data-testid="hb-pack-health"]');
-    expect(card.textContent).toContain('5 to fix');
+    // The empty addition cannot load either, and is listed first.
+    expect(card.textContent).toContain('6 to fix');
     expect($$('[data-testid="hb-pack-health"] li').map((item) => item.getAttribute('data-kind'))).toEqual([
-      'missing-grant', 'duplicate-id', 'unattachable', 'append-target', 'invalid-requirements',
+      'incomplete', 'missing-grant', 'duplicate-id', 'unattachable', 'append-target', 'invalid-requirements',
     ]);
     const labelsOf = (kind) => [...card.querySelector(`li[data-kind="${kind}"]`).querySelectorAll('button')].map((button) => button.textContent);
     expect(labelsOf('missing-grant')).toEqual(['Create spell', 'Find a source', 'Open element']);
@@ -401,6 +402,56 @@ describe('pack health', () => {
     expect(labelsOf('invalid-requirements')).toEqual(['Open element']);
     // It asked the engine about this pack's own file.
     expect(h.api.content.checkPack).toHaveBeenCalledWith(expect.objectContaining({ xml: expect.stringContaining('Hermit') }));
+  });
+
+  it('lists what keeps an element from loading, in plain words, instead of saying No problems found', async () => {
+    const unfinished = elementForDraft(
+      {
+        schemaVersion: 1,
+        id: 'ID_CUSTOM_CHOICETEST01',
+        template: 'boon',
+        name: 'Moonwell Gift',
+        showsUnder: 'other',
+        description: 'A gift.',
+        blocks: [{ kind: 'choice', id: 'c1', type: 'Language', name: '', count: 1, supports: { kind: 'group', op: 'all', items: [{ kind: 'tag', value: '' }] } }],
+      },
+      pack,
+    );
+    h.api.content.checkPack.mockImplementation(async () => []);
+    await openPack({ ...pack, elements: [unfinished] });
+    await wait(800);
+    const card = $('[data-testid="hb-pack-health"]');
+    expect(card.textContent).not.toContain('No problems found');
+    expect(card.textContent).toContain('2 to fix');
+    const items = $$('[data-testid="hb-pack-health"] li[data-kind="incomplete"]');
+    expect(items).toHaveLength(2);
+    const text = items.map((item) => item.textContent).join(' ');
+    expect(text).toContain('Moonwell Gift');
+    expect(text).toContain('Player choice: give the choice a name');
+    expect(text).toContain('Player choice: a Has the tag filter is empty');
+    expect(text).not.toMatch(/blocks\[|supports|\.name|\.value/);
+    expect([...items[0].querySelectorAll('button')].map((button) => button.textContent)).toEqual(['Open element']);
+  });
+
+  it('says the same plain words when Load into builder is held back', async () => {
+    const unfinished = elementForDraft(
+      {
+        schemaVersion: 1,
+        id: 'ID_CUSTOM_CHOICETEST02',
+        template: 'boon',
+        name: 'Moonwell Gift',
+        showsUnder: 'other',
+        description: 'A gift.',
+        blocks: [{ kind: 'choice', id: 'c1', type: 'Language', name: '', count: 1 }],
+      },
+      pack,
+    );
+    await openPack({ ...pack, elements: [unfinished] });
+    await click(buttonByText('Load into builder'));
+    await settle();
+    expect(h.api.content.upload).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Player choice: give the choice a name');
+    expect(document.body.textContent).not.toMatch(/blocks\[0\]/);
   });
 
   it('converts an unattachable Background Feature to a feature that can be granted', async () => {
