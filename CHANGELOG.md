@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-10-21
+
 ### Added
 
 - A pack's features and items are tracked on the Resources page: each limited
