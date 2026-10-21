@@ -1894,8 +1894,10 @@ function planTraitsColumn(
   const printed = column.speciesTop - column.speciesBottom;
   const least = TRAITS_SPECIES_MIN_HEIGHT - printed;
   const most = column.featuresTop - column.featuresBottom - TRAITS_FEATURES_MIN_HEIGHT;
-  if (most < least) return 0;
-  if (species === undefined || species.paragraphs.length === 0) return least;
+  // A page that says nothing about the species prints the column as drawn;
+  // a species with no traits gives the features all the room it can.
+  if (most < least || species === undefined) return 0;
+  if (species.paragraphs.length === 0) return least;
   const rects = new Map([[SPECIES_FIELD, column.species], [FEATURES_FIELD, column.features]]);
   const box = (field: string, shift: number): RichTextBox =>
     richTextBox(shiftedTraitsRects(rects, column, shift), field, species.fallback);

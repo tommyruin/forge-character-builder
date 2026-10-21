@@ -139,9 +139,20 @@ describe("text placed in template boxes", () => {
         { title: "proficiencies", rows: [line("Armor Proficiencies. Light Armor")] },
       ],
     }, {}, localTemplateBundle(set));
+    // On 2024 the one-line species gives its room to the features, so their box
+    // starts higher than the template drew it, by as far as its title moved
+    // (the Species Traits title stays put).
+    const titles = localTemplateBundle(set).labels["details.pdf"]!.labels;
+    const moved = (title: string): number => {
+      const drawn = written.pages[0]!.find((item) => item.str === title);
+      const printed = titles.find((label) => label.text === title);
+      return drawn === undefined || printed === undefined ? 0 : drawn.y - printed.y;
+    };
+    const lift = moved("CLASS FEATURES") - moved("SPECIES TRAITS");
     const sizes = new Set<string>();
     for (const field of ["details_features", "details_additional_notes", "details_proficiencies_languages"]) {
-      const box = rect(field);
+      const template = rect(field);
+      const box = field === "details_features" ? { ...template, height: template.height + lift } : template;
       const first = within(written.pages[0]!, box).reduce((top, item) => (item.y > top.y ? item : top));
       sizes.add(first.size.toFixed(1));
       // Helvetica's cap height is 718/1000 of the size.
