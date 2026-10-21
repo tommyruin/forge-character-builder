@@ -5745,8 +5745,36 @@ button:disabled {
   }
 }
 
-/* On a phone the five amounts and Apply sit on two compact rows of three. */
+/* On a phone a card is: name with its actions, summary, Qty and storage on one line, and, only for a
+   record that is equipped, where it is worn on a line of its own, so the storage menu keeps its width
+   and "Primary Hand" is never cut. The card's icon buttons are 32px with a gap between them. */
 @container fcb-inventory-primary (max-width: 560px) {
+  .fcb-inventory-table tr {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "item item"
+      "qty storage"
+      "equipped equipped";
+    padding: 5px 6px;
+  }
+
+  .fcb-inventory-table td.fcb-inventory-unequipped {
+    display: none;
+  }
+
+  .fcb-inventory-table td[data-label="Equipped"] {
+    padding-top: 3px;
+    text-align: left;
+  }
+
+  .fcb-inventory-mobile-actions .fcb-inventory-info,
+  .fcb-inventory-mobile-actions .fcb-inventory-action-button {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
   .fcb-inventory-coins .fcb-inventory-coin-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

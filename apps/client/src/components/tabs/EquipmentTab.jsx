@@ -1646,7 +1646,7 @@ function Inventory({
                       />
                     </td>
                     <td
-                      className={`text-xs${item.isEquipped || item.isEquippable ? "" : " fcb-inventory-cannot-equip"}`}
+                      className={`text-xs${item.isEquipped ? " fcb-inventory-is-equipped" : item.isEquippable ? " fcb-inventory-unequipped" : " fcb-inventory-cannot-equip"}`}
                       data-label="Equipped"
                     >
                       {item.isEquipped ? (

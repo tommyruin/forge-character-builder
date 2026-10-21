@@ -3,6 +3,8 @@
 // Rename / Notes / Edit actions, through the real tab with a stand-in engine API.
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { characters, content } = vi.hoisted(() => ({
@@ -233,6 +235,21 @@ describe("the inventory", () => {
     const panel = document.querySelector(".fcb-description-panel");
     expect(panel.textContent).toContain("Rime clings to the blade.");
     expect(panel.textContent).not.toContain("No description available.");
+  });
+
+  it("puts where an equipped record is worn on its own line on a phone, and says nothing for one that is not", async () => {
+    characters.inventory.mockResolvedValue(
+      inventoryWith([record({}), record({ identifier: "rec-2", name: "Dagger", isEquipped: false, equippedLocation: null })]),
+    );
+    await openInventory();
+    const cells = [...document.querySelectorAll('td[data-label="Equipped"]')];
+    expect(cells[0].classList.contains("fcb-inventory-is-equipped")).toBe(true);
+    expect(cells[1].classList.contains("fcb-inventory-unequipped")).toBe(true);
+    const cssPath = ["src/index.css", "apps/client/src/index.css"].map((path) => resolve(process.cwd(), path)).find(existsSync);
+    const css = readFileSync(cssPath, "utf8");
+    const phone = css.slice(css.indexOf("@container fcb-inventory-primary (max-width: 560px)"));
+    expect(phone).toMatch(/"item item"\s*"qty storage"\s*"equipped equipped"/);
+    expect(phone).toMatch(/td\.fcb-inventory-unequipped \{\s*display: none;/);
   });
 
   it("renames a record through the dialog and refreshes the row", async () => {
