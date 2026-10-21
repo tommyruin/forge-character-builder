@@ -468,7 +468,7 @@ describe("the compact top row's values", () => {
 });
 
 describe("the split layout's feature groups", () => {
-  it("puts every row of the features box, senses included, in exactly one group", async () => {
+  it("puts every row of the features box in exactly one group", async () => {
     const library = await sharedLibrary();
     for (const build of [buildWizard4, buildRangerRogue8, buildFullSheetCharacter]) {
       const details = buildCharacterSheetModel(build(library).state, library, { mode: "full" }).pages.find((candidate) => candidate.templateKind === "details")!;
@@ -478,9 +478,9 @@ describe("the split layout's feature groups", () => {
       const grouped = [...lines(groups["class-features"]!), ...lines(groups["subclass-features"]!), ...lines(groups.feats!)];
       expect(grouped.sort(), build.name).toEqual(lines(features.renderRows ?? features.rows).sort());
     }
-    // The high elf's darkvision is a sense; it prints with the class features.
+    // The high elf's darkvision is a sense: it prints in the senses field, not with the class features.
     const wizard = buildCharacterSheetModel(buildWizard4(library).state, library, { mode: "full" }).pages.find((candidate) => candidate.templateKind === "details")!;
-    expect(wizard.featureGroups!["class-features"]!.some((row) => row.kind === "lines" && row.lines.some((text) => text.startsWith("Darkvision")))).toBe(true);
+    expect(wizard.featureGroups!["class-features"]!.some((row) => row.kind === "lines" && row.lines.some((text) => text.startsWith("Darkvision")))).toBe(false);
   }, 120_000);
 });
 
