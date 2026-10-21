@@ -376,6 +376,21 @@ describe('ChoiceBlock', () => {
     expect(customDraftIssues(draftWith(emitted.at(-1)))).toEqual([]);
   });
 
+  it('opens Narrow the list without adding an empty filter the author has not asked for', async () => {
+    const emitted = [];
+    await mount(
+      <Controlled initial={makeChoice({ id: 'c1', name: 'Tongue', type: 'Language' })} emitted={emitted}>
+        {(block, onChange) => <ChoiceBlock block={block} onChange={onChange} lookup={lookup} />}
+      </Controlled>,
+    );
+    await click(buttonByText('Narrow the list'));
+    // The builder is open, waiting for the first filter, and the choice is still valid as it was.
+    expect(byLabel('Filter to add')).not.toBeNull();
+    expect(byLabel('Tag')).toBeNull();
+    expect(emitted.every((block) => block.supports === undefined)).toBe(true);
+    expect(customDraftIssues(draftWith(emitted.at(-1) ?? makeChoice({ id: 'c1', name: 'Tongue', type: 'Language' })))).toEqual([]);
+  });
+
   it('builds a filter with ALL OF / ANY OF / NONE OF', async () => {
     const emitted = [];
     await mount(
@@ -384,6 +399,7 @@ describe('ChoiceBlock', () => {
       </Controlled>,
     );
     await click(buttonByText('Narrow the list'));
+    await choose(byLabel('Filter to add'), 'tag');
     await type(byLabel('Tag'), 'Standard');
     await choose(byLabel('Match'), 'none');
     expect(emitted.at(-1).supports).toEqual({ kind: 'group', op: 'none', items: [{ kind: 'tag', value: 'Standard' }] });
@@ -404,7 +420,7 @@ describe('ChoiceBlock', () => {
     await choose(byLabel('Casting ability'), 'wisdom');
     await choose(byLabel('Spellcasting feature'), 'Druid');
     expect(emitted.at(-1)).toMatchObject({
-      supports: { kind: 'group', op: 'all', items: [{ kind: 'tag', value: '' }, { kind: 'level', value: 0 }] },
+      supports: { kind: 'group', op: 'all', items: [{ kind: 'level', value: 0 }] },
       castAbility: 'wisdom',
       caster: 'Druid',
     });

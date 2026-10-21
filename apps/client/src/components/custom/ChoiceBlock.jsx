@@ -4,6 +4,7 @@
 // what the character's picks are remembered by, which is why the modal warns before they
 // change. The block emits the draft's `ChoiceBlock` shape.
 
+import { useState } from 'react';
 import {
   CUSTOM_GRANT_TYPES,
   MAX_CONDITION_DEPTH,
@@ -179,34 +180,44 @@ function FilterGroup({ node, onChange, onRemove, type, lookup, depth }) {
   );
 }
 
-// B3's filter builder on its own, for the Homebrew editor to reuse.
+// B3's filter builder on its own, for the Homebrew editor to reuse. "Narrow the list" opens the
+// builder with no filter in it: nothing is written to the choice until the author adds a filter, so
+// opening it never leaves an empty "Has the tag" behind that would stop the pack loading.
 export function FilterBuilder({ value, onChange, type, lookup, label = 'Filter' }) {
+  const [opening, setOpening] = useState(null);
   const issues = value ? filterIssues(value) : [];
-  if (!value) {
+  if (!value && opening === null) {
     return (
       <div role="group" aria-label={label}>
         <p className="fcb-muted-copy text-xs">Everything of this kind is offered.</p>
-        <button
-          type="button"
-          className="fcb-button"
-          onClick={() => onChange({ kind: 'group', op: 'all', items: [LEAVES[0].make()] })}
-        >
+        <button type="button" className="fcb-button" onClick={() => setOpening({ kind: 'group', op: 'all', items: [] })}>
           Narrow the list
         </button>
       </div>
     );
   }
+  const node = value ?? opening;
   return (
     <div role="group" aria-label={label}>
       <FilterGroup
-        node={value}
+        node={node}
         depth={0}
         type={type}
         lookup={lookup}
-        onChange={(next) => onChange(next.items.length === 0 ? undefined : next)}
+        onChange={(next) => {
+          if (next.items.length === 0) {
+            // Removing the last filter closes the builder again; a match change on an empty
+            // builder only waits for the first filter.
+            setOpening(value ? null : next);
+            if (value) onChange(undefined);
+            return;
+          }
+          setOpening(null);
+          onChange(next);
+        }}
       />
       <Issues issues={issues} />
-      {issues.length === 0 && (
+      {value && issues.length === 0 && (
         <p className="fcb-custom-readout">
           <strong>Offers things that are:</strong> {describeFilter(value)}
         </p>
