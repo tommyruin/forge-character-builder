@@ -306,10 +306,10 @@ describe("the inventory", () => {
     await openInventory();
     const submit = async () =>
       act(async () => {
-        document.querySelector('form[aria-label="Add custom gear"]').dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+        document.querySelector('form[aria-label="Add a simple item"]').dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
       });
 
-    await typeInto(byLabel("Gear name"), "Signal Whistle");
+    await typeInto(byLabel("Item name"), "Signal Whistle");
     await typeInto(byLabel("Gear quantity"), "3");
     await submit();
     expect(characters.saveCustomDraft).toHaveBeenCalledTimes(1);
@@ -317,10 +317,10 @@ describe("the inventory", () => {
     expect(id).toBe("Ada");
     expect(draft).toMatchObject({ template: "gear", name: "Signal Whistle", stackable: true, blocks: [] });
     expect(options).toEqual({ amount: 3 });
-    expect(byLabel("Gear name").value).toBe("");
+    expect(byLabel("Item name").value).toBe("");
 
     // The same name again adds to the item the character already has.
-    await typeInto(byLabel("Gear name"), "signal whistle");
+    await typeInto(byLabel("Item name"), "signal whistle");
     await submit();
     expect(characters.saveCustomDraft).toHaveBeenCalledTimes(1);
     expect(characters.addItem).toHaveBeenCalledWith("Ada", draft.id, 1, null);

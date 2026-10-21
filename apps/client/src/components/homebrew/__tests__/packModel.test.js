@@ -109,7 +109,7 @@ describe('the New element templates', () => {
     expect(NEW_ELEMENT_TEMPLATES.map((template) => template.label)).toEqual([
       'Boon or blessing', 'Curse or injury', 'Transformation', 'Feature',
       'Species', 'Subspecies or variant', 'Class', 'Subclass', 'Background', 'Feat',
-      'Spell', 'Weapon', 'Armor or shield', 'Magic weapon or armor', 'Wondrous or worn item', 'Gear or consumable',
+      'Spell', 'Weapon', 'Armor or shield', 'Magic weapon or armor', 'Wondrous or worn item', 'Simple item',
       'Companion', 'Language', 'Proficiency', 'Sense or damage type', 'Deity', 'Optional rule', 'Alignment', 'Weapon property',
       'Change a book element', 'Add to a book element', 'Reflavour', 'Custom type or raw XML',
     ]);

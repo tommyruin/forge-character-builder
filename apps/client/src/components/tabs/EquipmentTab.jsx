@@ -1522,7 +1522,7 @@ function Inventory({
           {onAddGear && (
             <form
               className="fcb-inventory-quick-gear"
-              aria-label="Add custom gear"
+              aria-label="Add a simple item"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (gearName.trim() === "") return;
@@ -1532,10 +1532,10 @@ function Inventory({
                 });
               }}
             >
-              <span className="fcb-field-label">Add custom gear</span>
+              <span className="fcb-field-label">Add a simple item</span>
               <input
                 className="fcb-input"
-                aria-label="Gear name"
+                aria-label="Item name"
                 placeholder="Signal whistle"
                 value={gearName}
                 onChange={(event) => setGearName(event.target.value)}

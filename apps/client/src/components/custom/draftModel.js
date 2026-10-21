@@ -437,7 +437,7 @@ export const ITEM_TEMPLATE_OPTIONS = [
   { id: 'weapon', label: 'Weapon' },
   { id: 'armor', label: 'Armor or shield' },
   { id: 'worn', label: 'Worn item' },
-  { id: 'gear', label: 'Plain gear' },
+  { id: 'gear', label: 'Simple item' },
 ];
 
 const titleCase = (word) => word.charAt(0).toUpperCase() + word.slice(1);

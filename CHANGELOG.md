@@ -174,6 +174,10 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- An item with no rules of its own is called a "Simple item" everywhere: the
+  custom item choice, the Homebrew template and the quick add line above the
+  inventory.
+
 - Custom content reads the same everywhere. The terms are: Bonus to another
   stat, Uses per rest, Grows with level, Player choice, Spell and Other feature
   for a feature's effects, and Bonus to a stat, Damage resistance and Charges for

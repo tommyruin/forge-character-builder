@@ -7893,7 +7893,7 @@ button:disabled {
   white-space: nowrap;
 }
 
-/* The quick "Add custom gear" line above the inventory table. */
+/* The quick "Add a simple item" line above the inventory table. */
 .fcb-inventory-quick-gear {
   display: flex;
   flex-wrap: wrap;

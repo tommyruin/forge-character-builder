@@ -106,7 +106,7 @@ export function draftFamily(draft) {
 
 const SPELL_LEVEL_WORDS = ['Cantrip', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
 
-const ITEM_KIND_LABELS = { weapon: 'Magic weapon', armor: 'Magic armor', worn: 'Wondrous item', gear: 'Gear' };
+const ITEM_KIND_LABELS = { weapon: 'Magic weapon', armor: 'Magic armor', worn: 'Wondrous item', gear: 'Simple item' };
 
 const FEATURE_KIND_LABELS = {
   feature: 'Feature',
@@ -212,7 +212,7 @@ export const NEW_ELEMENT_GROUPS = [
       { id: 'armor', label: 'Armor or shield', summary: 'Group, AC, stealth, strength', route: { kind: 'catalog', template: 'baseArmor' } },
       { id: 'magicBase', label: 'Magic weapon or armor', summary: 'Built on a base item; bonus, riders, charges', route: { kind: 'item', template: 'weapon' } },
       { id: 'wondrous', label: 'Wondrous or worn item', summary: 'Rarity, attunement, effects while worn, charges', route: { kind: 'item', template: 'worn' } },
-      { id: 'gear', label: 'Gear or consumable', summary: 'Cost, weight, stacks, pack contents', route: { kind: 'item', template: 'gear' } },
+      { id: 'gear', label: 'Simple item', summary: 'No rules: a name, quantity, weight, cost and notes', route: { kind: 'item', template: 'gear' } },
     ],
   },
   {
