@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.6.2] - 2026-10-21
+
 ### Fixed
 
 - The inventory menu item has one style rule, and the engine worker's size
