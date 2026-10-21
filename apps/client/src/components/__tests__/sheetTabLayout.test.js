@@ -115,7 +115,7 @@ describe('SheetTab floating controls', () => {
 
   it('separates cached PDFs by the item notes switch and retires older renders', () => {
     // v13: the character page ticks its initiative advantage circle.
-    expect(SHEET_RENDERER_REVISION).toBe('pdf-canvas-v14');
+    expect(SHEET_RENDERER_REVISION).toBe('pdf-canvas-v15');
     const args = ['hero', 4, false, 7, '2014', 'colours', 'fonts', 'pages', false];
     expect(sheetCacheKey(...args, true)).not.toBe(sheetCacheKey(...args, false));
     expect(sheetCacheKey(...args)).toBe(sheetCacheKey(...args, false));

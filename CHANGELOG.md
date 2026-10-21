@@ -215,6 +215,12 @@ project uses [Semantic Versioning](https://semver.org/).
   the rest. The compact top row is the default on these sheets.
 - On the Hybrid page, Senses joins "Proficiencies, Training, Languages &
   Senses" and Conditions & Exhaustion moves to the bottom left.
+- On the 2024 and Hybrid pages, Species Traits and the features box share
+  their column: a short species gives its room to the features, and a long one
+  (Aasimar, Hexblood) shrinks a little, then borrows space, before anything
+  continues on another page.
+- Senses such as Darkvision print once, with their range, in the senses
+  field, and no longer appear among the class features.
 - The 2014 page prints five attack rows and no Actions box. The compact top
   row stacks Proficiency Bonus and Initiative, and the readable body keeps the
   classic ability shields with larger numbers and roomier Armor Class and Hit

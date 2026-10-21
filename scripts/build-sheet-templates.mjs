@@ -321,7 +321,8 @@ class Sheet {
     }
     this.display(title, x, y + height - 11, { size, align: "center", width });
     this.ornamentRule(x + 8, x + width - 8, y + height - 15);
-    return { x: x + 4, y: y + 4, width: width - 8, height: height - 20 - padTop };
+    const pad = C.platePad;
+    return { x: x + pad.side, y: y + pad.bottom, width: width - pad.side * 2, height: height - pad.top - pad.bottom - padTop };
   }
   /** A framed stat: a large centred value over its caption. */
   stat(name, caption, x, y, width, height, { size = 12, radius = 4 } = {}) {
@@ -1019,11 +1020,14 @@ function topBand2024(s, edition, layout) {
  * traits at the top, the features beneath, and five rows of weapons and
  * damage cantrips along the foot. The features take every point the other
  * two leave; split, they stay one box, and the writer heads its class,
- * subclass and feat groups inside it.
+ * subclass and feat groups inside it. The two boxes are the contract's
+ * traits column, whose boundary the writer moves to suit the text.
  */
-function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, featuresTitle) {
-  s.block(style.traits, "details_additional_notes", areaX, 557, areaW, 642 - 557);
-  const weaponsTop = 218;
+function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, featuresTitle, speciesHeight) {
+  const column = C.traitsColumn;
+  const speciesBottom = column.top - speciesHeight;
+  s.block(style.traits, "details_additional_notes", areaX, speciesBottom, areaW, speciesHeight);
+  const weaponsTop = column.bottom - 8;
   s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 60, areaW, weaponsTop - 60);
   columns.forEach(([caption, x]) => s.label(caption, x, weaponsTop - 24.5, { size: captionSize, color: "lines" }));
   for (let row = 1; row <= 5; row += 1) {
@@ -1042,7 +1046,7 @@ function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, f
   // The attacks without a row and the user's own notes, under the last row's notes cell.
   s.text("details_attack_description", areaX + 4, 64, areaW - 8, 22, { multiline: true, size: layout.readable ? 7 : 6, box: "none" });
   // Split, the box's title must not repeat the writer's first heading, "Class Features".
-  s.block(layout.split ? "FEATURES" : featuresTitle, "details_features", areaX, weaponsTop + 8, areaW, 557 - 8 - weaponsTop - 8);
+  s.block(layout.split ? "FEATURES" : featuresTitle, "details_features", areaX, column.bottom, areaW, speciesBottom - column.gap - column.bottom);
 }
 
 /** A compact framed stat: a large value over a one- or two-line caption. */
@@ -1109,7 +1113,8 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
 
   rightColumn2024(s, style, layout, 270, 316,
     // RANGE holds a ranged weapon's ammunition too ("30/120; Bullet").
-    [["NAME", 274, 74], ["RANGE", 350, 40], ["ATK / DC", 392, 34], ["DAMAGE & TYPE", 428, 64], ["NOTES", 494, 88]], readable ? 5 : 3.8, "CLASS FEATURES");
+    [["NAME", 274, 74], ["RANGE", 350, 40], ["ATK / DC", 392, 34], ["DAMAGE & TYPE", 428, 64], ["NOTES", 494, 88]], readable ? 5 : 3.8, "CLASS FEATURES",
+    C.traitsColumn.speciesHeight["2024"]);
   return finish(doc, s);
 }
 
@@ -1185,7 +1190,8 @@ async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   conditions2024(s, layout, 26, 60, lw, 76);
 
   rightColumn2024(s, style, layout, 230, 356,
-    [["NAME", 234, 82], ["RANGE", 318, 40], ["ATK / DC", 360, 36], ["DAMAGE & TYPE", 398, 72], ["NOTES", 472, 110]], readable ? 5.5 : 5, "FEATURES");
+    [["NAME", 234, 82], ["RANGE", 318, 40], ["ATK / DC", 360, 36], ["DAMAGE & TYPE", 398, 72], ["NOTES", 472, 110]], readable ? 5.5 : 5, "FEATURES",
+    C.traitsColumn.speciesHeight["2024-hybrid"]);
   return finish(doc, s);
 }
 

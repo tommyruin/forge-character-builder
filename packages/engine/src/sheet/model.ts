@@ -561,7 +561,7 @@ function buildFormValues(
   set("details_speed_fly", specialSpeed(values["speed:fly"]));
   set("details_speed_climb", specialSpeed(values["speed:climb"]));
   set("details_speed_swim", specialSpeed(values["speed:swim"]));
-  set("details_vision", visionNames(state, library).join(", "));
+  set("details_vision", senseLabels(state, library, values).join(", "));
   // The computed defences first, then an imported file's own hand-written
   // <defenses><conditional> text: nothing in this app writes that text, so it
   // is the importing player's note and outlives what the engine can derive.
@@ -933,7 +933,7 @@ function buildPage1(
     speedTokens.push(`${values[key] ?? 0}ft.`);
   }
   sections.push({ title: "speed", rows: [{ kind: "tokens", tokens: speedTokens }] });
-  sections.push({ title: "vision", rows: [{ kind: "tokens", tokens: visionNames(state, library) }] });
+  sections.push({ title: "vision", rows: [{ kind: "tokens", tokens: senseLabels(state, library, values).join(", ").split(/\s+/).filter(Boolean) }] });
 
   // The same lines the Resistances box prints, so the canonical projection
   // and the drawn sheet can never disagree about what a character resists.
@@ -982,7 +982,7 @@ function buildPage1(
   sections.push({ title: "attacks", rows: attackRows });
   sections.push({
     title: "features",
-    rows: [...collected.senses, ...collected.features],
+    rows: collected.features,
     renderRows: collected.orderedFeatures,
   });
 
@@ -1139,6 +1139,19 @@ function alignmentDeityNames(state: CharacterState, library: ElementLibrary): { 
   return { alignment, deity };
 }
 
+/**
+ * The character's senses as the senses field prints them, each once with its
+ * range: "Darkvision 60 ft.". A sense's range is the statistic named for it
+ * (Superior Darkvision widens darkvision's), and a sense with no range prints
+ * by name alone.
+ */
+function senseLabels(state: CharacterState, library: ElementLibrary, values: StatisticsValues): string[] {
+  return visionNames(state, library).map((name) => {
+    const range = values[`${name.toLowerCase().replace(/^superior\s+/, "")}:range`] ?? 0;
+    return range > 0 ? `${name} ${range} ft.` : name;
+  });
+}
+
 function visionNames(state: CharacterState, library: ElementLibrary): string[] {
   const names: string[] = [];
   for (const node of treeNodes(state.elements)) {
@@ -1230,7 +1243,7 @@ function unarmoredAlt(state: CharacterState, library: ElementLibrary): string | 
 }
 
 interface CollectedFeature {
-  class: "senses" | "features" | "racial";
+  class: "features" | "racial";
   type: string;
   title: string;
   parenthetical: string | null;
@@ -1417,7 +1430,6 @@ function collectFeatures(
   values: StatisticsValues,
   inline?: Readonly<Record<string, string>>,
 ): {
-  senses: SheetRow[];
   features: SheetRow[];
   racial: SheetRow[];
   orderedFeatures: SheetRow[];
@@ -1428,6 +1440,7 @@ function collectFeatures(
   const out: CollectedFeature[] = [];
   const usages: FeatureUsage[] = [];
   const seen = new Set<string>();
+  const senses = new Set(visionNames(state, library));
   const ids = featureOrderIds(state, library);
   const classLevels = featureClassLevels(state);
   let requirementCtx: ReturnType<typeof elementRequirementContext> | undefined;
@@ -1439,7 +1452,11 @@ function collectFeatures(
     if (element === undefined) continue;
     const plainText = printsWithoutSheet(element, homebrewSources);
     const cls = classOfElement(element, plainText);
-    if (cls === "hidden" || cls === "proficiency" || cls === "language") continue;
+    // Senses print once, with their ranges, in the page's senses field
+    // (details_vision); a trait that only names a sense the character has
+    // would say it a second time.
+    if (cls === "hidden" || cls === "proficiency" || cls === "language" || cls === "senses") continue;
+    if (senses.has(element.identity.name)) continue;
     // A feature whose own requirements fail has been replaced (typically by a
     // subclass or optional-class-feature marker such as
     // ID_INTERNAL_PHB24_FEATURE_REPLACEMENT_DRUID_WILD_SHAPE); the calculator
@@ -1493,9 +1510,9 @@ function collectFeatures(
       kind: "lines",
       lines: [featureLine(item.title, item.parenthetical, item.description)],
     }));
-  // Every row of the features box lands in exactly one group, senses included,
-  // so a split layout prints everything the combined box does.
-  const inBox = (item: CollectedFeature): boolean => item.class === "senses" || item.class === "features";
+  // Every row of the features box lands in exactly one group, so a split
+  // layout prints everything the combined box does.
+  const inBox = (item: CollectedFeature): boolean => item.class === "features";
   const group = (item: CollectedFeature): "class-features" | "subclass-features" | "feats" =>
     ["Archetype", "Archetype Feature"].includes(item.type) ? "subclass-features"
       : ["Feat", "Feat Feature"].includes(item.type) ? "feats"
@@ -1505,7 +1522,6 @@ function collectFeatures(
   const resourceText = resourceSheetText(buildTrackers(state, library, values, usages));
   const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
-    senses: rows((item) => item.class === "senses"),
     features: [...rows((item) => item.class === "features"), ...resourceRows],
     racial: rows((item) => item.class === "racial"),
     orderedFeatures: [...rows(inBox), ...resourceRows],
