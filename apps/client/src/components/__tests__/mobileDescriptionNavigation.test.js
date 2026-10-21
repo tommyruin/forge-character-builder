@@ -65,8 +65,11 @@ describe('mobile description navigation', () => {
     expect(
       occurrences(build, 'onInspect={inspectItem}'),
     ).toBeGreaterThanOrEqual(3);
+    // Inventory rows go through inspectRecord, which remembers the record and then calls inspectItem.
+    expect(equipment).toMatch(/const inspectRecord = [^;]*\n[^;]*;\n\s*inspectItem\(elementId, target\);/);
     expect(
-      occurrences(equipment, 'onInspect={inspectItem}'),
+      occurrences(equipment, 'onInspect={inspectItem}') +
+        occurrences(equipment, 'onInspect={(elementId, target) => inspectRecord(item, elementId, target)}'),
     ).toBeGreaterThanOrEqual(5);
     expect(manage).toContain('onInspect={inspectItem}');
     expect(
