@@ -1,5 +1,5 @@
 // The template picker behind "+ Element": what is being made decides the type, the tags that put it
-// in the right pickers and the blocks it usually needs. A template with a form starts that form; a
+// where players will find it and the parts it usually needs. A template with a form starts that form; a
 // subclass or subspecies first asks which class or species it is for; a change to a book element
 // first asks which element; "Custom type or raw XML" starts any other element as XML.
 
@@ -53,11 +53,15 @@ function BookElementStep({ route, api, onBack, onPicked }) {
   };
 
   const prompt =
-    route.kind === 'append' ? 'Which element does this add to?' : route.kind === 'reflavour' ? 'Which element do you want to rename?' : 'Which element do you want to change?';
+    route.kind === 'append'
+      ? 'Which book entry does this add to?'
+      : route.kind === 'reflavour'
+        ? 'Which book entry do you want to reflavour?'
+        : 'Which book entry do you want to change?';
   return (
     <div className="space-y-3" data-testid="hb-book-step">
       <p className="text-sm">{prompt}</p>
-      <LibraryPicker lookup={lookup} value={picked?.id ?? ''} valueLabel={picked?.name} label="Find a book element" onPick={pick} />
+      <LibraryPicker lookup={lookup} value={picked?.id ?? ''} valueLabel={picked?.name} label="Find a book entry" onPick={pick} />
       {busy && <p className="fcb-muted-copy text-xs">Copying it…</p>}
       {error && (
         <p role="alert" className="fcb-alert">
@@ -139,35 +143,16 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
   };
 
   const parentLookup = useMemo(() => makePackLookup(api, pack), [api, pack]);
+  // The new spell's id is made once, when the spell step opens.
+  const spellStart = useMemo(
+    () => (route?.kind === 'spell' ? { name: '', id: createTemplateDraft(templateId, { ruleset }).id } : null),
+    [route?.kind, templateId, ruleset],
+  );
   const formServices = useMemo(
     () => makePackFormServices({ api, pack, kind: route?.kind === 'spell' ? 'spell' : 'item', onSave: async (draft) => finish(elementForDraft(ruleset === 'inherit' ? draft : { ...draft, ruleset }, pack)) }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- finish only calls the parent's handlers
     [api, pack, route?.kind, ruleset],
   );
-
-  if (step === 'form' && route?.kind === 'spell') {
-    const initial = createTemplateDraft(templateId, { ruleset });
-    return (
-      <CustomSpellModal
-        services={formServices}
-        characterName={pack.name}
-        pack={{ name: pack.name }}
-        initialDraft={{ name: '', id: initial.id }}
-        onClose={() => setStep('pick')}
-      />
-    );
-  }
-  if (step === 'form' && route?.kind === 'item') {
-    return (
-      <CustomItemModal
-        services={formServices}
-        characterName={pack.name}
-        pack={{ name: pack.name }}
-        initialTemplate={route.template}
-        onClose={() => setStep('pick')}
-      />
-    );
-  }
 
   const packRules = RULES_LABEL[normalizeCollectionRuleset(pack.ruleset)];
 
@@ -176,8 +161,8 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
       {step === 'pick' && (
         <div className="space-y-4" data-testid="hb-new-element">
           <p className="fcb-muted-copy text-xs">
-            Pick what you are making. Each template sets the type, the tags that make it show up in the right pickers, and the blocks it
-            usually needs.
+            Pick what you are making. Each template puts it where players will find it (a feat among the feats, a spell on the spell
+            lists) and starts it with the parts it usually needs.
           </p>
           <Field label="Rules version">
             <SelectInput
@@ -245,6 +230,29 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
             </button>
           </DialogFooter>
         </div>
+      )}
+
+      {/* The spell and item templates are a step of this dialog too: the same form as everywhere
+          else, in this frame, with Back on the left like the other steps. */}
+      {step === 'form' && route?.kind === 'spell' && (
+        <CustomSpellModal
+          embedded
+          services={formServices}
+          characterName={pack.name}
+          pack={{ name: pack.name }}
+          initialDraft={spellStart}
+          onClose={() => setStep('pick')}
+        />
+      )}
+      {step === 'form' && route?.kind === 'item' && (
+        <CustomItemModal
+          embedded
+          services={formServices}
+          characterName={pack.name}
+          pack={{ name: pack.name }}
+          initialTemplate={route.template}
+          onClose={() => setStep('pick')}
+        />
       )}
 
       {step === 'raw' && <RawTypeStep onBack={() => setStep('pick')} onCreate={({ type, name }) => finish(rawElement({ type, name, pack, ruleset }))} />}

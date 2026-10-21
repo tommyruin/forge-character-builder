@@ -129,7 +129,30 @@ describe('the New element template picker', () => {
     await click($('[data-testid="hb-template-raw"]'));
     await click($('[data-testid="hb-template-create"]'));
     expect(order()).toEqual(['Back', 'Add element']);
+
+    // The spell and item templates are a step of this same dialog, not a second one.
+    for (const [templateId, add] of [['spell', 'Add spell'], ['wondrous', 'Add item']]) {
+      await click(buttonByText('Back'));
+      await click($(`[data-testid="hb-template-${templateId}"]`));
+      await click($('[data-testid="hb-template-create"]'));
+      expect($$('[role="dialog"]')).toHaveLength(1);
+      expect($('[role="dialog"]').getAttribute('aria-label')).toBe('New element in Moonwell Campaign');
+      expect(order()).toEqual(['Back', add]);
+      expect(footer().querySelector('button').className).toContain('mr-auto');
+    }
+    await click(buttonByText('Back'));
+    expect($('[data-testid="hb-new-element"]')).not.toBeNull();
     expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it('says what a template does in plain words, and asks for a book entry by that name', async () => {
+    await mount(<NewElementDialog pack={pack} api={h.api} onClose={() => {}} onCreate={() => {}} />);
+    const intro = $('[data-testid="hb-new-element"] p').textContent;
+    expect(intro).not.toMatch(/pickers|blocks|\btags?\b/);
+    await click($('[data-testid="hb-template-reflavour"]'));
+    await click($('[data-testid="hb-template-create"]'));
+    expect($('[data-testid="hb-book-step"]').textContent).toContain('Which book entry do you want to reflavour?');
+    expect($('[data-testid="hb-book-step"]').textContent).not.toMatch(/\belement\b/);
   });
 
   it('spells Reflavour the way the rest of the app does (Colours, not Colors)', async () => {

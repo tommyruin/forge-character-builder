@@ -198,6 +198,9 @@ export default function CustomItemModal({
   initialTemplate = 'weapon',
   pack = null,
   onClose,
+  // `embedded` renders the form as a step of another dialog (Homebrew's New element), whose own
+  // frame and title it then uses; its Cancel becomes a Back at the left, as in that dialog's other steps.
+  embedded = false,
   onSaved,
 }) {
   const editing = entry !== null;
@@ -405,8 +408,7 @@ export default function CustomItemModal({
   const attack = preview.key === previewKey ? preview.attack : null;
   const previewPending = previewKey !== null && preview.key !== previewKey;
 
-  return (
-    <Modal open title={title} onClose={onClose} size="wide">
+  const form = (
       <form
         className="fcb-custom-form"
         onSubmit={(event) => {
@@ -708,11 +710,18 @@ export default function CustomItemModal({
               Delete custom item
             </button>
           )}
+          {embedded && (
+            <button type="button" className="fcb-button mr-auto" onClick={onClose}>
+              Back
+            </button>
+          )}
           {/* The button waits until the form is complete; this says what it is waiting for. */}
           <HeldBackNote id={needsId} issues={issues} editing={editing} draft={draft} />
-          <button type="button" className="fcb-button" onClick={onClose}>
-            Cancel
-          </button>
+          {!embedded && (
+            <button type="button" className="fcb-button" onClick={onClose}>
+              Cancel
+            </button>
+          )}
           <button
             type="submit"
             className="fcb-button fcb-status-complete"
@@ -729,6 +738,11 @@ export default function CustomItemModal({
           </button>
         </DialogFooter>
       </form>
+  );
+  if (embedded) return form;
+  return (
+    <Modal open title={title} onClose={onClose} size="wide">
+      {form}
     </Modal>
   );
 }

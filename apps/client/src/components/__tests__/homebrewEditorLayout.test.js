@@ -129,7 +129,7 @@ describe('Homebrew Editor workspace layout', () => {
     expect(editorSource).toContain('Pack details and health');
     expect(editorSource).toContain('Search pack elements');
     expect(elementEditorSource).toContain('made with the earlier editor');
-    expect(newElementSource).toContain('Find a book element');
+    expect(newElementSource).toContain('Find a book entry');
   });
 
   it('calls the editor a pack, not a collection, wherever the author reads it', () => {
