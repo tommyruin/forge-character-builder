@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-10-21
+
 ### Fixed
 
 - The two engine tests that digest the whole content library allow the same
