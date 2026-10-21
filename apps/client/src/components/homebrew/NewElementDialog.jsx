@@ -115,6 +115,7 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
   const [templateId, setTemplateId] = useState(startAt === 'raw' ? 'raw' : null);
   const [step, setStep] = useState(startAt === 'raw' ? 'raw' : 'pick');
   const [ruleset, setRuleset] = useState('inherit');
+  const [spellStart, setSpellStart] = useState(null);
   const template = templateId ? templateById(templateId) : null;
   const route = template?.route ?? null;
   // A template that needs nothing more is added at once; the others go on to ask for it.
@@ -133,6 +134,8 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
     } else if (route.kind === 'raw' && route.type !== '') {
       finish(rawElement({ type: route.type, name: `New ${template.label.toLowerCase()}`, pack, ruleset }));
     } else {
+      // The new spell's id is made once, when its step opens.
+      if (route.kind === 'spell') setSpellStart({ name: '', id: createTemplateDraft(templateId, { ruleset }).id });
       setStep(route.kind === 'raw' ? 'raw' : route.kind === 'parent' ? 'parent' : route.kind === 'spell' || route.kind === 'item' ? 'form' : 'book');
     }
   };
@@ -143,11 +146,6 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
   };
 
   const parentLookup = useMemo(() => makePackLookup(api, pack), [api, pack]);
-  // The new spell's id is made once, when the spell step opens.
-  const spellStart = useMemo(
-    () => (route?.kind === 'spell' ? { name: '', id: createTemplateDraft(templateId, { ruleset }).id } : null),
-    [route?.kind, templateId, ruleset],
-  );
   const formServices = useMemo(
     () => makePackFormServices({ api, pack, kind: route?.kind === 'spell' ? 'spell' : 'item', onSave: async (draft) => finish(elementForDraft(ruleset === 'inherit' ? draft : { ...draft, ruleset }, pack)) }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- finish only calls the parent's handlers
@@ -234,7 +232,7 @@ export default function NewElementDialog({ pack, api, startAt, onClose, onCreate
 
       {/* The spell and item templates are a step of this dialog too: the same form as everywhere
           else, in this frame, with Back on the left like the other steps. */}
-      {step === 'form' && route?.kind === 'spell' && (
+      {step === 'form' && route?.kind === 'spell' && spellStart && (
         <CustomSpellModal
           embedded
           services={formServices}
