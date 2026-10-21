@@ -34,6 +34,7 @@ import {
   filterUploadedFiles,
   retainVisibleSelection,
 } from './contentBrowserState';
+import { sourceLabel } from './sourceLabel';
 
 const ACTIVE_IMPORT_STATUSES = new Set(['queued', 'running']);
 
@@ -42,13 +43,14 @@ const ACTIVE_IMPORT_STATUSES = new Set(['queued', 'running']);
 export const ALL_TYPES = '*';
 
 export function contentSourceOption(source) {
+  // The builder's own rules can still be filtered to, under a name that is not a book's.
   if (typeof source === 'string') {
-    return { key: source, value: source, label: source };
+    return { key: source, value: source, label: sourceLabel(source, 'Built in') };
   }
   return {
     key: source.id,
     value: source.name,
-    label: source.name,
+    label: sourceLabel(source.name, 'Built in'),
   };
 }
 
@@ -1320,7 +1322,7 @@ export default function ContentManager({
                         </div>
                       </td>
                       <td className="text-xs text-[var(--fcb-text-muted)]">
-                        {item.source}
+                        {sourceLabel(item.source)}
                       </td>
                     </tr>
                   ))}

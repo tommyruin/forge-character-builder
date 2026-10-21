@@ -8,6 +8,7 @@ import {
 import SelectionRuleCard from '../SelectionRuleCard';
 import PortraitControls from '../PortraitControls';
 import Icon from '../Icon';
+import { sourceLabel } from '../sourceLabel';
 
 function signed(value) {
   return value >= 0 ? `+${value}` : `${value}`;
@@ -266,7 +267,7 @@ export default function CompanionSection({ rules, onInspect }) {
                 </section>
               ))}
 
-            <p className="fcb-companion-source">{companion.source}</p>
+            {sourceLabel(companion.source) && <p className="fcb-companion-source">{sourceLabel(companion.source)}</p>}
           </div>
         </section>
       )}

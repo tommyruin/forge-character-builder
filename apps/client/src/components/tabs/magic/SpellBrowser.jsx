@@ -9,6 +9,7 @@ import {
 } from '../../InspectableItemControls';
 import { spellLevelLabel, levelPhrase } from './spellLevels';
 import { castingTimeBadge } from './castingTime';
+import { sourceLabel } from '../../sourceLabel';
 
 // The learn browser for ONE Spell selection rule: every spell on the rule's class
 // list in spell-level tabs, with unlearnable spells greyed out and a popup that
@@ -412,7 +413,7 @@ export default function SpellBrowser({
                   <option value="">All sources</option>
                   {sources.map((source) => (
                     <option key={source} value={source}>
-                      {source}
+                      {sourceLabel(source, 'Built in')}
                     </option>
                   ))}
                 </select>
@@ -497,7 +498,7 @@ export default function SpellBrowser({
                         </span>
                       )}
                       <span className="fcb-spell-mobile-meta">
-                        {spell.school} · {spell.source}
+                        {[spell.school, sourceLabel(spell.source)].filter(Boolean).join(' · ')}
                       </span>
                     </span>
                   </td>
@@ -511,7 +512,7 @@ export default function SpellBrowser({
                     className="text-xs text-[var(--fcb-text-muted)]"
                     data-label="Source"
                   >
-                    {spell.source}
+                    {sourceLabel(spell.source)}
                   </td>
                   <td
                     className="text-right fcb-mobile-list-actions"

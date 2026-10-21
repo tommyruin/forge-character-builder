@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../../api";
 import Modal from "../../Modal";
 import { useWorkspace } from "../../WorkspaceContext";
+import { sourceLabel } from '../../sourceLabel';
 
 // DM/homebrew "add a feat": search the WHOLE feat library (ignoring prerequisites and the
 // normal ASI/feat choice) and grant the chosen feat, mirroring AddSpellModal. Backed by the
@@ -88,9 +89,9 @@ export default function AddFeatModal({ id, open, onClose }) {
                 <tr key={feat.id}>
                   <td>
                     <span className="font-semibold">{feat.name}</span>
-                    {feat.source && (
+                    {sourceLabel(feat.source) && (
                       <span className="ml-2 text-xs text-[var(--fcb-text-faint)]">
-                        {feat.source}
+                        {sourceLabel(feat.source)}
                       </span>
                     )}
                   </td>

@@ -18,6 +18,7 @@ import Icon from '../../Icon';
 import CustomFeatureModal from '../../custom/CustomFeatureModal';
 import { makeCustomServices } from '../../custom/customServices';
 import { localStore } from '../../../transport/localStore';
+import { sourceLabel } from '../../sourceLabel';
 
 // A feature of the character's own, the same capability as Build's [+] Custom feature.
 const canCustom = typeof api.characters.saveCustomDraft === 'function';
@@ -65,7 +66,7 @@ export function filterFeatures(entries, categoryKey, query) {
         : entry.category === categoryKey;
     if (!inCategory) return false;
     if (!needle) return true;
-    return `${entry.name} ${entry.category} ${entry.source}`
+    return `${entry.name} ${entry.category} ${sourceLabel(entry.source)}`
       .toLocaleLowerCase()
       .includes(needle);
   });
@@ -104,7 +105,7 @@ export function FeatureList({
             >
               <div className="font-semibold">{entry.name}</div>
               <div className="fcb-muted-copy text-xs">
-                {entry.category} · {entry.source}
+                {[entry.category, sourceLabel(entry.source)].filter(Boolean).join(' · ')}
               </div>
               {grantedBy.length > 0 && (
                 <div className="fcb-muted-copy text-xs">

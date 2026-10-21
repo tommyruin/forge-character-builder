@@ -7,6 +7,7 @@
 // list grows inside the dialog's own scroll area rather than scrolling on its own.
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { sourceLabel } from '../sourceLabel';
 
 export default function BasePicker({ kind, bases, loading, value, disabled, onPick }) {
   const noun = kind === 'weapon' ? 'weapon' : 'armor';
@@ -26,7 +27,7 @@ export default function BasePicker({ kind, bases, loading, value, disabled, onPi
     const matching = bases.filter((option) => text === '' || `${option.name} ${option.equipmentKind ?? ''} ${option.source ?? ''}`.toLowerCase().includes(text));
     const bySource = new Map();
     for (const option of matching) {
-      const source = option.source || 'Other';
+      const source = sourceLabel(option.source, 'Built in') || 'Other';
       if (!bySource.has(source)) bySource.set(source, []);
       bySource.get(source).push(option);
     }
@@ -57,7 +58,7 @@ export default function BasePicker({ kind, bases, loading, value, disabled, onPi
         <span className="font-semibold">{value.name}</span>
         {option && (
           <span className="fcb-muted-copy text-xs">
-            {[option.equipmentKind, option.source].filter(Boolean).join(' · ')}
+            {[option.equipmentKind, sourceLabel(option.source)].filter(Boolean).join(' · ')}
           </span>
         )}
         {!disabled && (

@@ -8,6 +8,7 @@
 // Enter work from the search box.
 
 import { useEffect, useId, useState } from 'react';
+import { sourceLabel } from '../sourceLabel';
 
 export default function LibraryPicker({
   lookup,
@@ -124,7 +125,7 @@ export default function LibraryPicker({
           >
             <span className="fcb-option-main">
               <span className="fcb-option-title">{item.name}</span>
-              {item.source && <span className="fcb-option-subtitle">{item.source}</span>}
+              {sourceLabel(item.source) && <span className="fcb-option-subtitle">{sourceLabel(item.source)}</span>}
               {item.pending && <span className="fcb-option-subtitle">{item.pending}</span>}
             </span>
           </li>

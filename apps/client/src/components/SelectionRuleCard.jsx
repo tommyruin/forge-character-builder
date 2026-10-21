@@ -13,6 +13,7 @@ import {
 } from './selectionRulePresentation';
 import { selectedElementLabel } from './selectionRuleLabels';
 import Icon from './Icon';
+import { sourceLabel } from './sourceLabel';
 
 // Inspect control for an already-made pick, shown inside the card trigger (a real
 // <button>), so it must be a role="button" span — nested <button>s are invalid —
@@ -173,7 +174,7 @@ export default function SelectionRuleCard({
             >
               <div className="fcb-option-title">{option.name}</div>
               {option.detail && <div className="fcb-option-subtitle">{option.detail}</div>}
-              {option.source && <div className="fcb-option-subtitle">{option.source}</div>}
+              {sourceLabel(option.source) && <div className="fcb-option-subtitle">{sourceLabel(option.source)}</div>}
             </InspectableItemButton>
             {option.canInspect && onInspect && (
               <InformationButton

@@ -11,6 +11,7 @@ import {
   readDefaultRulesetMode,
   writeDefaultRulesetMode,
 } from "../../../rulesetPreferences.js";
+import { sourceLabel } from "../../sourceLabel";
 
 export function RuleList({
   title,
@@ -49,8 +50,7 @@ export function RuleList({
             >
               <div className="font-semibold">{rule.name}</div>
               <div className="fcb-muted-copy text-xs">
-                {rule.source}
-                {rule.unavailableReason ? ` · ${rule.unavailableReason}` : ""}
+                {[sourceLabel(rule.source), rule.unavailableReason].filter(Boolean).join(" · ")}
               </div>
             </InspectableItemButton>
             <label className="inline-flex items-center gap-2 text-sm">

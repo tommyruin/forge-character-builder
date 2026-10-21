@@ -5,6 +5,7 @@ import {
   requirementExpressionForPresentation,
   requirementDuplicatesPrerequisite,
 } from './requirementPresentation';
+import { sourceLabel } from './sourceLabel';
 
 const SAFE_URL_PATTERN = /^(https?:|mailto:)/i;
 const CLASS_MAP = {
@@ -320,7 +321,7 @@ export default function ContentRenderer({
 }) {
   const displayTitle = title ?? sheetDescription?.alternateName ?? element?.sheetDescription?.alternateName ?? element?.name;
   const displaySubtitle = subtitle ?? element?.type;
-  const displaySource = source ?? element?.source;
+  const displaySource = sourceLabel(source ?? element?.source) || undefined;
   const displayPage = sourcePage ?? element?.sourcePage;
   const displayUrl = sourceUrl ?? element?.sourceUrl;
   const displayRequirements = requirements ?? element?.requirements;

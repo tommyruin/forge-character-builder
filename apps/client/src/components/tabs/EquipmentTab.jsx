@@ -31,6 +31,7 @@ import ItemDetailsModal from "../custom/ItemDetailsModal";
 import { CustomBadge, useCustomContent } from "../custom/CustomEntries";
 import { makeCustomServices } from "../custom/customServices";
 import { localStore } from "../../transport/localStore";
+import { sourceLabel } from "../sourceLabel";
 
 // Custom items are the same capability as custom features: the engine stores them in the character.
 const canCustom = typeof api.characters.saveCustomDraft === "function";
@@ -1169,7 +1170,7 @@ function Catalog({
                           className="text-xs text-[var(--fcb-text-muted)]"
                           data-label="Source"
                         >
-                          {item.source}
+                          {sourceLabel(item.source)}
                         </td>
                         <td
                           className="text-right fcb-mobile-list-actions"
@@ -1330,7 +1331,7 @@ export function GlobalEquipmentSearchResults({
                   </InspectableItemButton>
                   <EquipmentSummary item={item} />
                   <span className="fcb-global-equipment-source">
-                    {item.source}
+                    {sourceLabel(item.source)}
                   </span>
                 </div>
                 <span className="fcb-global-equipment-actions">

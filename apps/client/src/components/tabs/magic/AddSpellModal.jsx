@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../../api";
 import Modal from "../../Modal";
 import { useWorkspace } from "../../WorkspaceContext";
+import { sourceLabel } from '../../sourceLabel';
 
 // DM/homebrew "add a spell" surface: search the WHOLE spell library (ignoring the class
 // list and the known/prepared caps) and grant the chosen spell to a caster. Backed by the
@@ -159,9 +160,9 @@ export default function AddSpellModal({
                         {spell.detail}
                       </span>
                     )}
-                    {spell.source && (
+                    {sourceLabel(spell.source) && (
                       <span className="ml-2 text-xs text-[var(--fcb-text-faint)]">
-                        {spell.source}
+                        {sourceLabel(spell.source)}
                       </span>
                     )}
                     {alreadyHas.has(spell.id) && (
