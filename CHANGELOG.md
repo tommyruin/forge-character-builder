@@ -6,6 +6,11 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The inventory menu item has one style rule, and the engine worker's size
+  budget allows for the custom-content engine.
+
 ## [2.6.1] - 2026-10-21
 
 ### Fixed
