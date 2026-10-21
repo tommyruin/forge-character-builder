@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import Icon from '../Icon';
+import { plainIssueMessage } from './issueWords';
 
 export function Field({ label, children, className = '' }) {
   return (
@@ -92,7 +93,7 @@ export function Issues({ issues }) {
   return (
     <ul role="alert" className="fcb-custom-issues">
       {issues.map((issue) => (
-        <li key={`${issue.path}:${issue.message}`}>{issue.message}</li>
+        <li key={`${issue.path}:${issue.message}`}>{plainIssueMessage(issue)}</li>
       ))}
     </ul>
   );
@@ -100,14 +101,14 @@ export function Issues({ issues }) {
 
 // What a dialog's held-back Add (or Save changes) button is waiting for: the first thing missing, in
 // the author's words, and how many more. The button names this note as its description.
-export function HeldBackNote({ id, issues, editing = false }) {
+export function HeldBackNote({ id, issues, editing = false, draft = null }) {
   if (issues.length === 0) return null;
-  const first = issues[0].message;
+  const first = plainIssueMessage(issues[0], draft).replace(/\.$/, '');
   return (
     <p id={id} className="fcb-custom-needs mr-auto" data-testid="add-needs">
       {editing ? 'To save: ' : 'To add it: '}
       {first.charAt(0).toLowerCase() + first.slice(1)}
-      {issues.length > 1 ? ` (and ${issues.length - 1} more)` : ''}
+      {issues.length > 1 ? ` (and ${issues.length - 1} more)` : '.'}
     </p>
   );
 }

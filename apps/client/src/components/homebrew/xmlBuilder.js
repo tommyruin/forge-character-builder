@@ -20,6 +20,9 @@
 import { compileCustomElement, customPackDraftIssues } from '@forge-cb/engine/custom';
 import { requirementsSyntaxError } from '@forge-cb/engine/requirements';
 import { contentStoragePath } from '../../transport/contentStorage.js';
+import { plainDraftIssue } from '../custom/issueWords.js';
+
+export { plainDraftIssue };
 
 // The shape version of a stored pack. A record without one is a collection from before packs
 // carried an author, a release date and a playtest flag; `migratePack` reads it as version 1.
@@ -808,47 +811,6 @@ export function buildCollectionXml(draft) {
 // ---------------------------------------------------------------------------
 
 const ID_PATTERN = /^ID_[A-Z0-9_]+$/;
-
-// The part of an element a draft issue is about, in the editor's words: the engine names it by its
-// path in the draft ("blocks[0].supports.items[0].value"), which an author never sees.
-const BLOCK_PLACES = { choice: 'Player choice', modifier: 'Bonus', grant: 'Grant' };
-const LIST_PLACES = { trackers: 'Uses per rest', scales: 'Grows with level', features: 'Feature', levels: 'Level' };
-
-function issuePlace(draft, path = '') {
-  const block = /^blocks\[(\d+)\]/.exec(path);
-  if (block) {
-    const kind = draft.blocks?.[Number(block[1])]?.kind;
-    const place = BLOCK_PLACES[kind] ?? 'Effect';
-    const sameKind = (draft.blocks ?? []).filter((entry) => entry.kind === kind).length;
-    const nth = (draft.blocks ?? []).slice(0, Number(block[1]) + 1).filter((entry) => entry.kind === kind).length;
-    return sameKind > 1 ? `${place} ${nth}` : place;
-  }
-  const list = /^(\w+)\[(\d+)\]/.exec(path);
-  if (list && LIST_PLACES[list[1]]) {
-    const many = (draft[list[1]] ?? []).length > 1;
-    return many ? `${LIST_PLACES[list[1]]} ${Number(list[2]) + 1}` : LIST_PLACES[list[1]];
-  }
-  return '';
-}
-
-// A filter tag's rule is written for the XML; say it in the filter's own name.
-function plainMessage(path, message) {
-  if (/supports/.test(path) && /^a filter tag cannot be empty/.test(message)) {
-    return 'a Has the tag filter is empty or uses one of , & | ( ) !; type a tag or remove the filter';
-  }
-  if (/supports/.test(path) && /^a filter group needs at least one filter/.test(message)) {
-    return 'a filter group is empty; add a filter to it or remove it';
-  }
-  return message;
-}
-
-/** One draft issue as a sentence an author can act on: where it is, then what to do. */
-export function plainDraftIssue(draft, issue) {
-  const place = issuePlace(draft, issue.path);
-  const message = plainMessage(issue.path ?? '', issue.message);
-  const sentence = place ? `${place}: ${message}` : message.charAt(0).toUpperCase() + message.slice(1);
-  return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
-}
 
 /** Every issue that keeps a pack's form-made elements from loading, one entry per issue. */
 export function draftIssuesOf(pack) {

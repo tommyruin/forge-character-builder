@@ -175,7 +175,7 @@ export default function CustomFeatureModal({
         {warning === null && (
           <DialogFooter>
             {/* The button waits until the form is complete; this says what it is waiting for. */}
-            <HeldBackNote id={needsId} issues={issues} editing={editing} />
+            <HeldBackNote id={needsId} issues={issues} editing={editing} draft={draft} />
             <button type="button" className="fcb-button" onClick={onClose}>
               Cancel
             </button>

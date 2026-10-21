@@ -276,6 +276,15 @@ describe('the custom feature dialog: creating', () => {
     expect(buttonByText('Add feature').disabled).toBe(false);
   });
 
+  it('says plainly what an empty spell grant waits for, without engine words', async () => {
+    const api = fakeApi();
+    await open(api);
+    await type(byLabel('Name'), 'Stag Mark');
+    await click(buttonByText('+ Spell'));
+    expect($('[data-testid="add-needs"]').textContent).toBe('To add it: choose the spell to grant.');
+    expect(document.body.textContent).not.toMatch(/\belement\b/);
+  });
+
   it('turns the button on once the name and the spell are there', async () => {
     const api = fakeApi();
     await open(api);

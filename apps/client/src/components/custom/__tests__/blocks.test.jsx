@@ -532,7 +532,8 @@ describe('RequirementsBuilder', () => {
         lookup={lookup}
       />,
     );
-    expect($('[role="alert"]').textContent).toContain('pick the element or optional rule');
+    expect($('[role="alert"]').textContent).toContain('pick what this condition needs');
+    expect($('[role="alert"]').textContent).not.toMatch(/\belement\b/);
   });
 
   it('picks the element a condition names from the library', async () => {
