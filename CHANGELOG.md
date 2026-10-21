@@ -58,7 +58,7 @@ project uses [Semantic Versioning](https://semver.org/).
 
 - You can make your own items: a magic weapon on a real base (with a bonus,
   extra damage dice, a different attack ability, die, range or properties), a
-  magic armor or shield, a worn item, or plain gear. A weapon's attack row shows
+  magic armor or shield, a worn item, or a simple item. A weapon's attack row shows
   its extra damage ("1d8+3 slashing + 1d6 cold"). While worn or wielded (and
   attuned, if it asks) an item can add bonuses and grant resistances, spells and
   features; take it off or end the attunement and they go. Custom items are
