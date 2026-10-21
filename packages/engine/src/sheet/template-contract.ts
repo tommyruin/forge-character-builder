@@ -427,4 +427,23 @@ export const SHEET_TEMPLATE_CONTRACT = {
   },
   /** The equipment page's notes column; item descriptions flow inside it. */
   equipmentNotes: { x: 410, y: 192, width: 172, height: 570 },
+  /**
+   * A section titled on a plate (the 2024 sets' boxes): its field sits this
+   * far inside the frame, the top clearing the title and its ornamented rule.
+   */
+  platePad: { top: 16, side: 4, bottom: 4 },
+  /**
+   * The 2024 and Hybrid pages' right column: the Species Traits frame from
+   * `top` over the features frame down to `bottom`, `gap` apart. The template
+   * prints Species Traits `speciesHeight` tall, 75% of the tester's mock-ups;
+   * the writer treats the two boxes as one region and moves the boundary to
+   * suit the text, so a short species gives its room to the features and a
+   * long one borrows theirs.
+   */
+  traitsColumn: {
+    top: 642,
+    bottom: 226,
+    gap: 8,
+    speciesHeight: { "2024": 85, "2024-hybrid": 72 },
+  },
 } as const;

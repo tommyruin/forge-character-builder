@@ -25,12 +25,14 @@ import {
   PDFTextField,
   StandardFonts,
   clip,
+  clipEvenOdd,
   closePath,
   endPath,
   lineTo,
   moveTo,
   popGraphicsState,
   pushGraphicsState,
+  rectangle,
   rgb,
   type PDFFont,
   type PDFPage,
@@ -902,11 +904,14 @@ async function addFilledTemplatePage(
   /** The output document's own faces, embedded once for the whole sheet. */
   outputFonts: SheetFonts,
   artwork: ArtworkCache,
+  /** Draws the template's artwork onto the page; absent, it prints as drawn. */
+  drawArtwork?: (page: PDFPage, embedded: PDFEmbeddedPage, width: number, height: number) => void,
 ): Promise<FilledTemplatePage> {
   const art = await artworkFor(template);
   const embedded = await embedArtwork(output, template, art, artwork);
   const page = output.addPage([art.width, art.height]);
-  page.drawPage(embedded, { x: 0, y: 0, width: art.width, height: art.height });
+  if (drawArtwork === undefined) page.drawPage(embedded, { x: 0, y: 0, width: art.width, height: art.height });
+  else drawArtwork(page, embedded, art.width, art.height);
   const textColour = SHEET_PALETTE[colours.text].rgb;
   const overflow: BoxOverflow[] = [];
   for (const [name, field] of art.fields) {
@@ -1282,6 +1287,9 @@ const DEFAULT_FEATURE_FONT_SIZE = 8;
 // Preserve readable print: modest fitting is allowed, then prose continues
 // on another page at the normal size instead of falling below 6pt.
 const MIN_FEATURE_FONT_SIZE = 6;
+// Species Traits steps down no further than this before it borrows room from
+// the features beside it, then continues.
+const SPECIES_MIN_FONT_SIZE = 6.5;
 const FEATURE_PARAGRAPH_GAP = 1.2;
 // One feature is set off from the next by rather more than the breath between
 // its own paragraphs, so the eye finds the boundaries. It is a fraction of the
@@ -1475,6 +1483,21 @@ function drawFeatureFlow(
   };
 }
 
+/**
+ * Whether `paragraphs` fit the box at `size`, the line height scaling with the
+ * size as drawRichFeatureSection scales it.
+ */
+function featureBoxFits(
+  paragraphs: readonly FeatureParagraph[],
+  fonts: SheetFonts,
+  box: RichTextBox,
+  size: number,
+  lineHeightRatio = 1,
+): boolean {
+  const top = box.top - BOX_TEXT_TOP_INSET - capHeightRatio(fonts.regular) * size;
+  return featureFlowFits(featureFlowLines(paragraphs, box.width, size, fontMeasure(fonts)), top, box.bottom, size * lineHeightRatio, size);
+}
+
 function drawRichFeatureSection(
   page: PDFPage,
   paragraphs: readonly FeatureParagraph[],
@@ -1487,6 +1510,7 @@ function drawRichFeatureSection(
   fontSize = DEFAULT_FEATURE_FONT_SIZE,
   lineHeight = fontSize,
   ruleColour?: PdfColor,
+  minFontSize = MIN_FEATURE_FONT_SIZE,
 ): FeatureParagraph[] | undefined {
   const lineHeightAt = (size: number): number => lineHeight * size / fontSize;
   const capHeight = capHeightRatio(fonts.regular);
@@ -1497,12 +1521,12 @@ function drawRichFeatureSection(
   let chosenLines = normalLines;
   let chosenLineHeight = lineHeightAt(chosenFontSize);
   if (!featureFlowFits(normalLines, topAt(chosenFontSize), bottom, chosenLineHeight, chosenFontSize)) {
-    const floorLines = featureFlowLines(paragraphs, width, MIN_FEATURE_FONT_SIZE, measure);
-    const floorLineHeight = lineHeightAt(MIN_FEATURE_FONT_SIZE);
-    if (featureFlowFits(floorLines, topAt(MIN_FEATURE_FONT_SIZE), bottom, floorLineHeight, MIN_FEATURE_FONT_SIZE)) {
+    const floorLines = featureFlowLines(paragraphs, width, minFontSize, measure);
+    const floorLineHeight = lineHeightAt(minFontSize);
+    if (featureFlowFits(floorLines, topAt(minFontSize), bottom, floorLineHeight, minFontSize)) {
       // Take the largest size that still fits, so the text shrinks only as far
       // as the page demands.
-      let low = MIN_FEATURE_FONT_SIZE;
+      let low = minFontSize;
       let high = fontSize;
       for (let pass = 0; pass < 10; pass += 1) {
         const candidate = (low + high) / 2;
@@ -1675,33 +1699,36 @@ interface DetailsFeatureLayout {
   ruleColour?: PdfColor;
 }
 
-function drawDetailsRichText(
-  page: PDFPage,
+/** One flowed box of the character page: its field, its text and how it is set. */
+interface DetailsTextBox {
+  field: string;
+  paragraphs: readonly FeatureParagraph[];
+  /** The box's name for a continuation when the page prints no title for it. */
+  heading: string;
+  fallback: RichTextBox;
+  fontSize?: number;
+  lineHeight?: number;
+  minFontSize?: number;
+}
+
+const SPECIES_FIELD = "details_additional_notes";
+const FEATURES_FIELD = "details_features";
+
+/** What the character page flows into its rich-text boxes, in drawing order. */
+function detailsTextBoxes(
   modelPage: SheetPage,
-  fonts: SheetFonts,
   fieldRects: ReadonlyMap<string, FieldRect>,
   layout: DetailsFeatureLayout,
-): FeatureContinuation[] {
+): DetailsTextBox[] {
   const find = (title: string): SheetSection | undefined =>
     modelPage.sections.find((section) => section.title === title);
-  const continuations: FeatureContinuation[] = [];
-  const draw = (
-    field: string, paragraphs: readonly FeatureParagraph[], heading: string, fallback: RichTextBox,
-    fontSize = DEFAULT_FEATURE_FONT_SIZE, lineHeight = fontSize,
-  ): void => {
-    const box = richTextBox(fieldRects, field, fallback);
-    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight, layout.ruleColour);
-    if (rest === undefined) return;
-    // Cut inside a headed group, the part continues that group, by its name.
-    const group = paragraphs.slice(0, paragraphs.length - rest.length + 1).reverse().find((paragraph) => paragraph.kind === "heading");
-    continuations.push({
-      paragraphs: rest,
-      heading: group === undefined ? boxTitle(layout.labels, fieldRects.get(field), heading) : group.words.map((word) => word.text).join(" "),
-    });
-  };
+  const boxes: DetailsTextBox[] = [];
   const racial = find("racial-traits");
   if (racial !== undefined) {
-    draw("details_additional_notes", sectionParagraphs(racial), "Traits", { x: 222, top: 380, width: 169, bottom: 125 });
+    boxes.push({
+      field: SPECIES_FIELD, paragraphs: sectionParagraphs(racial), heading: "Traits",
+      fallback: { x: 222, top: 380, width: 169, bottom: 125 }, minFontSize: SPECIES_MIN_FONT_SIZE,
+    });
   }
   // A layout with its own subclass and feat boxes (2024 Hybrid, and the split
   // layout of the others) splits the feature rows by origin; a split layout
@@ -1712,16 +1739,19 @@ function drawDetailsRichText(
   const featureBox = { x: 409, top: 661, width: 169, bottom: 132 };
   const features = find("features");
   const grouped: ReadonlyArray<readonly [string, string, readonly SheetRow[]]> = groups === undefined ? [] : [
-    ["details_features", "Class Features", groups["class-features"] ?? []],
+    [FEATURES_FIELD, "Class Features", groups["class-features"] ?? []],
     ["details_subclass_features", "Subclass Features", groups["subclass-features"] ?? []],
     ["details_feats", "Feats", groups.feats ?? []],
   ];
   if (fieldRects.has("details_subclass_features") && groups !== undefined) {
-    for (const [field, heading, rows] of grouped) draw(field, featureParagraphs(rows), heading, featureBox);
+    for (const [field, heading, rows] of grouped) boxes.push({ field, paragraphs: featureParagraphs(rows), heading, fallback: featureBox });
   } else if (layout.split && groups !== undefined) {
-    draw("details_features", groupedFeatureParagraphs(grouped.map(([, heading, rows]) => [heading, rows] as const)), "Features", featureBox);
+    boxes.push({
+      field: FEATURES_FIELD, heading: "Features", fallback: featureBox,
+      paragraphs: groupedFeatureParagraphs(grouped.map(([, heading, rows]) => [heading, rows] as const)),
+    });
   } else if (features !== undefined) {
-    draw("details_features", sectionParagraphs(features), "Features", featureBox);
+    boxes.push({ field: FEATURES_FIELD, paragraphs: sectionParagraphs(features), heading: "Features", fallback: featureBox });
   }
 
   const proficiencyRows = [
@@ -1730,9 +1760,233 @@ function drawDetailsRichText(
   ];
   // A list box — proficiencies and languages — is one run of like items, not a
   // sequence of features, so it keeps the plain paragraph rhythm.
-  draw("details_proficiencies_languages", featureParagraphs(proficiencyRows, false), "Proficiencies & Languages",
-    { x: 409, top: 128, width: 169, bottom: 33 }, 7.4, 9.2);
+  boxes.push({
+    field: "details_proficiencies_languages", paragraphs: featureParagraphs(proficiencyRows, false), heading: "Proficiencies & Languages",
+    fallback: { x: 409, top: 128, width: 169, bottom: 33 }, fontSize: 7.4, lineHeight: 9.2,
+  });
+  return boxes;
+}
+
+function drawDetailsRichText(
+  page: PDFPage,
+  boxes: readonly DetailsTextBox[],
+  fonts: SheetFonts,
+  fieldRects: ReadonlyMap<string, FieldRect>,
+  layout: DetailsFeatureLayout,
+): FeatureContinuation[] {
+  const continuations: FeatureContinuation[] = [];
+  for (const { field, paragraphs, heading, fallback, fontSize = DEFAULT_FEATURE_FONT_SIZE, lineHeight = fontSize, minFontSize } of boxes) {
+    const box = richTextBox(fieldRects, field, fallback);
+    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight, layout.ruleColour, minFontSize);
+    if (rest === undefined) continue;
+    // Cut inside a headed group, the part continues that group, by its name.
+    const group = paragraphs.slice(0, paragraphs.length - rest.length + 1).reverse().find((paragraph) => paragraph.kind === "heading");
+    continuations.push({
+      paragraphs: rest,
+      heading: group === undefined ? boxTitle(layout.labels, fieldRects.get(field), heading) : group.words.map((word) => word.text).join(" "),
+    });
+  }
   return continuations;
+}
+
+// ---------------------------------------------------------------------------
+// The 2024 and Hybrid traits column: Species Traits over the features box,
+// one region the two share.
+// ---------------------------------------------------------------------------
+
+/**
+ * The column as the template drew it, found from its own boxes: the species
+ * and features fields one above the other in the same column, their plate
+ * frames `traitsColumn.gap` apart. A page without that arrangement (the 2014
+ * page keeps its species traits in another column) has none.
+ */
+interface TraitsColumn {
+  species: FieldRect;
+  features: FieldRect;
+  /** The band's horizontal extent: both frames and their strokes. */
+  left: number;
+  right: number;
+  /** The species frame's top edge, which never moves. */
+  speciesTop: number;
+  /** The template's species frame bottom and features frame top. */
+  speciesBottom: number;
+  featuresTop: number;
+  /** The features frame's bottom edge, which never moves. */
+  featuresBottom: number;
+  /**
+   * Lines across each frame's straight sides, clear of its title and its
+   * corners. Between them the writer rearranges the artwork; outside them it
+   * prints as drawn.
+   */
+  upperCut: number;
+  lowerCut: number;
+}
+
+// A frame's 0.9pt stroke reaches this far past its path.
+const FRAME_STROKE_REACH = 0.6;
+// The species frame holds at least its title and two lines; the features
+// frame at least its title and a few lines of text.
+const TRAITS_SPECIES_MIN_HEIGHT = 40;
+const TRAITS_FEATURES_MIN_HEIGHT = 80;
+// When the column cannot hold both, Species Traits takes no more than this
+// share of it unless the features still fit beside it.
+const TRAITS_SPECIES_CAP_SHARE = 0.4;
+// Neighbouring pieces of the rearranged artwork overlap by this much, so no
+// viewer shows a seam where they meet.
+const TRAITS_SEAM_OVERLAP = 0.5;
+
+function findTraitsColumn(rects: ReadonlyMap<string, FieldRect>): TraitsColumn | undefined {
+  const species = rects.get(SPECIES_FIELD);
+  const features = rects.get(FEATURES_FIELD);
+  if (species === undefined || features === undefined) return undefined;
+  const pad = SHEET_TEMPLATE_CONTRACT.platePad;
+  if (Math.abs(species.x - features.x) > 0.5 || Math.abs(species.width - features.width) > 0.5) return undefined;
+  const speciesBottom = species.y - pad.bottom;
+  const featuresTop = features.y + features.height + pad.top;
+  const gap = speciesBottom - featuresTop;
+  if (gap < 0 || gap > SHEET_TEMPLATE_CONTRACT.traitsColumn.gap + 0.5) return undefined;
+  return {
+    species,
+    features,
+    left: species.x - pad.side - FRAME_STROKE_REACH,
+    right: species.x + species.width + pad.side + FRAME_STROKE_REACH,
+    speciesTop: species.y + species.height + pad.top,
+    speciesBottom,
+    featuresTop,
+    featuresBottom: features.y - pad.bottom,
+    upperCut: species.y + species.height - pad.bottom,
+    lowerCut: features.y + pad.bottom,
+  };
+}
+
+/**
+ * The column's field rectangles with the boundary moved down by `shift`
+ * points (up, when negative): the species box ends lower and the features
+ * box starts lower, both by the same amount.
+ */
+function shiftedTraitsRects(
+  rects: ReadonlyMap<string, FieldRect>, column: TraitsColumn, shift: number,
+): ReadonlyMap<string, FieldRect> {
+  if (shift === 0) return rects;
+  const out = new Map(rects);
+  out.set(SPECIES_FIELD, { ...column.species, y: column.species.y - shift, height: column.species.height + shift });
+  out.set(FEATURES_FIELD, { ...column.features, height: column.features.height - shift });
+  return out;
+}
+
+/**
+ * How far to move the boundary. Species Traits first takes the height it
+ * needs at the normal size, giving any spare to the features. Text the
+ * printed box cannot hold shrinks, down to SPECIES_MIN_FONT_SIZE, before it
+ * borrows. When it must borrow, it takes what the features can spare at
+ * their own normal size, so it prints as large as the column allows, and at
+ * least what it needs at the floor while the features still fit at theirs.
+ * Only when the column cannot hold both does either continue: Species Traits
+ * keeps its printed height or takes up to TRAITS_SPECIES_CAP_SHARE of the
+ * column, more if the features still fit.
+ */
+function planTraitsColumn(
+  column: TraitsColumn,
+  species: DetailsTextBox | undefined,
+  features: DetailsTextBox | undefined,
+  fonts: SheetFonts,
+): number {
+  const printed = column.speciesTop - column.speciesBottom;
+  const least = TRAITS_SPECIES_MIN_HEIGHT - printed;
+  const most = column.featuresTop - column.featuresBottom - TRAITS_FEATURES_MIN_HEIGHT;
+  if (most < least) return 0;
+  if (species === undefined || species.paragraphs.length === 0) return least;
+  const rects = new Map([[SPECIES_FIELD, column.species], [FEATURES_FIELD, column.features]]);
+  const box = (field: string, shift: number): RichTextBox =>
+    richTextBox(shiftedTraitsRects(rects, column, shift), field, species.fallback);
+  const speciesFits = (shift: number, size: number): boolean => featureBoxFits(species.paragraphs, fonts, box(SPECIES_FIELD, shift), size);
+  const featuresFit = (shift: number, size = MIN_FEATURE_FONT_SIZE): boolean => features === undefined
+    || featureBoxFits(features.paragraphs, fonts, box(FEATURES_FIELD, shift), size);
+  /** The smallest whole-point shift in range that passes a test growing easier with the shift. */
+  const smallest = (test: (shift: number) => boolean): number | undefined => {
+    if (!test(most)) return undefined;
+    let low = least - 1;
+    let high = most;
+    while (high - low > 1) {
+      const middle = Math.floor((low + high) / 2);
+      if (test(middle)) high = middle;
+      else low = middle;
+    }
+    return high;
+  };
+  const atNormal = smallest((shift) => speciesFits(shift, DEFAULT_FEATURE_FONT_SIZE));
+  if (atNormal !== undefined && atNormal <= 0) return atNormal;
+  if (speciesFits(0, SPECIES_MIN_FONT_SIZE)) return 0;
+  const atFloor = smallest((shift) => speciesFits(shift, SPECIES_MIN_FONT_SIZE));
+  // The largest shift that leaves the features room at `size`, found the same way.
+  const featuresRoom = (size?: number): number => {
+    if (!featuresFit(least, size)) return least - 1;
+    const first = smallest((shift) => !featuresFit(shift, size));
+    return first === undefined ? most : first - 1;
+  };
+  const room = featuresRoom();
+  if (atFloor !== undefined && atFloor <= room) {
+    return Math.max(atFloor, Math.min(featuresRoom(DEFAULT_FEATURE_FONT_SIZE), atNormal ?? most));
+  }
+  const cap = Math.round(TRAITS_SPECIES_CAP_SHARE * (column.speciesTop - column.featuresBottom)) - printed;
+  return Math.min(most, Math.max(0, Math.min(atFloor ?? most, Math.max(room, cap))));
+}
+
+/** Clips to the union of `rects` (or, even-odd, the first less the rest), draws, and restores. */
+function withClip(page: PDFPage, rects: ReadonlyArray<readonly [number, number, number, number]>, evenOdd: boolean, draw: () => void): void {
+  page.pushOperators(
+    pushGraphicsState(),
+    ...rects.map(([x, y, width, height]) => rectangle(x, y, width, height)),
+    evenOdd ? clipEvenOdd() : clip(),
+    endPath(),
+  );
+  draw();
+  page.pushOperators(popGraphicsState());
+}
+
+/**
+ * The character page's artwork with the traits column's boundary moved down
+ * by `shift`. Everything outside the band between the column's cuts prints
+ * as drawn. Inside it, the species frame's foot and the features frame's head
+ * move together; the gap they open (or the overlap they leave) is filled by
+ * stretching a one-point slice of the frame's straight sides, which repeats
+ * exactly, so the frames read as drawn at their new heights.
+ */
+function drawTraitsColumnArtwork(
+  page: PDFPage, embedded: PDFEmbeddedPage, width: number, height: number, column: TraitsColumn, shift: number,
+): void {
+  const full = { x: 0, y: 0, width, height };
+  if (shift === 0) {
+    page.drawPage(embedded, full);
+    return;
+  }
+  const { left, right, upperCut, lowerCut } = column;
+  const span = right - left;
+  withClip(page, [[0, 0, width, height], [left, lowerCut, span, upperCut - lowerCut]], true, () => page.drawPage(embedded, full));
+  // The moved part: the species foot, the gap and the features head.
+  const movedBottom = lowerCut + Math.max(0, -shift);
+  const movedTop = upperCut - Math.max(0, shift);
+  withClip(page, [[left, movedBottom, span, movedTop - movedBottom]], false, () => page.drawPage(embedded, { ...full, y: -shift }));
+  // A taller species box repeats the slice under its cut; a shorter one, the
+  // features box's slice over its own.
+  const [slice, from, to] = shift > 0
+    ? [upperCut - 1, movedTop - TRAITS_SEAM_OVERLAP, upperCut + TRAITS_SEAM_OVERLAP]
+    : [lowerCut, lowerCut - TRAITS_SEAM_OVERLAP, movedBottom + TRAITS_SEAM_OVERLAP];
+  const scale = to - from;
+  withClip(page, [[left, from, span, to - from]], false, () =>
+    page.drawPage(embedded, { x: 0, y: from - slice * scale, width, height: height * scale }));
+}
+
+/** The page's labels with those inside the traits column's band moved with its boundary. */
+function shiftedTraitsLabels(
+  labels: SheetTemplateLabels[string] | undefined, column: TraitsColumn, shift: number,
+): SheetTemplateLabels[string] | undefined {
+  if (labels === undefined || shift === 0) return labels;
+  const inBand = (x: number, y: number): boolean => x >= column.left && x <= column.right && y > column.lowerCut && y < column.upperCut;
+  return {
+    labels: labels.labels.map((label) => inBand(label.x + (label.width ?? 0) / 2, label.y) ? { ...label, y: label.y - shift } : label),
+    ribbons: labels.ribbons.map((ribbon) => inBand(ribbon.cx, ribbon.cy) ? { ...ribbon, cy: ribbon.cy - shift } : ribbon),
+  };
 }
 
 /**
@@ -2309,8 +2563,10 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const files = SHEET_TEMPLATE_CONTRACT.files;
   const timed = phaseTimer(options.trace);
   const artwork: ArtworkCache = new Map();
-  const fill = (phase: string, template: Uint8Array, pageValues: Readonly<Record<string, string>>) =>
-    timed(`fill:${phase}`, () => addFilledTemplatePage(output, template, pageValues, colours, fonts, artwork));
+  const fill = (
+    phase: string, template: Uint8Array, pageValues: Readonly<Record<string, string>>,
+    drawArtwork?: (page: PDFPage, embedded: PDFEmbeddedPage, width: number, height: number) => void,
+  ) => timed(`fill:${phase}`, () => addFilledTemplatePage(output, template, pageValues, colours, fonts, artwork, drawArtwork));
 
   const output = await PDFDocument.create();
   const fonts = await timed("embedFonts", () => embedSheetFonts(output, bundle.faces));
@@ -2356,24 +2612,34 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   for (const modelPage of model.pages) {
     await yieldToEventLoop();
     if (modelPage.templateKind === "details") {
-      const { page, fieldRects, overflow: boxOverflow } = await fill("details", bundle.details, {
+      const split = bundle.layout?.split ?? detailsArt.rects.has("details_subclass_features");
+      const boxes = detailsTextBoxes(modelPage, detailsArt.rects, { split });
+      // On the 2024 pages Species Traits and the features share one column;
+      // the boundary between them moves to suit the text.
+      const column = findTraitsColumn(detailsArt.rects);
+      const shift = column === undefined ? 0 : timed("traitsColumn", () => planTraitsColumn(
+        column, boxes.find((box) => box.field === SPECIES_FIELD), boxes.find((box) => box.field === FEATURES_FIELD), fonts));
+      const { page, fieldRects: templateRects, overflow: boxOverflow } = await fill("details", bundle.details, {
         ...values,
         details_features: "",
         details_subclass_features: "",
         details_feats: "",
         details_proficiencies_languages: "",
-      });
-      drawTemplateText(page, detailsLabels, fonts, labelInk);
+      }, column === undefined || shift === 0 ? undefined : (target, embedded, width, height) =>
+        drawTraitsColumnArtwork(target, embedded, width, height, column, shift));
+      const fieldRects = column === undefined ? templateRects : shiftedTraitsRects(templateRects, column, shift);
+      const pageLabels = column === undefined ? detailsLabels : shiftedTraitsLabels(detailsLabels, column, shift);
+      drawTemplateText(page, pageLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       drawSheetFooter(page, fonts, footerText);
-      const overflow = timed("richText:details", () => drawDetailsRichText(page, modelPage, fonts, fieldRects, {
-        split: bundle.layout?.split ?? fieldRects.has("details_subclass_features"),
-        labels: detailsLabels,
+      const overflow = timed("richText:details", () => drawDetailsRichText(page, boxes, fonts, fieldRects, {
+        split,
+        labels: pageLabels,
         ruleColour: labelInk.lines,
       }));
       // A page that carries feature text is titled for it; one carrying only
       // other boxes' values is the character page continued.
-      addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, detailsLabels)],
+      addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, pageLabels)],
         fonts, labelInk, footerText, overflow.length > 0 ? "FEATURES & TRAITS (CONTINUED)" : "CHARACTER (CONTINUED)");
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
       continue;
