@@ -38,7 +38,9 @@ const corpusAbsent = !existsSync(CORPUS_DIR) && process.env.FCB_REQUIRE_CORPUS !
  * Each test worker builds its own content library, so a laptop runs one test
  * file at a time to stay within its memory. CI runners have room for one
  * worker per core, which cuts the corpus-backed coverage run several-fold.
- * A --maxWorkers flag on the command line still wins.
+ * Workers then share the cores under coverage instrumentation, so the slower
+ * tests get CI-only limits instead of the 5s default. A --maxWorkers flag on
+ * the command line still wins.
  */
 const inCi = process.env.CI === "true";
 const workers = inCi ? Math.max(1, availableParallelism()) : 1;
@@ -56,6 +58,7 @@ export default defineConfig({
     environment: "node",
     maxWorkers: workers,
     fileParallelism: inCi,
+    ...(inCi ? { testTimeout: 30_000, hookTimeout: 60_000 } : {}),
     globalSetup: ["packages/engine/src/testing/corpus-preflight.ts"],
     coverage: {
       provider: "v8",
