@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { availableParallelism } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
@@ -33,6 +34,15 @@ function corpusBackedTests(): string[] {
 
 const corpusAbsent = !existsSync(CORPUS_DIR) && process.env.FCB_REQUIRE_CORPUS !== "1";
 
+/**
+ * Each test worker builds its own content library, so a laptop runs one test
+ * file at a time to stay within its memory. CI runners have room for one
+ * worker per core, which cuts the corpus-backed coverage run several-fold.
+ * A --maxWorkers flag on the command line still wins.
+ */
+const inCi = process.env.CI === "true";
+const workers = inCi ? Math.max(1, availableParallelism()) : 1;
+
 export default defineConfig({
   resolve: {
     alias: {
@@ -44,6 +54,8 @@ export default defineConfig({
     include: ["packages/*/src/**/*.test.ts"],
     exclude: ["**/node_modules/**", "**/dist/**", ...(corpusAbsent ? corpusBackedTests() : [])],
     environment: "node",
+    maxWorkers: workers,
+    fileParallelism: inCi,
     globalSetup: ["packages/engine/src/testing/corpus-preflight.ts"],
     coverage: {
       provider: "v8",
