@@ -32,6 +32,19 @@ export interface ShellLink {
   readonly title?: string;
 }
 
+/** An entry of the host's own navigation, shown in the top bar's "Tools" nav. */
+export interface ShellToolLink extends ShellLink {
+  /** Decorative icon (aria-hidden), rendered at about 16 px. */
+  readonly Icon?: ComponentType<{ size?: number; className?: string }>;
+  /**
+   * "tools": parts of the host site; "apps": separate apps, shown after a
+   * divider with an external (↗) mark. Default "tools".
+   */
+  readonly group?: "tools" | "apps";
+  /** The entry that is this builder: shown as the current page (aria-current="page"), not a link target. */
+  readonly current?: boolean;
+}
+
 export interface ShellLinks {
   /** Where the brand mark navigates. Omitted: the mark is not a link. */
   readonly home?: ShellLink;
@@ -39,6 +52,10 @@ export interface ShellLinks {
   readonly legal: ShellLink;
   /** An optional support/donation link shown among the top-bar utilities. */
   readonly support?: ShellLink;
+  /** Optional host navigation shown in the top bar as a labelled "Tools" nav. */
+  readonly tools?: readonly ShellToolLink[];
+  /** Optional "Make a token" destination offered in the character menu. */
+  readonly makeToken?: ShellLink;
 }
 
 /**

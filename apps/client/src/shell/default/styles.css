@@ -38,6 +38,14 @@
   --dmf-radius-sm: 6px;
   --dmf-radius: 12px;
   --dmf-radius-lg: 18px;
+  /* Buttons, inputs and tiles. */
+  --dmf-control-radius: 8px;
+
+  /* Type steps the chrome uses: meta text (the footer) and controls (tabs,
+     menus, labelled utilities). */
+  --dmf-type-badge: 11px;
+  --dmf-type-meta: 12px;
+  --dmf-type-control: 14px;
 
   --dmf-transition: 160ms ease;
 
@@ -47,6 +55,8 @@
   --dmf-control-min-height: 36px;
   --dmf-control-height-lg: 44px;
   --dmf-tool-nav-height: 44px;
+  /* The top bar's minimum height; it grows if a row needs more. */
+  --dmf-header-height: 56px;
   --dmf-inspector-width: clamp(240px, 24vw, 288px);
   --dmf-safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
@@ -93,7 +103,8 @@
   --dmf-accent: #a8412f;
   --dmf-danger: #a8412f;
   --dmf-success: #6f8f3a;
-  --dmf-warning: #d6b060;
+  /* Amber, not the gold primary, so warnings never read as selected states. */
+  --dmf-warning: #e8913a;
   --dmf-shadow-color: rgb(10 7 5 / 40%);
   --dmf-page-background: linear-gradient(180deg, #1d1610 0%, #0b0806 100%);
   --dmf-header-background: #241a12;

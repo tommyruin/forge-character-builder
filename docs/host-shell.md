@@ -19,11 +19,34 @@ short, the directory exports (from `index.jsx`) a frozen `shell` object with:
 | `ReleaseNotesProvider` | Wraps the app; receives `announce`. |
 | `VersionStamp` | Small version label next to the brand. |
 | `theme` | `AVAILABLE_THEMES`, `DEFAULT_THEME`, `normalizeTheme`, `applyTheme`, `readStoredTheme`, `storeTheme`, `getNextTheme`. The stored key is `theme`; values are `dark`, `light`, `retro`. |
-| `links` | `legal` (required), optional `home` and `support`, each `{ href, label, title? }`. |
+| `links` | `legal` (required), optional `home`, `support` and `makeToken`, each `{ href, label, title? }`, and optional `tools` (see below). |
+
+### Optional links
+
+- `support` shows as a quiet, icon-only link among the top-bar utilities. Its
+  accessible name and tooltip are `title ?? label`. It opens in a new tab.
+- `tools` is the host's own navigation: a list of `{ href, label, title?, Icon?,
+  group?, current? }`. When it is non-empty the top bar shows a "Tools" button
+  (labelled from 1280 px, icon-only below) inside `<nav aria-label="Tools">`,
+  opening a short list of the entries. `Icon` is a decorative component drawn at
+  about 16 px. `group: "apps"` entries are separate apps: they follow a divider,
+  carry a ↗ mark and say "(opens its own page)" in their tooltip. The
+  `current: true` entry is this builder; it shows as the current page
+  (`aria-current="page"`) rather than as a link. Links open in the same tab.
+- `makeToken` adds "Make a token" to each character's Export menu, opening
+  `href` in the same tab.
+
+A host that leaves these out gets none of these controls.
+
+The theme control reads `theme.AVAILABLE_THEMES` and shows "Theme: Retro"
+style labels (each name capitalised), with a menu of the themes in that order.
 
 The directory also supplies `styles.css`, imported as `@shell/styles.css`
 before the client's own stylesheet. It must define the `--dmf-*` design tokens
-listed in `src/shell/default/styles.css` for all three themes, plus the
+listed in `src/shell/default/styles.css` for all three themes (including
+`--dmf-header-background`, `--dmf-header-height`, which is a minimum height,
+`--dmf-control-radius` and the `--dmf-type-*` steps; the client falls back to
+56 px, 8 px and 11/12/14 px when a host omits the last ones), plus the
 `.dmf-logo*`, `.dmf-versioned-brand*`, `.dmf-version-stamp` and `.dmf-sr-only`
 rules its own `Logo` and `VersionStamp` rely on.
 
