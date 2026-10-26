@@ -6,6 +6,11 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Resource trackers print as empty circles on the sheet, and a new sheet
+  setting turns the Resources line off.
+
 ## [2.6.2] - 2026-10-21
 
 ### Fixed

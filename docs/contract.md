@@ -71,7 +71,9 @@ There are currently no public roadmap-unsupported methods. Groups:
   `setItemPresentation`, `setItemCards`, `setItemDetails`, `setCoins`
 - **Attacks**: `getAttacks`, `getAttackOptions`, `createAttack`, `updateAttack`,
   `setAttackVisibility`, `moveAttack`, `deleteAttack`
-- **Sheet**: `generateSheet` (lite flag, optional `include`, optional `inventoryNotes`), `getSheetBuffer`.
+- **Sheet**: `generateSheet` (lite flag, optional `include`, optional `inventoryNotes`, optional `resourceTrackers`), `getSheetBuffer`.
+  `resourceTrackers: false` leaves the "Resources" paragraph (a circle per use) off
+  the features text; absent or `true` prints it.
   `inventoryNotes: true` widens the equipment page's notes column: after the
   attuned and `sidebar` items (printed exactly as without it), the other magic
   items in full, then tools and useful gear as a one-sentence summary capped

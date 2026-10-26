@@ -48,6 +48,6 @@ describe("resourceSheetText", () => {
 
   it("prints boxes for a few uses and a blank for many, whatever is spent", () => {
     expect(resourceSheetText([dto({}), dto({ label: "Wand", max: 7, unit: "charges", recharge: "dawn" }), dto({ label: "Pool", max: 20, unit: "points", recharge: "shortRest" })]))
-      .toBe("Resources. Gift [ ] [ ] (LR); Wand ____ / 7 charges (dawn); Pool ____ / 20 points (SR)");
+      .toBe("Resources. Gift ○ ○ (LR); Wand ____ / 7 charges (dawn); Pool ____ / 20 points (SR)");
   });
 });

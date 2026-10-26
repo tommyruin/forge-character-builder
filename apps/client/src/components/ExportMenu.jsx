@@ -77,7 +77,7 @@ export default function ExportMenu({
   const downloadSheet = () =>
     runAction("sheet", async () => {
       const brandImage = await loadSheetBrandImage();
-      const url = await api.characters.sheet(id, { templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes: layoutOptions.inventoryNotes, layout: effectiveSheetLayout(templateSet, layoutOptions), brandImage, footerText: `Generated with ${shell.appName}.` });
+      const url = await api.characters.sheet(id, { templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes: layoutOptions.inventoryNotes, resourceTrackers: layoutOptions.resourceTrackers, layout: effectiveSheetLayout(templateSet, layoutOptions), brandImage, footerText: `Generated with ${shell.appName}.` });
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = `${id}.pdf`;

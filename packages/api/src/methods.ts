@@ -582,6 +582,8 @@ export interface EngineMethodMap {
         include?: SheetPageInclusionsDto;
         /** Item notes: the inventory notes column also describes magic items, tools and useful gear. */
         inventoryNotes?: boolean;
+        /** Resource trackers: `false` leaves the "Resources" paragraph off the features text. Absent prints it. */
+        resourceTrackers?: boolean;
         /** The body face the sheet will be drawn in, so card prose is measured in its widths. */
         bodyFace?: string;
       },

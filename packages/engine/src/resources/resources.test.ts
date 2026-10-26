@@ -505,12 +505,22 @@ describe("limited uses printed in the book content", () => {
 });
 
 describe("the sheet", () => {
-  const resourceLines = (service: CharacterService, id: string): string[] => {
-    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
+  const resourceLines = (service: CharacterService, id: string, resourceTrackers?: boolean): string[] => {
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", ...(resourceTrackers === undefined ? {} : { resourceTrackers }) });
     return model.pages
       .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))))
       .filter((line) => line.startsWith("Resources."));
   };
+
+  it("leaves the Resources paragraph off when the sheet option is off", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", { trackers: [tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" })] }),
+    });
+    expect(resourceLines(service, id)).toHaveLength(1);
+    expect(resourceLines(service, id, true)).toHaveLength(1);
+    expect(resourceLines(service, id, false)).toEqual([]);
+  });
 
   it("prints every resource in one paragraph: boxes for a few uses, a blank for many", () => {
     const { service, id } = fighter();
@@ -525,7 +535,7 @@ describe("the sheet", () => {
     });
     service.setTrackerUsed(id, { trackerId: "a", used: 1 });
     const [line] = resourceLines(service, id);
-    expect(line).toContain("Moonbeam [ ] [ ] (SR)");
+    expect(line).toContain("Moonbeam ○ ○ (SR)");
     expect(line).toContain("Embers ____ / 12 charges (dawn)");
     expect(line).toContain("Wand ____ / 7 charges (1d6+1 at dawn)");
   });

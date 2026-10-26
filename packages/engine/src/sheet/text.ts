@@ -19,6 +19,9 @@ export function winAnsiText(value: string): string {
     .replaceAll("\u0007", "•")
     .replaceAll("♊", "•")
     .replaceAll("✝", "†")
+    // The empty circle of a resource tracker: WinAnsi has no ring, and the
+    // lowercase o is the closest round mark every face carries.
+    .replaceAll("○", "o")
     .replaceAll("\u00a0", " ")
     // A soft hyphen marks where a word may break, not a glyph: drawn, it
     // prints a hyphen inside the word wherever the word lands ("tar-get").

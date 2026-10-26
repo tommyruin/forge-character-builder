@@ -28,8 +28,10 @@ export default function SheetPreviewPanel() {
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { options: layoutOptions } = useSheetLayoutOptionsSetting();
   const inventoryNotes = layoutOptions.inventoryNotes;
+  const resourceTrackers = layoutOptions.resourceTrackers;
   const layout = useMemo(() => effectiveSheetLayout(templateSet, layoutOptions), [templateSet, layoutOptions]);
-  const layoutKey = sheetLayoutCacheKey(layout);
+  // Trackers off changes the rendered sheet, so it changes every cache key built from this.
+  const layoutKey = sheetLayoutCacheKey(layout) + (resourceTrackers ? '' : '#no-trackers');
   const footerText = `Generated with ${shell.appName}.`;
   // What we want rendered: the latest debounced mutation tick (+ manual refreshes). Seeded from
   // the CURRENT tick (not 0) so a remount can hit the cross-mount cache immediately instead of
@@ -83,6 +85,7 @@ export default function SheetPreviewPanel() {
       pagesKey,
       emphasizeAbilityModifiers,
       inventoryNotes,
+      resourceTrackers,
       layout,
       layoutKey,
     };
@@ -120,6 +123,7 @@ export default function SheetPreviewPanel() {
               emphasizeAbilityModifiers: run.emphasizeAbilityModifiers,
               include: run.pages,
               inventoryNotes: run.inventoryNotes,
+              resourceTrackers: run.resourceTrackers,
               layout: run.layout,
               brandImage: await loadSheetBrandImage(),
               footerText,
@@ -158,7 +162,7 @@ export default function SheetPreviewPanel() {
       }
     })();
     return undefined;
-  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, layout, layoutKey, footerText]);
+  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, layout, layoutKey, footerText]);
 
   useEffect(
     () => () => {

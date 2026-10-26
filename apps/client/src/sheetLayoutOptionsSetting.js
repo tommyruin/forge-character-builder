@@ -19,11 +19,13 @@
 //    attack rows.
 //  - inventoryNotes: the equipment page's notes column also describes the
 //    other magic items in full and the tools and useful gear in brief.
+//  - resourceTrackers: the features text closes with a "Resources" paragraph of
+//    use trackers (a circle per use). On by default; off leaves it out.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card
 //    only when they are magic items, tools or useful gear. Items already in
 //    the inventory never change.
 //
-// Every option defaults to off (or, for top and split, to the layout's own
+// Every option defaults to off (except resourceTrackers) (or, for top and split, to the layout's own
 // default), so a browser that has never touched this setting gets each
 // layout's own sheet and the item cards it has always had.
 
@@ -31,7 +33,7 @@ import { resolveSheetLayout, sheetLayoutKey } from '@forge-cb/engine/sheet-contr
 
 export const SHEET_LAYOUT_OPTIONS_STORAGE_KEY = 'fcb-sheet-layout-options';
 
-const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards'];
+const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards', 'resourceTrackers'];
 /** Options that may also be null, for the layout's own default. */
 const DEFAULTABLE_OPTIONS = ['top', 'split'];
 
@@ -41,6 +43,7 @@ export const DEFAULT_SHEET_LAYOUT_OPTIONS = Object.freeze({
   readable: false,
   inventoryNotes: false,
   smartCards: false,
+  resourceTrackers: true,
 });
 
 

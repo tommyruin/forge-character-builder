@@ -171,6 +171,15 @@ function ItemCardSettings({ workspace }) {
         />
         <span>Print item notes in the inventory: magic items in full, tools and useful gear in brief</span>
       </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={options.resourceTrackers}
+          onChange={(event) => setOptions({ resourceTrackers: event.target.checked })}
+        />
+        <span>Print resource trackers (Wild Shape, Rage and other limited uses) with the features</span>
+      </label>
       {characterId && (
         <div className="flex flex-wrap gap-2" role="group" aria-label="Item cards for this character">
           <button

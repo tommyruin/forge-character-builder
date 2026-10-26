@@ -541,6 +541,7 @@ export function createEngineMethodHandlers(
         mode: request.lite ? "lite" : "full",
         ...(request.include ? { include: request.include } : {}),
         ...(request.inventoryNotes === true ? { inventoryNotes: true } : {}),
+        ...(request.resourceTrackers === false ? { resourceTrackers: false } : {}),
         ...(typeof request.bodyFace === "string" ? { bodyFace: request.bodyFace } : {}),
       }));
     },
