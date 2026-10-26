@@ -48,7 +48,8 @@ describe('top bar with the default shell', () => {
     expect(shell.links.makeToken).toBeUndefined();
     const markup = renderToStaticMarkup(<TopbarUtilities onCloudOpen={() => {}} />);
     expect(markup).not.toContain('fcb-topbar-utility--quiet');
-    expect(markup).toContain('aria-label="Theme: Dark"');
+    // The default theme comes from VITE_FCB_DEFAULT_THEME, which host builds set (DM Forge: retro).
+    expect(markup).toMatch(/aria-label="Theme: (Dark|Light|Retro)"/);
     expect(renderToStaticMarkup(<ToolsNav tools={shell.links.tools} />)).toBe('');
     expect(renderToStaticMarkup(<ToolsNav tools={[]} />)).toBe('');
   });
