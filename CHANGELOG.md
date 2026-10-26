@@ -6,6 +6,31 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A host shell can supply `links.tools`, its own navigation: the top bar shows
+  a "Tools" button that opens the entries, with separate apps after a divider
+  and marked ↗, and the builder itself shown as the current page. A host can
+  also supply `links.makeToken`, which adds "Make a token" to each character's
+  Export menu. Hosts without them look as before.
+
+### Changed
+
+- The top bar takes the host's header height and background, and centres the
+  brand like the host's own header. The section tabs are 14 px sentence-case
+  tiles; the active one is a gold tile rather than an underline.
+- The theme control names the theme in use ("Theme: Retro") and opens a menu
+  of the themes, instead of naming the next one.
+- The support link is a quiet icon with no outline or glow, named by its
+  title.
+- Drive sync and autosave show their state with a badge glyph (a tick, slash,
+  "!" or spinner) as well as colour. Autosave off and unsaved changes use the
+  warning colour, so they no longer look selected.
+- On the characters page, "Create & Open" and "Open" are flat primary
+  buttons, other buttons are outlined, and all use the 8 px control radius
+  with no glow. Page headings are 28 px in sentence case on every theme, and
+  the footer text is 12 px.
+
 ## [2.6.2] - 2026-10-21
 
 ### Fixed
