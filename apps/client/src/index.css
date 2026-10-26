@@ -912,10 +912,21 @@ button:disabled {
   padding: 0 18px;
 }
 
+/* The section tabs are tiles, like the host's header controls: sentence case
+   at 14 px, and the active one is the selected tile (primary border, a light
+   primary fill and primary text) rather than a full-height underline. */
 .fcb-global-tabs .fcb-tab {
   flex: 1 1 0;
   min-width: 0;
+  min-height: 40px;
   overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: var(--fcb-control-radius);
+  font-family: var(--dmf-font-body);
+  font-size: var(--dmf-type-control, 14px);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .fcb-global-tabs .fcb-tab-label--full,
@@ -960,22 +971,8 @@ button:disabled {
   background: color-mix(in srgb, var(--fcb-teal) 11%, transparent);
 }
 
-/* The section tabs are tiles, like the host's header controls: sentence case
-   at 14 px, and the active one is the selected tile (primary border, a light
-   primary fill and primary text) rather than a full-height underline. The
-   open character's tab keeps its teal tint at rest and takes the same
-   selected tile when active. */
-.fcb-global-tabs .fcb-tab {
-  min-height: 40px;
-  border: 1px solid transparent;
-  border-radius: var(--fcb-control-radius);
-  font-family: var(--dmf-font-body);
-  font-size: var(--dmf-type-control, 14px);
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
+/* The open character's tab keeps its teal tint at rest and takes the same
+   selected tile as the section tabs when active. */
 .fcb-global-tabs .fcb-tab.is-active {
   border-color: var(--fcb-primary);
   background: var(--fcb-selected-fill);
