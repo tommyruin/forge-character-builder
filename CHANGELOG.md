@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-10-26
+
 ### Added
 
 - A host shell can supply `links.tools`, its own navigation: the top bar shows
