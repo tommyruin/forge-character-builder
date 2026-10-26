@@ -112,14 +112,16 @@ describe('compact sticky workspace shell', () => {
     expect(css).toMatch(
       /\.fcb-tab-character\s*\{[^}]*background:\s*color-mix\([^}]*var\(--fcb-teal\)/s,
     );
+    // Active, the character tab takes the same selected tile as the others.
+    expect(css).not.toMatch(/\.fcb-tab-character\.is-active\s*\{/);
     expect(css).toMatch(
-      /\.fcb-tab-character\.is-active\s*\{[^}]*border-color:\s*var\(--fcb-teal\);/s,
+      /\.fcb-global-tabs \.fcb-tab\.is-active\s*\{[^}]*border-color:\s*var\(--fcb-primary\);[^}]*background:\s*var\(--fcb-selected-fill\);[^}]*color:\s*var\(--fcb-selected-text\);/s,
     );
   });
 
   it('uses opaque compact sticky navigation surfaces', () => {
     expect(css).toMatch(
-      /\.fcb-topbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;[^}]*background:\s*var\(--fcb-bg-soft\);/s,
+      /\.fcb-topbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;[^}]*background:\s*var\(--dmf-header-background\);/s,
     );
     expect(css).toMatch(
       /\.fcb-subbar\s*\{[^}]*position:\s*sticky;[^}]*background:\s*var\(--fcb-bg-soft\);/s,

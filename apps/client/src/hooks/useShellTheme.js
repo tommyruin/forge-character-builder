@@ -23,5 +23,11 @@ export default function useShellTheme() {
     setTheme((current) => themeApi.getNextTheme(current));
   }, []);
 
-  return { theme, toggleTheme };
+  // Picks a theme by name; anything the shell does not know is ignored.
+  const selectTheme = useCallback((value) => {
+    const next = themeApi.normalizeTheme(value);
+    if (next) setTheme(next);
+  }, []);
+
+  return { theme, toggleTheme, selectTheme };
 }

@@ -17,7 +17,8 @@ import Icon from './Icon';
 // can also include the PDF sheet here, while the editor retains its dedicated SHEET-tab
 // download. `variant="primary"` styles the trigger as the workspace's primary Save button.
 // VTT converters (Foundry/Roll20) exist under src/vtt but are unlisted until they are
-// tested end-to-end.
+// tested end-to-end. When the host shell offers a "Make a token" destination
+// (`shell.links.makeToken`), it closes the menu as an ordinary link in the same tab.
 export default function ExportMenu({
   id,
   includeSheet = false,
@@ -25,6 +26,7 @@ export default function ExportMenu({
   variant = "default",
   label = "Export",
   iconOnly = false,
+  makeToken = shell.links.makeToken,
 }) {
   const { templateSet } = useSheetTemplateSetting();
   const { colours } = useSheetColoursSetting();
@@ -155,6 +157,19 @@ export default function ExportMenu({
               {busy === item.kind ? (item.busyText ?? "Exporting…") : item.text}
             </button>
           ))}
+          {makeToken ? (
+            <>
+              <span className="fcb-export-menu-divider" role="separator" />
+              <a
+                className="fcb-export-menu-item fcb-export-menu-link"
+                href={makeToken.href}
+                role="menuitem"
+                title={makeToken.title ?? makeToken.label}
+              >
+                Make a token
+              </a>
+            </>
+          ) : null}
         </div>
       )}
     </div>

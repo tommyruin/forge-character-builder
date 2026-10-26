@@ -1,6 +1,8 @@
 import Icon from './Icon';
+import UtilityBadge from './UtilityBadge';
 
 // Header utility: shows whether edits are written as you go, and flips it.
+// The corner badge is a tick while autosave is on and a slash while it is off.
 export default function AutosaveToggle({ enabled, onToggle }) {
   const label = enabled ? 'Autosave on' : 'Autosave off';
   return (
@@ -15,7 +17,7 @@ export default function AutosaveToggle({ enabled, onToggle }) {
       type="button"
     >
       <Icon name="autosave" />
-      <span className="fcb-autosave-utility-dot" aria-hidden="true" />
+      <UtilityBadge state={enabled ? 'on' : 'off'} />
     </button>
   );
 }

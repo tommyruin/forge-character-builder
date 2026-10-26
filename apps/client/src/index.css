@@ -174,6 +174,12 @@
   --fcb-cyan: var(--dmf-primary);
   --fcb-teal: var(--dmf-success);
   --fcb-amber: var(--dmf-primary);
+  /* Selected tiles (the active section tab, the current tool, a checked menu
+     item): a primary border and fill with primary text, lightened on the dark
+     themes and deepened on light so the text keeps its contrast. */
+  --fcb-selected-text: var(--fcb-primary-light);
+  --fcb-selected-fill: color-mix(in srgb, var(--dmf-primary) 18%, transparent);
+  --fcb-control-radius: var(--dmf-control-radius, 8px);
   --fcb-red: var(--dmf-danger);
   --fcb-green: var(--dmf-success);
   /* Status palette. Derived from the theme's own danger/success/warning hues so
@@ -250,18 +256,13 @@
 }
 
 :root[data-theme="light"] {
+  --fcb-selected-text: var(--dmf-primary-strong);
+
   color-scheme: light;
 }
 
 :root[data-theme="retro"] body {
   letter-spacing: 0.02em;
-}
-
-:root[data-theme="retro"] .fcb-character-list-heading h1,
-:root[data-theme="retro"] .fcb-page-heading h1,
-:root[data-theme="retro"] .fcb-page-heading h2 {
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 * {
@@ -421,7 +422,7 @@ button:disabled {
   padding: var(--dmf-space-16) var(--fcb-gutter) var(--dmf-space-24);
   border-top: 1px solid var(--fcb-border-soft);
   color: var(--fcb-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--dmf-type-meta, 12px);
   text-align: center;
 }
 
@@ -441,12 +442,14 @@ button:disabled {
   overflow-anchor: none;
   z-index: 30;
   border-bottom: 1px solid var(--fcb-border);
-  /* Solid (was 0.94 + backdrop-blur). The blur is intentionally gone: it promotes
+  /* The host's header surface, so the bar matches the host site's own header
+     when moving between them.
+     Solid (was 0.94 + backdrop-blur). The blur is intentionally gone: it promotes
      this sticky bar to a GPU compositing layer, and on fractional-DPR displays (e.g. 1.25)
      the scaled layout lands the layer off the device-pixel grid, so the whole layer —
      text included — gets bilinearly resampled and the brand/tabs look fuzzy. The opaque
      surface also prevents page content bleeding through the pinned navigation stack. */
-  background: var(--fcb-bg-soft);
+  background: var(--dmf-header-background);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
 }
 
@@ -455,9 +458,12 @@ button:disabled {
   --fcb-topbar-group-gap: 6px;
 
   display: flex;
-  align-items: stretch;
+  /* Everything centres on the bar like the host's header: the brand, the tab
+     tiles and the utilities. --dmf-header-height is a minimum, so the bar
+     grows rather than clips when a row needs more. */
+  align-items: center;
   gap: 14px;
-  min-height: var(--dmf-tool-nav-height);
+  min-height: var(--dmf-header-height, 56px);
   /* Full-bleed bar background (.fcb-topbar), but the inner row is capped and
      centred to the same column as .fcb-main — and as the portal header — so the
      brand/tabs line up with the content gutters on wide viewports. */
@@ -569,50 +575,69 @@ button:disabled {
   color: var(--fcb-text-muted);
 }
 
-.fcb-cloud-utility-dot {
+/* State badges on the Drive sync and autosave utilities: a 12 px disc with a
+   glyph (tick, slash, "!" or an open arc), so the state never rests on colour
+   alone. The control's tooltip and accessible name carry it in words. */
+.fcb-utility-badge {
   position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--fcb-bg-soft);
+  right: 1px;
+  bottom: 1px;
+  display: grid;
+  width: 12px;
+  height: 12px;
+  place-items: center;
+  border: 1px solid var(--dmf-header-background);
   border-radius: 50%;
   background: var(--fcb-text-faint);
+  color: var(--dmf-background);
 }
 
-.fcb-cloud-utility.is-connected .fcb-cloud-utility-dot {
+.fcb-topbar-utility .fcb-utility-badge svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 1.8;
+}
+
+.fcb-utility-badge.is-on {
   background: var(--dmf-success);
+  color: #ffffff;
 }
 
-.fcb-cloud-utility:is(.is-connecting, .is-syncing)
-  .fcb-cloud-utility-dot {
-  background: var(--fcb-cyan);
-  animation: fcb-cloud-pulse 1.2s ease-in-out infinite;
+.fcb-utility-badge.is-warn {
+  background: var(--dmf-warning);
+  color: var(--dmf-background);
 }
 
-.fcb-cloud-utility:is(.is-reconnect, .is-error) .fcb-cloud-utility-dot {
-  background: var(--fcb-amber);
+.fcb-utility-badge.is-busy {
+  background: var(--dmf-primary);
+  color: var(--dmf-on-primary);
 }
 
-/* Autosave utility: green dot while edits save themselves, amber (with the
-   icon tinted to match) while the user is saving by hand. */
-.fcb-autosave-utility-dot {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--fcb-bg-soft);
-  border-radius: 50%;
-  background: var(--dmf-success);
+.fcb-utility-badge.is-busy svg {
+  animation: fcb-badge-spin 1s linear infinite;
 }
 
+@keyframes fcb-badge-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcb-utility-badge.is-busy svg {
+    animation: none;
+  }
+}
+
+/* Autosave off is a warning (edits wait for Save), so it takes the theme's
+   warning hue rather than the primary, which marks selected states. */
 .fcb-autosave-utility.is-off {
-  color: var(--fcb-amber);
+  color: var(--dmf-warning);
 }
 
-.fcb-autosave-utility.is-off .fcb-autosave-utility-dot {
-  background: var(--fcb-amber);
+.fcb-autosave-utility .fcb-utility-badge.is-off {
+  background: var(--dmf-warning);
+  color: var(--dmf-background);
 }
 
 /* Save and Undo are icon-only squares like the rest of the character group;
@@ -630,11 +655,11 @@ button:disabled {
   height: 7px;
   border: 1px solid var(--fcb-bg-soft);
   border-radius: 50%;
-  background: var(--fcb-amber);
+  background: var(--dmf-warning);
 }
 
 .fcb-manual-save-button[data-unsaved='true']:not(:disabled) {
-  border-color: var(--fcb-amber);
+  border-color: var(--dmf-warning);
 }
 
 .fcb-manual-save-button[data-unsaved='true'] .fcb-manual-save-dot {
@@ -659,50 +684,179 @@ button:disabled {
   stroke-width: 1.8;
 }
 
-/* Matches the marketing header's support glow so the one optional, generous
-   action reads the same on both surfaces. The glow keyframes are defined below. */
-.fcb-topbar-utility--support {
-  border-color: color-mix(in srgb, var(--dmf-primary) 55%, transparent);
-  background: color-mix(in srgb, var(--dmf-primary) 14%, var(--fcb-control));
+/* The host's support link: a quiet ghost icon with no outline, fill or glow at
+   rest, so the one optional, generous action never reads as a selected tool. */
+.fcb-topbar-utility--quiet {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--fcb-text-muted);
+}
+
+/* Utilities that carry a text label from 1280 px (the theme menu and the
+   host's Tools menu); icon-only squares below that. */
+.fcb-topbar-utility-label {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .fcb-topbar-utility--labelled {
+    display: inline-flex;
+    width: auto;
+    gap: 6px;
+    padding: 0 10px;
+    font-family: var(--dmf-font-body);
+    font-size: var(--dmf-type-control, 14px);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .fcb-topbar-utility-label {
+    display: inline;
+  }
+
+  .fcb-topbar-utility svg.fcb-topbar-utility-label {
+    display: block;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* The small menus the top bar opens (theme, Tools). */
+.fcb-theme-menu,
+.fcb-tools-nav {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.fcb-topbar-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  min-width: 10rem;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--fcb-border);
+  border-radius: var(--fcb-radius);
+  background: var(--fcb-surface);
+  box-shadow: var(--fcb-shadow);
+}
+
+.fcb-tools-nav .fcb-topbar-menu {
+  right: auto;
+  left: 0;
+  min-width: 13rem;
+}
+
+.fcb-topbar-menu-item {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--fcb-control-radius);
+  background: transparent;
   color: var(--fcb-text);
-  animation: fcb-support-glow 3.2s ease-in-out infinite;
+  cursor: pointer;
+  font-family: var(--dmf-font-body);
+  font-size: var(--dmf-type-control, 14px);
+  text-align: start;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-@keyframes fcb-support-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--dmf-primary) 16%, transparent),
-      0 0 10px -3px color-mix(in srgb, var(--dmf-primary) 36%, transparent);
-  }
-
-  50% {
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--dmf-primary) 30%, transparent),
-      0 0 20px -1px color-mix(in srgb, var(--dmf-primary) 62%, transparent);
-  }
+.fcb-topbar-menu-item:hover,
+.fcb-topbar-menu-item:focus-visible {
+  background: color-mix(in srgb, var(--fcb-text) 6%, transparent);
 }
 
-.fcb-topbar-utility--support svg {
-  color: var(--dmf-primary);
+.fcb-topbar-menu-item:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: -2px;
 }
 
-.fcb-topbar-utility--support:hover,
-.fcb-topbar-utility--support:focus-visible {
-  border-color: var(--dmf-primary);
-  background: color-mix(in srgb, var(--dmf-primary) 24%, var(--fcb-control));
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--dmf-primary) 32%, transparent),
-    0 0 18px -1px color-mix(in srgb, var(--dmf-primary) 62%, transparent);
-  animation-play-state: paused;
+.fcb-topbar-menu-item[aria-checked="true"] {
+  color: var(--fcb-selected-text);
+  font-weight: 600;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .fcb-topbar-utility--support {
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--dmf-primary) 24%, transparent),
-      0 0 14px -2px color-mix(in srgb, var(--dmf-primary) 48%, transparent);
-    animation: none;
+/* The entry that is this builder: the selected tile, not a link. */
+.fcb-topbar-menu-item.is-current {
+  border-color: var(--fcb-primary);
+  background: var(--fcb-selected-fill);
+  color: var(--fcb-selected-text);
+  cursor: default;
+  font-weight: 600;
+}
+
+.fcb-topbar-menu-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--fcb-border-soft);
+}
+
+.fcb-topbar-menu-label {
+  padding: 4px 8px 2px;
+  color: var(--fcb-text-muted);
+  font-size: var(--dmf-type-badge, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fcb-tools-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fcb-tools-nav-entry {
+  justify-content: flex-start;
+}
+
+.fcb-tools-nav-entry-icon {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.fcb-tools-nav-entry-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fcb-tools-nav-entry-label {
+  flex: 1 1 auto;
+}
+
+.fcb-tools-nav-external {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: var(--fcb-text-muted);
+}
+
+.fcb-theme-menu-icon,
+.fcb-tools-nav-icon {
+  flex: 0 0 auto;
+}
+
+/* On a phone the open character's actions fill the first row of the bar, so
+   the Tools button would push the utilities onto a row of their own. It stays
+   on the library pages, and the brand still links home. */
+@media (max-width: 460px) {
+  .fcb-app-shell--workspace .fcb-tools-nav {
+    display: none;
   }
 }
 
@@ -719,7 +873,11 @@ button:disabled {
 
 .fcb-global-tabs {
   flex: 1 1 0;
+  align-items: center;
+  gap: 4px;
   max-width: 720px;
+  /* Room for the tiles' focus ring inside the clipped strip. */
+  padding: 4px;
   overflow: hidden;
 }
 
@@ -802,9 +960,31 @@ button:disabled {
   background: color-mix(in srgb, var(--fcb-teal) 11%, transparent);
 }
 
-.fcb-tab-character.is-active {
-  border-color: var(--fcb-teal);
-  background: color-mix(in srgb, var(--fcb-teal) 15%, transparent);
+/* The section tabs are tiles, like the host's header controls: sentence case
+   at 14 px, and the active one is the selected tile (primary border, a light
+   primary fill and primary text) rather than a full-height underline. The
+   open character's tab keeps its teal tint at rest and takes the same
+   selected tile when active. */
+.fcb-global-tabs .fcb-tab {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--fcb-control-radius);
+  font-family: var(--dmf-font-body);
+  font-size: var(--dmf-type-control, 14px);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.fcb-global-tabs .fcb-tab.is-active {
+  border-color: var(--fcb-primary);
+  background: var(--fcb-selected-fill);
+  color: var(--fcb-selected-text);
+}
+
+.fcb-global-tabs .fcb-tab:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: 1px;
 }
 
 .fcb-tab-character-copy {
@@ -1332,6 +1512,26 @@ button:disabled {
 .fcb-export-menu-item:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+/* "Make a token" (from the host shell) sits under the exports as a link. */
+.fcb-export-menu-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--fcb-border-soft);
+}
+
+.fcb-export-menu-link {
+  text-decoration: none;
+}
+
+.fcb-export-menu-link:hover {
+  background: var(--fcb-control-hover);
+}
+
+.fcb-export-menu-link:focus-visible {
+  outline: 2px solid var(--fcb-primary);
+  outline-offset: -2px;
 }
 
 /* A tab whose content is split into sub-tabs (EQUIPMENT, MANAGE) wraps itself in this
@@ -2023,7 +2223,9 @@ button:disabled {
   margin: 0;
   color: var(--fcb-primary-light);
   font-family: var(--dmf-font-display);
-  font-size: clamp(2rem, 3vw, 2.25rem);
+  /* 28 px, in sentence case on every theme, with no glow: a page heading in
+     step with the host's other apps rather than larger than all of them. */
+  font-size: 1.75rem;
   font-weight: 700;
 }
 
@@ -2400,7 +2602,9 @@ button:disabled {
 .fcb-homebrew-heading h1 {
   color: var(--fcb-primary-light);
   font-family: var(--dmf-font-display);
-  font-size: clamp(2rem, 3vw, 2.25rem);
+  /* 28 px, in sentence case on every theme, with no glow: a page heading in
+     step with the host's other apps rather than larger than all of them. */
+  font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -2422,8 +2626,43 @@ button:disabled {
 
 .fcb-character-create-form .fcb-input,
 .fcb-character-create-form .fcb-button {
-  min-height: 44px;
-  font-size: 0.82rem;
+  min-height: 40px;
+  border-radius: var(--fcb-control-radius);
+  font-size: var(--dmf-type-control, 14px);
+}
+
+/* The library's buttons follow the host's hierarchy: one flat primary per
+   area ("Create & Open", a card's "Open"), outlined secondaries ("Import",
+   "Export"), the 8 px control radius, and no gradient or glow. */
+.fcb-character-list .fcb-button {
+  border-radius: var(--fcb-control-radius);
+  box-shadow: none;
+}
+
+.fcb-character-list .fcb-button:not(.fcb-button-primary, .fcb-button-danger) {
+  border-color: var(--dmf-border-strong, var(--fcb-border));
+  background: transparent;
+}
+
+.fcb-character-list .fcb-button:not(.fcb-button-primary, .fcb-button-danger):hover:not(:disabled) {
+  border-color: var(--fcb-primary);
+  background: color-mix(in srgb, var(--fcb-text) 6%, transparent);
+}
+
+.fcb-character-list .fcb-button-primary {
+  border-color: var(--dmf-primary);
+  background: var(--dmf-primary);
+  color: var(--dmf-on-primary);
+}
+
+.fcb-character-list .fcb-button-primary:hover:not(:disabled) {
+  border-color: var(--dmf-primary-strong);
+  background: var(--dmf-primary-strong);
+  color: var(--dmf-on-primary);
+}
+
+.fcb-character-list .fcb-button-danger {
+  background: transparent;
 }
 
 .fcb-character-create-form .fcb-input {
@@ -8017,7 +8256,7 @@ button:disabled {
     margin: 0;
     margin-inline: auto;
     padding: 5px var(--fcb-gutter) 6px;
-    font-size: 0.64rem;
+    font-size: var(--dmf-type-meta, 12px);
     line-height: 1.25;
   }
 
@@ -8025,7 +8264,7 @@ button:disabled {
     margin: 0;
     margin-inline: auto;
     padding: 5px var(--fcb-gutter) 6px;
-    font-size: 0.64rem;
+    font-size: var(--dmf-type-meta, 12px);
     line-height: 1.25;
   }
 

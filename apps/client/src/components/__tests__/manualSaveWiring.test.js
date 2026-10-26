@@ -28,7 +28,7 @@ describe('manual save wiring', () => {
     const utilities = header.slice(header.indexOf('fcb-topbar-utilities'));
     expect(utilities.indexOf('{leading}')).toBeLessThan(utilities.indexOf('fcb-cloud-utility'));
     expect(utilities.indexOf('<AutosaveToggle')).toBeLessThan(utilities.indexOf('fcb-topbar-divider'));
-    expect(utilities.indexOf('fcb-topbar-divider')).toBeLessThan(utilities.indexOf('Switch to ${nextTheme} theme'));
+    expect(utilities.indexOf('fcb-topbar-divider')).toBeLessThan(utilities.indexOf('<ThemeMenu'));
   });
 
   it('places Undo and Save to the left of Level Up', () => {

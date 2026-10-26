@@ -17,6 +17,7 @@ import CharacterList from './components/CharacterList';
 import BootSplash from './components/BootSplash';
 import CharacterLoadingState from './components/CharacterLoadingState';
 import { TopbarUtilities } from './components/TopbarUtilities';
+import ToolsNav from './components/ToolsNav';
 import FastStartActivityNotice from './components/FastStartActivityNotice';
 import { api } from './api.js';
 import { autosaveSettingStore } from './autosaveSetting.js';
@@ -343,6 +344,8 @@ export default function App() {
             )}
             <shell.VersionStamp />
           </div>
+          {/* The host's own navigation, when the shell supplies one. */}
+          <ToolsNav tools={shell.links.tools} />
           <nav
             className="fcb-primary-tabs fcb-global-tabs"
             aria-label="Character Builder sections"
@@ -358,6 +361,7 @@ export default function App() {
                   key={tab.key}
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={tab.label}
+                  title={tab.label}
                   className={`fcb-tab ${
                     isCharacterTab ? 'fcb-tab-character' : ''
                   } ${isActive ? 'is-active' : ''}`}
