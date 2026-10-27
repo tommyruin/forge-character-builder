@@ -208,7 +208,7 @@ export const NEW_ELEMENT_GROUPS = [
     label: 'Magic and equipment',
     items: [
       { id: 'spell', label: 'Spell', summary: 'Class lists, components, attack or save, damage and scaling', route: { kind: 'spell' } },
-      { id: 'weapon', label: 'Weapon', summary: 'Category, properties, damage, mastery', route: { kind: 'catalog', template: 'baseWeapon' } },
+      { id: 'weapon', label: 'Weapon type', summary: 'Category, properties, damage, mastery', route: { kind: 'catalog', template: 'baseWeapon' } },
       { id: 'armor', label: 'Armor or shield', summary: 'Group, AC, stealth, strength', route: { kind: 'catalog', template: 'baseArmor' } },
       { id: 'magicBase', label: 'Magic weapon or armor', summary: 'Built on a base item; bonus, riders, charges', route: { kind: 'item', template: 'weapon' } },
       { id: 'wondrous', label: 'Wondrous or worn item', summary: 'Rarity, attunement, effects while worn, charges', route: { kind: 'item', template: 'worn' } },
