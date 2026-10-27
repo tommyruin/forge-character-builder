@@ -80,9 +80,9 @@ interface RegistrationTarget {
  * built on. Control records (optional class features, supernatural gifts,
  * adjustment proxies) are not physical equipment and keep their own planner.
  */
-export function isItemContentElement(element: ParsedElement | undefined): boolean {
+export function isItemContentElement(element: ParsedElement | undefined, library?: ElementLibrary): boolean {
   if (element === undefined) return false;
-  if (element.identity.type === "Weapon" || element.identity.type === "Armor") return hasOwnContent(element);
+  if (element.identity.type === "Weapon" || element.identity.type === "Armor") return hasOwnContent(element, library);
   return isPhysicalEquipment(element);
 }
 
@@ -121,7 +121,7 @@ function registersAsNode(element: ParsedElement): boolean {
 export function isItemRegistrationNode(library: ElementLibrary, node: Dnd5eNode): boolean {
   const id = getAttr(node, "id");
   if (id === null || id === "") return false;
-  return isItemContentElement(elementById(library, id));
+  return isItemContentElement(elementById(library, id), library);
 }
 
 /** Every element id inside a document node, the node's own id first. */
@@ -187,7 +187,7 @@ export function itemOwnedRegistrationIds(document: Dnd5eDocument, library: Eleme
   for (const node of childElements(elementsNode, "element")) {
     const id = getAttr(node, "id");
     if (id === null || id === "") continue;
-    if (!isItemContentElement(elementById(library, id))) continue;
+    if (!isItemContentElement(elementById(library, id), library)) continue;
     for (const subId of subtreeIdsOf(node)) counts.set(subId, (counts.get(subId) ?? 0) + 1);
   }
   return counts;
@@ -232,7 +232,7 @@ export function planItemRegistrationSweep(
   for (const node of childElements(elementsNode, "element")) {
     const id = getAttr(node, "id");
     if (id === null || id === "" || itemNodes.has(id)) continue;
-    if (!isItemContentElement(elementById(library, id))) continue;
+    if (!isItemContentElement(elementById(library, id), library)) continue;
     itemNodes.set(id, node);
   }
   const outside = idsOutsideItemNodes(elementsNode, new Set(itemNodes.values()));
@@ -274,7 +274,7 @@ export function planItemRegistrationSweep(
   for (const entry of sum) {
     if (entry.id === "" || itemNodes.has(entry.id) || outside.has(entry.id)) continue;
     if (flatIds.includes(entry.id)) continue;
-    if (!isItemContentElement(elementById(library, entry.id))) continue;
+    if (!isItemContentElement(elementById(library, entry.id), library)) continue;
     flatIds.push(entry.id);
   }
   for (const id of flatIds) {

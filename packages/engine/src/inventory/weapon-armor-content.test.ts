@@ -9,6 +9,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { buildCharacterSheetModel } from "../sheet/model.js";
+import { computeStatistics } from "../statistics/calculator.js";
 import { pendingSelectionRules } from "../selection/selection.js";
 import { buildFighter3, freshService, sharedLibrary } from "../testing/character-factory.js";
 import type { InventoryItemDto } from "./inventory.js";
@@ -16,6 +17,9 @@ import type { InventoryItemDto } from "./inventory.js";
 const WEAPON = "ID_TEST_WEAPON_SENTINEL_BLADE";
 const ARMOR = "ID_TEST_ARMOR_SENTINEL_MAIL";
 const PLAIN_ARMOR = "ID_TEST_ARMOR_PLAIN_MAIL";
+const BUNDLE_WEAPON = "ID_TEST_WEAPON_BUNDLED_BLADE";
+const BUNDLE = "ID_TEST_GRANTS_BUNDLED_BLADE_GIFTS";
+const ATTUNED_WEAPON = "ID_TEST_WEAPON_BONDED_BLADE";
 
 const PACK = `<?xml version="1.0" encoding="utf-8"?>
 <elements>
@@ -62,6 +66,40 @@ const PACK = `<?xml version="1.0" encoding="utf-8"?>
 \t\t\t<grant type="Grants" id="ID_INTERNAL_GRANTS_STEALTH_DISADVANTAGE" />
 \t\t</rules>
 \t</element>
+	<element name="Bundled Blade" type="Weapon" source="Weapon Content Test" id="${BUNDLE_WEAPON}">
+		<supports>ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING</supports>
+		<description><p>A test blade whose gifts come in a bundle.</p></description>
+		<setters>
+			<set name="category">Weapons</set>
+			<set name="slot">onehand</set>
+			<set name="damage" type="piercing">1d4</set>
+		</setters>
+		<rules>
+			<grant type="Grants" id="${BUNDLE}" />
+		</rules>
+	</element>
+	<element name="Bundled Blade Gifts" type="Grants" source="Weapon Content Test" id="${BUNDLE}">
+		<rules>
+			<grant type="Vision" id="ID_VISION_BLINDSIGHT" />
+			<select type="Language" name="Bundled Tongue" />
+		</rules>
+	</element>
+	<element name="Bonded Blade" type="Weapon" source="Weapon Content Test" id="${ATTUNED_WEAPON}">
+		<supports>ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING</supports>
+		<description><p>A test blade that needs a bond.</p></description>
+		<setters>
+			<set name="category">Weapons</set>
+			<set name="slot">onehand</set>
+			<set name="damage" type="piercing">1d4</set>
+			<set name="attunement">true</set>
+		</setters>
+		<rules>
+			<stat name="ac:misc" value="1" />
+			<grant type="Vision" id="ID_VISION_BLINDSIGHT" />
+			<grant type="Spell" id="ID_PHB_SPELL_BURNING_HANDS" />
+			<select type="Language" name="Bonded Tongue" />
+		</rules>
+	</element>
 </elements>
 `;
 
@@ -166,5 +204,73 @@ describe("plain armor content", () => {
     const xml = service.exportCharacterXml(id);
     expect(sumIds(xml)).toEqual(expect.arrayContaining([PLAIN_ARMOR, "ID_INTERNAL_GRANTS_STEALTH_DISADVANTAGE"]));
     expect(xml.match(new RegExp(`id="${PLAIN_ARMOR}"`, "g"))).toHaveLength(3);
+  });
+});
+
+describe("plain weapon content granted through a bundle", () => {
+  it("registers what a Grants bundle on the weapon offers only while it is wielded", () => {
+    const { service, id, record } = addAndEquip(BUNDLE_WEAPON, "primary", "BundleContent");
+    expect(record.isEquipped).toBe(true);
+    expect(pendingNames(service, id)).toContain("Bundled Tongue");
+    expect(visionTokens(service, id)).toContain("Blindsight");
+
+    service.equipItem(id, record.identifier, "none");
+    expect(pendingNames(service, id)).not.toContain("Bundled Tongue");
+    expect(visionTokens(service, id)).not.toContain("Blindsight");
+    expect(sumIds(service.exportCharacterXml(id))).not.toContain(BUNDLE);
+  });
+
+  it("reloads byte-identically and leaves the count where it was once removed", () => {
+    const { service, id, record } = addAndEquip(BUNDLE_WEAPON, "primary", "BundleReload");
+    const xml = service.exportCharacterXml(id);
+    expect(xml.match(new RegExp(`<element type="Weapon" name="Bundled Blade" id="${BUNDLE_WEAPON}"`, "g"))).toHaveLength(1);
+    const reloaded = freshService(library);
+    const copy = reloaded.importCharacterXml("BundleReloadCopy", xml);
+    expect(reloaded.exportCharacterXml(copy.id)).toBe(xml);
+
+    service.removeItem(id, record.identifier);
+    const baseline = buildFighter3(library, "BundleBaseline");
+    expect(registeredCount(service.exportCharacterXml(id))).toBe(registeredCount(baseline.service.exportCharacterXml(baseline.id)));
+  });
+});
+
+describe("an attunement-requiring plain weapon", () => {
+  it("can be attuned, and conveys its stats, sense, spell and choice only while wielded and attuned", () => {
+    const { service, id, record } = addAndEquip(ATTUNED_WEAPON, "primary", "BondedBlade");
+    const acBefore = (stats: Record<string, number | undefined>) => stats["ac:misc"] ?? 0;
+    expect(record.isEquipped).toBe(true);
+    expect(record.isAttunable).toBe(true);
+
+    // Wielded but not attuned: inert.
+    expect(acBefore(computeStatistics(service.getCharacter(id), library))).toBe(0);
+    expect(pendingNames(service, id)).not.toContain("Bonded Tongue");
+    expect(visionTokens(service, id)).not.toContain("Blindsight");
+    expect(sumIds(service.exportCharacterXml(id))).not.toContain("ID_PHB_SPELL_BURNING_HANDS");
+
+    const attuned = service.attuneItem(id, record.identifier, true);
+    expect(attuned.attunedItemCount).toBe(1);
+    expect(acBefore(computeStatistics(service.getCharacter(id), library))).toBe(1);
+    expect(pendingNames(service, id)).toContain("Bonded Tongue");
+    expect(visionTokens(service, id)).toContain("Blindsight");
+    expect(sumIds(service.exportCharacterXml(id))).toContain("ID_PHB_SPELL_BURNING_HANDS");
+
+    // Attuned but not in hand: inert again, the bond still held.
+    service.equipItem(id, record.identifier, "none");
+    service.attuneItem(id, record.identifier, true);
+    expect(service.getInventory(id).attunedItemCount).toBe(1);
+    expect(acBefore(computeStatistics(service.getCharacter(id), library))).toBe(0);
+    expect(pendingNames(service, id)).not.toContain("Bonded Tongue");
+    expect(visionTokens(service, id)).not.toContain("Blindsight");
+    expect(sumIds(service.exportCharacterXml(id))).not.toContain("ID_PHB_SPELL_BURNING_HANDS");
+
+    service.equipItem(id, record.identifier, "primary");
+    expect(pendingNames(service, id)).toContain("Bonded Tongue");
+    service.attuneItem(id, record.identifier, false);
+    expect(pendingNames(service, id)).not.toContain("Bonded Tongue");
+    expect(sumIds(service.exportCharacterXml(id))).not.toContain("ID_PHB_SPELL_BURNING_HANDS");
+
+    service.removeItem(id, record.identifier);
+    const baseline = buildFighter3(library, "BondedBaseline");
+    expect(registeredCount(service.exportCharacterXml(id))).toBe(registeredCount(baseline.service.exportCharacterXml(baseline.id)));
   });
 });

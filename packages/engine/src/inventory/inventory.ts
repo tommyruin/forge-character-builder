@@ -352,24 +352,41 @@ export function contentElementOf(
 ): ParsedElement | undefined {
   if (item.adorners.length > 0) return elementById(library, item.adorners[0]!);
   const element = elementById(library, item.itemId);
-  if (hasOwnContent(element)) return element;
+  if (hasOwnContent(element, library)) return element;
   return isWearableElement(element) ? element : undefined;
 }
 
 /**
  * A physical Weapon or Armor that offers a choice or grants something beyond
- * a marker (a sense, a spell, a language). Its base registration only lists
- * the element and its direct grants flat, which is enough for a stat or a
- * marker but leaves a choice, or a sense the sheet reads from the element
- * tree, unseen. Such an element is its own record content: registered as a
- * node while it conveys its benefits, like a worn magic item.
+ * a marker (a sense, a spell, a language), directly or through a `Grants`
+ * bundle that does. Its base registration only lists the element and its
+ * direct grants flat, which is enough for a stat or a marker but leaves a
+ * choice, a sense the sheet reads from the element tree, or anything a bundle
+ * grants in turn, unseen. Such an element is its own record content:
+ * registered as a node while it conveys its benefits, like a worn magic item.
+ *
+ * Bundles are looked into only when a library is given; without one, a
+ * `Grants` grant counts as a marker. The corpus's own weapons and armor grant
+ * only rule-less markers, so either way they keep their flat registration.
  */
-export function hasOwnContent(element: ParsedElement | undefined): boolean {
+export function hasOwnContent(element: ParsedElement | undefined, library?: ElementLibrary): boolean {
   if (element === undefined) return false;
   if (element.identity.type !== "Weapon" && element.identity.type !== "Armor") return false;
-  return element.rules.some(
-    (rule) => rule.kind === "select" || (rule.kind === "grant" && (rule.type ?? "").trim().toLowerCase() !== "grants"),
-  );
+  return grantsBeyondMarkers(element, library, new Set([element.identity.id]));
+}
+
+/** Whether an element's rules offer a choice or grant more than rule-less markers. */
+function grantsBeyondMarkers(element: ParsedElement, library: ElementLibrary | undefined, seen: Set<string>): boolean {
+  for (const rule of element.rules) {
+    if (rule.kind === "select") return true;
+    if (rule.kind !== "grant") continue;
+    if ((rule.type ?? "").trim().toLowerCase() !== "grants") return true;
+    if (library === undefined || rule.id === undefined || rule.id === "" || seen.has(rule.id)) continue;
+    seen.add(rule.id);
+    const bundle = elementById(library, rule.id);
+    if (bundle !== undefined && grantsBeyondMarkers(bundle, library, seen)) return true;
+  }
+  return false;
 }
 
 /**
@@ -837,7 +854,7 @@ function planTreeAppendEdits(
 ): RawEdit[] {
   if (base.identity.type !== "Armor") return [];
   // Armor with content of its own is registered in full by the item-registration sweep.
-  if (hasOwnContent(base)) return [];
+  if (hasOwnContent(base, library)) return [];
   const elementsNode = document.root.build.elements?.node;
   if (!elementsNode) return [];
   const existing = childElements(elementsNode, "element").find((node) => getAttr(node, "id") === base.identity.id);
@@ -1533,7 +1550,8 @@ export function planEquipItemEdits(
  * storage; see `planEquipItemEdits`). Attunement is a magical bond, not
  * physical possession, so it persists through stowage -- but a stowed item
  * conveys nothing, so its registration goes with it and comes back when the
- * item is taken out and put to use again.
+ * item is taken out and put to use again. The destination must be one of
+ * the character's containers (`state.storages`); null or "" carries it.
  */
 export function planSetItemStorageEdits(
   state: CharacterState,
@@ -1549,6 +1567,11 @@ export function planSetItemStorageEdits(
   const next = storage ?? "";
   const current = item.storage ?? "";
   if (next === current) return [];
+  // Only a container the character has can take an item; taking one out (an
+  // empty name) is always allowed, even from a container no longer listed.
+  if (next !== "" && !state.storages.includes(next)) {
+    throw engineError("invalid-argument", `unknown storage container '${next}'`);
+  }
   const moveAmount = amount ?? item.amount;
   if (!Number.isInteger(moveAmount) || moveAmount < 1 || moveAmount > item.amount) {
     throw engineError("invalid-argument", `invalid storage amount '${amount}'`);

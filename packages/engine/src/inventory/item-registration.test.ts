@@ -21,6 +21,7 @@ import { pendingSelectionRules, selectionOptions } from "../selection/selection.
 import { buildCorpusLibrary } from "../testing/corpus.js";
 import { seededRng } from "../testing/character-factory.js";
 import type { InventoryDto, InventoryItemDto } from "./inventory.js";
+import { isItemContentElement } from "./item-registration.js";
 
 const SCALE_MAIL = "ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL";
 const CHAIN_SHIRT = "ID_WOTC_ARMOR_MEDIUM_CHAIN_SHIRT";
@@ -530,6 +531,24 @@ describe("Imported compatible characters", () => {
       expect(service.exportCharacterXml(name)).toBe(xml);
     },
   );
+});
+
+describe("which weapons and armor are their own item content", () => {
+  let library: ElementLibrary;
+
+  beforeAll(async () => {
+    library = await corpusLibrary();
+  }, 120_000);
+
+  // Looking into a weapon's or armor's Grants bundles must not change how any
+  // shipped weapon or armor registers: they grant only rule-less markers, so
+  // saved characters keep the flat base registration they always had.
+  it("counts no shipped weapon or armor as its own content", () => {
+    const physical = [...(library.byType.get("Weapon") ?? []), ...(library.byType.get("Armor") ?? [])];
+    expect(physical.length).toBeGreaterThan(50);
+    expect(physical.filter((element) => isItemContentElement(element, library)).map((element) => element.identity.id)).toEqual([]);
+    expect(isItemContentElement(library.byId.get(SCALE_MAIL), library)).toBe(false);
+  });
 });
 
 describe("legacy flat registrations", () => {

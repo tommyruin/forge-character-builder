@@ -130,6 +130,54 @@ describe("item storage assignment", () => {
   });
 });
 
+describe("storage container names", () => {
+  it("rejects a container name that is not one of the character's storages", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Storage Unknown").id;
+    const dto = service.addItem(id, { itemId: LONGSWORD, amount: 1, baseElementId: null });
+    const longsword = dto.items[0]!;
+    const before = service.exportCharacterXml(id);
+    for (const name of ["Bag of Holding", "#3", " #1", "#1 "]) {
+      expect(() => service.setItemStorage(id, longsword.identifier, name)).toThrow(
+        expect.objectContaining({ code: "invalid-argument" }),
+      );
+    }
+    // A rejected move changes nothing: the sword is still carried and wielded.
+    expect(service.exportCharacterXml(id)).toBe(before);
+  });
+
+  it("rejects an unknown container for a partial move too", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Storage Unknown Split").id;
+    const dto = service.addItem(id, { itemId: POTION, amount: 3, baseElementId: null });
+    expect(() => service.setItemStorage(id, dto.items[0]!.identifier, "Cart", 2)).toThrow(
+      expect.objectContaining({ code: "invalid-argument" }),
+    );
+  });
+
+  it("still lets an item leave a container the character no longer lists", () => {
+    const service = new CharacterService(undefined, library);
+    const id = service.createCharacter("Storage Unlisted").id;
+    let dto = service.addItem(id, { itemId: POTION, amount: 4, baseElementId: null });
+    service.setItemStorage(id, dto.items[0]!.identifier, "#1");
+    const xml = service.exportCharacterXml(id).replace("<location>#1</location>", "<location>Old Cart</location>");
+    const imported = service.importCharacterXml("Storage Unlisted 2", xml);
+    const stowed = byItemId(buildInventoryDto(imported, library), POTION)!;
+    expect(stowed.storage).toBe("Old Cart");
+    expect(imported.storages).not.toContain("Old Cart");
+
+    // Part of it comes out, then the rest moves to a listed container.
+    dto = service.setItemStorage(imported.id, stowed.identifier, null, 1);
+    expect(dto.items.find((i) => i.itemId === POTION && i.storage === null)!.amount).toBe(1);
+    dto = service.setItemStorage(imported.id, stowed.identifier, "#2");
+    expect(dto.items.find((i) => i.identifier === stowed.identifier)!.storage).toBe("#2");
+    dto = service.setItemStorage(imported.id, stowed.identifier, "");
+    const rows = dto.items.filter((i) => i.itemId === POTION);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ storage: null, amount: 4 });
+  });
+});
+
 describe("partial item storage moves", () => {
   it("stows part of a stack and leaves the remainder carried", () => {
     const service = new CharacterService(undefined, library);

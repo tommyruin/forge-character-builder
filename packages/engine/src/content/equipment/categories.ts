@@ -369,6 +369,26 @@ function slug(value: string): string {
   return value.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+/**
+ * The base a Magic Item's type line claims but nothing supplies: "weapon" or
+ * "armor" when its `<set name="type">` says Weapon or Armor and it has no
+ * `weapon`/`armor` setter naming a base to lay it over; otherwise null.
+ *
+ * In the .dnd5e format, a Magic Item is a weapon or armour only through that base
+ * setter. The type setter's `addition` ("longsword" in "Weapon (longsword)")
+ * is the printed type line and nothing more, so an item authored with it but
+ * no base is slotless gear: worn, never wielded, and with no attack row. Every
+ * shipped magic weapon that is not ammunition names its base, and stackable
+ * ammunition needs none, so it is not reported.
+ */
+export function missingMagicItemBase(element: ParsedElement | undefined): "weapon" | "armor" | null {
+  if (element?.identity.type !== "Magic Item") return null;
+  if (setter(element, "weapon") !== undefined || setter(element, "armor") !== undefined) return null;
+  if (normalizedText(setterValue(element, "stackable")).toLocaleLowerCase() === "true") return null;
+  const type = normalizedText(setterValue(element, "type")).toLocaleLowerCase();
+  return type === "weapon" || type === "armor" ? type : null;
+}
+
 function categoryFor(element: ParsedElement): EquipmentCategoryDto {
   const { type } = element.identity;
   if (type === "Weapon") {
