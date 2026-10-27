@@ -122,7 +122,7 @@ function registeredSubtreeIds(node: RegisteredElement): string[] {
 function itemGrantSources(state: CharacterState, library: ElementLibrary): Map<string, string[]> {
   const sources = new Map<string, string[]>();
   for (const node of state.elements) {
-    if (!isItemContentElement(library.byId.get(node.id))) continue;
+    if (!isItemContentElement(library.byId.get(node.id), library)) continue;
     const record = state.items.find((item) => (item.adorners[0] ?? item.itemId) === node.id);
     if (record === undefined) continue;
     const name = library.byId.get(node.id)?.identity.name ?? record.name;

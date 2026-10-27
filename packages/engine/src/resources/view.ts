@@ -8,8 +8,9 @@
  *    cast of a spell that entry grants, declared by the draft in the character's
  *    file, or carried by the compiled element of a pack the character uses;
  *  - a tracker the player added by hand;
- *  - a book feature whose sheet usage line states a count and a rest
- *    ("2/Short Rest", "{{proficiency}}/Long Rest" once its token is filled in).
+ *  - a book feature (or an active control item, such as a Supernatural Gift)
+ *    whose sheet usage line states a count and a rest ("2/Short Rest",
+ *    "{{proficiency}}/Long Rest" once its token is filled in).
  *    Lines in any other shape ("Channel Divinity", "1/Turn") are not tracked.
  *
  * Trackers naming one pool are a single resource. What is spent is stored under

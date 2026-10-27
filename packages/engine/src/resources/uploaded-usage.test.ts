@@ -7,6 +7,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { replaceLibraryFiles, type ElementLibrary } from "../content/library.js";
 import { buildFighter3, sharedLibrary } from "../testing/character-factory.js";
+import { buildCharacterSheetModel } from "../sheet/model.js";
+import type { CharacterService } from "../character/service.js";
 import type { ResourcesDto, TrackerDto } from "@forge-cb/api";
 
 const SOURCE = "Glimmerfen Notes";
@@ -98,13 +100,45 @@ describe("usage lines on uploaded elements", () => {
     expect(tracker(service.restCharacter(id, { kind: "short" }), "Reed Whisper")).toMatchObject({ used: 0, remaining: 1 });
   });
 
-  // Known gap: an Item or Magic Item added through Manage > Additional features registers (it is
-  // listed as enabled) but its sheet usage line never reaches the Resources view. `it.fails` turns
-  // red once that is fixed, so it can become an ordinary test then.
-  it.fails("tracks the usage of an uploaded Additional features item once it is added", () => {
+  it("tracks the usage of an uploaded Additional features item once it is added", () => {
     const { service, id } = fighter();
+    expect(tracker(service.getResources(id), "Heron Blessing")).toBeUndefined();
     service.setCharacterControl(id, { key: `item:${GIFT}`, enabled: true });
     expect(service.getCharacterAdjustments(id).find((entry) => entry.elementId === GIFT)?.enabled).toBe(true);
-    expect(tracker(service.getResources(id), "Heron Blessing")).toMatchObject({ max: 3, recharge: "longRest" });
+    expect(tracker(service.getResources(id), "Heron Blessing")).toMatchObject({
+      id: `usage:${GIFT}`,
+      max: 3,
+      recharge: "longRest",
+      sources: [{ name: "Heron Blessing", elementId: GIFT }],
+    });
+    // Switched off again, it is no longer a resource.
+    service.setCharacterControl(id, { key: `item:${GIFT}`, enabled: false });
+    expect(tracker(service.getResources(id), "Heron Blessing")).toBeUndefined();
+  });
+
+  it("tracks a gift carried as an equipment record, and counts it once when it is also switched on", () => {
+    const { service, id } = fighter();
+    service.addItem(id, { itemId: GIFT, amount: 1 });
+    expect(trackersFor(service, id)).toHaveLength(1);
+    service.setCharacterControl(id, { key: `item:${GIFT}`, enabled: true });
+    expect(trackersFor(service, id)).toEqual([expect.objectContaining({ id: `usage:${GIFT}`, max: 3 })]);
+  });
+
+  it("prints the gift's uses once among the sheet's resources, and not as a feature", () => {
+    const { service, id } = fighter();
+    expect(sheetLines(service, id).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
+    service.setCharacterControl(id, { key: `item:${GIFT}`, enabled: true });
+    const lines = sheetLines(service, id).filter((line) => line.includes("Heron Blessing"));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/^Resources\. .*Heron Blessing \[ \] \[ \] \[ \] \(LR\)/);
+    expect(lines[0]!.match(/Heron Blessing/g)).toHaveLength(1);
   });
 });
+
+const trackersFor = (service: CharacterService, id: string): TrackerDto[] =>
+  service.getResources(id).trackers.filter((entry) => entry.label === "Heron Blessing");
+
+/** Every printed line of the character's full sheet. */
+const sheetLines = (service: CharacterService, id: string): string[] =>
+  buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" }).pages
+    .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))));

@@ -24,6 +24,9 @@ const GIFT = "ID_TEST_MAGIC_ITEM_HEARTSTONE_GIFT";
 const GIFT_NAME = "Heartstone Gift";
 const WEAPON = "ID_TEST_MAGIC_ITEM_HEARTSTONE_BLADE";
 const WEAPON_NAME = "Heartstone Blade";
+const BUNDLE_WEAPON = "ID_TEST_WEAPON_HEARTSTONE_PICK";
+const BUNDLE_WEAPON_NAME = "Heartstone Pick";
+const BUNDLE = "ID_TEST_GRANTS_HEARTSTONE_PICK_GIFTS";
 
 /**
  * A Supernatural Gift and a magic dagger that grants it. The gift is a
@@ -53,6 +56,23 @@ const HOMEBREW_PACK = `<?xml version="1.0" encoding="utf-8"?>
 \t\t\t<set name="rarity">Rare</set>
 \t\t\t<set name="weapon">Dagger</set>
 \t\t</setters>
+\t\t<rules>
+\t\t\t<grant type="Magic Item" id="${GIFT}" />
+\t\t</rules>
+\t</element>
+\t<element name="${BUNDLE_WEAPON_NAME}" type="Weapon" source="Adjustment Grants Test" id="${BUNDLE_WEAPON}">
+\t\t<supports>ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, ID_INTERNAL_DAMAGE_TYPE_PIERCING</supports>
+\t\t<description><p>A test pick whose gift comes in a bundle.</p></description>
+\t\t<setters>
+\t\t\t<set name="category">Weapons</set>
+\t\t\t<set name="slot">onehand</set>
+\t\t\t<set name="damage" type="piercing">1d4</set>
+\t\t</setters>
+\t\t<rules>
+\t\t\t<grant type="Grants" id="${BUNDLE}" />
+\t\t</rules>
+\t</element>
+\t<element name="Heartstone Pick Gifts" type="Grants" source="Adjustment Grants Test" id="${BUNDLE}">
 \t\t<rules>
 \t\t\t<grant type="Magic Item" id="${GIFT}" />
 \t\t</rules>
@@ -108,6 +128,16 @@ describe.each(["2014", "2024"])("item-granted adjustments (%s rules)", (mode) =>
     expect(topLevelIds(service, id)).toContain(WEAPON);
     expect(service.getCharacter(id).sum.elements.some((entry) => entry.id === GIFT)).toBe(true);
     expect(gift(service, id)).toMatchObject({ enabled: false, grantedBy: [WEAPON_NAME] });
+  });
+
+  it("names a plain weapon whose gift comes through a Grants bundle as granting it", () => {
+    const { service, id } = character("Heartstone Bundle");
+    const dto = service.addItem(id, { itemId: BUNDLE_WEAPON, amount: 1 });
+    const record = dto.items.find((item) => item.itemId === BUNDLE_WEAPON)!;
+    service.equipItem(id, record.identifier, "primary");
+
+    expect(service.getCharacter(id).sum.elements.some((entry) => entry.id === GIFT)).toBe(true);
+    expect(gift(service, id)).toMatchObject({ enabled: false, grantedBy: [BUNDLE_WEAPON_NAME] });
   });
 
   it("enables and disables the character's own copy without touching the item's", () => {

@@ -1314,6 +1314,29 @@ function activeControlGrantIds(state: CharacterState, library: ElementLibrary): 
   return out;
 }
 
+/**
+ * The character's active control items — Supernatural Gifts, optional class
+ * features, the `Additional …` records — in the order a reader meets them: one
+ * switched on through Manage › Additional features is registered in the
+ * elements tree and listed in the sum, and one carried as an equipment record
+ * is on while its benefits are. Each id appears once, however it is held.
+ */
+function activeControlItemIds(state: CharacterState, library: ElementLibrary): string[] {
+  const out: string[] = [];
+  const isControl = (id: string): boolean => {
+    const element = library.byId.get(id);
+    return element !== undefined && (element.identity.type === "Item" || element.identity.type === "Magic Item")
+      && !isPhysicalEquipment(element);
+  };
+  for (const entry of state.sum.elements) {
+    if (isControl(entry.id) && !out.includes(entry.id)) out.push(entry.id);
+  }
+  for (const item of state.items) {
+    if (isControl(item.itemId) && !out.includes(item.itemId) && itemBenefitsActive(library, item)) out.push(item.itemId);
+  }
+  return out;
+}
+
 /** Ordered feature ids: preserve registration order, then make wrapper
  * dependencies parent-before-child (observed: a selected enemy or
  * terrain follows the feature that explains that selection). */
@@ -1507,6 +1530,25 @@ function collectFeatures(
       description: substitute(description.text, values, inline),
     });
   }
+  // A control item is a switch, not a feature, so it never prints in a
+  // features box; but a usage line it states ("3/Long Rest" on a DM's gift) is
+  // a limited use the character tracks, the same as a feat's.
+  const usageIds = new Set(usages.map((entry) => entry.elementId));
+  for (const id of activeControlItemIds(state, library)) {
+    const element = library.byId.get(id);
+    const sheet = element?.sheets[0];
+    if (element === undefined || sheet === undefined || usageIds.has(id)) continue;
+    if (element.sheets.some((entry) => entry.display === false)) continue;
+    const description = sheetDescriptionAtLevel(sheet, state.level);
+    const usageLine = sheet.usage ?? description?.usage;
+    if (usageLine === undefined || usageLine === "") continue;
+    usageIds.add(id);
+    usages.push({
+      elementId: id,
+      title: sheet.alt !== undefined && sheet.alt !== "" ? sheet.alt : element.identity.name,
+      usage: substitute(usageLine, values, inline),
+    });
+  }
   const rows = (filter: (item: CollectedFeature) => boolean): SheetRow[] =>
     out.filter(filter).map((item) => ({
       kind: "lines",
@@ -1537,7 +1579,8 @@ function collectFeatures(
 }
 
 /**
- * The usage line of every feature the sheet prints that states one, with its
+ * The usage line of every feature the sheet prints that states one, and of
+ * every active control item (a Supernatural Gift) that does, with its
  * `{{token}}` filled in ("{{proficiency}}/Long Rest" is "3/Long Rest"). The
  * Resources page reads its book trackers from these.
  */
