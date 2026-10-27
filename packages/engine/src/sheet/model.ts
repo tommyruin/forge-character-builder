@@ -797,7 +797,9 @@ function buildFormValues(
       set(`SlotsTotal ${18 + level}`, caster.slotsPerLevel[level - 1] ?? 0);
       set(`SlotsRemaining ${18 + level}`, caster.slotsPerLevel[level - 1] ?? 0);
     }
-    caster.knownSpells.slice(0, 120).forEach((spell, index) => set(`Spells ${1014 + index}`, spellShortName(spell.name, spell.alias)));
+    // No current template has these legacy fields (the spell pages print the
+    // list), so every known spell is written rather than an arbitrary first 120.
+    caster.knownSpells.forEach((spell, index) => set(`Spells ${1014 + index}`, spellShortName(spell.name, spell.alias)));
   }
   return fields;
 }
@@ -2128,7 +2130,8 @@ function overflowEntry(title: string, rows: readonly EquipmentRow[]): InventoryC
 /**
  * The rows of the equipment page's tables: adventuring gear (40 rows), magic
  * items (20) and valuables (10, the Treasure category: gems, art objects), plus
- * the cargo of the two named containers (10 rows each).
+ * the cargo of the two named containers (10 rows each). A stowed item prints
+ * only with its container's cargo, never in the other tables as well.
  *
  * Magic and valuable overflow continues in the gear table under a labeled
  * separator row while it has room. Whatever no table can hold (gear past row
@@ -2157,6 +2160,9 @@ function equipmentTables(
   inventory.items.forEach((item, index) => {
     if (isHiddenInventoryItem(state.items[index], library)) return;
     const record = state.items[index]!;
+    // A stowed item prints with its container's cargo below (its rows, or the
+    // notes column for a container without rows), not in these tables too.
+    if ((record.storage ?? "") !== "") return;
     const displayName = itemDisplayName(record, library);
     const row: EquipmentRow = {
       name: item.isEquipped ? `[${displayName}]` : displayName,
@@ -2206,8 +2212,12 @@ function equipmentTables(
     cargo[index] = rows.slice(0, CARGO_ROWS);
     if (rows.length > CARGO_ROWS) overflow.push(overflowEntry(`${container}, stowed (continued)`, rows.slice(CARGO_ROWS)));
   });
-  for (const [container, rows] of stowed) {
-    if (!named.has(container)) overflow.push(overflowEntry(`${container}, stowed`, rows));
+  // The other containers in the character's order, then any container an
+  // item names that the character no longer lists, one entry each.
+  const unnamed = [...new Set([...state.storages, ...stowed.keys()])].filter((container) => !named.has(container));
+  for (const container of unnamed) {
+    const rows = stowed.get(container);
+    if (rows !== undefined) overflow.push(overflowEntry(`${container}, stowed`, rows));
   }
   return { gear, magic, valuables, cargo, overflow };
 }

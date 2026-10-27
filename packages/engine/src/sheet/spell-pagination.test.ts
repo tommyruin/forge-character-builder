@@ -84,6 +84,34 @@ describe("spell-list page filling", () => {
     }
   }, 180_000);
 
+  it("writes every known spell to the legacy spell fields, past the old 120", () => {
+    const { service, id } = buildCharacter(library, { id: "ManySpells", classId: ID.CLASS_FIGHTER, levels: 17 });
+    const spellIds = (library.byType.get("Spell") ?? []).map((element) => element.identity.id);
+    let granted = 0;
+    for (const spellId of spellIds) {
+      if (granted >= 130) break;
+      try {
+        service.addGrantedSpell(id, { spellId });
+        granted += 1;
+      } catch {
+        continue;
+      }
+    }
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, {
+      mode: "full",
+      include: { background: false, notes: false, spellCards: false, itemCards: false },
+    });
+    const legacy = Object.keys(model.formValues ?? {}).filter((key) => /^Spells \d+$/.test(key));
+    const listed = model.pages
+      .filter((page) => page.templateKind === "spell-list")
+      .flatMap((page) => page.spellcasting ?? [])
+      .flatMap((caster) => caster.sections)
+      .flatMap((section) => section.spells);
+    expect(listed.length).toBeGreaterThan(120);
+    expect(legacy).toHaveLength(listed.length);
+    expect(legacy.map((key) => model.formValues![key]).sort()).toEqual(listed.map((spell) => spell.name).sort());
+  });
+
   it("prints every slot level's circles even with no spells chosen there", async () => {
     // A 17th-level wizard with no spells picked still has 4/3/3/3/2/1/1/1/1
     // slots to track; a level with slots but nothing chosen keeps its band.

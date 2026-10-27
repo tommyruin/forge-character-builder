@@ -248,6 +248,63 @@ describe("what the equipment tables cannot hold", () => {
     expect(overflowItems(model, /^Cart, stowed\./)).toBe(3);
   });
 
+  /** Every name a table row or an overflow list prints, separator rows left out. */
+  const placedNames = (model: CharacterSheetModel): string[] => [
+    ...["equipment_page_gear", "equipment_page_magic_gear", "equipment_page_valuable",
+      "equipment_page_vehicle_1_cargo", "equipment_page_vehicle_2_cargo"]
+      .flatMap((prefix) => tableNames(model, prefix))
+      .filter((name) => !/ — CONTINUED$/.test(name)),
+    ...String(model.formValues?.["equipment_page_magic_items"] ?? "")
+      .split("\n\n")
+      .filter((entry) => /^[^.]*(?:\(continued\)|, stowed)\./.test(entry))
+      .flatMap((entry) => entry.replace(/^[^.]*\.\s*/, "").replace(/\.$/, "").split("; "))
+      .map((name) => name.replace(/ \([^)]*\)$/, "")),
+  ].map((name) => name.replace(/^\[(.*)\]$/, "$1"));
+
+  it("prints an item stowed in a container with cargo rows in those rows only", () => {
+    const state = loaded(6, 2, "Stowed");
+    const baseline = placedNames(buildCharacterSheetModel(state, library, { mode: "full" }));
+    state.storages = ["Saddlebags", "Backpack"];
+    // The last gear item and both magic items go in the saddlebags, the
+    // gear item before them in the backpack.
+    const added = state.items.slice(-8);
+    for (const record of added.slice(-3)) record.storage = "Saddlebags";
+    added[4]!.storage = "Backpack";
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    const cargo1 = tableNames(model, "equipment_page_vehicle_1_cargo");
+    const cargo2 = tableNames(model, "equipment_page_vehicle_2_cargo");
+    expect(cargo1).toHaveLength(3);
+    expect(cargo2).toHaveLength(1);
+    const tables = ["equipment_page_gear", "equipment_page_magic_gear", "equipment_page_valuable"]
+      .flatMap((prefix) => tableNames(model, prefix))
+      .map((name) => name.replace(/^\[(.*)\]$/, "$1"));
+    for (const name of [...cargo1, ...cargo2]) expect(tables, name).not.toContain(name);
+    // Nothing is lost or repeated: the same items print, each once.
+    expect(placedNames(model).sort()).toEqual(baseline.sort());
+  });
+
+  it("prints items in a container without cargo rows once, under that container's name", () => {
+    const state = loaded(12, 0, "Wagons");
+    const baseline = placedNames(buildCharacterSheetModel(state, library, { mode: "full" }));
+    state.storages = ["Saddlebags", "#2", "Cart", "Wagon"];
+    const added = state.items.slice(-12);
+    // Stowed out of container order, and one item in a container the
+    // character no longer lists.
+    added.slice(0, 2).forEach((record) => { record.storage = "Wagon"; });
+    added.slice(2, 5).forEach((record) => { record.storage = "Cart"; });
+    added[5]!.storage = "Lost chest";
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    const notes = String(model.formValues?.["equipment_page_magic_items"] ?? "").split("\n\n");
+    // One heading per extra container, in the character's container order.
+    expect(notes.map((entry) => entry.split(".")[0])).toEqual(["Cart, stowed", "Wagon, stowed", "Lost chest, stowed"]);
+    expect(overflowItems(model, /^Cart, stowed\./)).toBe(3);
+    expect(overflowItems(model, /^Wagon, stowed\./)).toBe(2);
+    expect(overflowItems(model, /^Lost chest, stowed\./)).toBe(1);
+    const gear = tableNames(model, "equipment_page_gear").map((name) => name.replace(/^\[(.*)\]$/, "$1"));
+    expect(gear).toHaveLength(baseline.length - 6);
+    expect(placedNames(model).sort()).toEqual(baseline.sort());
+  });
+
   it("prints the overflow in the column of the rendered sheet", async () => {
     const model = buildCharacterSheetModel(loaded(46, 0, "Render"), library, {
       mode: "full",
