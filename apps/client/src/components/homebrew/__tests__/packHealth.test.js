@@ -78,6 +78,29 @@ describe('pack health', () => {
     expect(problemsIn(after)).toEqual([]);
   });
 
+  it('names a magic weapon or armour with no base, and opens it to give it one', async () => {
+    const baseLibrary = await libraryWithHomebrew();
+    const typed = (name, typeLine) => {
+      const element = rawElement({ type: 'Magic Item', name, pack });
+      element.rawXml = element.rawXml.replace('</element>', `  <setters><set name="type">${typeLine}</set></setters>\n</element>`);
+      return element;
+    };
+    const blade = typed('Cinder Edge', 'Weapon');
+    const mail = typed('Ashen Mail', 'Armor');
+    const full = { ...pack, elements: [blade, mail] };
+    const findings = problemsIn(await checkPackHealth(await realApi(baseLibrary), full));
+    expect(findings.map((finding) => [finding.kind, finding.elementName, finding.missingType])).toEqual([
+      ['missing-base', 'Cinder Edge', 'Weapon'],
+      ['missing-base', 'Ashen Mail', 'Armor'],
+    ]);
+    expect(findings[0].message).toContain('says it is a weapon but has no base weapon, so it cannot be wielded');
+    expect(findings[0].message).toContain('New element › Magic weapon or armor');
+    expect(findingTitle(findings[0])).toBe('Has no base weapon');
+    expect(findingTitle(findings[1])).toBe('Has no base armour');
+    expect(fixFor(findings[0], full)).toMatchObject({ action: 'open', element: blade });
+    expect(fixFor(findings[1], full)).toMatchObject({ action: 'open', element: mail });
+  });
+
   it('does not count a deliberate replacement of a book element as a problem', async () => {
     const baseLibrary = await libraryWithHomebrew();
     const shield = baseLibrary.byId.get('ID_PHB_SPELL_SHIELD') ?? [...baseLibrary.byId.values()].find((element) => element.identity.type === 'Spell');

@@ -711,9 +711,15 @@ the character or its last copy of an entry removes it.
 - `checkPackContent({path, xml, overrides?})` -> `PackFindingDto[]`: checks a
   pack's compiled file against the loaded library without loading it. Kinds:
   `missing-grant`, `duplicate-id`, `unattachable`, `append-target`,
-  `invalid-requirements`, and `overrides` (a deliberate replacement, listed in
-  `overrides`, which is a note and not a fault). Each finding names the pack
-  element that carries it.
+  `invalid-requirements`, `missing-base`, and `overrides` (a deliberate
+  replacement, listed in `overrides`, which is a note and not a fault). Each
+  finding names the pack element that carries it. `missing-base` is a Magic
+  Item whose type line (`<set name="type">`) says Weapon or Armor but that has
+  no `weapon`/`armor` base setter, so it is plain worn gear: it can't be
+  wielded or worn as armour and has no attack row. `missingType` is the base it
+  lacks (`"Weapon"` or `"Armor"`). Stackable ammunition is not reported. The
+  same kind appears in the upload diagnostics for uploaded files; bundled
+  content produces none.
 
 ### Companion
 

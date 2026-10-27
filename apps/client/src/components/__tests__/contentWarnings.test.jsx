@@ -73,3 +73,26 @@ describe('Content warnings: a Background Feature nothing attaches', () => {
     expect(source).toContain('convertFindingInPack({ api, store: localStore, finding: diag })');
   });
 });
+
+describe('Content warnings: a magic weapon with no base', () => {
+  it('says what the item lacks and how to fix it', () => {
+    const diag = {
+      kind: 'missing-base',
+      file: 'imports/upload-7/blades.xml',
+      message: 'Cinder Edge (ID_HB_MC_MAGIC_ITEM_CINDER_EDGE) says it is a weapon but has no base weapon, so it cannot be wielded',
+      detail: 'give it a base weapon, or make it with New element › Magic weapon or armor',
+      elementId: 'ID_HB_MC_MAGIC_ITEM_CINDER_EDGE',
+      elementName: 'Cinder Edge',
+      missingType: 'Weapon',
+    };
+    const markup = renderToStaticMarkup(
+      createElement(UploadDiagnostics, { diagnostics: [diag], onCreateSpell: () => {}, onConvertFeature: () => {} }),
+    );
+    expect(markup).toContain('[missing-base]');
+    expect(markup).toContain('imports/upload-7/blades.xml: Cinder Edge');
+    expect(markup).toContain('so it cannot be wielded');
+    expect(markup).toContain('give it a base weapon');
+    // Neither the spell nor the feature fix applies to it.
+    expect(markup).not.toContain('<button');
+  });
+});

@@ -434,6 +434,7 @@ describe('pack health', () => {
       { kind: 'missing-grant', message: 'Moonwell Pact grants Frost Lance, which is not in your library.', elementId: 'ID_CUSTOM_PACTTEST0001', elementName: 'Moonwell Pact', missingId: 'ID_HB_MC_SPELL_FROST_LANCE', missingType: 'Spell' },
       { kind: 'duplicate-id', message: 'Wand of Embers is defined twice.', elementId: wand.id, elementName: 'Wand of Embers' },
       { kind: 'unattachable', message: "Hermit's Retreat is a Background Feature no Background grants.", elementId: retreat.id, elementName: "Hermit's Retreat" },
+      { kind: 'missing-base', message: 'Wand of Embers says it is a weapon but has no base weapon.', elementId: wand.id, elementName: 'Wand of Embers', missingType: 'Weapon' },
       { kind: 'append-target', message: 'Missing Thing adds to ID_NOT_LOADED, which is not loaded.', elementId: addition.id, elementName: 'Missing Thing', targetId: 'ID_NOT_LOADED' },
       { kind: 'invalid-requirements', message: 'Bad Gate has requirements the builder cannot read.', elementId: pact.id, elementName: 'Moonwell Pact' },
     ]);
@@ -441,14 +442,16 @@ describe('pack health', () => {
     await wait(800);
     const card = $('[data-testid="hb-pack-health"]');
     // The empty addition cannot load either, and is listed first.
-    expect(card.textContent).toContain('6 to fix');
+    expect(card.textContent).toContain('7 to fix');
     expect($$('[data-testid="hb-pack-health"] li').map((item) => item.getAttribute('data-kind'))).toEqual([
-      'incomplete', 'missing-grant', 'duplicate-id', 'unattachable', 'append-target', 'invalid-requirements',
+      'incomplete', 'missing-grant', 'duplicate-id', 'unattachable', 'missing-base', 'append-target', 'invalid-requirements',
     ]);
     const labelsOf = (kind) => [...card.querySelector(`li[data-kind="${kind}"]`).querySelectorAll('button')].map((button) => button.textContent);
     expect(labelsOf('missing-grant')).toEqual(['Create spell', 'Find a source', 'Open element']);
     expect(labelsOf('unattachable')).toEqual(['Convert to feature', 'Open element']);
     expect(labelsOf('duplicate-id')).toEqual(['Open element']);
+    expect(labelsOf('missing-base')).toEqual(['Open element']);
+    expect(card.querySelector('li[data-kind="missing-base"]').textContent).toContain('Has no base weapon');
     expect(labelsOf('append-target')).toEqual(['Find a source', 'Open element']);
     expect(labelsOf('invalid-requirements')).toEqual(['Open element']);
     // It asked the engine about this pack's own file.

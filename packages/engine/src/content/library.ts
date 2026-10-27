@@ -156,17 +156,17 @@ export interface ElementLibrary {
 }
 
 export interface ContentDiagnostic {
-  kind: "duplicate-id" | "empty-file" | "append-target" | "missing-grant" | "unattachable" | "invalid-requirements";
+  kind: "duplicate-id" | "empty-file" | "append-target" | "missing-grant" | "unattachable" | "missing-base" | "invalid-requirements";
   /** Normalized path of the file the finding is about. */
   file: string;
   message: string;
   detail?: string;
-  /** missing-grant, unattachable, invalid-requirements: the element the finding is about. */
+  /** missing-grant, unattachable, missing-base, invalid-requirements: the element the finding is about. */
   elementId?: string;
   elementName?: string;
   /** missing-grant: the id (or `Type "Name"`) that resolves to no element. */
   missingId?: string;
-  /** missing-grant: the element type the rule wants (`Spell`), when it says. */
+  /** missing-grant: the element type the rule wants (`Spell`), when it says; missing-base: `Weapon` or `Armor`. */
   missingType?: string;
 }
 

@@ -1174,15 +1174,20 @@ export interface ResourcesDto extends WireObject {
 /**
  * One thing wrong (or worth knowing) about a pack's content file, found without
  * loading it. `overrides` is not a fault: the pack replaces a loaded element on
- * purpose.
+ * purpose. `missing-base` is a Magic Item whose type line says Weapon or Armor
+ * but that names no base weapon or armour, so it cannot be wielded or worn as
+ * one.
  */
 export interface PackFindingDto extends WireObject {
-  kind: "missing-grant" | "duplicate-id" | "unattachable" | "append-target" | "invalid-requirements" | "overrides";
+  kind: "missing-grant" | "duplicate-id" | "unattachable" | "missing-base" | "append-target" | "invalid-requirements" | "overrides";
   message: string;
   /** The pack element the finding is about. */
   elementId?: string;
   elementName?: string;
-  /** missing-grant: the id (or `Type "Name"`) nothing defines, and the type the rule wants. */
+  /**
+   * missing-grant: the id (or `Type "Name"`) nothing defines, and the type the rule wants.
+   * missing-base: `missingType` alone, the type of the base the item lacks (`Weapon` or `Armor`).
+   */
   missingId?: string;
   missingType?: string;
   /** append-target: the element the append names. */

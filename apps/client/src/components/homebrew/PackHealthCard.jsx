@@ -1,6 +1,6 @@
-// The pack's health: every broken reference, duplicate id, element nothing can attach, addition to
-// something that is not loaded and unreadable requirement the engine found in the pack's file, each
-// with the element that carries it and the fix on offer.
+// The pack's health: every broken reference, duplicate id, element nothing can attach, magic weapon
+// or armour with no base, addition to something that is not loaded and unreadable requirement the
+// engine found in the pack's file, each with the element that carries it and the fix on offer.
 
 import { findingTitle, fixFor, problemsIn, sourceNeedFor } from './packHealth';
 

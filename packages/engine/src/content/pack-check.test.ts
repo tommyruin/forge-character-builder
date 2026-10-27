@@ -136,6 +136,61 @@ describe("checking a pack's file", () => {
   });
 });
 
+// Magic Items whose type line says Weapon or Armor: two without a base, one on a base, and
+// stackable ammunition, which needs none.
+const BASES_PACK = `<elements>
+  <element name="Cinder Edge" type="Magic Item" source="Pack" id="ID_PACK_MAGIC_ITEM_CINDER_EDGE">
+    <description><p>x</p></description>
+    <setters><set name="category">Magic Weapons</set><set name="type" addition="longsword">Weapon</set></setters>
+  </element>
+  <element name="Ashen Mail" type="Magic Item" source="Pack" id="ID_PACK_MAGIC_ITEM_ASHEN_MAIL">
+    <description><p>x</p></description>
+    <setters><set name="category">Magic Armor</set><set name="type" addition="chain mail">Armor</set></setters>
+  </element>
+  <element name="Kindled Edge" type="Magic Item" source="Pack" id="ID_PACK_MAGIC_ITEM_KINDLED_EDGE">
+    <description><p>x</p></description>
+    <setters><set name="type" addition="longsword">Weapon</set><set name="weapon">ID_PACK_WEAPON_LONGSWORD</set></setters>
+  </element>
+  <element name="Ember Bolts" type="Magic Item" source="Pack" id="ID_PACK_MAGIC_ITEM_EMBER_BOLTS">
+    <description><p>x</p></description>
+    <setters><set name="type" addition="any ammunition">Weapon</set><set name="stackable">true</set></setters>
+  </element>
+</elements>`;
+
+describe("a magic weapon or armour with no base", () => {
+  it("names each one, with the base it lacks and how to fix it", () => {
+    const findings = find(checkContentFile(library(), { path: PACK_PATH, xml: BASES_PACK }), "missing-base");
+    expect(findings).toEqual([
+      {
+        kind: "missing-base",
+        elementId: "ID_PACK_MAGIC_ITEM_CINDER_EDGE",
+        elementName: "Cinder Edge",
+        missingType: "Weapon",
+        message: "Cinder Edge (ID_PACK_MAGIC_ITEM_CINDER_EDGE) says it is a weapon but has no base weapon, so it cannot be wielded. "
+          + "Give it a base weapon, or make it with New element › Magic weapon or armor.",
+      },
+      expect.objectContaining({ elementId: "ID_PACK_MAGIC_ITEM_ASHEN_MAIL", missingType: "Armor" }),
+    ]);
+    expect(findings[1]!.message).toMatch(/says it is armour but has no base armour, so it cannot be worn as armour\. Give it a base armour/);
+  });
+
+  it("reports the same items against an uploaded file", async () => {
+    const lib = library();
+    const result = await ingestContentFiles(lib, [{ path: PACK_PATH, base64: encodeBase64(new TextEncoder().encode(BASES_PACK)) }]);
+    const missing = result.diagnostics.filter((diagnostic) => diagnostic.kind === "missing-base");
+    expect(missing).toEqual([
+      expect.objectContaining({ file: PACK_PATH, elementId: "ID_PACK_MAGIC_ITEM_CINDER_EDGE", missingType: "Weapon", detail: expect.stringMatching(/^give it a base weapon/) }),
+      expect.objectContaining({ file: PACK_PATH, elementId: "ID_PACK_MAGIC_ITEM_ASHEN_MAIL", missingType: "Armor" }),
+    ]);
+  });
+
+  it("does not report items in bundled content", async () => {
+    const lib = createEmptyLibrary();
+    const result = await ingestContentFiles(lib, [{ path: "core/bases.xml", base64: encodeBase64(new TextEncoder().encode(BASES_PACK)) }]);
+    expect(result.diagnostics.filter((diagnostic) => diagnostic.kind === "missing-base")).toEqual([]);
+  });
+});
+
 describe("the same findings when a file is uploaded", () => {
   const upload = async (xml: string) => {
     const lib = library();

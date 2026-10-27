@@ -48,16 +48,21 @@ const KIND_TITLES = {
   'missing-grant': 'Grants something that is not in your library',
   'duplicate-id': 'Defined twice',
   unattachable: 'Cannot be added to anyone',
+  'missing-base': 'Has no base weapon or armour',
   'append-target': 'Adds to something that is not loaded',
   'invalid-requirements': 'Requirements the builder cannot read',
 };
 
-export const findingTitle = (finding) => KIND_TITLES[finding.kind] ?? finding.kind;
+// A magic weapon or armour with no base says which of the two it lacks.
+const MISSING_BASE_TITLES = { Weapon: 'Has no base weapon', Armor: 'Has no base armour' };
+
+export const findingTitle = (finding) =>
+  (finding.kind === 'missing-base' && MISSING_BASE_TITLES[finding.missingType]) || KIND_TITLES[finding.kind] || finding.kind;
 
 /**
  * The fix offered for a finding, or null. `create-spell` makes the spell a grant is waiting for,
  * `convert` turns an unattachable Background Feature into a feature, and `open` goes to the element
- * that carries the problem.
+ * that carries the problem (a magic weapon or armour with no base is fixed there, by giving it one).
  */
 export function fixFor(finding, pack) {
   const element = elementForFinding(finding, pack);

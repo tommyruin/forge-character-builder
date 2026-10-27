@@ -8,6 +8,8 @@
  * - duplicate-id: an id defined twice in the pack, or already defined by another
  *   loaded file the pack was not meant to replace;
  * - unattachable: a Background Feature no Background grants or offers;
+ * - missing-base: a Magic Item whose type line says Weapon or Armor but that
+ *   names no base weapon or armour, so it is plain worn gear;
  * - append-target: an `<append>` whose target is not loaded;
  * - invalid-requirements: requirements the engine cannot read;
  * - overrides: a loaded element the pack replaces on purpose (not a fault).
@@ -15,6 +17,7 @@
 
 import type { PackFindingDto } from "@forge-cb/api";
 import { isCharacterPackElement } from "./character-packs.js";
+import { missingMagicItemBase } from "./equipment/categories.js";
 import type { ContentDiagnostic, ElementLibrary } from "./library.js";
 import { missingGrantDiagnostics } from "./missing-grants.js";
 import { parseAppendsFile, parseElementsFile, type ParsedElement } from "./parser.js";
@@ -75,6 +78,28 @@ function backgroundFeatureHolders(library: ElementLibrary, extra: readonly Parse
     }
   }
   return holders;
+}
+
+/**
+ * What a Magic Item that claims to be a weapon or armour but names no base is
+ * missing: the element type of the base, and what the reader is told. Null for
+ * any other element.
+ */
+function missingBase(element: ParsedElement): { missingType: "Weapon" | "Armor"; message: string; detail: string } | null {
+  const base = missingMagicItemBase(element);
+  if (base === null) return null;
+  const fix = "or make it with New element › Magic weapon or armor";
+  return base === "weapon"
+    ? {
+      missingType: "Weapon",
+      message: `${describe(element)} says it is a weapon but has no base weapon, so it cannot be wielded`,
+      detail: `give it a base weapon, ${fix}`,
+    }
+    : {
+      missingType: "Armor",
+      message: `${describe(element)} says it is armour but has no base armour, so it cannot be worn as armour`,
+      detail: `give it a base armour, ${fix}`,
+    };
 }
 
 function fromDiagnostic(diagnostic: ContentDiagnostic): PackFindingDto {
@@ -181,6 +206,19 @@ export function checkContentFile(library: ElementLibrary, request: PackCheckRequ
     }
   }
 
+  // Magic weapons and armour with no base to lay them over.
+  for (const element of elements) {
+    const missing = missingBase(element);
+    if (missing === null) continue;
+    findings.push({
+      kind: "missing-base",
+      elementId: element.identity.id,
+      elementName: element.identity.name,
+      missingType: missing.missingType,
+      message: `${missing.message}. ${missing.detail.charAt(0).toUpperCase()}${missing.detail.slice(1)}.`,
+    });
+  }
+
   // Requirements the engine cannot read.
   eachElement(elements, (element) => {
     for (const text of requirementTexts(element)) {
@@ -199,8 +237,9 @@ export function checkContentFile(library: ElementLibrary, request: PackCheckRequ
 
 /**
  * The ingest-time form of the checks a library can make on its own, for the
- * files a user uploaded: Background Features nothing attaches and requirements
- * the engine cannot read. Bundled content is not examined.
+ * files a user uploaded: Background Features nothing attaches, magic weapons
+ * and armour with no base, and requirements the engine cannot read. Bundled
+ * content is not examined.
  */
 export function packReferenceDiagnostics(library: ElementLibrary): ContentDiagnostic[] {
   const out: ContentDiagnostic[] = [];
@@ -219,6 +258,19 @@ export function packReferenceDiagnostics(library: ElementLibrary): ContentDiagno
         elementName: feature.identity.name,
       });
     }
+  }
+  for (const element of uploaded) {
+    const missing = missingBase(element);
+    if (missing === null) continue;
+    out.push({
+      kind: "missing-base",
+      file: element.declaredBy.split("#")[0] ?? element.declaredBy,
+      message: missing.message,
+      detail: missing.detail,
+      elementId: element.identity.id,
+      elementName: element.identity.name,
+      missingType: missing.missingType,
+    });
   }
   eachElement(uploaded, (element) => {
     for (const text of requirementTexts(element)) {
