@@ -6,6 +6,12 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A level 1 character can start a second class: "Start a new multiclass…" is
+  available as soon as the first class's ability-score prerequisite is met,
+  instead of only from level 2, so a 1/1 character can be built.
+
 ## [2.7.0] - 2026-10-26
 
 ### Added

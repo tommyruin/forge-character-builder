@@ -125,7 +125,7 @@ export function buildProgression(state: CharacterState, library: ElementLibrary)
     canLevelUp: state.level < MAX_LEVEL,
     canLevelDown,
     hasMainClass: mainClassId !== null,
-    canMulticlass: multiclassRuleEnabled && mainClassId !== null && state.level > 1 && prereqMet,
+    canMulticlass: multiclassRuleEnabled && mainClassId !== null && prereqMet,
     hasMulticlass: multiclassIds.length > 0,
     multiclassRuleEnabled,
     classes,

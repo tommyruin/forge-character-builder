@@ -176,6 +176,31 @@ describe("buildProgression", () => {
     fighter.levelUp("PF");
     expect(fighter.getProgression("PF").canMulticlass).toBe(false);
   });
+
+  it("canMulticlass is available at total level 1 once the prerequisites are met", () => {
+    const rogue = new CharacterService(undefined, library, { rng: seededRng(3) });
+    rogue.createCharacter("P1");
+    rogue.setAbilities("P1", { strength: 18, dexterity: 18, constitution: 18, intelligence: 18, wisdom: 18, charisma: 18 });
+    const state = rogue.getCharacter("P1");
+    rogue.setSelection("P1", ruleOfType(pendingSelectionRules(state), "Class").identifier, ID_ROGUE);
+    expect(rogue.getCharacter("P1").level).toBe(1);
+    expect(rogue.getProgression("P1").canMulticlass).toBe(true);
+
+    rogue.levelUpMode("P1", { mode: "new-multiclass" });
+    const rule = pendingSelectionRules(rogue.getCharacter("P1")).find((candidate) => candidate.type === "Multiclass");
+    expect(rule).toBeDefined();
+    rogue.setSelection("P1", rule!.identifier, ID_MULTICLASS_WIZARD);
+    const classes = rogue.getProgression("P1").classes;
+    expect(rogue.getCharacter("P1").level).toBe(2);
+    expect(classes.map((c) => [c.isMulticlass, c.level])).toEqual([[false, 1], [true, 1]]);
+
+    const weak = new CharacterService(undefined, library, { rng: seededRng(3) });
+    weak.createCharacter("P2");
+    weak.setAbilities("P2", { strength: 8, dexterity: 8, constitution: 18, intelligence: 18, wisdom: 18, charisma: 18 });
+    weak.setSelection("P2", ruleOfType(pendingSelectionRules(weak.getCharacter("P2")), "Class").identifier, ID_ROGUE);
+    expect(weak.getCharacter("P2").level).toBe(1);
+    expect(weak.getProgression("P2").canMulticlass).toBe(false);
+  });
 });
 
 describe("levelUpTo", () => {
