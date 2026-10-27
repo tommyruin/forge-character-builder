@@ -4,18 +4,6 @@
 		<description>
 			<p>Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus, as described in chapter 10. Each type of musical instrument requires a separate proficiency.</p>
 		</description>
-		<rules>
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_BAGPIPES" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_DRUM" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_DULCIMER" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_FLUTE" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_LUTE" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_LYRE" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_HORN" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_PAN_FLUTE" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_SHAWM" type="Proficiency" />
-			<grant name="ID_PROFICIENCY_TOOL_PROFICIENCY_VIOL" type="Proficiency" />
-		</rules>
 	</element>
 	<element name="Tool Proficiency (Bagpipes)" type="Proficiency" source="Player’s Handbook" id="ID_PROFICIENCY_TOOL_PROFICIENCY_BAGPIPES">
 		<supports>Tool, ID_PROFICIENCY_MUSICAL_INSTRUMENT, Musical Instrument</supports>
