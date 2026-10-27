@@ -1056,7 +1056,7 @@ describe("attacks document round-trip", () => {
     service.addItem(id, { itemId: LONGSWORD, amount: 1, baseElementId: null });
     const shortbow = service.addItem(id, { itemId: SHORTBOW, amount: 1, baseElementId: null })
       .items.find((i) => i.itemId === SHORTBOW)!;
-    service.equipItem(id, shortbow.identifier, "secondary");
+    service.equipItem(id, shortbow.identifier, "primary-twohanded");
     expect(service.getAttacks(id).length).toBeGreaterThan(0);
 
     const exported = service.exportCharacterXml(id);
@@ -1073,7 +1073,8 @@ describe("attacks document round-trip", () => {
     for (const itemId of [LONGSWORD, RAPIER, SHORTBOW]) {
       const added = service.addItem(id, { itemId, amount: 1, baseElementId: null })
         .items.find((i) => i.itemId === itemId)!;
-      service.equipItem(id, added.identifier, "secondary");
+      // A bow needs both hands; the one-handed weapons go in the off hand.
+      service.equipItem(id, added.identifier, itemId === SHORTBOW ? "primary-twohanded" : "secondary");
     }
     const exported = service.exportCharacterXml(id);
 

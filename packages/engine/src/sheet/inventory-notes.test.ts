@@ -305,6 +305,42 @@ describe("what the equipment tables cannot hold", () => {
     expect(placedNames(model).sort()).toEqual(baseline.sort());
   });
 
+  it("names an empty third or later container once, in container order, and leaves the first two alone", () => {
+    const state = loaded(12, 0, "Empty");
+    const baseline = placedNames(buildCharacterSheetModel(state, library, { mode: "full" }));
+    // The first two containers are empty too; their fields name them already.
+    state.storages = ["Saddlebags", "Backpack", "Cart", "", "Wagon", "Barrel"];
+    const added = state.items.slice(-12);
+    added.slice(0, 2).forEach((record) => { record.storage = "Wagon"; });
+    added[2]!.storage = "Lost chest";
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    const notes = String(model.formValues?.["equipment_page_magic_items"] ?? "").split("\n\n");
+    expect(notes.map((entry) => entry.split(".")[0])).toEqual([
+      "Cart, stowed",
+      "Wagon, stowed",
+      "Barrel, stowed",
+      "Lost chest, stowed",
+    ]);
+    expect(notes[0]).toBe("Cart, stowed. Empty.");
+    expect(notes[2]).toBe("Barrel, stowed. Empty.");
+    expect(overflowItems(model, /^Wagon, stowed\./)).toBe(2);
+    expect(overflowItems(model, /^Lost chest, stowed\./)).toBe(1);
+    expect(tableNames(model, "equipment_page_vehicle_1_cargo")).toEqual([]);
+    expect(tableNames(model, "equipment_page_vehicle_2_cargo")).toEqual([]);
+    // The page column prints the same entries; nothing is lost or repeated.
+    expect(sidebarText(model)).toContain("Cart, stowed. Empty.");
+    expect(sidebarText(model)).toContain("Barrel, stowed. Empty.");
+    expect(placedNames(model).filter((name) => name !== "Empty").sort()).toEqual(baseline.sort());
+  });
+
+  it("adds no entry when only the first two containers are empty", () => {
+    const state = loaded(10, 3, "Two Empty");
+    state.storages = ["Saddlebags", "Backpack"];
+    expect(inventoryColumnEntries(state, library, { notes: false })).toEqual([]);
+    const model = buildCharacterSheetModel(state, library, { mode: "full" });
+    expect(model.formValues?.["equipment_page_magic_items"]).toBe("");
+  });
+
   it("prints the overflow in the column of the rendered sheet", async () => {
     const model = buildCharacterSheetModel(loaded(46, 0, "Render"), library, {
       mode: "full",

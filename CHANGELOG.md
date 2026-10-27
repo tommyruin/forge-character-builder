@@ -29,7 +29,10 @@ project uses [Semantic Versioning](https://semver.org/).
 - Warnings and errors (the boot screen's error and warning text, a stale
   sheet preview, a homebrew error dot) use the warning colour instead of the
   gold used for selected states.
-- `setItemStorage` refuses a container the character doesn't have.
+- `setItemStorage` refuses a container the character doesn't have, and
+  `equipItem` refuses a location the item can't use (a ring or shield in the
+  main hand, a non-versatile weapon in both hands). Saved characters load
+  as before.
 
 ### Fixed
 
@@ -40,7 +43,7 @@ project uses [Semantic Versioning](https://semver.org/).
   limited uses on Resources and the printed sheet.
 - A stowed item prints once on the equipment page, with its container's
   cargo, instead of in the gear table as well. Containers past the first two
-  print in the character's order.
+  print in the character's order, and an empty one is named too.
 - A weapon or armour that grants a bundle with its own grants or choices
   applies them while it is in use, and is named as their source.
 - The tool proficiency umbrellas (artisan's tools, musical instruments,

@@ -172,4 +172,26 @@ describe("a magic weapon or armor authored without a base", () => {
     expect(xml.slice(xml.indexOf("<sum "), xml.indexOf("</sum>"))).toContain("ID_VISION_BLINDSIGHT");
     expect(service.getInventory(id).items.at(-1)!.hasAttackRow).toBe(false);
   }, 120_000);
+
+  it("cannot be put in a hand: the request is rejected before any attack row is written", () => {
+    const service = new CharacterService(undefined, packLibrary);
+    const id = service.createCharacter("Unbased Hand").id;
+    const record = service.addItem(id, { itemId: UNBASED_BLADE, amount: 1, baseElementId: null }).items.at(-1)!;
+    const before = service.exportCharacterXml(id);
+    const attacksBefore = service.getAttacks(id);
+    for (const location of ["primary", "secondary", "primary-twohanded", "armor"]) {
+      let thrown: unknown;
+      try {
+        service.equipItem(id, record.identifier, location);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).toMatchObject({ code: "invalid-argument", message: `item '${UNBASED_BLADE}' cannot be equipped at '${location}'` });
+    }
+    expect(service.exportCharacterXml(id)).toBe(before);
+    expect(service.getAttacks(id)).toEqual(attacksBefore);
+    const worn = service.equipItem(id, record.identifier, "worn").items.at(-1)!;
+    expect(worn).toMatchObject({ isEquipped: true, equippedLocation: null, hasAttackRow: false });
+    expect(service.getAttacks(id)).toEqual(attacksBefore);
+  }, 120_000);
 });

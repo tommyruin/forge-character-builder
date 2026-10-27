@@ -33,6 +33,7 @@ import type { CharacterState, Coinage, InventoryItemState } from "../character/s
 import { equipmentMetadata, isPhysicalEquipment, type EquipmentAttunementDto } from "../content/equipment/categories.js";
 import { inventoryItemSignificance, isSignificantItem, itemSignificance } from "../content/equipment/significance.js";
 import { contentOrigin } from "../custom/placement.js";
+import { VERSATILE_PROPERTY } from "../custom/base-items.js";
 import { MAX_ITEM_NAME, MAX_ITEM_NOTES, customNameOf, ruleName } from "./names.js";
 
 export interface ExtractEntryDto {
@@ -205,6 +206,23 @@ export function equipLocationsFor(element: ParsedElement | undefined): string[] 
     return ["armor"];
   }
   return [];
+}
+
+/**
+ * The hand or armour locations an equip request may name for a record: its
+ * base's own slots, plus both hands for a versatile weapon (wielded
+ * two-handed, it deals its versatile die). A slotless item has none; it is
+ * worn instead. Only new requests are held to this: a saved file that already
+ * records another location loads and keeps it until the item is moved.
+ */
+function requestableEquipLocations(library: ElementLibrary, item: InventoryItemState, base: ParsedElement): string[] {
+  const slots = equipLocationsFor(base);
+  if (base.identity.type !== "Weapon" || slots.includes("primary-twohanded")) return slots;
+  const adorner = item.adorners.length > 0 ? elementById(library, item.adorners[0]!) : undefined;
+  const versatile =
+    [base, adorner].some((element) => (setterValue(element, "versatile")?.trim() ?? "") !== "") ||
+    base.supports.includes(VERSATILE_PROPERTY);
+  return versatile ? [...slots, "primary-twohanded"] : slots;
 }
 
 /**
@@ -1499,10 +1517,17 @@ export function planEquipItemEdits(
     // item-registration sweep picks up its own benefits.
     if (!item.equipped) {
       edits.push(...planItemChildEdit(document, identifier, "<equipped>true</equipped>", "add", ["storage"]));
+    } else if (item.location) {
+      // A saved file may record a slotless item in a hand; wearing it moves
+      // it out of that slot.
+      edits.push(...planItemChildEdit(document, identifier, "<equipped>true</equipped>", "replace"));
     }
   } else {
     const display = LOCATION_DISPLAY[location];
     if (!display) throw engineError("invalid-argument", `unknown equip location '${location}'`);
+    if (!requestableEquipLocations(library, item, base).includes(location)) {
+      throw engineError("invalid-argument", `item '${item.itemId}' cannot be equipped at '${location}'`);
+    }
     // Single location principle: equipping an item clears its storage assignment.
     if (item.storage) {
       edits.push(...planItemChildEdit(document, identifier, "<storage>", "remove"));

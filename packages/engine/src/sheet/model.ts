@@ -2170,6 +2170,11 @@ function overflowEntry(title: string, rows: readonly EquipmentRow[]): InventoryC
   return { title, html: `<p>${escapeHtml(text)}.</p>`, text: `${text}.` };
 }
 
+/** A container without cargo rows that holds nothing, named so the page still lists it. */
+function emptyContainerEntry(container: string): InventoryColumnEntry {
+  return { title: `${container}, stowed`, html: "<p>Empty.</p>", text: "Empty." };
+}
+
 /**
  * The rows of the equipment page's tables: adventuring gear (40 rows), magic
  * items (20) and valuables (10, the Treasure category: gems, art objects), plus
@@ -2179,8 +2184,9 @@ function overflowEntry(title: string, rows: readonly EquipmentRow[]): InventoryC
  * Magic and valuable overflow continues in the gear table under a labeled
  * separator row while it has room. Whatever no table can hold (gear past row
  * 40, magic items and valuables once the gear table is full, a third container
- * and the items past a container's tenth) is returned as `overflow`, entries
- * for the notes column, which flows onto continuation pages. A character's
+ * -- named even when empty -- and the items past a container's tenth) is
+ * returned as `overflow`, entries for the notes column, which flows onto
+ * continuation pages. A character's
  * things never drop off the sheet at a table's cap.
  *
  * Cargo weight is what the item itself weighs, without the stowed exclusion
@@ -2256,11 +2262,13 @@ function equipmentTables(
     if (rows.length > CARGO_ROWS) overflow.push(overflowEntry(`${container}, stowed (continued)`, rows.slice(CARGO_ROWS)));
   });
   // The other containers in the character's order, then any container an
-  // item names that the character no longer lists, one entry each.
+  // item names that the character no longer lists, one entry each. An empty
+  // container is listed too, as empty; a container with no name is not.
   const unnamed = [...new Set([...state.storages, ...stowed.keys()])].filter((container) => !named.has(container));
   for (const container of unnamed) {
     const rows = stowed.get(container);
     if (rows !== undefined) overflow.push(overflowEntry(`${container}, stowed`, rows));
+    else if (container !== "") overflow.push(emptyContainerEntry(container));
   }
   return { gear, magic, valuables, cargo, overflow };
 }

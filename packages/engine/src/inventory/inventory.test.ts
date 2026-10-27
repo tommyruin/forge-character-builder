@@ -34,6 +34,7 @@ const QUARTERSTAFF = "ID_WOTC_PHB_WEAPON_QUARTERSTAFF";
 const STAFF_OF_POWER = "ID_WOTC_DMG_MAGIC_ITEM_STAFF_OF_POWER";
 const RING = "ID_WOTC_DMG_MAGIC_ITEM_RING_OF_SPELL_STORING";
 const PACK = "ID_WOTC_ITEM_EXPLORERS_PACK";
+const DAGGER = "ID_WOTC_PHB_WEAPON_DAGGER";
 
 const byItemId = (dto: { items: InventoryItemDto[] }, itemId: string) =>
   dto.items.find((i) => i.itemId === itemId);
@@ -216,20 +217,128 @@ describe("inventory equip semantics", () => {
     const id = service.createCharacter("Equip3").id;
     let dto = service.addItem(id, { itemId: LONGSWORD, amount: 1, baseElementId: null });
     dto = service.addItem(id, { itemId: SHIELD, amount: 1, baseElementId: null });
+    dto = service.addItem(id, { itemId: DAGGER, amount: 1, baseElementId: null });
     const longsword = byItemId(dto, LONGSWORD)!;
-    const shield = byItemId(dto, SHIELD)!;
-    // equipping the shield at primary vacates the longsword, keeps secondary free
-    dto = service.equipItem(id, shield.identifier, "primary");
+    const dagger = byItemId(dto, DAGGER)!;
+    expect(byItemId(dto, SHIELD)!.equippedLocation).toBe("Secondary Hand");
+    // equipping the dagger at primary vacates the longsword, keeps the shield
+    dto = service.equipItem(id, dagger.identifier, "primary");
     expect(byItemId(dto, LONGSWORD)!.isEquipped).toBe(false);
-    expect(byItemId(dto, SHIELD)!.equippedLocation).toBe("Primary Hand");
+    expect(byItemId(dto, DAGGER)!.equippedLocation).toBe("Primary Hand");
+    expect(byItemId(dto, SHIELD)!.equippedLocation).toBe("Secondary Hand");
     // equipping the longsword two-handed vacates both hands
     dto = service.equipItem(id, longsword.identifier, "primary-twohanded");
+    expect(byItemId(dto, DAGGER)!.isEquipped).toBe(false);
     expect(byItemId(dto, SHIELD)!.isEquipped).toBe(false);
     expect(byItemId(dto, LONGSWORD)!.equippedLocation).toBe("Two-Handed");
     // unequip at none
     dto = service.equipItem(id, longsword.identifier, "none");
     expect(byItemId(dto, LONGSWORD)!.isEquipped).toBe(false);
     expect(byItemId(dto, LONGSWORD)!.equippedLocation).toBeNull();
+  });
+
+  const thrownBy = (action: () => unknown): unknown => {
+    try {
+      action();
+    } catch (error) {
+      return error;
+    }
+    return undefined;
+  };
+
+  it("wields a versatile weapon in both hands, but not a weapon without the property", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Both Hands").id;
+    let dto = service.addItem(id, { itemId: LONGSWORD, amount: 1, baseElementId: null });
+    dto = service.addItem(id, { itemId: DAGGER, amount: 1, baseElementId: null });
+    const longsword = byItemId(dto, LONGSWORD)!;
+    const dagger = byItemId(dto, DAGGER)!;
+    // The client offers only the slots the DTO lists; both hands is an API request.
+    expect(longsword.equipLocations).toEqual(["primary", "secondary"]);
+    dto = service.equipItem(id, longsword.identifier, "primary-twohanded");
+    expect(byItemId(dto, LONGSWORD)!.equippedLocation).toBe("Two-Handed");
+    expect(thrownBy(() => service.equipItem(id, dagger.identifier, "primary-twohanded"))).toMatchObject({
+      code: "invalid-argument",
+      message: `item '${DAGGER}' cannot be equipped at 'primary-twohanded'`,
+    });
+    expect(byItemId(service.getInventory(id), DAGGER)!.isEquipped).toBe(false);
+  });
+
+  it("holds a two-handed weapon only in both hands", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Greatsword Hands").id;
+    const dto = service.addItem(id, { itemId: GREATSWORD, amount: 1, baseElementId: null });
+    const greatsword = byItemId(dto, GREATSWORD)!;
+    service.equipItem(id, greatsword.identifier, "none");
+    for (const location of ["primary", "secondary", "armor"]) {
+      expect(thrownBy(() => service.equipItem(id, greatsword.identifier, location))).toMatchObject({ code: "invalid-argument" });
+    }
+    expect(byItemId(service.equipItem(id, greatsword.identifier, "primary-twohanded"), GREATSWORD)!.equippedLocation).toBe("Two-Handed");
+  });
+
+  it("takes a shield in the off hand and armour in the armour slot, and nowhere else", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Shield Hand").id;
+    let dto = service.addItem(id, { itemId: SHIELD, amount: 1, baseElementId: null });
+    dto = service.addItem(id, { itemId: SCALE_MAIL, amount: 1, baseElementId: null });
+    const shield = byItemId(dto, SHIELD)!;
+    const mail = byItemId(dto, SCALE_MAIL)!;
+    expect(shield.equipLocations).toEqual(["secondary"]);
+    service.equipItem(id, shield.identifier, "none");
+    service.equipItem(id, mail.identifier, "none");
+    for (const location of ["primary", "primary-twohanded", "armor", "worn"]) {
+      expect(thrownBy(() => service.equipItem(id, shield.identifier, location))).toMatchObject({ code: "invalid-argument" });
+    }
+    for (const location of ["primary", "secondary", "primary-twohanded", "worn"]) {
+      expect(thrownBy(() => service.equipItem(id, mail.identifier, location))).toMatchObject({ code: "invalid-argument" });
+    }
+    dto = service.equipItem(id, shield.identifier, "secondary");
+    expect(byItemId(dto, SHIELD)!.equippedLocation).toBe("Secondary Hand");
+    dto = service.equipItem(id, mail.identifier, "armor");
+    expect(byItemId(dto, SCALE_MAIL)!.equippedLocation).toBe("Armor");
+  });
+
+  it("rejects a ring in a hand or armour slot, with no attack row, and wears it", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Ring Hand").id;
+    let dto = service.addItem(id, { itemId: RING, amount: 1, baseElementId: null });
+    const ring = byItemId(dto, RING)!;
+    expect(ring.equipLocations).toEqual(["worn"]);
+    const before = service.exportCharacterXml(id);
+    const attacksBefore = service.getAttacks(id);
+    for (const location of ["primary", "secondary", "primary-twohanded", "armor"]) {
+      expect(thrownBy(() => service.equipItem(id, ring.identifier, location))).toMatchObject({
+        code: "invalid-argument",
+        message: `item '${RING}' cannot be equipped at '${location}'`,
+      });
+    }
+    // Nothing was written: no equip state and no attack row.
+    expect(service.exportCharacterXml(id)).toBe(before);
+    expect(service.getAttacks(id)).toEqual(attacksBefore);
+    dto = service.equipItem(id, ring.identifier, "worn");
+    expect(byItemId(dto, RING)).toMatchObject({ isEquipped: true, equippedLocation: null, hasAttackRow: false });
+  });
+
+  it("loads a saved ring already in a hand, keeps it there, and lets it be taken off", async () => {
+    const service = await freshService();
+    const id = service.createCharacter("Saved Ring").id;
+    const ring = byItemId(service.addItem(id, { itemId: RING, amount: 1, baseElementId: null }), RING)!;
+    service.equipItem(id, ring.identifier, "worn");
+    const exported = service.exportCharacterXml(id);
+    expect(exported.split("<equipped>true</equipped>")).toHaveLength(2);
+    const saved = exported.replace("<equipped>true</equipped>", '<equipped location="Primary Hand">true</equipped>');
+
+    const reader = await freshService();
+    reader.importCharacterXml(id, saved);
+    expect(reader.exportCharacterXml(id)).toBe(saved);
+    expect(byItemId(reader.getInventory(id), RING)).toMatchObject({ isEquipped: true, equippedLocation: "Primary Hand" });
+    // A new request is still held to the ring's own locations.
+    expect(thrownBy(() => reader.equipItem(id, ring.identifier, "primary"))).toMatchObject({ code: "invalid-argument" });
+    // Taking it off, or wearing it properly, repairs the record.
+    let dto = reader.equipItem(id, ring.identifier, "worn");
+    expect(byItemId(dto, RING)).toMatchObject({ isEquipped: true, equippedLocation: null });
+    dto = reader.equipItem(id, ring.identifier, "none");
+    expect(byItemId(dto, RING)!.isEquipped).toBe(false);
   });
 
   it("drops attunement when unequipping", async () => {
@@ -577,7 +686,6 @@ describe("pack extras extraction", () => {
 
 describe("inventory amounts and stacking", () => {
   const POTION = "ID_WOTC_DMG_MAGIC_ITEM_POTION_OF_HEALING";
-  const DAGGER = "ID_WOTC_PHB_WEAPON_DAGGER";
 
   it("sets an amount up and down, writing the attribute only above 1", async () => {
     const service = await freshService();
