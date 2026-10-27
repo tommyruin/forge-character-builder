@@ -6,11 +6,46 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Manage > Additional features says which categories make an uploaded Item
+  or Magic Item show there, and points to Custom feature for a feature made
+  without XML. The Homebrew Editor's raw-type step shows the same list for
+  an Item or Magic Item.
+- Uploads and Pack health warn about a Magic Item that says it is a weapon or
+  armour but has no base weapon or armour, so it can't be wielded or worn.
+  Pack health opens the element to fix it.
+- The upload screen can convert a pack's Background Feature that nothing
+  attaches into a feature, as Pack health already could.
+
+### Changed
+
+- The Homebrew Editor no longer offers Background Feature as a new element or
+  grant type, since one can only reach a character through a background.
+  Existing ones still load and edit, and typing the type as raw XML warns
+  first.
+- The New element card for a new kind of weapon is "Weapon type"; magic
+  weapons stay under "Magic weapon or armor".
+- Warnings and errors (the boot screen's error and warning text, a stale
+  sheet preview, a homebrew error dot) use the warning colour instead of the
+  gold used for selected states.
+- `setItemStorage` refuses a container the character doesn't have.
+
 ### Fixed
 
 - A level 1 character can start a second class: "Start a new multiclass…" is
   available as soon as the first class's ability-score prerequisite is met,
   instead of only from level 2, so a 1/1 character can be built.
+- A supernatural gift added in Manage > Additional features tracks its
+  limited uses on Resources and the printed sheet.
+- A stowed item prints once on the equipment page, with its container's
+  cargo, instead of in the gear table as well. Containers past the first two
+  print in the character's order.
+- A weapon or armour that grants a bundle with its own grants or choices
+  applies them while it is in use, and is named as their source.
+- The tool proficiency umbrellas (artisan's tools, musical instruments,
+  gaming sets) no longer carry grants that could never resolve. No
+  character changes.
 
 ## [2.7.0] - 2026-10-26
 
