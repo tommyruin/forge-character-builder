@@ -68,6 +68,27 @@ describe('semantic status tokens', () => {
   });
 });
 
+describe('warning colour', () => {
+  // `--fcb-amber` is the gold primary, so a warning drawn with it reads as a selected state.
+  const rule = (selector) => {
+    const start = css.indexOf(`${selector} {`);
+    expect(start, selector).toBeGreaterThan(-1);
+    return css.slice(start, css.indexOf('}', start));
+  };
+
+  it('draws warnings and errors in the warning colour, not the primary gold', () => {
+    expect(rule('.fcb-homebrew-status-dot.is-error')).toContain('background: var(--dmf-warning);');
+    for (const selector of ['.fcb-boot-sub.fcb-boot-error', '.fcb-boot-pill.is-warn', '.fcb-sheet-preview-status.is-stale']) {
+      expect(rule(selector), selector).toContain('color: var(--dmf-warning-text, var(--dmf-warning));');
+    }
+  });
+
+  it('falls back to --dmf-warning, which the standalone builder shell defines', () => {
+    const shell = readFileSync(new URL('../../shell/default/styles.css', import.meta.url), 'utf8');
+    expect(shell).toMatch(/--dmf-warning:/);
+  });
+});
+
 describe('theme-safe JSX', () => {
   it('uses no Tailwind colour literals in themed components', () => {
     for (const file of jsxFiles) {

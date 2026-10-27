@@ -3,7 +3,8 @@
 // finding, so the card can open it.
 
 import { buildCollectionXml, collectionStoragePath, draftIssuesOf } from './xmlBuilder.js';
-import { elementForFinding, elementIdOf } from './packModel.js';
+import { convertToFeature, elementForFinding, elementIdOf, loadedPack } from './packModel.js';
+import { saveCollection } from './homebrewStorage.js';
 
 // Ids the pack replaces on purpose: a changed book element keeps the book's id, so it is not a
 // duplicate. The engine reports those as `overrides`, which are notes and not problems.
@@ -81,4 +82,40 @@ export function sourceNeedFor(finding) {
     return { label: finding.targetId ?? '', type: '', neededBy: finding.elementName ?? '' };
   }
   return null;
+}
+
+// Every pack keeps its file at the same path around its id (see collectionStoragePath).
+const [PACK_PATH_HEAD, PACK_PATH_TAIL] = collectionStoragePath({ id: 'PACKID' }).split('PACKID');
+
+/** Whether a stored file is a pack's file, so a finding about it can be fixed in the pack. */
+export function isPackFilePath(path) {
+  if (typeof path !== 'string' || !path.startsWith(PACK_PATH_HEAD) || !path.endsWith(PACK_PATH_TAIL)) return false;
+  const id = path.slice(PACK_PATH_HEAD.length, path.length - PACK_PATH_TAIL.length);
+  return id !== '' && !id.includes('/');
+}
+
+/** The pack this device keeps whose file is at `path`, if any. */
+export const packForFile = (packs, path) => (packs ?? []).find((pack) => collectionStoragePath(pack) === path) ?? null;
+
+/**
+ * Convert to feature from the upload screen: the health card's conversion, applied to the pack
+ * that wrote the file and saved at once, since no editor is open to save it. A clean save marks
+ * the pack as loaded, as Update builder does. Null when the finding is not about an element of a
+ * pack this device keeps (an uploaded file that is not a pack, or a pack since deleted).
+ */
+export async function convertFindingInPack({ api, store, finding }) {
+  const pack = packForFile(await store.listHomebrew(), finding.file);
+  const element = pack ? elementForFinding(finding, pack) : null;
+  if (!element) return null;
+  const updated = {
+    ...pack,
+    elements: pack.elements.map((entry) => (entry.localId === element.localId ? convertToFeature(entry, pack) : entry)),
+  };
+  await store.putHomebrew(updated);
+  const saved = await saveCollection(api, updated);
+  api.content.clearCache?.();
+  const clean = saved.diagnostics.length === 0 && saved.rejected.length === 0;
+  const stored = clean ? loadedPack(updated) : updated;
+  if (clean) await store.putHomebrew(stored);
+  return { pack: stored, saved, clean };
 }

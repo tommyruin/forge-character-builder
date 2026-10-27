@@ -16,6 +16,7 @@ import {
 } from '../../InspectableItemControls';
 import Icon from '../../Icon';
 import CustomFeatureModal from '../../custom/CustomFeatureModal';
+import AdditionalFeatureCategories from '../../homebrew/AdditionalFeatureCategories';
 import { makeCustomServices } from '../../custom/customServices';
 import { localStore } from '../../../transport/localStore';
 import { sourceLabel } from '../../sourceLabel';
@@ -56,6 +57,24 @@ export function featureCategories(entries) {
   ];
 }
 
+/**
+ * What the empty Active view says about getting something here: which uploaded items show up, and
+ * the no-XML route when the Custom feature button is there.
+ */
+export function UploadedFeaturesHint({ offersCustomFeature }) {
+  return (
+    <div className="space-y-2" data-testid="additional-features-hint">
+      <p className="fcb-muted-copy text-xs">
+        An uploaded Item or Magic Item shows here when its category is one of
+        the values below.
+        {offersCustomFeature &&
+          ' To add a feature without writing XML, use Custom feature.'}
+      </p>
+      <AdditionalFeatureCategories />
+    </div>
+  );
+}
+
 /** The offering narrowed to one rail entry and the search text. */
 export function filterFeatures(entries, categoryKey, query) {
   const needle = query.trim().toLocaleLowerCase();
@@ -80,8 +99,16 @@ export function FeatureList({
   onInspect,
   onToggle,
   emptyCopy,
+  emptyHint = null,
 }) {
-  if (!features.length) return <p className="fcb-empty-copy">{emptyCopy}</p>;
+  if (!features.length) {
+    return (
+      <>
+        <p className="fcb-empty-copy">{emptyCopy}</p>
+        {emptyHint}
+      </>
+    );
+  }
   return (
     <ul className="space-y-2">
       {features.map((entry) => {
@@ -211,10 +238,11 @@ export default function AdditionalFeaturesPanel() {
     }
   };
 
-  const emptyCopy =
-    selectedKey === ACTIVE_KEY && deferredSearch.trim() === ''
-      ? 'Nothing active yet.'
-      : 'No features match this search.';
+  const nothingActive =
+    selectedKey === ACTIVE_KEY && deferredSearch.trim() === '';
+  const emptyCopy = nothingActive
+    ? 'Nothing active yet.'
+    : 'No features match this search.';
 
   return (
     <div className="fcb-two-panel-grid">
@@ -273,6 +301,11 @@ export default function AdditionalFeaturesPanel() {
                 onInspect={inspectItem}
                 onToggle={setEnabled}
                 emptyCopy={emptyCopy}
+                emptyHint={
+                  nothingActive ? (
+                    <UploadedFeaturesHint offersCustomFeature={Boolean(customServices)} />
+                  ) : null
+                }
               />
             )}
           </div>

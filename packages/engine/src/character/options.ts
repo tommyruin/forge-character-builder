@@ -238,7 +238,7 @@ export interface CharacterAdjustmentDto {
  * Items are added to a character by registering them (the "equip to enable"
  * convention).
  */
-const ADJUSTMENT_CATEGORIES: readonly string[] = [
+export const ADJUSTMENT_CATEGORIES: readonly string[] = [
   "Additional Arcane Trickster Spell",
   "Additional Artificer Spell",
   "Additional Bard Spell",

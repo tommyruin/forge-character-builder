@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { checkPackHealth, findingTitle, fixFor, problemsIn } from '../packHealth.js';
+import { checkPackHealth, convertFindingInPack, findingTitle, fixFor, isPackFilePath, problemsIn } from '../packHealth.js';
 import { appendElement, convertToFeature, elementForDraft, overrideElement, rawElement } from '../packModel.js';
 import { buildCollectionXml, collectionStoragePath, createCollection } from '../xmlBuilder.js';
 import { libraryWithHomebrew } from './homebrewHarness.js';
@@ -85,5 +85,73 @@ describe('pack health', () => {
     const full = { ...pack, elements: [overrideElement(source, pack)] };
     const findings = await checkPackHealth(await realApi(baseLibrary), full);
     expect(problemsIn(findings)).toEqual([]);
+  });
+});
+
+describe('converting from the upload screen', () => {
+  const hermitPack = () => {
+    const hermit = rawElement({ type: 'Background Feature', name: "Hermit's Retreat", pack });
+    return { full: { ...pack, elements: [hermit] }, hermit };
+  };
+  const finding = (full, hermit) => ({
+    kind: 'unattachable',
+    file: collectionStoragePath(full),
+    elementId: hermit.id,
+    elementName: hermit.name,
+  });
+  const fakeStore = (packs) => {
+    const records = new Map(packs.map((entry) => [entry.id, entry]));
+    return { records, listHomebrew: vi.fn(async () => [...records.values()]), putHomebrew: vi.fn(async (record) => records.set(record.id, record)) };
+  };
+  const fakeApi = (diagnostics = []) => ({
+    content: {
+      upload: vi.fn(async () => ({ elementCountAfterReload: 2, diagnostics, files: [{ accepted: true }] })),
+      clearCache: vi.fn(),
+    },
+  });
+
+  it('tells a pack file from any other stored file', () => {
+    expect(isPackFilePath(collectionStoragePath(pack))).toBe(true);
+    expect(isPackFilePath('imports/homebrew-abc/collection.xml')).toBe(true);
+    expect(isPackFilePath('imports/upload-1/ferry.xml')).toBe(false);
+    expect(isPackFilePath('imports/homebrew-abc/nested/collection.xml')).toBe(false);
+    expect(isPackFilePath(undefined)).toBe(false);
+  });
+
+  it('converts the element in the pack that wrote the file, saves it and marks it loaded', async () => {
+    const { full, hermit } = hermitPack();
+    const store = fakeStore([full]);
+    const api = fakeApi();
+    const outcome = await convertFindingInPack({ api, store, finding: finding(full, hermit) });
+
+    expect(outcome.clean).toBe(true);
+    const stored = store.records.get(pack.id);
+    expect(stored.elements[0]).toMatchObject({ type: 'Custom Feature', id: hermit.id, localId: hermit.localId });
+    expect(stored.elements[0].rawXml).toContain('type="Custom Feature"');
+    expect(stored.hasUnloadedChanges).toBe(false);
+    const uploaded = await api.content.upload.mock.calls[0][0][0].text();
+    expect(uploaded).toContain('type="Custom Feature"');
+    expect(uploaded).not.toContain('type="Background Feature"');
+    expect(api.content.clearCache).toHaveBeenCalled();
+  });
+
+  it('keeps the pack unmarked when its file still has a problem', async () => {
+    const { full, hermit } = hermitPack();
+    const store = fakeStore([full]);
+    const problem = { kind: 'duplicate-id', file: collectionStoragePath(full), message: 'defined twice' };
+    const outcome = await convertFindingInPack({ api: fakeApi([problem]), store, finding: finding(full, hermit) });
+    expect(outcome.clean).toBe(false);
+    expect(store.records.get(pack.id).elements[0].type).toBe('Custom Feature');
+    expect(store.records.get(pack.id).hasUnloadedChanges).not.toBe(false);
+  });
+
+  it('does nothing for a file no pack on this device wrote', async () => {
+    const { full, hermit } = hermitPack();
+    const store = fakeStore([full]);
+    const api = fakeApi();
+    const outcome = await convertFindingInPack({ api, store, finding: { ...finding(full, hermit), file: 'imports/upload-1/ferry.xml' } });
+    expect(outcome).toBeNull();
+    expect(store.putHomebrew).not.toHaveBeenCalled();
+    expect(api.content.upload).not.toHaveBeenCalled();
   });
 });

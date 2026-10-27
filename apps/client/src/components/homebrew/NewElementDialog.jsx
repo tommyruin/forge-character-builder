@@ -9,7 +9,9 @@ import CustomItemModal from '../custom/CustomItemModal';
 import CustomSpellModal from '../custom/CustomSpellModal';
 import LibraryPicker from '../custom/LibraryPicker';
 import { Field, SelectInput } from '../custom/fields';
+import AdditionalFeatureCategories from './AdditionalFeatureCategories';
 import ParentPicker from './ParentPicker';
+import { ADDITIONAL_FEATURE_ITEM_TYPES } from './adjustmentCategories';
 import {
   NEW_ELEMENT_GROUPS,
   appendElement,
@@ -77,6 +79,29 @@ function BookElementStep({ route, api, onBack, onPicked }) {
   );
 }
 
+const sameType = (a, b) => a.trim().toLowerCase() === b.toLowerCase();
+
+// What the raw route says about a type that needs more than its XML to reach a character.
+function RawTypeAdvice({ type }) {
+  if (sameType(type, 'Background Feature')) {
+    return (
+      <p className="fcb-warning-note text-sm" data-testid="hb-raw-background-feature">
+        A Background Feature can&rsquo;t be added to a character on its own: only a background that grants it attaches it. For a
+        feature players can add, go back and pick Feature.
+      </p>
+    );
+  }
+  if (ADDITIONAL_FEATURE_ITEM_TYPES.some((itemType) => sameType(type, itemType))) {
+    return (
+      <div className="space-y-2" data-testid="hb-raw-item-categories">
+        <p className="text-sm">To list it on Manage › Additional features, set its category to one of these values.</p>
+        <AdditionalFeatureCategories summary="Categories for Additional features" />
+      </div>
+    );
+  }
+  return null;
+}
+
 function RawTypeStep({ onBack, onCreate }) {
   const [type, setType] = useState('');
   const [name, setName] = useState('');
@@ -98,6 +123,7 @@ function RawTypeStep({ onBack, onCreate }) {
           <input className="fcb-input" aria-label="Element name" value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
       </div>
+      <RawTypeAdvice type={type} />
       <DialogFooter>
         <button type="button" className="fcb-button mr-auto" onClick={onBack}>
           Back

@@ -56,13 +56,15 @@ export function normalizeElementRuleset(value) {
     : 'inherit';
 }
 
+// The types a new element can be. A Background Feature is left out: on its own it can never be added
+// to a character (only a Background's grant attaches it). TYPE_SPECS still has it, so an existing
+// one loads, opens and saves as before.
 export const ELEMENT_TYPES = [
   'Spell',
   'Feat',
   'Racial Trait',
   'Class Feature',
   'Archetype Feature',
-  'Background Feature',
   'Language',
   'Weapon',
   'Armor',
@@ -211,9 +213,10 @@ export const STAT_NAMES = [
   'hp', 'ac:misc', 'initiative:misc', 'innate speed',
 ];
 
+// What an element can grant. No Background Feature here either: see ELEMENT_TYPES.
 export const GRANT_TYPES = [
   'Racial Trait', 'Class Feature', 'Archetype Feature', 'Feat', 'Feat Feature',
-  'Background Feature', 'Language', 'Proficiency', 'Spell', 'Weapon', 'Armor', 'Item', 'Magic Item',
+  'Language', 'Proficiency', 'Spell', 'Weapon', 'Armor', 'Item', 'Magic Item',
 ];
 
 // Declarative per-type field spec. One table drives ElementForm's rendering AND the setter

@@ -338,6 +338,34 @@ describe('the New element template picker', () => {
     const element = onCreate.mock.calls[0][0];
     expect(element).toMatchObject({ type: 'Race Variant', name: 'Selkie Lineage' });
     expect(element.rawXml).toContain('type="Race Variant"');
+    expect($('[data-testid="hb-raw-background-feature"]')).toBeNull();
+    expect($('[data-testid="hb-raw-item-categories"]')).toBeNull();
+  });
+
+  it('offers no Background Feature type, and warns when one is typed but still makes it', async () => {
+    const { ELEMENT_TYPES, GRANT_TYPES, TYPE_SPECS } = await import('../xmlBuilder.js');
+    expect(ELEMENT_TYPES).not.toContain('Background Feature');
+    expect(GRANT_TYPES).not.toContain('Background Feature');
+    // An existing one still has its form spec, so it keeps loading and saving.
+    expect(TYPE_SPECS['Background Feature']).toBeTruthy();
+
+    const { onCreate } = await pick('raw');
+    await click($('[data-testid="hb-template-create"]'));
+    await type(byLabel('Element type'), 'background feature');
+    expect($('[data-testid="hb-raw-background-feature"]').textContent).toContain('only a background that grants it attaches it');
+    await type(byLabel('Element name'), 'Ferry Rights');
+    await click(buttonByText('Add element'));
+    expect(onCreate.mock.calls[0][0].rawXml).toContain('type="background feature"');
+  });
+
+  it('lists the Additional features categories when the type is an item', async () => {
+    await pick('raw');
+    await click($('[data-testid="hb-template-create"]'));
+    await type(byLabel('Element type'), 'Magic Item');
+    const advice = $('[data-testid="hb-raw-item-categories"]');
+    expect(advice.textContent).toContain('To list it on Manage › Additional features, set its category to one of these values.');
+    expect(advice.textContent).toContain('Supernatural Gifts');
+    expect(advice.textContent).toContain('Additional Feature');
   });
 });
 

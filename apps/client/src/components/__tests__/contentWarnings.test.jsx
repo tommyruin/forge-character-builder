@@ -36,3 +36,40 @@ describe('Content warnings: fixing a missing spell', () => {
     expect(source).toContain('<CustomSpellModal');
   });
 });
+
+describe('Content warnings: a Background Feature nothing attaches', () => {
+  const unattachable = (file) => ({
+    kind: 'unattachable',
+    file,
+    message: "Ferry Rights (ID_HB_MC_BACKGROUND_FEATURE_FERRY_RIGHTS) is a Background Feature with no Background that grants it",
+    detail: 'it cannot be added to anyone; add it as a custom feature instead',
+    elementId: 'ID_HB_MC_BACKGROUND_FEATURE_FERRY_RIGHTS',
+    elementName: 'Ferry Rights',
+  });
+  const render = (diag, props = {}) =>
+    renderToStaticMarkup(createElement(UploadDiagnostics, { diagnostics: [diag], onConvertFeature: () => {}, ...props }));
+
+  it('offers Convert to feature when a pack wrote the file', () => {
+    const markup = render(unattachable('imports/homebrew-1/collection.xml'));
+    expect(markup).toContain('[unattachable]');
+    expect(markup).toContain('Convert to feature');
+  });
+
+  it('keeps to the advice for an uploaded file that is not a pack', () => {
+    const markup = render(unattachable('imports/upload-7/ferry.xml'));
+    expect(markup).toContain('add it as a custom feature instead');
+    expect(markup).not.toContain('Convert to feature');
+  });
+
+  it('holds the button while a conversion runs', () => {
+    const markup = render(unattachable('imports/homebrew-1/collection.xml'), { convertingKey: 'busy' });
+    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Convert to feature<\/button>/);
+  });
+
+  it('is wired to the pack conversion in the content manager', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../ContentManager.jsx', import.meta.url), 'utf8');
+    expect(source).toContain('onConvertFeature={convertFeature}');
+    expect(source).toContain('convertFindingInPack({ api, store: localStore, finding: diag })');
+  });
+});

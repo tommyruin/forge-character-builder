@@ -3228,7 +3228,7 @@ button:disabled {
 }
 
 .fcb-homebrew-status-dot.is-error {
-  background: var(--fcb-amber);
+  background: var(--dmf-warning);
   box-shadow: none;
 }
 
@@ -7124,7 +7124,7 @@ button:disabled {
 }
 
 .fcb-boot-sub.fcb-boot-error {
-  color: var(--fcb-amber);
+  color: var(--dmf-warning-text, var(--dmf-warning));
 }
 
 .fcb-boot-steps {
@@ -7234,7 +7234,7 @@ button:disabled {
 }
 
 .fcb-boot-pill.is-warn {
-  color: var(--fcb-amber);
+  color: var(--dmf-warning-text, var(--dmf-warning));
 }
 
 .fcb-boot-pill-spinner {
@@ -7636,7 +7636,7 @@ button:disabled {
 }
 
 .fcb-sheet-preview-status.is-stale {
-  color: var(--fcb-amber);
+  color: var(--dmf-warning-text, var(--dmf-warning));
 }
 
 /* No stacked fallback: below 1081px viewport CharacterWorkspace deactivates split view

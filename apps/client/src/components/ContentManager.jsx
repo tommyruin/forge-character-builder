@@ -20,6 +20,7 @@ import { makePackSpellServices } from './custom/customServices';
 import { spellDraftFromMissing } from './custom/draftModel';
 import PackImportPanel from './homebrew/PackImportPanel';
 import { sniffPackFile } from './homebrew/packFile';
+import { convertFindingInPack, isPackFilePath } from './homebrew/packHealth';
 import usePackImport from './homebrew/usePackImport';
 import { collectionStoragePath } from './homebrew/xmlBuilder';
 import ContentImportControls from './ContentImportControls';
@@ -68,7 +69,7 @@ export function ContentSourceOption({ source }) {
 // failed to parse still reports accepted=true — the parse failure only shows up here.
 const MAX_DIAGNOSTIC_ROWS = 100;
 
-export function UploadDiagnostics({ diagnostics, onCreateSpell }) {
+export function UploadDiagnostics({ diagnostics, onCreateSpell, onConvertFeature, convertingKey = null }) {
   if (!diagnostics?.length) return null;
   const shown = diagnostics.slice(0, MAX_DIAGNOSTIC_ROWS);
   const hidden = diagnostics.length - shown.length;
@@ -98,6 +99,20 @@ export function UploadDiagnostics({ diagnostics, onCreateSpell }) {
                   onClick={() => onCreateSpell(diag)}
                 >
                   Create spell
+                </button>
+              )}
+            {/* A Background Feature nothing attaches is fixed in the pack that wrote it, the
+                way Pack health does; a file that is not a pack has only the advice above. */}
+            {onConvertFeature &&
+              diag.kind === 'unattachable' &&
+              isPackFilePath(diag.file) && (
+                <button
+                  type="button"
+                  className="fcb-button ml-2"
+                  disabled={convertingKey !== null}
+                  onClick={() => onConvertFeature(diag)}
+                >
+                  Convert to feature
                 </button>
               )}
           </li>
@@ -228,6 +243,8 @@ function ContentFilesDrawer({
   keepDuplicateSource,
   keepAllDuplicates,
   onCreateSpell,
+  onConvertFeature,
+  convertingKey,
   importNeed,
   packImport,
 }) {
@@ -418,6 +435,8 @@ function ContentFilesDrawer({
                   <UploadDiagnostics
                     diagnostics={importJob.diagnostics}
                     onCreateSpell={onCreateSpell}
+                    onConvertFeature={onConvertFeature}
+                    convertingKey={convertingKey}
                   />
                 </div>
               )}
@@ -441,6 +460,8 @@ function ContentFilesDrawer({
                   <UploadDiagnostics
                     diagnostics={uploadResult.diagnostics}
                     onCreateSpell={onCreateSpell}
+                    onConvertFeature={onConvertFeature}
+                    convertingKey={convertingKey}
                   />
                 </div>
               )}
@@ -579,6 +600,8 @@ export default function ContentManager({
   // A spell being made for a pack that granted it without defining it: the warning it answers,
   // and the collection of the builder that wrote it (null when the file is not one of those).
   const [spellFix, setSpellFix] = useState(null);
+  // The unattachable finding being converted to a feature in its pack, while that runs.
+  const [convertingKey, setConvertingKey] = useState(null);
   const [resolvingDuplicateFingerprint, setResolvingDuplicateFingerprint] =
     useState(null);
   const fileInput = useRef(null);
@@ -651,6 +674,42 @@ export default function ContentManager({
       void onLibraryChanged?.({ source: 'homebrew', result: saved.result });
     },
     [onLibraryChanged, spellFix],
+  );
+
+  // Convert to feature on a Background Feature no background attaches: the pack that wrote the file
+  // gets the same conversion as its Pack health card, and is saved again, so the warning is done
+  // with once the file reloads.
+  const convertFeature = useCallback(
+    async (diag) => {
+      setConvertingKey(`${diag.file}:${diag.elementId}`);
+      try {
+        await beforeLibraryMutation?.();
+        const outcome = await convertFindingInPack({ api, store: localStore, finding: diag });
+        if (!outcome) {
+          setError(
+            `${diag.elementName ?? 'That element'} is no longer in a pack on this device, so it can't be converted here. Open the pack on the Homebrew page and check its Pack health.`,
+          );
+          return;
+        }
+        const resolved = (entry) =>
+          entry.kind === 'unattachable' && entry.file === diag.file && entry.elementId === diag.elementId;
+        const clean = (diagnostics) => (diagnostics ?? []).filter((entry) => !resolved(entry));
+        setImportJob((job) => (job ? { ...job, diagnostics: clean(job.diagnostics) } : job));
+        setUploadResult((result) => (result ? { ...result, diagnostics: clean(result.diagnostics) } : result));
+        void onLibraryChanged?.({ source: 'homebrew', result: outcome.saved.result });
+        if (!outcome.clean) {
+          setError(
+            `${outcome.pack.name} was converted and saved, but its file still has problems. Open it on the Homebrew page to see them in Pack health.`,
+          );
+        }
+      } catch (caught) {
+        setError(caught.message);
+      } finally {
+        setConvertingKey(null);
+        onLibraryMutationFinished?.();
+      }
+    },
+    [beforeLibraryMutation, onLibraryChanged, onLibraryMutationFinished],
   );
 
   const refresh = useCallback(() => {
@@ -1419,6 +1478,8 @@ export default function ContentManager({
         keepDuplicateSource={keepDuplicateSource}
         keepAllDuplicates={keepAllDuplicates}
         onCreateSpell={startSpellFix}
+        onConvertFeature={convertFeature}
+        convertingKey={convertingKey}
         importNeed={importNeed}
         packImport={packImport}
       />

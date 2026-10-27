@@ -2,12 +2,15 @@ import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { ADJUSTMENT_CATEGORIES } from '@forge-cb/engine';
 import {
   ACTIVE_KEY,
   FeatureList,
+  UploadedFeaturesHint,
   featureCategories,
   filterFeatures,
 } from '../tabs/manage/AdditionalFeaturesPanel.jsx';
+import { ADDITIONAL_FEATURE_CATEGORIES } from '../homebrew/adjustmentCategories.js';
 
 const manage = readFileSync(
   new URL('../tabs/ManageTab.jsx', import.meta.url),
@@ -162,5 +165,56 @@ describe('feature cards', () => {
       emptyCopy: 'Nothing active yet.',
     });
     expect(markup).toContain('Nothing active yet.');
+  });
+});
+
+describe('which uploaded items show here', () => {
+  it('mirrors the engine list exactly, in its order', () => {
+    expect([...ADDITIONAL_FEATURE_CATEGORIES]).toEqual([...ADJUSTMENT_CATEGORIES]);
+  });
+
+  it('says which categories put an uploaded item here and lists every one', () => {
+    const markup = renderToStaticMarkup(
+      createElement(UploadedFeaturesHint, { offersCustomFeature: true }),
+    );
+    expect(markup).toContain(
+      'An uploaded Item or Magic Item shows here when its category is one of the values below.',
+    );
+    expect(markup).toContain('Categories that show here');
+    for (const category of ADJUSTMENT_CATEGORIES) {
+      expect(markup).toContain(`<code>${category}</code>`);
+    }
+  });
+
+  it('points to Custom feature only when that button is offered', () => {
+    const route = 'To add a feature without writing XML, use Custom feature.';
+    expect(
+      renderToStaticMarkup(
+        createElement(UploadedFeaturesHint, { offersCustomFeature: true }),
+      ),
+    ).toContain(route);
+    expect(
+      renderToStaticMarkup(
+        createElement(UploadedFeaturesHint, { offersCustomFeature: false }),
+      ),
+    ).not.toContain(route);
+  });
+
+  it('shows the hint under the empty Active view, and only there', () => {
+    const hint = createElement(UploadedFeaturesHint, {
+      offersCustomFeature: true,
+    });
+    const empty = renderList({
+      features: [],
+      emptyCopy: 'Nothing active yet.',
+      emptyHint: hint,
+    });
+    expect(empty).toContain('data-testid="additional-features-hint"');
+    expect(renderList({ emptyHint: hint })).not.toContain(
+      'additional-features-hint',
+    );
+    expect(panelSource).toMatch(
+      /nothingActive \? \(\s*<UploadedFeaturesHint/,
+    );
   });
 });
