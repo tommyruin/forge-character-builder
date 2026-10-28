@@ -58,6 +58,36 @@ describe("selection rule presentation", () => {
     ).toBe(true);
   });
 
+  it("clears the Background dot once only optional picks are left", async () => {
+    const { BUILD_SECTIONS } = await import("../../api.js");
+    const { buildSectionRules } = await import("../buildSectionRules.js");
+    const section = (key) => BUILD_SECTIONS.find((s) => s.key === key);
+    const dotOn = (key, rules) =>
+      hasIncompleteRequiredSelection(buildSectionRules(section(key), rules), {
+        sectionKey: key,
+      });
+    // The shape the engine reports for a 2014 background with personality
+    // lists: List picks come through optional, so they hold no reminder.
+    const rules = [
+      rule({ name: "Background", type: "Background", hasSelection: true }),
+      rule({ name: "Variant Feature", type: "Background Feature", isOptional: true, hasSelection: false, hasAvailableOptions: false }),
+      rule({ name: "Personality Trait", type: "List", isList: true, isOptional: true, selectionCount: 2, hasSelection: false }),
+      rule({ name: "Ideal", type: "List", isList: true, isOptional: true, hasSelection: false }),
+      rule({ name: "Language (Background)", type: "Language", isOptional: false, selectionCount: 2, hasSelection: false }),
+    ];
+
+    expect(dotOn("background", rules)).toBe(false);
+    // The background's language pick still flags its own section.
+    expect(dotOn("languages", rules)).toBe(true);
+    // A List pick the content marks required keeps the dot.
+    expect(
+      dotOn("background", [
+        ...rules,
+        rule({ name: "Calling", type: "List", isList: true, isOptional: false, hasSelection: false }),
+      ]),
+    ).toBe(true);
+  });
+
   it("keeps an authored language title while removing its grouped type", () => {
     expect(
       getSelectionRulePresentation(

@@ -49,6 +49,8 @@ project uses [Semantic Versioning](https://semver.org/).
 - A level 1 character can start a second class: "Start a new multiclass…" is
   available as soon as the first class's ability-score prerequisite is met,
   instead of only from level 2, so a 1/1 character can be built.
+- Personality trait, ideal, bond and flaw picks are optional again, so the
+  Background section's dot clears once the required picks are made.
 - A supernatural gift added in Manage > Additional features tracks its
   limited uses on Resources and the printed sheet.
 - A stowed item prints once on the equipment page, with its container's

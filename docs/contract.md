@@ -150,7 +150,9 @@ the public description plus equipment `rarity` and
   rule-local level, so same-name Wizard spellbook rules at later class levels
   do not collapse into the first rule.
 - `SelectionRuleDetail` includes `isOptional`, propagated from authored XML
-  `optional="true"`, and `hasAvailableOptions`, derived from legal candidates.
+  `optional="true"` (a Deity pick, and a `List` pick such as a personality
+  trait, ideal, bond or flaw, is optional unless its select says
+  `optional="false"`), and `hasAvailableOptions`, derived from legal candidates.
   Optional and zero-option rows stay visible but do not display an incomplete
   notification; invalidated-choice warnings remain visible.
 - `SelectionRuleDetail` includes `allocatesAbilityScores`, true when resolving

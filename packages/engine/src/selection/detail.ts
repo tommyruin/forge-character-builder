@@ -379,7 +379,7 @@ function detailSelectionRules(
             type: node.type,
             requiredLevel: node.requiredLevel,
             isList: node.isList === true,
-            isOptional: node.type === "Deity" || authoredSelect?.optional === true,
+            isOptional: isOptionalSelection(node.type, authoredSelect),
             hasAvailableOptions: !groupHasEmptySlot || groupHasAvailableOptions,
             selectionCount: 1,
             hasSelection: selectedId !== null,
@@ -404,6 +404,21 @@ function detailSelectionRules(
   };
   walk(state.elements, []);
   return rules;
+}
+
+/**
+ * Whether a choice can be left unpicked without the build counting as unfinished.
+ * The content marks most of these with `optional="true"`. Two kinds are optional
+ * without the marker: a Deity, and a `List` pick (personality trait, ideal, bond,
+ * flaw, trinket and the like). A List pick only stores a line of text: it grants
+ * nothing, and the .dnd5e format does not count it as a registration. The content
+ * marks these lists inconsistently, so an absent marker means optional. Only an
+ * explicit `optional="false"` makes a List pick required.
+ */
+function isOptionalSelection(type: string, authoredSelect: { optional?: boolean } | undefined): boolean {
+  if (type === "Deity") return true;
+  if (type === "List") return authoredSelect?.optional !== false;
+  return authoredSelect?.optional === true;
 }
 
 /** Projects the character state into the client-facing detail view. */
