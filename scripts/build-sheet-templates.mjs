@@ -83,6 +83,10 @@ const SHADOW = rgb(...SHEET_FIXED_COLOURS.shadow);
 const PANEL_GREY = rgb(...SHEET_FIXED_COLOURS.panelGrey);
 const LABEL_FONT = { display: "titles", caption: "captions", captionLight: "notes" };
 
+// Each set's `marker` is its checkboxes' (proficiency, expertise and the
+// advantage marks); `track` is the death saves' and the exhaustion track's,
+// circles on every set, which the writer's resource pips copy
+// (SHEET_TEMPLATE_MARKERS in the contract).
 const EDITION = {
   "2014": {
     rules: "2014 RULES",
@@ -92,6 +96,7 @@ const EDITION = {
     titleStyle: "caption",
     titleAt: "bottom",
     marker: "square",
+    track: "circle",
   },
   "2024": {
     rules: "2024 RULES",
@@ -101,6 +106,7 @@ const EDITION = {
     titleStyle: "plate",
     titleAt: "top",
     marker: "circle",
+    track: "circle",
   },
 };
 // The hybrid set prints 2024 rules on the classic ability column.
@@ -504,8 +510,8 @@ function deathSaves(s, prefix, x, y) {
   s.note("successes", x, y + 9.5, { size: 4.2 });
   s.note("failures", x, y - 1.5, { size: 4.2 });
   for (let index = 1; index <= 3; index += 1) {
-    s.check(`${prefix}_death_save_success_${index}`, x + 28 + (index - 1) * 8.5, y + 8.5, 6);
-    s.check(`${prefix}_death_save_fail_${index}`, x + 28 + (index - 1) * 8.5, y - 2.5, 6);
+    s.check(`${prefix}_death_save_success_${index}`, x + 28 + (index - 1) * 8.5, y + 8.5, 6, { marker: s.style.track });
+    s.check(`${prefix}_death_save_fail_${index}`, x + 28 + (index - 1) * 8.5, y - 2.5, 6, { marker: s.style.track });
   }
 }
 
@@ -547,8 +553,8 @@ function hitPointBox(s, prefix, x, y, width, height, { splitDice = false, readab
   const checksX = saves.x + 38;
   const [successY, failY] = [y + 21, y + 13];
   for (let index = 1; index <= 3; index += 1) {
-    s.check(`${prefix}_death_save_success_${index}`, checksX + (index - 1) * 9, successY, 6);
-    s.check(`${prefix}_death_save_fail_${index}`, checksX + (index - 1) * 9, failY, 6);
+    s.check(`${prefix}_death_save_success_${index}`, checksX + (index - 1) * 9, successY, 6, { marker: s.style.track });
+    s.check(`${prefix}_death_save_fail_${index}`, checksX + (index - 1) * 9, failY, 6, { marker: s.style.track });
   }
   const captionSize = readable ? 4.2 : 3.2;
   s.label("SUCCESSES", saves.x + 4, y + 22.5, { size: captionSize, color: "lines" });
@@ -582,7 +588,7 @@ function readableColumnC2014(s, style, layout, bottom) {
   const inspirationSize = Math.min(4.8, 35 / s.textWidth(style.inspiration, "caption", 1));
   s.captioned("details_inspiration", style.inspiration, 296, frameTop - 48, 35, 10, { align: "center", captionAlign: "center", size: 7, captionSize: inspirationSize });
   s.label("EXHAUSTION", 335, frameTop - 36, { size: 4.8 });
-  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, frameTop - 46, 6, { marker: "square" });
+  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, frameTop - 46, 6, { marker: s.style.track });
   s.text("details_resistances", 224, frameTop - 81, 164, 26, { multiline: true, size: 6, box: "none" });
   s.block(style.traits, "details_additional_notes", 213, bottom, 182, frameTop - 96 - bottom, { padTop: 4 });
 }
@@ -696,7 +702,7 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
     s.captioned("details_vision", "VISION", 224, 448, 66, 10, { size: 7 });
     s.captioned("details_inspiration", style.inspiration, 296, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
     s.label("EXHAUSTION", 335, 460, { size: 3.4 });
-    for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, 450, 6, { marker: "square" });
+    for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, 450, 6, { marker: s.style.track });
     s.text("details_resistances", 224, 404, 164, 38, { multiline: true, size: 6, box: "none" });
     s.block(style.traits, "details_additional_notes", 213, columnBottom, 182, 384 - columnBottom);
   }
@@ -881,8 +887,8 @@ function vitalsRow2024(s, layout) {
   s.label("SUCCESSES", vitalX(4) + 6, vitalY + 27, { size: 3.4, color: "lines" });
   s.label("FAILURES", vitalX(4) + 6, vitalY + 17, { size: 3.4, color: "lines" });
   for (let index = 1; index <= 3; index += 1) {
-    s.check(`details_death_save_success_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 25, 7);
-    s.check(`details_death_save_fail_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 15, 7);
+    s.check(`details_death_save_success_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 25, 7, { marker: s.style.track });
+    s.check(`details_death_save_fail_${index}`, vitalX(4) + 36 + (index - 1) * 11, vitalY + 15, 7, { marker: s.style.track });
   }
   s.label("DEATH SAVES", vitalX(4), vitalY + 4.5, { size: caption, align: "center", width: vitalW });
   stat("details_passive_perception_total", "PASSIVE PERCEPTION", 5);
@@ -999,8 +1005,8 @@ function topBand2024(s, edition, layout) {
   s.label("SUCCESSES", savesX + 5, vitalY + 28, { size: 3.2, color: "lines" });
   s.label("FAILURES", savesX + 5, vitalY + 18, { size: 3.2, color: "lines" });
   for (let index = 1; index <= 3; index += 1) {
-    s.check(`details_death_save_success_${index}`, savesX + 27 + (index - 1) * 7.5, vitalY + 26.5, 6);
-    s.check(`details_death_save_fail_${index}`, savesX + 27 + (index - 1) * 7.5, vitalY + 16.5, 6);
+    s.check(`details_death_save_success_${index}`, savesX + 27 + (index - 1) * 7.5, vitalY + 26.5, 6, { marker: s.style.track });
+    s.check(`details_death_save_fail_${index}`, savesX + 27 + (index - 1) * 7.5, vitalY + 16.5, 6, { marker: s.style.track });
   }
   s.label("DEATH SAVES", savesX, vitalY + 5, { size: readable ? 4.8 : 4, align: "center", width: savesW });
 
@@ -1065,13 +1071,13 @@ function plateSection(s, title, x, y, width, height) {
   return s.section(title, x, y, width, height, { style: "plate", at: "top", size });
 }
 
-/** The conditions box: conditions over the exhaustion marks. */
+/** The conditions box: conditions over the exhaustion marks, in the death saves' marker. */
 function conditions2024(s, layout, x, y, width, height) {
   const title = "CONDITIONS & EXHAUSTION";
   const inner = s.section(title, x, y, width, height, { size: Math.min(5.6, (width - 14) / s.textWidth(title, "display", 1)) });
   const pitch = Math.min(16, (inner.width - 6) / 6);
   s.label("EXHAUSTION", inner.x + 2, inner.y + 12, { size: layout.readable ? 5.5 : 4.6, color: "lines" });
-  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, inner.x + 2 + (i - 1) * pitch, inner.y + 2, 7, { marker: "square" });
+  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, inner.x + 2 + (i - 1) * pitch, inner.y + 2, 7, { marker: s.style.track });
   s.text("details_conditions", inner.x, inner.y + 19, inner.width, inner.height - 19, { multiline: true, size: 6, box: "none" });
 }
 

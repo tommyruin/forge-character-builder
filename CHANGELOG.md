@@ -25,8 +25,11 @@ project uses [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Resource trackers print as circles on the sheet, filled for each use spent
-  on the Resources page (or a count left past six). Sheet settings can turn
-  the Resources line off, or print it empty to fill in at the table.
+  on the Resources page (or a count left past six), drawn like the death
+  saves. Sheet settings can turn the Resources line off, or print it empty to
+  fill in at the table.
+- Death saves and the exhaustion track are circles on every sheet set; the
+  2014 sheet's were rounded squares.
 - The Homebrew Editor no longer offers Background Feature as a new element or
   grant type, since one can only reach a character through a background.
   Existing ones still load and edit, and typing the type as raw XML warns

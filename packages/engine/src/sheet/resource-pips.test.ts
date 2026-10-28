@@ -16,6 +16,7 @@ import { buildCharacterSheetModel, type CharacterSheetModel, type SheetPage } fr
 import { featureFlowLines, featureParagraphs, writeCharacterSheetPdfWithTemplateBundle, type TextMeasure } from "./pdf.js";
 import {
   CHECK_DOT_RATIO,
+  DEFAULT_PIP_LOOK,
   MARKER_STROKE,
   PIP_SIDE_BEARING,
   hasPips,
@@ -24,6 +25,7 @@ import {
   pipMarker,
   pipSegments,
   pipWordWidth,
+  type PipLook,
 } from "./pips.js";
 
 const dto = (extra: Partial<TrackerDto>): TrackerDto => ({
@@ -86,10 +88,11 @@ describe("pip size", () => {
     expect(pipWordWidth(`(${OPEN_MARK}${OPEN_MARK})`, 10, 0.7, measure)).toBeCloseTo(2 * advance + 20);
   });
 
-  it("copies the death saves in the set's marker, or the exhaustion track's squares", () => {
+  it("copies the death saves in the set's marker, or rounded squares on every set", () => {
     expect(pipMarker("death-save", "circle")).toBe("circle");
     expect(pipMarker("death-save", "square")).toBe("square");
-    expect(pipMarker("exhaustion", "circle")).toBe("square");
+    expect(pipMarker("square", "circle")).toBe("square");
+    expect(DEFAULT_PIP_LOOK).toBe("death-save");
   });
 });
 
@@ -142,7 +145,7 @@ describe("the PDF's pips", () => {
     page: 1, templateKind: "details",
     sections: [{ title: "features", rows: lines.map((text) => ({ kind: "lines" as const, lines: [text] })) }],
   });
-  async function draw(sheetPage: SheetPage, set: "2014" | "2024", pipLook?: "death-save" | "exhaustion") {
+  async function draw(sheetPage: SheetPage, set: "2014" | "2024", pipLook?: PipLook) {
     const circles = vi.spyOn(PDFPage.prototype, "drawCircle");
     const paths = vi.spyOn(PDFPage.prototype, "drawSvgPath");
     try {
@@ -165,26 +168,27 @@ describe("the PDF's pips", () => {
   }
   const fourUsesTwoSpent = resourceSheetText([dto({})])!;
 
-  it("draws a 4-use tracker with 2 spent as four exhaustion squares, two of them dotted", async () => {
+  it("draws a 4-use tracker with 2 spent as four death-save circles on a 2024 page, two of them dotted", async () => {
     expect(fourUsesTwoSpent).toBe(`Resources. Pip Test ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK} (LR)`);
     const drawn = await draw(page([fourUsesTwoSpent]), "2024");
-    expect(drawn).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 2 });
+    expect(drawn).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 2 });
     expect(drawn.text).toContain("Pip Test");
     expect(drawn.text).toContain("(LR)");
     expect(drawn.text).not.toMatch(/Pip Test\s+o\b/);
     expect(drawn.text).not.toContain("•");
   }, 60_000);
 
-  it("copies the death saves in the set's own marker when asked", async () => {
+  it("copies the 2014 death saves' circles too, and draws squares on any set when asked", async () => {
     expect(await draw(page([fourUsesTwoSpent]), "2024", "death-save")).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 2 });
-    expect(await draw(page([fourUsesTwoSpent]), "2014", "death-save")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 2 });
-    expect(await draw(page([fourUsesTwoSpent]), "2014")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 2 });
+    expect(await draw(page([fourUsesTwoSpent]), "2014")).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 2 });
+    expect(await draw(page([fourUsesTwoSpent]), "2024", "square")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 2 });
+    expect(await draw(page([fourUsesTwoSpent]), "2014", "square")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 2 });
   }, 60_000);
 
   it("prints an empty tracker as rings alone, a large one as text, and leaves other marks as text", async () => {
     const empty = resourceSheetText([dto({}), dto({ label: "Wand", max: 7, used: 3 })], { empty: true })!;
     const drawn = await draw(page([`Bullets. A feature that prints ${OPEN_MARK} as text.`, empty]), "2024");
-    expect(drawn).toMatchObject({ ringSquares: 4, dots: 0 });
+    expect(drawn).toMatchObject({ ringCircles: 4, dots: 0 });
     expect(drawn.text).toContain("____ / 7");
     expect(drawn.text).toMatch(/prints\s+o\s+as/);
   }, 60_000);
@@ -193,7 +197,7 @@ describe("the PDF's pips", () => {
     const filler = Array.from({ length: 1400 }, (_, index) => `word${index}`).join(" ");
     const drawn = await draw(page([`Long. ${filler}`, fourUsesTwoSpent]), "2024");
     expect(drawn.text).toContain("FEATURES & TRAITS (CONTINUED)");
-    expect(drawn).toMatchObject({ ringSquares: 4, dots: 2 });
+    expect(drawn).toMatchObject({ ringCircles: 4, dots: 2 });
   }, 60_000);
 
   it("draws a real character's tracker kept by hand", async () => {
@@ -206,7 +210,7 @@ describe("the PDF's pips", () => {
     expect(JSON.stringify(details)).toContain(`Pip Test ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK} (LR)`);
     const drawn = await draw(details, "2024");
     // Every tracker on the line is drawn as pips; none prints as "o" or a bullet.
-    expect(drawn.ringSquares).toBeGreaterThanOrEqual(4);
+    expect(drawn.ringCircles).toBeGreaterThanOrEqual(4);
     expect(drawn.dots).toBeGreaterThanOrEqual(2);
     expect(drawn.text).toContain("Pip Test");
     expect(drawn.text).not.toMatch(/Pip Test\s+o\b/);

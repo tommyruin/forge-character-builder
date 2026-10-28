@@ -392,8 +392,8 @@ export interface CharacterSheetTemplateBundle {
    */
   layout?: SheetLayout;
   /**
-   * The set's checkbox marker, which the Resources paragraph's pips copy.
-   * Absent, they are circles.
+   * The set's death-save and exhaustion marker (SHEET_TEMPLATE_MARKERS),
+   * which the Resources paragraph's pips copy. Absent, they are circles.
    */
   marker?: SheetMarker;
   /** The set's titles, captions and ribbons, keyed by template file. */
@@ -419,7 +419,7 @@ export interface CharacterSheetWriteOptions {
    */
   trace?: SheetRenderTrace;
   /**
-   * Internal: which track the Resources paragraph's pips copy (sheet/pips.ts).
+   * Internal: which marker the Resources paragraph's pips copy (sheet/pips.ts).
    * Not a sheet setting; absent, DEFAULT_PIP_LOOK.
    */
   pipLook?: PipLook;
@@ -1460,7 +1460,7 @@ interface FeatureFlowResult {
 const FEATURE_RULE_COLOUR: PdfColor = [0.45, 0.45, 0.45];
 
 /**
- * How the Resources paragraph's pips print: the set's checkbox marker, ruled
+ * How the Resources paragraph's pips print: the death saves' marker, ruled
  * in the accent colour and filled white as the template draws it, and a spent
  * use's dot in the text colour, as a ticked death save's.
  */

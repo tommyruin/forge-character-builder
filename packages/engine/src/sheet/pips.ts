@@ -4,7 +4,7 @@
  * The sheet model writes a resource tracker's uses as "○" (left) and "●"
  * (spent), which previews and text exports read as they are. No sheet face has
  * either glyph, so the PDF writer draws each one as a small copy of the sheet's
- * own checkbox marker instead: the empty death-save box for a use left, the
+ * own death-save marker instead: the empty death save for a use left, the
  * ticked one for a use spent. Only the Resources paragraph is drawn this way;
  * the same marks anywhere else print as text (see `winAnsiText`).
  *
@@ -18,30 +18,28 @@ import { OPEN_MARK, RESOURCES_LEAD, SPENT_MARK } from "../resources/sheet.js";
 import type { SheetMarker } from "./template-contract.js";
 
 /**
- * Which of the page's own tracks the pips copy: the death saves, drawn in the
- * set's marker (rounded squares on a 2014 page, circles on a 2024 one), or
- * the exhaustion track, rounded squares on every set. Both are a white marker
- * ruled in the accent colour, ticked with the same dot. An internal switch,
- * not a sheet setting.
+ * What the pips copy: the death saves and the exhaustion track, drawn in the
+ * set's track marker (circles on every set), or rounded squares on every set.
+ * Either is a white marker ruled in the accent colour, ticked with the same
+ * dot. An internal switch, not a sheet setting.
  */
-export type PipLook = "death-save" | "exhaustion";
+export type PipLook = "death-save" | "square";
 /**
- * The exhaustion squares, for now: at text size a cap-height circle in the
- * print theme's black reads as a capital O, where a rounded square reads only
- * as a box to tick, and it is the same box on every set.
+ * The death saves, so the pips match the page's other tracks. "square" stays
+ * for a page where a cap-height circle in black would read as a capital O.
  */
-export const DEFAULT_PIP_LOOK: PipLook = "exhaustion";
+export const DEFAULT_PIP_LOOK: PipLook = "death-save";
 
-/** The marker the pips draw for `look` on a set whose checkboxes use `setMarker`. */
+/** The marker the pips draw for `look` on a set whose death saves use `setMarker`. */
 export function pipMarker(look: PipLook, setMarker: SheetMarker): SheetMarker {
-  return look === "exhaustion" ? "square" : setMarker;
+  return look === "square" ? "square" : setMarker;
 }
 
 /**
  * The template checkbox a pip copies, in points: a 6pt marker ruled with a
  * 0.6pt stroke, a rounded square's corners at 1.2pt (see
- * scripts/build-sheet-templates.mjs `check`; the 2024 exhaustion boxes are
- * 7pt with the same stroke and corners).
+ * scripts/build-sheet-templates.mjs `check`; the 2024 exhaustion circles and
+ * some death saves are 7pt with the same stroke).
  */
 export const MARKER_BOX = 6;
 export const MARKER_STROKE = 0.6;
