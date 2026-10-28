@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-10-28
+
 ### Added
 
 - Each resource on the Resources page has a Track switch. A resource you
