@@ -873,14 +873,15 @@ function vitalsRow2024(s, layout) {
   s.check("details_initiative_advantage", vitalX(1) + 6, vitalY + 30, 6);
   s.label("ADV", vitalX(1) + 14, vitalY + 31.2, { size: readable ? 4.4 : 3.6 });
   s.frame(vitalX(2), vitalY, vitalW, vitalH);
-  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 15, 35, 20, { align: "center", size: 14, box: "none" });
-  s.label("SPEED", vitalX(2) + 3, vitalY + 5, { size: caption, align: "center", width: 35 });
-  s.rule(vitalX(2) + 40, vitalY + 6, vitalX(2) + 40, vitalY + vitalH - 6, GOLD, 0.4);
-  const modeX = vitalX(2) + 44.5 + s.textWidth("CLIMB", "caption", 3.4);
+  s.text("details_speed_walking", vitalX(2) + 3, vitalY + 15, 33, 20, { align: "center", size: 14, box: "none" });
+  s.label("SPEED", vitalX(2) + 3, vitalY + 5, { size: caption, align: "center", width: 33 });
+  s.rule(vitalX(2) + 38, vitalY + 6, vitalX(2) + 38, vitalY + vitalH - 6, GOLD, 0.4);
+  // The mode lines stop 5pt short of the border and keep the 17pt "120ft." needs at 5pt.
+  const modeX = vitalX(2) + 42 + s.textWidth("CLIMB", "caption", 3.4);
   [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, label], index) => {
     const y = vitalY + 27 - index * 9.5;
-    s.label(label, vitalX(2) + 43, y + 1.5, { size: 3.4, color: "lines" });
-    s.text(name, modeX, y, vitalX(2) + vitalW - 3 - modeX, 8, { align: "center", size: 5.5 });
+    s.label(label, vitalX(2) + 40.5, y + 1.5, { size: 3.4, color: "lines" });
+    s.text(name, modeX, y, vitalX(2) + vitalW - 5 - modeX, 8, { align: "center", size: 5.5 });
   });
   stat("details_hd", "HIT DICE", 3);
   s.frame(vitalX(4), vitalY, vitalW, vitalH);
@@ -987,16 +988,18 @@ function topBand2024(s, edition, layout) {
   const speedX = 406;
   const speedW = 80;
   s.frame(speedX, vitalY, speedW, vitalH);
-  s.text("details_speed_walking", speedX + 3, vitalY + 14, 37, 20, { align: "center", size: 16, box: "none" });
-  s.label("SPEED", speedX + 3, vitalY + 5, { size: readable ? 5 : 4.2, align: "center", width: 37 });
-  s.rule(speedX + 42, vitalY + 6, speedX + 42, vitalY + vitalH - 6, GOLD, 0.4);
-  // Each mode's line takes what its caption leaves: "35ft." at 6pt needs 16pt.
+  // "30ft." at 16pt is 31pt wide: 32pt of field leaves it 4.9pt clear of the divider.
+  s.text("details_speed_walking", speedX + 4, vitalY + 14, 32, 20, { align: "center", size: 16, box: "none" });
+  s.label("SPEED", speedX + 4, vitalY + 5, { size: readable ? 5 : 4.2, align: "center", width: 32 });
+  s.rule(speedX + 40.5, vitalY + 6, speedX + 40.5, vitalY + vitalH - 6, GOLD, 0.4);
+  // Each mode's line takes what its caption leaves, and stops 5pt short of the
+  // border: "120ft." at 5pt needs 16.5pt.
   const modeCaption = readable ? 4 : 3.4;
-  const modeX = speedX + 46.5 + s.textWidth("CLIMB", "caption", modeCaption);
+  const modeX = speedX + 44.5 + s.textWidth("CLIMB", "caption", modeCaption);
   [["details_speed_fly", "FLY"], ["details_speed_climb", "CLIMB"], ["details_speed_swim", "SWIM"]].forEach(([name, caption], index) => {
     const y = vitalY + 28 - index * 10.5;
-    s.label(caption, speedX + 45, y + 1.5, { size: modeCaption, color: "lines" });
-    s.text(name, modeX, y, speedX + speedW - 3 - modeX, 9, { align: "center", size: 6 });
+    s.label(caption, speedX + 43.5, y + 1.5, { size: modeCaption, color: "lines" });
+    s.text(name, modeX, y, speedX + speedW - 5 - modeX, 9, { align: "center", size: 6 });
   });
 
   const savesX = 490;
@@ -1071,12 +1074,26 @@ function plateSection(s, title, x, y, width, height) {
   return s.section(title, x, y, width, height, { style: "plate", at: "top", size });
 }
 
-/** The conditions box: conditions over the exhaustion marks, in the death saves' marker. */
-function conditions2024(s, layout, x, y, width, height) {
+/**
+ * The conditions box: conditions over the exhaustion marks, in the death
+ * saves' marker. With `inline` the label and the six marks share one line and
+ * the conditions take the height that frees.
+ */
+function conditions2024(s, layout, x, y, width, height, { inline = false } = {}) {
   const title = "CONDITIONS & EXHAUSTION";
   const inner = s.section(title, x, y, width, height, { size: Math.min(5.6, (width - 14) / s.textWidth(title, "display", 1)) });
+  const captionSize = layout.readable ? 5.5 : 4.6;
+  if (inline) {
+    // The label's baseline sits level with the marks' centres.
+    const marksX = inner.x + 2 + s.textWidth("EXHAUSTION", "caption", captionSize) + 6;
+    const pitch = Math.min(14, (inner.x + inner.width - 2 - marksX - 7) / 5);
+    s.label("EXHAUSTION", inner.x + 2, inner.y + 5.5 - captionSize * 0.35, { size: captionSize, color: "lines" });
+    for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, marksX + (i - 1) * pitch, inner.y + 2, 7, { marker: s.style.track });
+    s.text("details_conditions", inner.x, inner.y + 12, inner.width, inner.height - 12, { multiline: true, size: 6, box: "none" });
+    return;
+  }
   const pitch = Math.min(16, (inner.width - 6) / 6);
-  s.label("EXHAUSTION", inner.x + 2, inner.y + 12, { size: layout.readable ? 5.5 : 4.6, color: "lines" });
+  s.label("EXHAUSTION", inner.x + 2, inner.y + 12, { size: captionSize, color: "lines" });
   for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, inner.x + 2 + (i - 1) * pitch, inner.y + 2, 7, { marker: s.style.track });
   s.text("details_conditions", inner.x, inner.y + 19, inner.width, inner.height - 19, { multiline: true, size: 6, box: "none" });
 }
@@ -1143,28 +1160,33 @@ function hybridAbilityColumns(s, layout) {
   const columnBottom = 268;
   const shieldH = 56;
   const shieldPitch = (columnTop - 2 - shieldH - columnBottom - 4) / 5;
-  s.panel(23, columnBottom - 6, 68, columnTop - columnBottom + 8);
+  const shieldW = 54;
+  s.panel(23, columnBottom - 6, shieldW + 10, columnTop - columnBottom + 8);
   ABILITIES.forEach(([key, caption], index) => {
-    // The brow takes the name at up to 5.6pt, the 2024 panels' size.
-    const captionSize = Math.min(5.6, 48 / MEASURE.display.widthOfTextAtSize(caption, 1));
-    s.abilityShield("details", key, caption, 57, columnTop - 2 - index * shieldPitch, { width: 58, height: shieldH, captionSize, large: "modifier" });
+    // The brow takes the name at up to 5.6pt, the 2024 panels' size, within 8pt of the shield's width.
+    const captionSize = Math.min(5.6, (shieldW - 8) / MEASURE.display.widthOfTextAtSize(caption, 1));
+    s.abilityShield("details", key, caption, 23 + (shieldW + 10) / 2, columnTop - 2 - index * shieldPitch, { width: shieldW, height: shieldH, captionSize, large: "modifier" });
   });
 
   // Column B: saving throws, with their notes, over the skills list.
-  const bx = 96;
-  const bw = 126;
+  // "Animal Handling (Wis)", the longest skill line, needs 59pt of the 112.
+  const bx = 92;
+  const bw = 112;
   const savesBottom = 518;
   const saves = s.section("SAVING THROWS", bx, savesBottom, bw, columnTop - savesBottom);
-  const savePitch = 11.5;
+  const savePitch = 10.5;
   ABILITIES.forEach(([key], index) => {
-    const y = columnTop - 32 - index * savePitch;
+    const y = columnTop - 31 - index * savePitch;
     s.check(`details_${key}_save_proficiency`, bx + 6, y, 6.5);
     s.text(`details_${key}_save_total`, bx + 16, y - 1, 20, 9, { align: "center", size: 8, box: "none" });
     s.rule(bx + 16, y + 3.5 - savePitch / 2, bx + 36, y + 3.5 - savePitch / 2, RULE, 0.5);
     s.note(ABILITY_NAME[key], bx + 40, y + 1, { size: 6.5 });
   });
-  s.label("SAVING THROW NOTES", saves.x + 2, savesBottom + 17, { size: layout.readable ? 5.5 : 4.6, color: "lines" });
-  s.text("details_saving_throws", saves.x + 2, saves.y, saves.width - 4, 12, { multiline: true, size: 6, box: "none" });
+  // The notes label sits under the last save row, and the notes fill the rest of the box.
+  const notesSize = layout.readable ? 5.5 : 4.6;
+  const notesLabelY = columnTop - 31 - 5 * savePitch + 3.5 - savePitch / 2 - 4 - notesSize;
+  s.label("SAVING THROW NOTES", saves.x + 2, notesLabelY, { size: notesSize, color: "lines" });
+  s.text("details_saving_throws", saves.x + 2, saves.y, saves.width - 4, notesLabelY - 2.5 - saves.y, { multiline: true, size: 6, box: "none" });
   const skillsTop = savesBottom - 6;
   s.section("SKILLS", bx, columnBottom, bw, skillsTop - columnBottom);
   const skillPitch = (skillsTop - 28 - (columnBottom + 9)) / (SKILLS.length - 1);
@@ -1187,16 +1209,17 @@ async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   hybridAbilityColumns(s, layout);
 
   // Beneath both columns: training, languages and senses, then conditions.
-  const lw = 196;
+  const lw = 178;
   const title = "PROFICIENCIES, TRAINING, LANGUAGES & SENSES";
   const inner = s.section(title, 26, 144, lw, 116, { size: Math.min(6.2, (lw - 14) / s.textWidth(title, "display", 1)) });
   s.text("details_proficiencies_languages", inner.x, inner.y + 17, inner.width, inner.height - 21, { multiline: true, size: 6, box: "none" });
   s.label("SENSES", inner.x + 3, inner.y + 6, { size: readable ? 5.5 : 4.6, color: "lines" });
   s.text("details_vision", inner.x + 30, inner.y + 4, inner.width - 33, 10, { size: 7 });
-  conditions2024(s, layout, 26, 60, lw, 76);
+  conditions2024(s, layout, 26, 60, lw, 76, { inline: true });
 
-  rightColumn2024(s, style, layout, 230, 356,
-    [["NAME", 234, 82], ["RANGE", 318, 40], ["ATK / DC", 360, 36], ["DAMAGE & TYPE", 398, 72], ["NOTES", 472, 110]], readable ? 5.5 : 5, "FEATURES",
+  // The column starts 8pt right of the left side (x 204) and ends where it did, at 586.
+  rightColumn2024(s, style, layout, 212, 374,
+    [["NAME", 216, 84], ["RANGE", 302, 40], ["ATK / DC", 344, 42], ["DAMAGE & TYPE", 388, 72], ["NOTES", 462, 120]], readable ? 5.5 : 5, "FEATURES",
     C.traitsColumn.speciesHeight["2024-hybrid"]);
   return finish(doc, s);
 }

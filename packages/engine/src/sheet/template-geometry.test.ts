@@ -687,6 +687,72 @@ describe("the small captions on the optional pages", () => {
   }, 30_000);
 });
 
+describe("the Hybrid body", () => {
+  const HYBRID_PAGES = DETAILS_PAGES.filter(([set]) => set === "2024-hybrid");
+
+  // The left side is kept narrow so the species traits, features and weapons
+  // take the width: the skills box must still hold its longest line.
+  it.each(HYBRID_PAGES)("gives the right column the width the left side leaves on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const notes = page.rect("details_additional_notes");
+    const features = page.rect("details_features");
+    expect(Math.abs(notes.x - features.x)).toBeLessThan(0.5);
+    expect(Math.abs(notes.width - features.width)).toBeLessThan(0.5);
+    expect(right(notes)).toBeCloseTo(582, 0);
+    expect(notes.width).toBeGreaterThanOrEqual(360);
+    const widest = Math.max(...["details_proficiencies_languages", "details_conditions"].map((name) => right(page.rect(name))));
+    expect(notes.x - widest).toBeGreaterThanOrEqual(12);
+    // The five weapon columns end inside the box, in order.
+    const columns = ["weapon", "range", "attack", "damage", "description"].map((part) => page.rect(`details_attack1_${part}`));
+    columns.forEach((box, index) => {
+      if (index > 0) expect(box.x).toBeGreaterThan(right(columns[index - 1]!));
+    });
+    expect(right(columns[4]!)).toBeLessThanOrEqual(right(notes));
+    expect(columns[0]!.x).toBeGreaterThanOrEqual(notes.x);
+  });
+
+  it.each(HYBRID_PAGES)("fills the saving throws box with its notes under the last save on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const notes = page.rect("details_saving_throws");
+    expect(page.multiline("details_saving_throws")).toBe(true);
+    expect(notes.height).toBeGreaterThanOrEqual(20);
+    expect(top(notes)).toBeLessThan(page.rect("details_cha_save_total").y);
+    // Above the skills list.
+    expect(notes.y).toBeGreaterThan(top(page.rect("details_acrobatics_total")));
+  });
+
+  it.each(HYBRID_PAGES)("puts the exhaustion marks on one line inside the conditions box on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const marks = [1, 2, 3, 4, 5, 6].map((index) => page.rect(`details_exhaustion_${index}`));
+    marks.forEach((mark) => expect(mark.y).toBe(marks[0]!.y));
+    marks.forEach((mark, index) => {
+      if (index > 0) expect(mark.x).toBeGreaterThan(right(marks[index - 1]!));
+    });
+    const conditions = page.rect("details_conditions");
+    expect(right(marks[5]!)).toBeLessThanOrEqual(right(conditions));
+    // The conditions take the height the label no longer needs.
+    expect(conditions.y).toBeGreaterThanOrEqual(top(marks[0]!));
+    expect(conditions.y - marks[0]!.y).toBeLessThan(14);
+  });
+});
+
+describe("the speed box", () => {
+  const BODY_PAGES = DETAILS_PAGES.filter(([set]) => set !== "2014");
+
+  // Each mode's line stops short of the border, and the walking speed keeps
+  // clear of the divider: "30ft." at the field's size is about 2pt a glyph wide.
+  it.each(BODY_PAGES)("keeps the mode lines off the box's right edge on %s/%s", async (set, file) => {
+    const page = await fieldsOf(set, file);
+    const walking = page.rect("details_speed_walking");
+    const modes = ["fly", "climb", "swim"].map((mode) => page.rect(`details_speed_${mode}`));
+    const boxRight = layoutOf(set, file).top ? 486 : 266;
+    for (const mode of modes) {
+      expect(mode.x).toBeGreaterThan(right(walking) + 15);
+      expect(boxRight - right(mode)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
 describe("templateFontSize", () => {
   it("reads the size a template asked for", () => {
     expect(templateFontSize("0.17 0.13 0.11 rg /Helv 12 Tf")).toBe(12);
