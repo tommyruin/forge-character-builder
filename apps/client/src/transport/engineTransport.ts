@@ -1508,6 +1508,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         ...(modelInclude ? { include: modelInclude } : {}),
         // Item notes widen the inventory notes column; off sends the old request.
         ...(opts.inventoryNotes === true ? { inventoryNotes: true } : {}),
+        // Trackers print by default; only an explicit off sends the new field.
+        ...(opts.resourceTrackers === false ? { resourceTrackers: false } : {}),
         // Card prose is laid out in the body face it will be drawn in.
         ...(typeof (opts.fonts as AnyRecord | undefined)?.body === "string" ? { bodyFace: (opts.fonts as AnyRecord).body as string } : {}),
       });

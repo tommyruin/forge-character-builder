@@ -36,6 +36,7 @@ describe('sheet layout options setting', () => {
       readable: false,
       inventoryNotes: false,
       smartCards: false,
+      resourceTrackers: true,
     });
   });
 

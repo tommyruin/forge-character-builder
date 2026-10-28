@@ -130,7 +130,7 @@ describe("usage lines on uploaded elements", () => {
     service.setCharacterControl(id, { key: `item:${GIFT}`, enabled: true });
     const lines = sheetLines(service, id).filter((line) => line.includes("Heron Blessing"));
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatch(/^Resources\. .*Heron Blessing \[ \] \[ \] \[ \] \(LR\)/);
+    expect(lines[0]).toMatch(/^Resources\. .*Heron Blessing ○ ○ ○ \(LR\)/);
     expect(lines[0]!.match(/Heron Blessing/g)).toHaveLength(1);
   });
 });

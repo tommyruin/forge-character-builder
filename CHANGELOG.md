@@ -20,6 +20,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Resource trackers print as empty circles on the sheet, and a sheet setting
+  ("Print resource trackers") turns the Resources line off.
 - The Homebrew Editor no longer offers Background Feature as a new element or
   grant type, since one can only reach a character through a background.
   Existing ones still load and edit, and typing the type as raw XML warns
