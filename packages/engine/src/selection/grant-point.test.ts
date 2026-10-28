@@ -7,7 +7,9 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import type { ElementLibrary } from "../content/library.js";
-import { freshService, ID, select, sharedLibrary, STANDARD_ARRAY } from "../testing/character-factory.js";
+import { createEmptyLibrary, replaceLibraryFiles } from "../content/library.js";
+import { CharacterService } from "../character/service.js";
+import { freshService, ID, select, seededRng, sharedLibrary, STANDARD_ARRAY } from "../testing/character-factory.js";
 import { pendingSelectionRules, selectionOptions, selectionRuleFor } from "./selection.js";
 
 const WARLOCK = "ID_WOTC_PHB_CLASS_WARLOCK";
@@ -57,5 +59,57 @@ describe("choices left open by a multi-level level-up", () => {
     const filled = selectionRuleFor(service.getCharacter(id), ruleId)!;
     expect(selectionOptions(service.getCharacter(id), library, filled).map((option) => option.id)).toContain(MIRE_THE_MIND);
     expect(() => service.setSelection(id, ruleId, MIRE_THE_MIND)).not.toThrow();
+  });
+});
+
+const TEST_CLASS = "ID_TEST_CLASS_CASTER";
+const TEST_FEATURE = "ID_TEST_CLASS_FEATURE_BOON";
+const TEST_OPENER = "ID_TEST_CLASS_FEATURE_OPENER";
+const TEST_PLAIN_FEAT = "ID_TEST_FEAT_PLAIN";
+const TEST_GATED_FEAT = "ID_TEST_FEAT_FOURTH";
+
+/** A class whose level-4 feature holds a feat select with no `level` of its own. */
+const SYNTHETIC_CONTENT = `<?xml version="1.0" encoding="utf-8"?>
+<elements>
+  <element name="Test Caster" type="Class" source="Grant Test" id="${TEST_CLASS}">
+    <setters><set name="hd">d8</set></setters>
+    <rules>
+      <grant type="Class Feature" id="${TEST_OPENER}" />
+      <grant type="Class Feature" id="${TEST_FEATURE}" level="4" />
+    </rules>
+  </element>
+  <element name="Opener" type="Class Feature" source="Grant Test" id="${TEST_OPENER}" />
+  <element name="Boon" type="Class Feature" source="Grant Test" id="${TEST_FEATURE}">
+    <rules>
+      <select type="Feat" name="Boon Feat" />
+    </rules>
+  </element>
+  <element name="Plain Feat" type="Feat" source="Grant Test" id="${TEST_PLAIN_FEAT}" />
+  <element name="Fourth Feat" type="Feat" source="Grant Test" id="${TEST_GATED_FEAT}">
+    <requirements>[character:4]</requirements>
+  </element>
+</elements>`;
+
+describe("a level-less choice inside a later-level feature", () => {
+  it("is judged as of the feature's level, not level 1", () => {
+    const syntheticLibrary = createEmptyLibrary();
+    replaceLibraryFiles(syntheticLibrary, new Map([["test/grant.xml", SYNTHETIC_CONTENT]]));
+    const service = new CharacterService(undefined, syntheticLibrary, { rng: seededRng(1) });
+    const id = service.createCharacter("Caster4").id;
+    select(service, id, "Class", TEST_CLASS);
+    for (let level = 2; level <= 4; level++) service.levelUp(id);
+
+    const rule = pendingSelectionRules(service.getCharacter(id)).find((candidate) => candidate.name === "Boon Feat");
+    if (rule === undefined) throw new Error("no open feat choice");
+    const offered = selectionOptions(service.getCharacter(id), syntheticLibrary, rule).map((option) => option.id);
+    expect(offered).toEqual(expect.arrayContaining([TEST_PLAIN_FEAT, TEST_GATED_FEAT]));
+    expect(() => service.setSelection(id, rule.identifier, TEST_GATED_FEAT)).not.toThrow();
+
+    // Levelling on must not push the open choice back to level 1 either.
+    const other = service.createCharacter("Caster5").id;
+    select(service, other, "Class", TEST_CLASS);
+    for (let level = 2; level <= 5; level++) service.levelUp(other);
+    const later = pendingSelectionRules(service.getCharacter(other)).find((candidate) => candidate.name === "Boon Feat")!;
+    expect(selectionOptions(service.getCharacter(other), syntheticLibrary, later).map((option) => option.id)).toContain(TEST_GATED_FEAT);
   });
 });

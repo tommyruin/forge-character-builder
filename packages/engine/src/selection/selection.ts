@@ -202,19 +202,36 @@ function grantPointContext(
 ): RegistrationContext | undefined {
   if (rule.selectedElementIds.some((id) => id !== null && id !== "")) return undefined;
   let classId: string | undefined;
+  // The class level its owners were granted at: a select with no `level` of
+  // its own inside a level-4 feature is granted at 4, not 1.
+  let ownerLevel = 0;
+  let parent: ParsedElement | undefined;
   let nodes = state.elements;
   for (const index of rule.path.slice(0, -1)) {
     const node = nodes[index];
     if (node === undefined) return undefined;
-    if ((node.type === "Class" || node.type === "Multiclass") && (node.registered ?? "") !== "") classId = node.registered;
+    if ((node.type === "Class" || node.type === "Multiclass") && (node.registered ?? "") !== "") {
+      classId = node.registered;
+      ownerLevel = 0;
+      parent = library.byId.get(classId!);
+    } else if (parent !== undefined) {
+      if (node.requiredLevel !== undefined) {
+        ownerLevel = Math.max(ownerLevel, node.requiredLevel);
+      } else {
+        const grant = parent.rules.find((entry) => entry.kind === "grant" && entry.id === node.id);
+        if (grant?.kind === "grant") ownerLevel = Math.max(ownerLevel, grant.level ?? 0);
+      }
+      parent = library.byId.get(node.id || node.registered || "");
+    }
     nodes = node.children;
   }
   const nameOf = (id: string): string | undefined => library.byId.get(id)?.identity.name;
   const entries = state.levelHistory.slice(0, state.level).filter((entry) => !entry.isPending);
-  let grantLevel = rule.requiredLevel;
+  const requiredLevel = Math.max(rule.requiredLevel, ownerLevel);
+  let grantLevel = requiredLevel;
   if (classId !== undefined) {
     const className = nameOf(classId);
-    const reached = entries.find((entry) => nameOf(entry.classId) === className && entry.classLevel >= rule.requiredLevel);
+    const reached = entries.find((entry) => nameOf(entry.classId) === className && entry.classLevel >= requiredLevel);
     if (reached === undefined) return undefined;
     grantLevel = reached.totalLevel;
   }
