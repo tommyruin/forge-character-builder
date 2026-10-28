@@ -177,8 +177,16 @@ export function FeatureList({
 // whole, so the rail and the search box narrow it here rather than through the
 // engine.
 export default function AdditionalFeaturesPanel() {
-  const { id, busy, run, mutationTick, registerDetailsScroll, detail, notify } =
-    useWorkspace();
+  const {
+    id,
+    busy,
+    run,
+    mutationTick,
+    registerPrimaryScroll,
+    registerDetailsScroll,
+    detail,
+    notify,
+  } = useWorkspace();
   const [customOpen, setCustomOpen] = useState(false);
   const rulesetMode = detail?.rulesetMode;
   const customServices = useMemo(
@@ -245,10 +253,14 @@ export default function AdditionalFeaturesPanel() {
     : 'No features match this search.';
 
   return (
-    <div className="fcb-two-panel-grid">
-      <div className="space-y-4">
+    <div className="fcb-two-panel-grid fcb-additional-features-grid">
+      <div className="fcb-additional-features-primary space-y-4">
         {error && <p className="fcb-alert">{error}</p>}
-        <section className="fcb-panel">
+        {/* The panel clips to its radius and only the list inside it scrolls,
+            so the search and the category tabs stay in reach: a scrollbar is
+            painted on the border box, so a rounded panel that scrolls itself
+            loses the radius down its scrollbar edge. */}
+        <section className="fcb-panel fcb-additional-features-panel">
           <header className="fcb-panel-header">
             <div>
               <h2 className="fcb-panel-title">Additional features</h2>
@@ -272,7 +284,7 @@ export default function AdditionalFeaturesPanel() {
               </div>
             )}
           </header>
-          <div className="fcb-panel-body space-y-3">
+          <div className="fcb-panel-body fcb-additional-features-body space-y-3">
             <label className="fcb-field-label">
               Search features and adjustments
               <input
@@ -289,25 +301,32 @@ export default function AdditionalFeaturesPanel() {
               activeKey={selectedKey}
               onSelect={setCategoryKey}
             />
-            {!features && !error && (
-              <p className="fcb-empty-copy">Loading features…</p>
-            )}
-            {features && (
-              <FeatureList
-                features={visible}
-                busy={busy}
-                pendingKey={pendingKey}
-                inspected={inspected}
-                onInspect={inspectItem}
-                onToggle={setEnabled}
-                emptyCopy={emptyCopy}
-                emptyHint={
-                  nothingActive ? (
-                    <UploadedFeaturesHint offersCustomFeature={Boolean(customServices)} />
-                  ) : null
-                }
-              />
-            )}
+            {/* The scroll region is inset by the body's padding, so its
+                scrollbar never reaches the panel's rounded corners. */}
+            <div
+              className="fcb-additional-features-scroll space-y-3"
+              ref={registerPrimaryScroll}
+            >
+              {!features && !error && (
+                <p className="fcb-empty-copy">Loading features…</p>
+              )}
+              {features && (
+                <FeatureList
+                  features={visible}
+                  busy={busy}
+                  pendingKey={pendingKey}
+                  inspected={inspected}
+                  onInspect={inspectItem}
+                  onToggle={setEnabled}
+                  emptyCopy={emptyCopy}
+                  emptyHint={
+                    nothingActive ? (
+                      <UploadedFeaturesHint offersCustomFeature={Boolean(customServices)} />
+                    ) : null
+                  }
+                />
+              )}
+            </div>
           </div>
         </section>
       </div>

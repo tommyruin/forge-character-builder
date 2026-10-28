@@ -490,8 +490,10 @@ export default function ManageTab() {
         <div
           className={`fcb-manage-single-primary${
             subTab === 'sources' ? ' fcb-manage-sources-primary' : ''
-          }`}
-          ref={registerPrimaryScroll}
+          }${subTab === 'features' ? ' fcb-manage-features-primary' : ''}`}
+          // Additional features registers its own list as the scroll owner:
+          // the wrapper clips there, so the search and category tabs stay put.
+          ref={subTab === 'features' ? undefined : registerPrimaryScroll}
         >
           {subTab === 'optional-rules' && <OptionalRulesPanel />}
 

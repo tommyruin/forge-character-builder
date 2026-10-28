@@ -8394,6 +8394,7 @@ button:disabled {
   .fcb-manage-single-primary,
   .fcb-description-scroll,
   .fcb-inventory-scroll,
+  .fcb-additional-features-scroll,
   .fcb-equipment-catalog .fcb-equipment-results {
     min-height: 0;
     overflow-x: hidden;
@@ -8493,6 +8494,50 @@ button:disabled {
   }
 
   .fcb-inventory-scroll {
+    flex: 1 1 auto;
+  }
+
+  /* Additional features follows the inventory model: the Manage wrapper stops
+     scrolling and clips, the grid takes its height, the panel clips to its
+     radius, and only the feature list inside the body scrolls — so the search
+     and the category tabs stay at the top while the list moves under them. */
+  .fcb-manage-content > .fcb-manage-single-primary.fcb-manage-features-primary {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-additional-features-grid {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  /* `min-height: 0` lets the grid's auto row settle at the grid's height
+     instead of growing to the whole list's. */
+  .fcb-additional-features-primary {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .fcb-additional-features-panel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-additional-features-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fcb-additional-features-scroll {
     flex: 1 1 auto;
   }
 
