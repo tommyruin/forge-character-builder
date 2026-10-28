@@ -1087,7 +1087,7 @@ export interface CustomItemPreviewDto extends WireObject {
 /** The attack or save row a custom spell would give the character, as the attack options print it. */
 export interface CustomSpellAttackPreviewDto extends WireObject {
   casterName: string;
-  /** "+5 INT vs AC" for an attack roll, "DC 13 DEX" for a save. */
+  /** "+5 vs AC" for an attack roll, "DC 13 DEX" for a save. */
   bonus: string;
   damage: string;
   range: string;

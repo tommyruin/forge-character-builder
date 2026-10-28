@@ -6,7 +6,7 @@ import { escapeXml, type RawEdit } from "../selection/selection.js";
 import { isSpellcastingExtension } from "../content/parser.js";
 import { multiclassSlotProgression } from "../statistics/calculator.js";
 import { spellInfo, canonicalSourceRank, alwaysPreparedSets, casterSpellLevelCap } from "./spelllist.js";
-import { applySpellRiders, damageWithBonus, ATTACK_ROLL_RIDER_IDS } from "./spell-riders.js";
+import { applySpellRiders, damageWithBonus, signed, ATTACK_ROLL_RIDER_IDS } from "./spell-riders.js";
 import { ordinal, structuredSpellMechanics } from "./structured-spell.js";
 import { spellDisplayName } from "./spell-aliases.js";
 import { featureSpellCasters } from "./feature-casters.js";
@@ -693,7 +693,6 @@ export function buildMagicAttackOptions(
   const saveRegistered = new Set([...registered].filter((id) => !ATTACK_ROLL_RIDER_IDS.has(id)));
 
   for (const block of sources) {
-    const abbr = ABILITY_ABBR[block.ability] ?? block.ability;
     const attackModifier = block.attackModifier;
     const contributions = (total: number, saving: boolean) => {
       const base = proficiency + abilityModifier(block.ability) + (saving ? 8 : 0);
@@ -774,7 +773,7 @@ export function buildMagicAttackOptions(
         level: info.level,
         range: riders.range,
         bonus: save === null
-          ? `+${attackModifier} ${abbr} vs AC`
+          ? `${signed(attackModifier)} vs AC`
           : `DC ${block.saveDc} ${ABILITY_ABBR[save.ability] ?? save.ability}`,
         damage: riders.damage,
         description: textOf(element.descriptionXml),

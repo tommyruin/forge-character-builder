@@ -94,7 +94,7 @@ describe("a spell's alias", () => {
     expect(option().spellName).toBe("Rimebolt (Frost Lance)");
     expect(service.getAttacks(id).find((row) => row.kind === "spell")).toMatchObject({
       name: "Rimebolt (Frost Lance)",
-      bonus: "+5 INT vs AC",
+      bonus: "+5 vs AC",
       damage: "2d8 cold",
     });
     // The row in the file follows, so an export prints the same name.

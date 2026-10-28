@@ -78,7 +78,7 @@ describe('save DC captions', () => {
   });
   it('recognises a save DC bonus from the row or the spell option', () => {
     expect(isSaveDcBonus({ bonus: 'DC 13 INT' })).toBe(true);
-    expect(isSaveDcBonus({ bonus: '+5 CHA vs AC' })).toBe(false);
+    expect(isSaveDcBonus({ bonus: '+5 vs AC' })).toBe(false);
     expect(
       isSaveDcBonus({ bonus: '+2 custom', generated: { bonus: 'DC 13 INT' } }),
     ).toBe(true);
@@ -99,7 +99,7 @@ describe('save DC captions', () => {
   it('keeps the "Attack" caption for an attack roll', () => {
     const html = renderToStaticMarkup(
       createElement(AttackComputationDetails, {
-        attack: { spellName: 'Fire Bolt', bonus: '+5 CHA vs AC' },
+        attack: { spellName: 'Fire Bolt', bonus: '+5 vs AC' },
         computation: attackComputation,
       }),
     );
@@ -114,7 +114,7 @@ describe('save DC captions', () => {
   });
 
   it('keeps "Attack bonus" for an attack-roll spell row', () => {
-    const html = renderEditor(spellRow('+5 CHA vs AC', attackComputation));
+    const html = renderEditor(spellRow('+5 vs AC', attackComputation));
     expect(html).toContain('Attack bonus');
     expect(html).not.toContain('Save DC');
   });

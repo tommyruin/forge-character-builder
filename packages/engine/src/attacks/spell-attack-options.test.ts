@@ -241,9 +241,9 @@ describe("Known Spell options for a level-3 Draconic Sorcerer", () => {
 
   it("keeps the attack-roll bonus for attack spells", () => {
     const { service, id } = draconicSorcerer("DraconicAttackBonus");
-    expect(optionFor(service, id, FLAME_BLADE).bonus).toBe("+5 CHA vs AC");
-    expect(optionFor(service, id, CHROMATIC_ORB)).toMatchObject({ bonus: "+5 CHA vs AC", damage: "3d8 (chosen type)" });
-    expect(optionFor(service, id, SORCEROUS_BURST)).toMatchObject({ bonus: "+5 CHA vs AC", damage: "1d8 (chosen type)" });
+    expect(optionFor(service, id, FLAME_BLADE).bonus).toBe("+5 vs AC");
+    expect(optionFor(service, id, CHROMATIC_ORB)).toMatchObject({ bonus: "+5 vs AC", damage: "3d8 (chosen type)" });
+    expect(optionFor(service, id, SORCEROUS_BURST)).toMatchObject({ bonus: "+5 vs AC", damage: "1d8 (chosen type)" });
   });
 
   it("gives a saving-throw spell the caster's DC and the target's save", () => {
@@ -295,7 +295,7 @@ describe("Known Spell options for a level-3 Draconic Sorcerer", () => {
     expect(ids).not.toContain(CURE_WOUNDS);
     // Fire Bolt is not one of the sorcerer's known spells, so its grant lives
     // in the Additional Spells block, whose profile is the best casting ability.
-    expect(optionFor(service, id, FIRE_BOLT)).toMatchObject({ casterName: "Additional Spells", bonus: "+5 CHA vs AC" });
+    expect(optionFor(service, id, FIRE_BOLT)).toMatchObject({ casterName: "Additional Spells", bonus: "+5 vs AC" });
   });
 
   it("creates a row from a saving-throw spell and keeps it through export and import", () => {

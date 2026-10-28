@@ -20,7 +20,7 @@ function fakeApi({ casters, preview } = {}) {
     promoteCustomDraft: vi.fn(async (_id, draftId) => ({ id: draftId, xml: '<element />', element: { localId: 'x', id: draftId } })),
     previewCustomSpell: vi.fn(
       preview ??
-        (async () => ({ attack: { casterName: 'Druid', bonus: '+5 WIS vs AC', damage: '2d8 cold', range: '120 feet', warning: null } })),
+        (async () => ({ attack: { casterName: 'Druid', bonus: '+5 vs AC', damage: '2d8 cold', range: '120 feet', warning: null } })),
     ),
   };
   return { characters, content: { elements: vi.fn(async () => ({ items: [] })), element: vi.fn() } };
@@ -207,7 +207,7 @@ describe('the custom spell dialog', () => {
     const [, draft, caster] = api.characters.previewCustomSpell.mock.calls.at(-1);
     expect(draft.mechanics.roll).toBe('attackRanged');
     expect(caster).toBe('Druid');
-    expect($('[data-testid="spell-attack-preview"]').textContent).toContain('+5 WIS vs AC');
+    expect($('[data-testid="spell-attack-preview"]').textContent).toContain('+5 vs AC');
     expect($('[data-testid="spell-attack-preview"]').textContent).toContain('2d8 cold');
   });
 

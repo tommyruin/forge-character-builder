@@ -78,7 +78,7 @@ describe("a created ranged-attack spell", () => {
     expect(optionFor(service, id, saved.entry.elementId)).toMatchObject({
       casterName: "Wizard",
       spellName: "Frost Lance",
-      bonus: "+5 INT vs AC",
+      bonus: "+5 vs AC",
       damage: "2d8 cold",
       range: "120 feet",
       warning: "Higher-level slots add 1d6 per slot level above 1st.",
@@ -92,13 +92,13 @@ describe("a created ranged-attack spell", () => {
     service.createAttack(id, { mode: "spell", casterIdentifier: option.casterIdentifier, spellId: option.spellId });
     expect(service.getAttacks(id).find((row) => row.kind === "spell")).toMatchObject({
       name: "Frost Lance",
-      bonus: "+5 INT vs AC",
+      bonus: "+5 vs AC",
       damage: "2d8 cold",
     });
 
     const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
     expect(model.pages[0]!.attacks).toEqual([
-      expect.objectContaining({ name: "Frost Lance", bonus: "+5 INT vs AC", damage: "2d8 cold" }),
+      expect.objectContaining({ name: "Frost Lance", bonus: "+5 vs AC", damage: "2d8 cold" }),
     ]);
     const list = tokensOf(model.pages.filter((page) => page.templateKind === "spell-list").flatMap((page) => page.sections.flatMap((section) => section.rows)));
     expect(list).toContain("Frost");
@@ -149,7 +149,7 @@ describe("a created ranged-attack spell", () => {
       }),
       caster: "Wizard",
     });
-    expect(optionFor(service, id, saved.entry.elementId)).toMatchObject({ damage: "1d10 cold", bonus: "+5 INT vs AC" });
+    expect(optionFor(service, id, saved.entry.elementId)).toMatchObject({ damage: "1d10 cold", bonus: "+5 vs AC" });
   });
 
   it("can be kept in the pack without being granted, and granted later", () => {
@@ -220,7 +220,7 @@ describe("a class-list tag", () => {
     const paladinId = service.getSpellcasting(id).find((caster) => caster.name === "Paladin")!.identifier;
     service.setPrepared(id, paladinId, { spellId: saved.entry.elementId, prepared: true });
     // Charisma 14 (+2), proficiency +2.
-    expect(optionFor(service, id, saved.entry.elementId)).toMatchObject({ casterName: "Paladin", bonus: "+4 CHA vs AC", damage: "2d8 cold" });
+    expect(optionFor(service, id, saved.entry.elementId)).toMatchObject({ casterName: "Paladin", bonus: "+4 vs AC", damage: "2d8 cold" });
   });
 });
 
@@ -277,7 +277,7 @@ describe("a spell in the file", () => {
     const other = new CharacterService(undefined, library, { rng: seededRng(5) });
     other.importCharacterXml("Reloaded", exported);
     expect(other.exportCharacterXml("Reloaded")).toBe(exported);
-    expect(optionFor(other, "Reloaded", saved.entry.elementId)).toMatchObject({ bonus: "+5 INT vs AC", damage: "2d8 cold" });
+    expect(optionFor(other, "Reloaded", saved.entry.elementId)).toMatchObject({ bonus: "+5 vs AC", damage: "2d8 cold" });
     expect(other.getCustomContent("Reloaded").entries[0]).toMatchObject({ kind: "spell", granted: true, installed: true });
 
     service.deleteCustomDraft(id, { draftId: saved.entry.elementId });
@@ -298,7 +298,7 @@ describe("previewing a spell", () => {
   it("shows the row the spell would give this character without saving it", () => {
     const { service, id } = wizard();
     const preview = service.previewCustomSpell(id, { draft: frostLance(), caster: "Wizard" });
-    expect(preview.attack).toMatchObject({ casterName: "Wizard", bonus: "+5 INT vs AC", damage: "2d8 cold", range: "120 feet" });
+    expect(preview.attack).toMatchObject({ casterName: "Wizard", bonus: "+5 vs AC", damage: "2d8 cold", range: "120 feet" });
     expect(service.getCustomContent(id).entries).toEqual([]);
     expect(allKnown(service, id).some((entry) => entry.spell.name === "Frost Lance")).toBe(false);
   });

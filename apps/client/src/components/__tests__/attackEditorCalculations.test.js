@@ -218,7 +218,7 @@ describe('calculated attack editor', () => {
       mode: 'spell',
       name: 'Eldritch Blast',
       range: '120 feet',
-      bonus: '+6 CHA vs AC',
+      bonus: '+6 vs AC',
       damage: '1d10 force',
       description: 'Make a ranged spell attack.',
       overrideFields: ['description'],

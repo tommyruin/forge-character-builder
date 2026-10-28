@@ -246,7 +246,7 @@ const SPELL_RIDERS: readonly SpellRider[] = [
   },
 ];
 
-const signed = (value: number): string => (value >= 0 ? `+${value}` : `${value}`);
+export const signed = (value: number): string => (value >= 0 ? `+${value}` : `${value}`);
 
 /** Inserts a signed bonus between the dice and the damage type, omitting zero. */
 export function damageWithBonus(damage: string, bonus: number): string {
