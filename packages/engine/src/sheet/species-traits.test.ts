@@ -6,7 +6,8 @@
  * the features, a long one borrows from them, and only text the whole column
  * cannot hold continues on a "Features & Traits (continued)" page, under
  * "Species Traits (continued)". Species text shrinks to a 6.5pt floor before
- * it borrows. On every page, the longest species texts print in full.
+ * it borrows. The 2014 page's box stands alone and shrinks to 6pt, as the
+ * features do. On every page, the longest species texts print in full.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -120,6 +121,37 @@ describe.each(SHARED_COLUMN_SETS)("the %s page's shared species and features col
       const found = inOrder(all, words(text));
       expect(found.ok, found.missing).toBe(true);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The 2014 page's species box stands alone, so it shrinks as the features do.
+// ---------------------------------------------------------------------------
+
+describe("the 2014 page's species box", () => {
+  const speciesWords = (page: readonly TextItem[]): TextItem[] => page.filter((item) => /^sp\d/.test(item.str));
+
+  it("shrinks to the features' 6pt floor, not 6.5pt, before it continues", async () => {
+    // Too long for 6.5pt, short enough for 6pt.
+    const racial = ["Longtrait. " + prose("sp", 225)];
+    const pages = await renderPages(syntheticModel(racial, ["Short. One feature."]), "2014");
+    expect(pages).toHaveLength(1);
+    const sizes = speciesWords(pages[0]!).map((item) => item.size);
+    expect(sizes.length).toBeGreaterThan(0);
+    for (const size of sizes) {
+      expect(size).toBeLessThan(6.5);
+      expect(size).toBeGreaterThanOrEqual(6 - 0.01);
+    }
+    const found = inOrder(words(pageText(pages[0]!)), words(racial.join(" ")));
+    expect(found.ok, found.missing).toBe(true);
+  });
+
+  it("still continues text that does not fit at 6pt, at the normal size", async () => {
+    const racial = ["Longtrait. " + prose("sp", 400)];
+    const pages = await renderPages(syntheticModel(racial, ["Short. One feature."]), "2014");
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.slice(1).map(pageText).join(" ")).toContain("Racial Traits (continued)");
+    for (const item of speciesWords(pages[0]!)) expect(item.size).toBeCloseTo(8, 1);
   });
 });
 

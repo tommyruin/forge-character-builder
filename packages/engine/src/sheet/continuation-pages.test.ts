@@ -86,6 +86,49 @@ describe("continuation pages", () => {
     }
   }, 60_000);
 
+  describe("attack notes after continued features", () => {
+    const features = { title: "features", rows: [line(`Spellcasting. ${tokens("feature", 700)}`)] };
+    const details = (notes: number, withFeatures = true) => render(
+      { page: 1, templateKind: "details", sections: withFeatures ? [features] : [] },
+      { details_attack_description: tokens("note", notes) },
+    );
+
+    it("carries on below the continued features when they fit, not on a page of their own", async () => {
+      const written = await details(120);
+      expect(written.pages).toHaveLength(2);
+      expect(written.text[1]).toContain("FEATURES & TRAITS (CONTINUED)");
+      expect(written.text[1]).toContain("Attack Notes");
+      expect(written.text[1]).toContain("General attack notes");
+      expect(written.text.join(" ")).not.toContain("ATTACK NOTES");
+      expect(written.words("feature")).toHaveLength(700);
+      expect(written.words("note")).toHaveLength(120);
+      // Under the last feature line, with its heading between.
+      const lastFeature = Math.min(...written.pages[1]!.filter((item) => /^feature\d/.test(item.str)).map((item) => item.y));
+      const heading = written.pages[1]!.find((item) => item.str.includes("Attack Notes"))!;
+      const firstNote = Math.max(...written.pages[1]!.filter((item) => /^note\d/.test(item.str)).map((item) => item.y));
+      expect(heading.y).toBeLessThan(lastFeature);
+      expect(firstNote).toBeLessThan(heading.y);
+    }, 60_000);
+
+    it("still spills onto a further page when there is too much to fit", async () => {
+      const written = await details(1500);
+      expect(written.pages.length).toBeGreaterThan(2);
+      expect(written.text[1]).toContain("Attack Notes");
+      expect(written.text[2]).toContain("ATTACK NOTES");
+      expect(written.text[2]).toContain("General attack notes (continued)");
+      expect(written.words("note")).toHaveLength(1500);
+      expect(new Set(written.words("note")).size).toBe(1500);
+    }, 60_000);
+
+    it("keeps attack notes on their own page when the features did not continue", async () => {
+      const written = await details(120, false);
+      expect(written.pages).toHaveLength(2);
+      expect(written.text[1]).toContain("ATTACK NOTES");
+      expect(written.text[1]).not.toContain("Attack Notes");
+      expect(written.words("note")).toHaveLength(120);
+    }, 60_000);
+  });
+
   it("continues companion traits the box cannot hold", async () => {
     const written = await render({
       page: 4, templateKind: "companion",

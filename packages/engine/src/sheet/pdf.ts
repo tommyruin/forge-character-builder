@@ -1331,8 +1331,9 @@ const DEFAULT_FEATURE_FONT_SIZE = 8;
 // Preserve readable print: modest fitting is allowed, then prose continues
 // on another page at the normal size instead of falling below 6pt.
 const MIN_FEATURE_FONT_SIZE = 6;
-// Species Traits steps down no further than this before it borrows room from
-// the features beside it, then continues.
+// Species Traits on the shared 2024 column steps down no further than this
+// before it borrows room from the features beside it, then continues. A page
+// with a box of its own (2014) shrinks to the features' floor instead.
 const SPECIES_MIN_FONT_SIZE = 6.5;
 const FEATURE_PARAGRAPH_GAP = 1.2;
 // One feature is set off from the next by rather more than the breath between
@@ -1717,6 +1718,12 @@ function addContinuationPage(
   return page;
 }
 
+/** The last page of a run of continuation pages and the baseline the next line would take on it. */
+interface ContinuationCursor {
+  page: PDFPage;
+  y: number;
+}
+
 /**
  * Whatever a page's boxes could not hold continues on plain pages in the
  * attack-note style, each box's part under a bold "<box> (continued)" line,
@@ -1727,7 +1734,7 @@ function addContinuationPage(
 function addFeatureContinuationPages(
   output: PDFDocument, parts: readonly FeatureContinuation[], fonts: SheetFonts,
   colours: SheetLabelColours, footerText: string, title: string, pips: PipStyle,
-): void {
+): ContinuationCursor | undefined {
   const measure = fontMeasure(fonts);
   const capHeight = capHeightRatio(fonts.regular);
   const fontSize = DEFAULT_FEATURE_FONT_SIZE;
@@ -1755,6 +1762,8 @@ function addFeatureContinuationPages(
       if (rest !== undefined) page = undefined;
     }
   }
+  // Whatever follows (the attack notes) may carry on below the last part.
+  return page === undefined ? undefined : { page, y };
 }
 
 // A box's title sits just above or just below it (2024 heads its boxes, 2014
@@ -1849,7 +1858,8 @@ function detailsTextBoxes(
   if (racial !== undefined) {
     boxes.push({
       field: SPECIES_FIELD, paragraphs: sectionParagraphs(racial), heading: "Traits",
-      fallback: { x: 222, top: 380, width: 169, bottom: 125 }, minFontSize: SPECIES_MIN_FONT_SIZE,
+      fallback: { x: 222, top: 380, width: 169, bottom: 125 },
+      minFontSize: findTraitsColumn(fieldRects) === undefined ? MIN_FEATURE_FONT_SIZE : SPECIES_MIN_FONT_SIZE,
     });
   }
   // A layout with its own subclass and feat boxes (2024 Hybrid, and the split
@@ -2176,16 +2186,43 @@ function attackNoteLines(text: string, font: PDFFont, size: number, width: numbe
   return lines;
 }
 
+/**
+ * The attack notes, each in a titled card. Given the cursor of a feature
+ * continuation page, they carry on there under an "Attack Notes" heading when
+ * the heading and the start of the first card fit, rather than opening a page
+ * of their own; they spill onto an ATTACK NOTES page when the room runs out.
+ */
 function addAttackNotePages(
   output: PDFDocument, cards: readonly AttackNoteCard[], fonts: SheetFonts,
-  colours: SheetLabelColours, footerText: string,
+  colours: SheetLabelColours, footerText: string, shared?: ContinuationCursor,
 ): void {
-  const x = 32, width = 548, padding = 12, bottom = 48, lineHeight = 11;
+  const x = 32, width = 548, padding = 12, bottom = CONTINUATION_TEXT_BOTTOM, lineHeight = 11;
+  // The heading's line and the rule and breath under it.
+  const headingRoom = DEFAULT_FEATURE_FONT_SIZE + 12;
   let page: PDFPage | undefined;
   let top = 0;
+  let cursor = shared;
   const newPage = (): PDFPage => {
     top = 724;
     return addContinuationPage(output, "ATTACK NOTES", fonts, colours, footerText);
+  };
+  /** The page the next card piece goes on, a new one unless the shared page has room for it. */
+  const pageFor = (needed: number): PDFPage => {
+    if (page && top - bottom >= needed) return page;
+    if (cursor !== undefined && page === undefined) {
+      const at = cursor;
+      cursor = undefined;
+      const headingY = at.y - CONTINUATION_PART_GAP;
+      if (headingY - headingRoom - bottom >= needed) {
+        const part = [headingParagraph("Attack Notes", "part")];
+        const lines = featureFlowLines(part, CONTINUATION_TEXT_WIDTH, DEFAULT_FEATURE_FONT_SIZE, fontMeasure(fonts), capHeightRatio(fonts.regular));
+        const drawn = drawFeatureFlow(at.page, part, lines, fonts, CONTINUATION_TEXT_X, headingY, CONTINUATION_TEXT_WIDTH,
+          bottom, DEFAULT_FEATURE_FONT_SIZE, DEFAULT_FEATURE_FONT_SIZE, colours.lines);
+        top = drawn.y + DEFAULT_FEATURE_FONT_SIZE - 2;
+        return at.page;
+      }
+    }
+    return newPage();
   };
   for (const card of cards) {
     const lines = attackNoteLines(card.text, fonts.regular, 8, width - padding * 2);
@@ -2195,13 +2232,13 @@ function addAttackNotePages(
       const wrappedTitle = attackNoteLines(title, fonts.titles, 10, width - padding * 2);
       const titleLines = wrappedTitle.length <= 3 ? wrappedTitle : [...wrappedTitle.slice(0, 2), ellipsizeSpellText(wrappedTitle.slice(2).join(" "), fonts.titles, 10, width - padding * 2)];
       const headerHeight = titleLines.length * 12 + 12;
-      if (!page || top - bottom < headerHeight + padding * 2 + lineHeight * 2) page = newPage();
+      const current = (page = pageFor(headerHeight + padding * 2 + lineHeight * 2));
       const count = Math.min(lines.length - offset, Math.floor((top - bottom - headerHeight - padding * 2) / lineHeight));
       const height = headerHeight + padding * 2 + count * lineHeight;
-      page.drawRectangle({ x, y: top - height, width, height, color: rgb(1, 1, 1), borderColor: rgb(...colours.lines), borderWidth: 1 });
-      page.drawRectangle({ x, y: top - headerHeight, width, height: headerHeight, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
-      titleLines.forEach((line, index) => page!.drawText(line, { x: x + padding, y: top - 16 - index * 12, size: 10, font: fonts.titles, color: rgb(...colours.cream) }));
-      lines.slice(offset, offset + count).forEach((line, index) => page!.drawText(line, { x: x + padding, y: top - headerHeight - padding - 8 - index * lineHeight, size: 8, font: fonts.regular, color: rgb(...colours.text) }));
+      current.drawRectangle({ x, y: top - height, width, height, color: rgb(1, 1, 1), borderColor: rgb(...colours.lines), borderWidth: 1 });
+      current.drawRectangle({ x, y: top - headerHeight, width, height: headerHeight, color: rgb(...colours.accent), borderColor: rgb(...colours.lines), borderWidth: 1 });
+      titleLines.forEach((line, index) => current.drawText(line, { x: x + padding, y: top - 16 - index * 12, size: 10, font: fonts.titles, color: rgb(...colours.cream) }));
+      lines.slice(offset, offset + count).forEach((line, index) => current.drawText(line, { x: x + padding, y: top - headerHeight - padding - 8 - index * lineHeight, size: 8, font: fonts.regular, color: rgb(...colours.text) }));
       offset += count;
       top -= height + 14;
     }
@@ -2770,9 +2807,9 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       }));
       // A page that carries feature text is titled for it; one carrying only
       // other boxes' values is the character page continued.
-      addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, pageLabels)],
+      const continued = addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, pageLabels)],
         fonts, labelInk, footerText, overflow.length > 0 ? "FEATURES & TRAITS (CONTINUED)" : "CHARACTER (CONTINUED)", pips);
-      addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
+      addAttackNotePages(output, attackNotes, fonts, labelInk, footerText, continued);
       continue;
     }
     if (modelPage.templateKind === "background") {
