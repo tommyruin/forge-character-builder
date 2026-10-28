@@ -629,7 +629,8 @@ describe("engine worker handlers", () => {
     // 99: added getResources, setTrackerUsed, setResourceSwitch, restCharacter, saveManualTracker and deleteManualTracker (trackers and switches).
     // 101: added getElementSource (a loaded element as XML) and checkPackContent (a pack's health, before it is loaded).
     // 102: added getPackChoiceImpact (the picks a pack element's choice change would clear).
-    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 102, engineVersion: ENGINE_VERSION } }]);
+    // 103: added setTrackerTracked (a tracker the player chooses not to track).
+    expect(messages).toEqual([{ type: "ready", metrics: { methodCount: 103, engineVersion: ENGINE_VERSION } }]);
   });
 });
 

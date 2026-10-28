@@ -165,6 +165,9 @@ export interface SheetPageInclusions {
   itemCards?: boolean;
 }
 
+/** How the "Resources" paragraph prints: left off, as the Resources page left it, or empty to fill in. */
+type ResourcePrint = "off" | "state" | "empty";
+
 export interface BuildSheetOptions {
   mode: SheetMode;
   /**
@@ -186,6 +189,12 @@ export interface BuildSheetOptions {
    * trackers. Absent or `true` prints it; `false` leaves it out.
    */
   resourceTrackers?: boolean;
+  /**
+   * Whether that paragraph prints empty, to fill in at the table: an open
+   * circle per use and a blank for a large count. Absent or `false` prints
+   * each tracker as the Resources page left it (what is spent, what is left).
+   */
+  resourceTrackersEmpty?: boolean;
   /**
    * The body face the sheet will be drawn in (a SHEET_FONT_FACES key), so card
    * prose is measured in that face's widths. Absent measures in Helvetica,
@@ -358,7 +367,8 @@ export function buildCharacterSheetModel(
   const wants = (page: keyof SheetPageInclusions): boolean => options.include?.[page] !== false;
   const pages: SheetPage[] = [];
   const attacks = sheetAttackRows(state, library);
-  pages.push({ ...buildPage1(state, library, values, inline, options.resourceTrackers !== false), attacks, attackNotes: state.attacksDescription });
+  const resources: ResourcePrint = options.resourceTrackers === false ? "off" : options.resourceTrackersEmpty === true ? "empty" : "state";
+  pages.push({ ...buildPage1(state, library, values, inline, resources), attacks, attackNotes: state.attacksDescription });
   if (wants("background")) pages.push(buildPage2(state, library));
   const companion = buildCompanionDto(state, library, values);
   if (companion !== null) pages.push(buildCompanionPage(companion, pages.length + 1));
@@ -385,7 +395,7 @@ export function buildCharacterSheetModel(
   // is what keeps the numbers contiguous once a page is left out.
   const numbered: SheetPage[] = pages.map((page, index) => ({ ...page, page: index + 1 }));
   const formValues = {
-    ...buildFormValues(state, library, values, spellcasters, attacks, inline, inventoryNotes, options.resourceTrackers !== false),
+    ...buildFormValues(state, library, values, spellcasters, attacks, inline, inventoryNotes, resources),
     ...(companion !== null ? companionFormValues(companion) : {}),
   };
   // The templates' portrait frames are image buttons; an absent portrait must
@@ -489,7 +499,7 @@ function buildFormValues(
   displayedAttacks: readonly SheetAttackRow[],
   inline?: Readonly<Record<string, string>>,
   inventoryNotes = false,
-  resourceTrackers = true,
+  resources: ResourcePrint = "state",
 ): Readonly<Record<string, string>> {
   const fields: Record<string, string> = {};
   const set = (name: string, value: string | number | undefined): void => {
@@ -683,7 +693,7 @@ function buildFormValues(
   });
   if (stealthDisadvantage) set("details_armor_stealth_disadvantage", "true");
   set("details_equipment_weight", inventory.equipmentWeight > 0 ? `${Math.round(inventory.equipmentWeight * 10) / 10}` : "");
-  const collected = collectFeatures(state, library, values, inline, resourceTrackers);
+  const collected = collectFeatures(state, library, values, inline, resources);
   set("Features and Traits", [
     ...collected.racial.flatMap((row) => row.kind === "tokens" ? row.tokens.join(" ") : row.lines.join("\n")),
     ...collected.features.flatMap((row) => row.kind === "tokens" ? row.tokens.join(" ") : row.lines.join("\n")),
@@ -872,7 +882,7 @@ function buildPage1(
   library: ElementLibrary,
   values: StatisticsValues,
   inline?: Readonly<Record<string, string>>,
-  resourceTrackers = true,
+  resources: ResourcePrint = "state",
 ): SheetPage {
   const sections: SheetSection[] = [];
 
@@ -986,7 +996,7 @@ function buildPage1(
       attackRows.push({ kind: "tokens", tokens: attack.description.split(/\s+/) });
     }
   }
-  const collected = collectFeatures(state, library, values, inline, resourceTrackers);
+  const collected = collectFeatures(state, library, values, inline, resources);
   sections.push({ title: "racial-traits", rows: collected.racial });
   sections.push({ title: "attacks", rows: attackRows });
   sections.push({
@@ -1461,7 +1471,7 @@ function collectFeatures(
   library: ElementLibrary,
   values: StatisticsValues,
   inline?: Readonly<Record<string, string>>,
-  resourceTrackers = true,
+  resources: ResourcePrint = "state",
 ): {
   features: SheetRow[];
   racial: SheetRow[];
@@ -1571,7 +1581,7 @@ function collectFeatures(
         : "class-features";
   // The character's resources close the features text: every template has that
   // box, and what it cannot hold continues on a continuation page.
-  const resourceText = resourceTrackers ? resourceSheetText(buildTrackers(state, library, values, usages)) : null;
+  const resourceText = resources === "off" ? null : resourceSheetText(buildTrackers(state, library, values, usages), { empty: resources === "empty" });
   const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
     features: [...rows((item) => item.class === "features"), ...resourceRows],

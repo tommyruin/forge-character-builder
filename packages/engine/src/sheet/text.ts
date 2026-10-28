@@ -22,6 +22,9 @@ export function winAnsiText(value: string): string {
     // The empty circle of a resource tracker: WinAnsi has no ring, and the
     // lowercase o is the closest round mark every face carries.
     .replaceAll("○", "o")
+    // The filled circle of a spent use: WinAnsi has no disc either, and the
+    // bullet is the filled round mark every face carries.
+    .replaceAll("●", "•")
     .replaceAll("\u00a0", " ")
     // A soft hyphen marks where a word may break, not a glyph: drawn, it
     // prints a hyphen inside the word wherever the word lands ("tar-get").

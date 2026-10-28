@@ -542,6 +542,7 @@ export function createEngineMethodHandlers(
         ...(request.include ? { include: request.include } : {}),
         ...(request.inventoryNotes === true ? { inventoryNotes: true } : {}),
         ...(request.resourceTrackers === false ? { resourceTrackers: false } : {}),
+        ...(request.resourceTrackersEmpty === true ? { resourceTrackersEmpty: true } : {}),
         ...(typeof request.bodyFace === "string" ? { bodyFace: request.bodyFace } : {}),
       }));
     },
@@ -550,6 +551,7 @@ export function createEngineMethodHandlers(
     setSpellAlias: (id, spellId, request) => service.setSpellAlias(id, spellId, request),
     getResources: (id) => service.getResources(id),
     setTrackerUsed: (id, request) => service.setTrackerUsed(id, request),
+    setTrackerTracked: (id, request) => service.setTrackerTracked(id, request),
     setResourceSwitch: (id, request) => service.setResourceSwitch(id, request),
     restCharacter: (id, request) => service.restCharacter(id, request),
     saveManualTracker: (id, request) => service.saveManualTracker(id, request),

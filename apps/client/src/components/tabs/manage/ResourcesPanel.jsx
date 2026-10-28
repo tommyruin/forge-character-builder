@@ -6,13 +6,14 @@ import Modal, { DialogFooter } from '../../Modal';
 import { CustomBadge } from '../../custom/CustomEntries';
 import TrackerBlock from '../../custom/TrackerBlock';
 import { makeTracker } from '../../custom/trackerModel';
-import { trackerCardView, switchNote } from './resourcesModel';
+import { splitTrackers, trackerCardView, switchNote } from './resourcesModel';
 
 // MANAGE / Resources: every limited use the character has (book features that state a count and
 // a rest, custom features and items, and trackers kept by hand), the switches that gate custom
 // bonuses, and the two rests. A tracker with a few uses is a row of pips to tap; one with many is
 // a counter. The numbers come from the engine, so a maximum that follows the level or a modifier
-// is always the current one.
+// is always the current one. Each card's Track switch turns a tracker off for this character: it
+// moves to the "Not tracked" group, is left off the sheet and out of rests, and keeps its count.
 
 function Pips({ view, disabled, onSet }) {
   return (
@@ -60,7 +61,51 @@ function Counter({ view, disabled, onSet }) {
   );
 }
 
-function TrackerCard({ tracker, disabled, onSet, onEdit, onRemove }) {
+// The switch that tracks a tracker or stops tracking it, on its card and in the Not tracked group.
+function TrackSwitch({ tracker, label, disabled, onTrack }) {
+  const tracked = tracker.tracked !== false;
+  return (
+    <label className="fcb-resource-track">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={tracked}
+        aria-label={`Track ${label}`}
+        className={`fcb-switch is-compact${tracked ? ' is-on' : ''}`}
+        disabled={disabled}
+        onClick={() => onTrack(tracker, !tracked)}
+      >
+        <span className="fcb-switch-knob" />
+      </button>
+      <span aria-hidden="true">Track</span>
+    </label>
+  );
+}
+
+function ManualActions({ tracker, label, disabled, onEdit, onRemove }) {
+  return (
+    <>
+      {onEdit && (
+        <button type="button" className="fcb-button px-2 py-1 text-xs" disabled={disabled} aria-label={`Edit ${label}`} onClick={() => onEdit(tracker)}>
+          <Icon name="edit" />
+          Edit
+        </button>
+      )}
+      <button
+        type="button"
+        className="fcb-button fcb-button-danger px-2 py-1 text-xs"
+        disabled={disabled}
+        aria-label={`Remove ${label}`}
+        onClick={() => onRemove(tracker)}
+      >
+        <Icon name="delete" />
+        Remove
+      </button>
+    </>
+  );
+}
+
+function TrackerCard({ tracker, disabled, onSet, onTrack, onEdit, onRemove }) {
   const view = trackerCardView(tracker);
   return (
     <li className="fcb-resource-card" data-testid="resource-card" aria-label={view.label}>
@@ -77,24 +122,24 @@ function TrackerCard({ tracker, disabled, onSet, onEdit, onRemove }) {
       ) : (
         <Counter view={view} disabled={disabled} onSet={(used) => onSet(tracker, used)} />
       )}
-      {tracker.manual && (
-        <div className="fcb-resource-actions">
-          <button type="button" className="fcb-button px-2 py-1 text-xs" disabled={disabled} aria-label={`Edit ${view.label}`} onClick={() => onEdit(tracker)}>
-            <Icon name="edit" />
-            Edit
-          </button>
-          <button
-            type="button"
-            className="fcb-button fcb-button-danger px-2 py-1 text-xs"
-            disabled={disabled}
-            aria-label={`Remove ${view.label}`}
-            onClick={() => onRemove(tracker)}
-          >
-            <Icon name="delete" />
-            Remove
-          </button>
-        </div>
-      )}
+      <div className="fcb-resource-actions">
+        <TrackSwitch tracker={tracker} label={view.label} disabled={disabled} onTrack={onTrack} />
+        {tracker.manual && <ManualActions tracker={tracker} label={view.label} disabled={disabled} onEdit={onEdit} onRemove={onRemove} />}
+      </div>
+    </li>
+  );
+}
+
+// A tracker turned off: one quiet row, with the switch that tracks it again.
+function UntrackedRow({ tracker, disabled, onTrack, onRemove }) {
+  const view = trackerCardView(tracker);
+  return (
+    <li className="fcb-resource-switch" data-testid="untracked-resource" aria-label={view.label}>
+      <TrackSwitch tracker={tracker} label={view.label} disabled={disabled} onTrack={onTrack} />
+      <span className="min-w-0 flex-1">
+        <strong>{view.label}</strong> <span className="fcb-muted-copy text-xs">{view.source}</span>
+      </span>
+      {tracker.manual && <ManualActions tracker={tracker} label={view.label} disabled={disabled} onRemove={onRemove} />}
     </li>
   );
 }
@@ -190,7 +235,22 @@ export default function ResourcesPanel() {
   );
 
   const trackers = useMemo(() => resources?.trackers ?? [], [resources]);
+  const { tracked, untracked } = useMemo(() => splitTrackers(trackers), [trackers]);
   const switches = resources?.switches ?? [];
+
+  // Tracking or not is an undoable edit like a spend; the toast says where the card went.
+  const setTracked = useCallback(
+    async (tracker, on) => {
+      try {
+        await run(() => api.characters.setTrackerTracked(id, tracker.id, on));
+        notify?.(on ? `Tracking ${tracker.label}` : `Not tracking ${tracker.label}`);
+      } catch {
+        // Reported by the workspace.
+      }
+      await refresh();
+    },
+    [id, notify, refresh, run],
+  );
 
   const openAdd = () => {
     setManualError(null);
@@ -245,19 +305,38 @@ export default function ResourcesPanel() {
             items can carry their own, and Add tracker keeps one by hand.
           </p>
         )}
-        {trackers.length > 0 && (
+        {tracked.length > 0 && (
           <ul className="fcb-resource-grid">
-            {trackers.map((tracker) => (
+            {tracked.map((tracker) => (
               <TrackerCard
                 key={tracker.id}
                 tracker={tracker}
                 disabled={busy}
                 onSet={(entry, used) => void act(() => api.characters.setTrackerUsed(id, entry.id, used))}
+                onTrack={(entry, on) => void setTracked(entry, on)}
                 onEdit={openEdit}
                 onRemove={(entry) => void act(() => api.characters.deleteManualTracker(id, entry.id))}
               />
             ))}
           </ul>
+        )}
+
+        {untracked.length > 0 && (
+          <div className="fcb-resource-switches" role="group" aria-label="Not tracked">
+            <h3 className="fcb-field-label">Not tracked</h3>
+            <p className="fcb-muted-copy text-xs">Left off the sheet and out of rests until you track it again.</p>
+            <ul className="space-y-2">
+              {untracked.map((tracker) => (
+                <UntrackedRow
+                  key={tracker.id}
+                  tracker={tracker}
+                  disabled={busy}
+                  onTrack={(entry, on) => void setTracked(entry, on)}
+                  onRemove={(entry) => void act(() => api.characters.deleteManualTracker(id, entry.id))}
+                />
+              ))}
+            </ul>
+          </div>
         )}
 
         <div className="fcb-resource-switches" aria-label="Switches">

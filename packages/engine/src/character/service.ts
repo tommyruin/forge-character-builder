@@ -2304,6 +2304,11 @@ export class CharacterService {
     return this.resources.setUsed(id, request);
   }
 
+  /** Tracks a tracker or stops tracking it; what is spent is kept. */
+  setTrackerTracked(id: string, request: { trackerId: string; tracked: boolean }): ResourcesDto {
+    return this.resources.setTracked(id, request);
+  }
+
   setResourceSwitch(id: string, request: { name: string; on: boolean }): ResourcesDto {
     const result = this.resources.setSwitch(id, request);
     // A grant gated on the switch registers or leaves with it, like any rule whose

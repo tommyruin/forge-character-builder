@@ -1,6 +1,8 @@
 // The pure side of the Resources page: how a tracker from the engine becomes a card. A tracker
 // with a few uses is a row of pips (filled while available, the spent ones counting from the
-// right, so tapping one spends it and every pip after it); a larger one is a counter.
+// right, so tapping one spends it and every pip after it); a larger one is a counter. A tracker
+// the player does not track drops to the "Not tracked" group (an engine without the flag tracks
+// everything).
 
 export const MAX_PIPS = 6;
 
@@ -38,7 +40,16 @@ export function trackerCardView(tracker) {
     counterText: `${tracker.remaining} / ${tracker.max}${UNIT_WORDS[tracker.unit] ?? ''}`,
     badge: tracker.isCustom ? 'custom' : null,
     source,
+    tracked: tracker.tracked !== false,
   };
+}
+
+/** The trackers the player tracks, and the ones turned off, each in the engine's order. */
+export function splitTrackers(trackers) {
+  const tracked = [];
+  const untracked = [];
+  for (const tracker of trackers) (tracker.tracked === false ? untracked : tracked).push(tracker);
+  return { tracked, untracked };
 }
 
 // What the switch row says about a switch: its state, what it costs and what it applies.

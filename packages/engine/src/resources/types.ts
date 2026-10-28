@@ -1,9 +1,9 @@
 /**
  * What the engine holds about a character's resources.
  *
- * Three things are stored in the character file (`block.ts`): how much of each
- * tracker is spent, which switches are on, and the trackers the player added by
- * hand. A fourth is derived from the file's custom pack every time the
+ * Four things are stored in the character file (`block.ts`): how much of each
+ * tracker is spent, which switches are on, the trackers the player added by
+ * hand, and the trackers the player chose not to track. A fifth is derived from the file's custom pack every time the
  * character loads (`declared.ts`): the limited uses and switches that custom
  * features and items declare. Keeping the derived part out of the file means a
  * draft is the only place a tracker is defined, so editing the draft is all it
@@ -47,6 +47,8 @@ export interface ResourceState {
   switchesOn: string[];
   /** Trackers added by hand on the Resources page. */
   manual: TrackerDef[];
+  /** The tracker keys the player turned off: still listed, but not printed or refilled. */
+  untracked: string[];
   declared: DeclaredResources;
 }
 
@@ -56,5 +58,6 @@ export const emptyResourceState = (): ResourceState => ({
   spent: {},
   switchesOn: [],
   manual: [],
+  untracked: [],
   declared: emptyDeclaredResources(),
 });

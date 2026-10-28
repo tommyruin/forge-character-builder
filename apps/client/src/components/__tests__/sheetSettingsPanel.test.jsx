@@ -5,6 +5,7 @@ import SheetSettingsPanel from '../tabs/manage/SheetSettingsPanel.jsx';
 import { WorkspaceContext } from '../WorkspaceContext';
 import { sheetFaceFontFamily } from '../../sheetFontFaces.js';
 import { SHEET_FONT_FACES } from '../../sheetFontsSetting.js';
+import { sheetLayoutOptionsSettingStore } from '../../sheetLayoutOptionsSetting.js';
 
 describe('SheetSettingsPanel', () => {
   const markup = renderToStaticMarkup(createElement(SheetSettingsPanel));
@@ -56,8 +57,9 @@ describe('SheetSettingsPanel', () => {
     }
     // Five page checkboxes on, plus ability emphasis, compact top row, split
     // feature boxes, readable body, smart cards and item notes off by default
-    // on the 2014 layout; resource trackers are a sixth checkbox, on by default.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(12);
+    // on the 2014 layout; resource trackers are a sixth checkbox, on by default,
+    // and printing them empty a seventh, off by default.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(13);
     expect(markup.match(/checked=""/g)).toHaveLength(6);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
@@ -75,12 +77,28 @@ describe('SheetSettingsPanel', () => {
   });
 
   it('offers resource trackers as a switch, on by default', () => {
-    expect(markup).toContain('Print resource trackers');
+    expect(markup).toContain('Print resource trackers (Wild Shape, Rage and other limited uses) with the features');
+  });
+
+  it('offers printing resource trackers empty as a switch, off by default, only while they print', () => {
+    const empty = /<label[^>]*>(?:(?!<\/label>).)*Print resource trackers empty, to fill in at the table/s;
+    expect(markup).toMatch(empty);
+    const label = markup.match(empty)[0];
+    expect(label).toContain('role="switch"');
+    expect(label.slice(label.lastIndexOf('<input'))).not.toContain('checked=""');
+    sheetLayoutOptionsSettingStore.set({ resourceTrackers: false });
+    try {
+      const off = renderToStaticMarkup(createElement(SheetSettingsPanel));
+      expect(off).not.toContain('Print resource trackers empty');
+      expect(off.match(/type="checkbox"/g)).toHaveLength(12);
+    } finally {
+      sheetLayoutOptionsSettingStore.set({ resourceTrackers: true });
+    }
   });
 
   it('offers item notes for the inventory as a switch, off by default', () => {
     expect(markup).toContain('Print item notes in the inventory: magic items in full, tools and useful gear in brief');
-    expect(markup.match(/role="switch"/g)).toHaveLength(6);
+    expect(markup.match(/role="switch"/g)).toHaveLength(7);
   });
 
   it('offers a compact top row as a layout option, off by default', () => {

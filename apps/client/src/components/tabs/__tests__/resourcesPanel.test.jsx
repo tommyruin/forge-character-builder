@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Manage > Resources: tracker cards with pips for a few uses and a counter for many, the Custom
-// badge, the switches row, the two rests, and a tracker kept by hand. The real panel runs against
+// badge, the Track switch and the Not tracked group, the switches row, the two rests, and a
+// tracker kept by hand. The real panel runs against
 // a stand-in engine API that keeps the counts the way the engine does.
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -10,6 +11,7 @@ const { characters } = vi.hoisted(() => ({
   characters: {
     resources: vi.fn(),
     setTrackerUsed: vi.fn(),
+    setTrackerTracked: vi.fn(),
     setResourceSwitch: vi.fn(),
     rest: vi.fn(),
     saveManualTracker: vi.fn(),
@@ -21,7 +23,7 @@ vi.mock("../../../api", () => ({ api: { characters } }));
 
 import ResourcesPanel from "../manage/ResourcesPanel.jsx";
 import { WorkspaceContext } from "../../WorkspaceContext";
-import { trackerCardView, switchNote } from "../manage/resourcesModel.js";
+import { splitTrackers, trackerCardView, switchNote } from "../manage/resourcesModel.js";
 
 const tracker = (extra) => ({
   id: "t",
@@ -35,10 +37,11 @@ const tracker = (extra) => ({
   unit: "uses",
   recharge: "shortRest",
   rechargeLabel: "per Short Rest",
+  tracked: true,
   ...extra,
 });
 
-const workspace = { id: "Ada", busy: false, run: (operation) => operation(), mutationTick: 0 };
+const workspace = { id: "Ada", busy: false, run: (operation) => operation(), mutationTick: 0, notify: vi.fn() };
 
 let host;
 let root;
@@ -68,6 +71,10 @@ beforeEach(() => {
     const found = resources.trackers.find((entry) => entry.id === trackerId);
     found.used = used;
     found.remaining = found.max - used;
+    return {};
+  });
+  characters.setTrackerTracked.mockImplementation(async (_id, trackerId, tracked) => {
+    resources.trackers.find((entry) => entry.id === trackerId).tracked = tracked;
     return {};
   });
   characters.setResourceSwitch.mockImplementation(async (_id, name, on) => {
@@ -112,6 +119,7 @@ const click = async (element) => {
 const byLabel = (label) => document.querySelector(`[aria-label="${label}"]`);
 const byText = (text) => [...document.querySelectorAll("button")].find((entry) => entry.textContent.trim() === text);
 const card = (label) => document.querySelector(`[data-testid="resource-card"][aria-label="${label}"]`);
+const untrackedRow = (label) => document.querySelector(`[data-testid="untracked-resource"][aria-label="${label}"]`);
 
 describe("the card view", () => {
   it("makes pips from a few uses, the spent ones counting from the right", () => {
@@ -136,6 +144,13 @@ describe("the card view", () => {
     expect(
       trackerCardView(tracker({ isCustom: true, pool: "Moon points", sources: [{ name: "A", kind: "custom" }, { name: "B", kind: "custom" }] })).source,
     ).toBe("Shared pool · A, B");
+  });
+
+  it("splits the trackers the player tracks from the ones turned off, and tracks one with no flag", () => {
+    const { tracked, untracked } = splitTrackers([tracker({ id: "a" }), tracker({ id: "b", tracked: false }), tracker({ id: "c", tracked: undefined })]);
+    expect(tracked.map((entry) => entry.id)).toEqual(["a", "c"]);
+    expect(untracked.map((entry) => entry.id)).toEqual(["b"]);
+    expect(trackerCardView(tracker({ tracked: false })).tracked).toBe(false);
   });
 
   it("says what a switch costs and applies", () => {
@@ -250,8 +265,57 @@ describe("the Resources page", () => {
     expect(dialog.querySelector('[aria-label="Limited use name"]').value).toBe("Winged Boots");
   });
 
+  it("gives every card a Track switch, on", async () => {
+    await render();
+    for (const label of ["Wild Shape", "Moonbeam, no slot", "Wand of Embers"]) {
+      const toggle = card(label).querySelector(`[aria-label="Track ${label}"]`);
+      expect(toggle.getAttribute("role")).toBe("switch");
+      expect(toggle.getAttribute("aria-checked")).toBe("true");
+      // A real button, so it takes focus and answers Enter and Space.
+      expect(toggle.tagName).toBe("BUTTON");
+      expect(toggle.closest("label").textContent).toBe("Track");
+    }
+    expect(document.querySelector('[aria-label="Not tracked"]')).toBeNull();
+  });
+
+  it("moves a tracker turned off to the Not tracked group, and back when it is tracked again", async () => {
+    await render();
+    await click(byLabel("Track Wild Shape"));
+    expect(characters.setTrackerTracked).toHaveBeenLastCalledWith("Ada", "ws", false);
+    expect(workspace.notify).toHaveBeenLastCalledWith("Not tracking Wild Shape");
+    expect(card("Wild Shape")).toBeNull();
+    const group = document.querySelector('[aria-label="Not tracked"]');
+    expect(group.textContent).toContain("Not tracked");
+    expect(untrackedRow("Wild Shape")).not.toBeNull();
+    expect(untrackedRow("Wild Shape").textContent).toContain("Druid");
+    // No pips while it is not tracked.
+    expect(untrackedRow("Wild Shape").querySelector(".fcb-resource-pip")).toBeNull();
+    expect(byLabel("Track Wild Shape").getAttribute("aria-checked")).toBe("false");
+
+    await click(byLabel("Track Wild Shape"));
+    expect(characters.setTrackerTracked).toHaveBeenLastCalledWith("Ada", "ws", true);
+    expect(workspace.notify).toHaveBeenLastCalledWith("Tracking Wild Shape");
+    expect(card("Wild Shape")).not.toBeNull();
+    expect(document.querySelector('[aria-label="Not tracked"]')).toBeNull();
+  });
+
+  it("lists what the engine says is not tracked below the cards, a tracker kept by hand with its Remove button", async () => {
+    resources.trackers[0].tracked = false;
+    resources.trackers.push(
+      tracker({ id: "boots", label: "Winged Boots", max: 30, used: 0, remaining: 30, unit: "minutes", manual: true, isCustom: true, tracked: false, sources: [{ name: "Winged Boots", kind: "manual" }] }),
+    );
+    await render();
+    expect(document.querySelectorAll('[data-testid="resource-card"]')).toHaveLength(2);
+    expect(document.querySelectorAll('[data-testid="untracked-resource"]')).toHaveLength(2);
+    expect(byLabel("Remove Winged Boots")).not.toBeNull();
+    expect(byLabel("Edit Winged Boots")).toBeNull();
+    await click(byLabel("Remove Winged Boots"));
+    expect(characters.deleteManualTracker).toHaveBeenLastCalledWith("Ada", "boots");
+  });
+
   it("is read-only while the workspace is busy", async () => {
     await render({ ...workspace, busy: true });
+    expect(byLabel("Track Wild Shape").disabled).toBe(true);
     expect(byLabel("Wild Shape use 1, available").disabled).toBe(true);
     expect(byText("Long rest").disabled).toBe(true);
     expect(byLabel("Moonlit Form").disabled).toBe(true);

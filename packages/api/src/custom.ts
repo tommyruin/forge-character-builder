@@ -1151,6 +1151,12 @@ export interface TrackerDto extends WireObject {
   spendOnSwitch?: string;
   /** A manual tracker's own definition, for editing. */
   def?: TrackerDef;
+  /**
+   * Whether the player tracks it. An untracked one is still listed, so it can
+   * be tracked again, but is left off the sheet, out of rests and out of what a
+   * switch spends; its spent count is kept for when it is tracked again.
+   */
+  tracked: boolean;
 }
 
 /** A named on/off switch and what turning it on does. */

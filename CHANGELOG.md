@@ -8,6 +8,10 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Each resource on the Resources page has a Track switch. A resource you
+  don't track moves to "Not tracked", stays off the sheet and out of rests,
+  and keeps its count for when you track it again. The choice is saved with
+  the character.
 - Manage > Additional features says which categories make an uploaded Item
   or Magic Item show there, and points to Custom feature for a feature made
   without XML. The Homebrew Editor's raw-type step shows the same list for
@@ -20,8 +24,9 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Resource trackers print as empty circles on the sheet, and a sheet setting
-  ("Print resource trackers") turns the Resources line off.
+- Resource trackers print as circles on the sheet, filled for each use spent
+  on the Resources page (or a count left past six). Sheet settings can turn
+  the Resources line off, or print it empty to fill in at the table.
 - The Homebrew Editor no longer offers Background Feature as a new element or
   grant type, since one can only reach a character through a background.
   Existing ones still load and edit, and typing the type as raw XML warns

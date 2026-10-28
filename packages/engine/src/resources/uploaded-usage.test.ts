@@ -132,6 +132,13 @@ describe("usage lines on uploaded elements", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatch(/^Resources\. .*Heron Blessing ○ ○ ○ \(LR\)/);
     expect(lines[0]!.match(/Heron Blessing/g)).toHaveLength(1);
+    // A use spent on the Resources page prints filled; printed empty, it prints open again.
+    service.setTrackerUsed(id, { trackerId: `usage:${GIFT}`, used: 1 });
+    expect(sheetLines(service, id).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ● \(LR\)/);
+    expect(sheetLines(service, id, { resourceTrackersEmpty: true }).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ○ \(LR\)/);
+    // Not tracked, it is not printed at all.
+    service.setTrackerTracked(id, { trackerId: `usage:${GIFT}`, tracked: false });
+    expect(sheetLines(service, id).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
   });
 });
 
@@ -139,6 +146,6 @@ const trackersFor = (service: CharacterService, id: string): TrackerDto[] =>
   service.getResources(id).trackers.filter((entry) => entry.label === "Heron Blessing");
 
 /** Every printed line of the character's full sheet. */
-const sheetLines = (service: CharacterService, id: string): string[] =>
-  buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" }).pages
+const sheetLines = (service: CharacterService, id: string, options: { resourceTrackersEmpty?: boolean } = {}): string[] =>
+  buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", ...options }).pages
     .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))));

@@ -14,7 +14,9 @@
  *    Lines in any other shape ("Channel Divinity", "1/Turn") are not tracked.
  *
  * Trackers naming one pool are a single resource. What is spent is stored under
- * the tracker's key (its id, `pool:<name>`, or `usage:<element id>`).
+ * the tracker's key (its id, `pool:<name>`, or `usage:<element id>`), and so is
+ * the player's choice not to track one: an untracked tracker is still listed,
+ * so it can be tracked again, but nothing else counts it.
  */
 
 import type { ResourcesDto, SwitchDto, TrackerDto, TrackerSourceDto, TrackerDef } from "@forge-cb/api";
@@ -220,6 +222,7 @@ function toDto(candidates: readonly Candidate[], state: CharacterState): Tracker
     ...(pooled ? { pool: first.pool! } : {}),
     ...(spendOnSwitch === undefined ? {} : { spendOnSwitch }),
     ...(first.def === undefined ? {} : { def: first.def }),
+    tracked: !state.resources.untracked.includes(key),
   };
 }
 
@@ -283,7 +286,8 @@ export function buildSwitches(state: CharacterState, library: ElementLibrary, tr
       if (!existing.sources.includes(entry.ownerName)) (existing.sources as string[]).push(entry.ownerName);
       continue;
     }
-    const spends = trackers.find((tracker) => tracker.spendOnSwitch !== undefined && sameName(tracker.spendOnSwitch, entry.name));
+    // An untracked tracker is not spent by its switch, so the switch costs nothing.
+    const spends = trackers.find((tracker) => tracker.tracked && tracker.spendOnSwitch !== undefined && sameName(tracker.spendOnSwitch, entry.name));
     out.push({
       name: entry.name,
       on: state.resources.switchesOn.some((name) => sameName(name, entry.name)),
@@ -304,8 +308,8 @@ export function buildResources(
   return { trackers, switches: buildSwitches(state, library, trackers) };
 }
 
-/** The tracker keys a rest of this kind refills. */
+/** The tracker keys a rest of this kind refills. An untracked tracker keeps what it had spent. */
 export function restKeys(trackers: readonly TrackerDto[], kind: "short" | "long"): string[] {
   const recharges = REST_RECHARGES[kind];
-  return trackers.filter((tracker) => recharges.includes(tracker.recharge)).map((tracker) => tracker.id);
+  return trackers.filter((tracker) => tracker.tracked && recharges.includes(tracker.recharge)).map((tracker) => tracker.id);
 }

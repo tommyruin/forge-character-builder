@@ -20,6 +20,9 @@ import {
   type TrackerDef,
 } from "../custom/schema.js";
 import type { ResourcesDto, TrackerDto } from "@forge-cb/api";
+import { createCharacterSnapshotController } from "../snapshot/character-snapshot.js";
+import { CHARACTER_LOAD_MANIFEST } from "../snapshot/identities.js";
+import { encodeBase64 } from "../platform.js";
 
 let library: ElementLibrary;
 beforeAll(async () => {
@@ -435,6 +438,177 @@ describe("item charges", () => {
   });
 });
 
+describe("a tracker the player does not track", () => {
+  const built = (): { service: CharacterService; id: string; original: string } => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", {
+        trackers: [
+          tracker({ id: "moonbeam", label: "Moonbeam", max: { kind: "number", value: 3 }, recharge: "shortRest" }),
+          tracker({ id: "ward", label: "Ward", max: { kind: "number", value: 1 }, recharge: "longRest" }),
+        ],
+      }),
+    });
+    return { service, id, original: service.exportCharacterXml(id) };
+  };
+
+  it("is listed as not tracked, so it can be tracked again", () => {
+    const { service, id } = built();
+    expect(byLabel(service.getResources(id), "Moonbeam").tracked).toBe(true);
+    const off = service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: false });
+    expect(byLabel(off, "Moonbeam").tracked).toBe(false);
+    expect(byLabel(off, "Ward").tracked).toBe(true);
+    expect(byLabel(service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: true }), "Moonbeam").tracked).toBe(true);
+  });
+
+  it("refuses a tracker that does not exist and a value that is not a yes or no", () => {
+    const { service, id } = built();
+    expect(() => service.setTrackerTracked(id, { trackerId: "nothing", tracked: false })).toThrow(/not found/);
+    expect(() => service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: "no" as unknown as boolean })).toThrow(/Tracked/);
+  });
+
+  it("keeps what it had spent through rests, and picks up there when tracked again", () => {
+    const { service, id } = built();
+    service.setTrackerUsed(id, { trackerId: "moonbeam", used: 2 });
+    service.setTrackerUsed(id, { trackerId: "ward", used: 1 });
+    service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: false });
+    const rested = service.restCharacter(id, { kind: "long" });
+    expect(byLabel(rested, "Moonbeam")).toMatchObject({ used: 2, tracked: false });
+    expect(byLabel(rested, "Ward").used).toBe(0);
+    expect(byLabel(service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: true }), "Moonbeam")).toMatchObject({ used: 2, tracked: true });
+    expect(byLabel(service.restCharacter(id, { kind: "short" }), "Moonbeam").used).toBe(0);
+  });
+
+  it("is stored with the character, survives a save and reload, and leaves the file as it was once tracked again", () => {
+    const { service, id, original } = built();
+    service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: false });
+    const xml = service.exportCharacterXml(id);
+    expect(xml).toContain(`<resources schema="1"><![CDATA[{"untracked":["moonbeam"]}]]></resources>`);
+    // Turning it off twice changes nothing.
+    service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: false });
+    expect(service.exportCharacterXml(id)).toBe(xml);
+
+    const reloaded = new CharacterService(undefined, library);
+    reloaded.importCharacterXml("Reloaded", xml);
+    expect(byLabel(reloaded.getResources("Reloaded"), "Moonbeam").tracked).toBe(false);
+    expect(reloaded.exportCharacterXml("Reloaded")).toBe(xml);
+
+    service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: true });
+    expect(service.exportCharacterXml(id)).toBe(original);
+  });
+
+  it("keeps every part of the block side by side", () => {
+    const { service, id } = built();
+    service.setTrackerUsed(id, { trackerId: "ward", used: 1 });
+    service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: false });
+    expect(service.exportCharacterXml(id)).toContain(`<![CDATA[{"spent":{"ward":1},"untracked":["moonbeam"]}]]>`);
+    service.restCharacter(id, { kind: "long" });
+    expect(service.exportCharacterXml(id)).toContain(`<![CDATA[{"untracked":["moonbeam"]}]]>`);
+  });
+
+  it("restores from a character snapshot", async () => {
+    const { service, id } = built();
+    service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: false });
+    const controller = createCharacterSnapshotController(service, library);
+    await controller.prepare(id, CHARACTER_LOAD_MANIFEST);
+    const body = controller.takeBuffer();
+    const xml = service.exportCharacterXml(id);
+    const device = new CharacterService(undefined, library);
+    const restore = createCharacterSnapshotController(device, library);
+    await restore.importWithSnapshot(id, encodeBase64(new TextEncoder().encode(xml)), CHARACTER_LOAD_MANIFEST, body);
+    expect(restore.diagnostics()).toMatchObject({ restoreMode: "snapshot", snapshotAccepted: true });
+    expect(byLabel(device.getResources(id), "Moonbeam").tracked).toBe(false);
+  }, 60_000);
+
+  it("reads a block tolerantly: entries that are not names are skipped, and keys it does not know are carried through", () => {
+    const { service, id } = built();
+    service.setTrackerUsed(id, { trackerId: "ward", used: 1 });
+    // What a later builder might add, and an untracked list with junk in it.
+    const xml = service.exportCharacterXml(id).replace(
+      `{"spent":{"ward":1}}`,
+      `{"spent":{"ward":1},"untracked":["moonbeam",7,"","moonbeam"],"later":{"kept":true}}`,
+    );
+    const reloaded = new CharacterService(undefined, library);
+    reloaded.importCharacterXml("Reloaded", xml);
+    const resources = reloaded.getResources("Reloaded");
+    expect(byLabel(resources, "Moonbeam").tracked).toBe(false);
+    expect(byLabel(resources, "Ward")).toMatchObject({ used: 1, tracked: true });
+    reloaded.setTrackerUsed("Reloaded", { trackerId: "ward", used: 0 });
+    expect(reloaded.exportCharacterXml("Reloaded")).toContain(`<![CDATA[{"untracked":["moonbeam"],"later":{"kept":true}}]]>`);
+  });
+
+  it("is left alone by a reader that does not know untracked: the rest of the block is read, and the list rides through its edits", () => {
+    const { service, id } = built();
+    service.setTrackerUsed(id, { trackerId: "ward", used: 1 });
+    service.setTrackerTracked(id, { trackerId: "moonbeam", tracked: false });
+    // An earlier builder treats "untracked" as it treats any key it does not know; renaming the
+    // key here stands in for that reader, which has the same unknown-key handling.
+    const xml = service.exportCharacterXml(id).replace(`"untracked":`, `"unknownLater":`);
+    const older = new CharacterService(undefined, library);
+    older.importCharacterXml("Older", xml);
+    const resources = older.getResources("Older");
+    expect(byLabel(resources, "Ward").used).toBe(1);
+    expect(byLabel(resources, "Moonbeam").tracked).toBe(true);
+    older.restCharacter("Older", { kind: "long" });
+    expect(older.exportCharacterXml("Older")).toContain(`<![CDATA[{"unknownLater":["moonbeam"]}]]>`);
+  });
+
+  it("turns a shared pool off as one resource", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, { draft: feature("Gift", { trackers: [tracker({ id: "gift", label: "Gift", pool: "Shared", max: { kind: "number", value: 4 } })] }) });
+    service.saveCustomDraft(id, { draft: feature("Twin", { trackers: [tracker({ id: "twin", label: "Twin", pool: "Shared", max: { kind: "number", value: 4 } })] }) });
+    const off = service.setTrackerTracked(id, { trackerId: "pool:shared", tracked: false });
+    expect(off.trackers.filter((entry) => entry.pool === "Shared")).toEqual([expect.objectContaining({ id: "pool:shared", tracked: false })]);
+    expect(service.exportCharacterXml(id)).toContain(`{"untracked":["pool:shared"]}`);
+  });
+
+  it("is not spent by its switch, which then turns on whatever is left", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonlit Form", {
+        template: "curse",
+        blocks: [{ kind: "modifier", id: "ac", target: "ac:misc", mode: "add", value: { kind: "number", value: 2 }, gates: { switch: "Moonlit Form" } }] as CustomBlock[],
+        trackers: [tracker({ id: "form", label: "Moonlit Form uses", max: { kind: "number", value: 1 }, spendOnSwitch: "Moonlit Form" })],
+      }),
+    });
+    service.setTrackerUsed(id, { trackerId: "form", used: 1 });
+    const off = service.setTrackerTracked(id, { trackerId: "form", tracked: false });
+    // The switch no longer says it spends anything.
+    expect(off.switches[0]).toEqual({ name: "Moonlit Form", on: false, sources: ["Moonlit Form"] });
+    const on = service.setResourceSwitch(id, { name: "Moonlit Form", on: true });
+    expect(on.switches[0]!.on).toBe(true);
+    expect(byLabel(on, "Moonlit Form uses").used).toBe(1);
+    service.setResourceSwitch(id, { name: "Moonlit Form", on: false });
+    // Tracked again, the switch spends it and is refused with none left.
+    service.setTrackerTracked(id, { trackerId: "form", tracked: true });
+    expect(service.getResources(id).switches[0]).toMatchObject({ spends: "Moonlit Form uses" });
+    expect(() => service.setResourceSwitch(id, { name: "Moonlit Form", on: true })).toThrow(/Moonlit Form uses/);
+  });
+
+  it("follows a book feature such as Rage", () => {
+    const { service, id } = buildCharacter(library, { id: `UntrackBarb${counter++}`, classId: ID.CLASS_BARBARIAN, levels: 3 });
+    const original = service.exportCharacterXml(id);
+    const rage = byLabel(service.getResources(id), "Rage");
+    expect(rage.id).toMatch(/^usage:/);
+    expect(byLabel(service.setTrackerTracked(id, { trackerId: rage.id, tracked: false }), "Rage").tracked).toBe(false);
+    service.setTrackerTracked(id, { trackerId: rage.id, tracked: true });
+    expect(service.exportCharacterXml(id)).toBe(original);
+  });
+
+  it("is forgotten with the custom entry or the tracker kept by hand it belongs to", () => {
+    const { service, id } = fighter();
+    const original = service.exportCharacterXml(id);
+    const gift = feature("Gift", { trackers: [tracker({ id: "gift", label: "Gift" })] });
+    service.saveCustomDraft(id, { draft: gift });
+    service.setTrackerTracked(id, { trackerId: "gift", tracked: false });
+    service.saveManualTracker(id, { tracker: tracker({ id: "boots", label: "Winged Boots" }) });
+    service.setTrackerTracked(id, { trackerId: "boots", tracked: false });
+    service.deleteManualTracker(id, { trackerId: "boots" });
+    service.deleteCustomDraft(id, { draftId: gift.id });
+    expect(service.exportCharacterXml(id)).toBe(original);
+  });
+});
+
 describe("a tracker kept by hand", () => {
   it("is added, spent, edited and removed on the Resources page alone", () => {
     const { service, id } = fighter();
@@ -505,8 +679,12 @@ describe("limited uses printed in the book content", () => {
 });
 
 describe("the sheet", () => {
-  const resourceLines = (service: CharacterService, id: string, resourceTrackers?: boolean): string[] => {
-    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", ...(resourceTrackers === undefined ? {} : { resourceTrackers }) });
+  const resourceLines = (service: CharacterService, id: string, resourceTrackers?: boolean, resourceTrackersEmpty?: boolean): string[] => {
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, {
+      mode: "full",
+      ...(resourceTrackers === undefined ? {} : { resourceTrackers }),
+      ...(resourceTrackersEmpty === undefined ? {} : { resourceTrackersEmpty }),
+    });
     return model.pages
       .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))))
       .filter((line) => line.startsWith("Resources."));
@@ -522,7 +700,7 @@ describe("the sheet", () => {
     expect(resourceLines(service, id, false)).toEqual([]);
   });
 
-  it("prints every resource in one paragraph: boxes for a few uses, a blank for many", () => {
+  it("prints every resource in one paragraph as the Resources page left it: circles for a few uses, a count for many", () => {
     const { service, id } = fighter();
     service.saveCustomDraft(id, {
       draft: feature("Moonwell Gift", {
@@ -534,10 +712,50 @@ describe("the sheet", () => {
       }),
     });
     service.setTrackerUsed(id, { trackerId: "a", used: 1 });
+    service.setTrackerUsed(id, { trackerId: "b", used: 5 });
     const [line] = resourceLines(service, id);
+    expect(line).toContain("Moonbeam ○ ● (SR)");
+    expect(line).toContain("Embers 7 / 12 charges (dawn)");
+    expect(line).toContain("Wand 7 / 7 charges (1d6+1 at dawn)");
+    // The line follows the pips: a rest refills it.
+    service.restCharacter(id, { kind: "short" });
+    expect(resourceLines(service, id)[0]).toContain("Moonbeam ○ ○ (SR)");
+  });
+
+  it("prints every resource empty, to fill in at the table, when the sheet option asks for it", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", {
+        trackers: [
+          tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" }),
+          tracker({ id: "b", label: "Embers", unit: "charges", max: { kind: "number", value: 12 }, recharge: "dawn" }),
+        ],
+      }),
+    });
+    service.setTrackerUsed(id, { trackerId: "a", used: 1 });
+    service.setTrackerUsed(id, { trackerId: "b", used: 5 });
+    const [line] = resourceLines(service, id, undefined, true);
     expect(line).toContain("Moonbeam ○ ○ (SR)");
     expect(line).toContain("Embers ____ / 12 charges (dawn)");
-    expect(line).toContain("Wand ____ / 7 charges (1d6+1 at dawn)");
+    // Off still wins: there is no paragraph to print empty.
+    expect(resourceLines(service, id, false, true)).toEqual([]);
+  });
+
+  it("leaves off a resource the player does not track", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", {
+        trackers: [
+          tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" }),
+          tracker({ id: "b", label: "Embers", unit: "charges", max: { kind: "number", value: 12 }, recharge: "dawn" }),
+        ],
+      }),
+    });
+    service.setTrackerTracked(id, { trackerId: "a", tracked: false });
+    const [line] = resourceLines(service, id);
+    expect(line).not.toContain("Moonbeam");
+    expect(line).toContain("Embers 12 / 12 charges (dawn)");
+    expect(resourceLines(service, id, undefined, true)[0]).not.toContain("Moonbeam");
   });
 
   it("prints nothing for a character with no limited uses", () => {

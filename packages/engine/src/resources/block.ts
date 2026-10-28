@@ -3,12 +3,15 @@
  * character file (`dnd5e/builder-block.ts`).
  *
  * ```xml
- * <resources schema="1"><![CDATA[{"spent":{"moonbeam":1},"switches":["Moonlit Form"],"manual":[…]}]]></resources>
+ * <resources schema="1"><![CDATA[{"spent":{"moonbeam":1},"switches":["Moonlit Form"],"manual":[…],"untracked":["usage:…"]}]]></resources>
  * ```
  *
  * Every part is left out when empty and the child with it, so a character
- * whose trackers are all full, whose switches are all off and who keeps no
- * tracker by hand has no trace of it and keeps its original bytes.
+ * whose trackers are all full, whose switches are all off, who keeps no
+ * tracker by hand and tracks everything has no trace of it and keeps its
+ * original bytes. Keys this reader does not know are carried through every
+ * rewrite untouched, and `schema` is written but never checked, so a later
+ * part (such as `untracked`) is ignored, not lost, by an earlier reader.
  */
 
 import type { TrackerDef } from "@forge-cb/api";
@@ -47,10 +50,16 @@ function readManual(raw: unknown): TrackerDef[] {
   return out;
 }
 
+/** The tracker keys turned off: non-empty strings, each once. */
+function readUntracked(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((key): key is string => typeof key === "string" && key !== ""))];
+}
+
 export function readResourceBlock(document: Dnd5eDocument): ResourceBlockRead {
   const empty: ResourceBlockRead = {
     stored: {},
-    state: { spent: {}, switchesOn: [], manual: [], declared: emptyDeclaredResources() },
+    state: { spent: {}, switchesOn: [], manual: [], untracked: [], declared: emptyDeclaredResources() },
     unreadable: false,
   };
   const text = builderChildText(document, RESOURCES_NODE);
@@ -71,11 +80,18 @@ export function readResourceBlock(document: Dnd5eDocument): ResourceBlockRead {
   const switchesOn = Array.isArray(parsed.switches)
     ? parsed.switches.filter((name): name is string => typeof name === "string" && name !== "")
     : [];
-  return { stored: parsed, state: { spent, switchesOn, manual: readManual(parsed.manual), declared: emptyDeclaredResources() }, unreadable: false };
+  return {
+    stored: parsed,
+    state: { spent, switchesOn, manual: readManual(parsed.manual), untracked: readUntracked(parsed.untracked), declared: emptyDeclaredResources() },
+    unreadable: false,
+  };
 }
 
 /** The stored object that carries `state`: unknown keys kept, every empty part left out. */
-export function storedWithState(stored: Readonly<Record<string, unknown>>, state: Pick<ResourceState, "spent" | "switchesOn" | "manual">): Record<string, unknown> {
+export function storedWithState(
+  stored: Readonly<Record<string, unknown>>,
+  state: Pick<ResourceState, "spent" | "switchesOn" | "manual" | "untracked">,
+): Record<string, unknown> {
   const next: Record<string, unknown> = { ...stored };
   const spent = Object.fromEntries(Object.entries(state.spent).filter(([, value]) => value > 0).sort(([a], [b]) => a.localeCompare(b)));
   if (Object.keys(spent).length > 0) next.spent = spent;
@@ -84,6 +100,8 @@ export function storedWithState(stored: Readonly<Record<string, unknown>>, state
   else delete next.switches;
   if (state.manual.length > 0) next.manual = state.manual;
   else delete next.manual;
+  if (state.untracked.length > 0) next.untracked = state.untracked;
+  else delete next.untracked;
   return next;
 }
 

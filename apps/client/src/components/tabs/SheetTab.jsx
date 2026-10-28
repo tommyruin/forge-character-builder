@@ -7,7 +7,7 @@ import useSheetFontsSetting from '../../hooks/useSheetFontsSetting';
 import useSheetPagesSetting from '../../hooks/useSheetPagesSetting';
 import useSheetAbilitySetting from '../../hooks/useSheetAbilitySetting';
 import useSheetLayoutOptionsSetting from '../../hooks/useSheetLayoutOptionsSetting';
-import { effectiveSheetLayout, sheetLayoutCacheKey } from '../../sheetLayoutOptionsSetting.js';
+import { effectiveSheetLayout, sheetLayoutCacheKey, resourceTrackersCacheKey, resourceTrackerSheetOptions } from '../../sheetLayoutOptionsSetting.js';
 import { loadSheetBrandImage } from '../../sheetBrandImage.js';
 import { useWorkspace } from '../WorkspaceContext';
 import PdfCanvasViewer from '../PdfCanvasViewer';
@@ -41,10 +41,11 @@ export default function SheetTab() {
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { options: layoutOptions } = useSheetLayoutOptionsSetting();
   const inventoryNotes = layoutOptions.inventoryNotes;
-  const resourceTrackers = layoutOptions.resourceTrackers;
+  const { resourceTrackers, resourceTrackersEmpty } = resourceTrackerSheetOptions(layoutOptions);
   const layout = useMemo(() => effectiveSheetLayout(templateSet, layoutOptions), [templateSet, layoutOptions]);
-  // Trackers off changes the rendered sheet, so it changes every cache key built from this.
-  const layoutKey = sheetLayoutCacheKey(layout) + (resourceTrackers ? '' : '#no-trackers');
+  // Trackers off or printed empty changes the rendered sheet, so it changes every cache key built
+  // from this. What is spent on the Resources tab is a character edit: it bumps the mutation tick.
+  const layoutKey = sheetLayoutCacheKey(layout) + resourceTrackersCacheKey(layoutOptions);
   // Debounced view of mutationTick: a burst of cascading mutations (multi-step
   // selections, level-ups) folds into one full-sheet regeneration instead of
   // rendering once per tick. Seeded from the current tick so the first mount
@@ -97,7 +98,7 @@ export default function SheetTab() {
     // if its own cleanup hasn't cancelled it — so the surviving mount always renders.
     sharedSheetGeneration(runKey, () =>
       loadSheetBrandImage().then((brandImage) =>
-        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, resourceTrackers, layout, brandImage, footerText: `Generated with ${shell.appName}.` })),
+        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, resourceTrackers, resourceTrackersEmpty, layout, brandImage, footerText: `Generated with ${shell.appName}.` })),
     )
       .then((bytes) => {
         putCachedSheet(cacheKey, bytes);
@@ -111,7 +112,7 @@ export default function SheetTab() {
     return () => {
       cancelled = true;
     };
-  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, layout, layoutKey]);
+  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersEmpty, layout, layoutKey]);
 
   const ready = state.key === key;
   const bytes = ready ? state.bytes : null;

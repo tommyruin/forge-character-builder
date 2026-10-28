@@ -9203,6 +9203,33 @@ html.fcb-busy-cursor * {
   opacity: 0.6;
 }
 
+/* A smaller switch for a dense row: a tracker card's Track switch. The hit area stays over 24 px. */
+.fcb-switch.is-compact {
+  width: 40px;
+  height: 24px;
+}
+
+.fcb-switch.is-compact .fcb-switch-knob {
+  width: 16px;
+  height: 16px;
+}
+
+.fcb-switch.is-compact.is-on .fcb-switch-knob {
+  transform: translateX(16px);
+}
+
+/* Track sits at the start of a card's actions row, its edit and remove buttons at the end. */
+.fcb-resource-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  color: var(--fcb-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .fcb-custom-readout {
   margin-top: 6px;
   color: var(--fcb-text-muted);

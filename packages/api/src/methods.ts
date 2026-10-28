@@ -413,6 +413,12 @@ export interface EngineMethodMap {
   /** Sets how many of a tracker are spent (clamped to its maximum). `trackerId` is a `TrackerDto.id`. */
   setTrackerUsed: MethodContract<[id: string, request: { trackerId: string; used: number }], ResourcesDto>;
   /**
+   * Tracks a tracker or stops tracking it (`TrackerDto.tracked`). `trackerId`
+   * is a `TrackerDto.id`, so a shared pool turns off as one. What is spent is
+   * kept either way.
+   */
+  setTrackerTracked: MethodContract<[id: string, request: { trackerId: string; tracked: boolean }], ResourcesDto>;
+  /**
    * Turns a switch on or off. Turning one on spends one use of the tracker it
    * is linked to, and is refused when none is left.
    */
@@ -584,6 +590,11 @@ export interface EngineMethodMap {
         inventoryNotes?: boolean;
         /** Resource trackers: `false` leaves the "Resources" paragraph off the features text. Absent prints it. */
         resourceTrackers?: boolean;
+        /**
+         * Resource trackers printed empty, to fill in at the table (a circle per use, "____ / N").
+         * Absent or `false` prints what is spent and what is left.
+         */
+        resourceTrackersEmpty?: boolean;
         /** The body face the sheet will be drawn in, so card prose is measured in its widths. */
         bodyFace?: string;
       },
@@ -660,6 +671,7 @@ export const ENGINE_METHOD_NAMES = [
   "setSpellAlias",
   "getResources",
   "setTrackerUsed",
+  "setTrackerTracked",
   "setResourceSwitch",
   "restCharacter",
   "saveManualTracker",
@@ -785,6 +797,7 @@ export const METHOD_SUPPORT: Readonly<Record<EngineMethodName, MethodSupport>> =
   setSpellAlias: implemented,
   getResources: implemented,
   setTrackerUsed: implemented,
+  setTrackerTracked: implemented,
   setResourceSwitch: implemented,
   restCharacter: implemented,
   saveManualTracker: implemented,
@@ -890,6 +903,7 @@ const QUEUE_KINDS: Readonly<Record<EngineMethodName, QueueKind>> = {
   setSpellAlias: "character-write",
   getResources: "read-only",
   setTrackerUsed: "character-write",
+  setTrackerTracked: "character-write",
   setResourceSwitch: "character-write",
   restCharacter: "character-write",
   saveManualTracker: "character-write",

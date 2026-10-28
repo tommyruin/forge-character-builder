@@ -1,16 +1,31 @@
 /**
  * How the sheet prints a character's resources: one "Resources" paragraph in
  * the features text, which every template has and which continues on a
- * continuation page when a box is full. A resource with a few uses gets a circle
- * for each, to tick off at the table; a large one gets a blank to write the
- * count in ("____ / 7"). The sheet prints the trackers full, as a fresh
- * sheet would be, not the state the app was left in.
+ * continuation page when a box is full. A resource with a few uses gets a
+ * circle for each; a large one gets a count ("4 / 7").
+ *
+ * By default the paragraph shows each tracker as the Resources page left it:
+ * an open circle per use left, then a filled one per use spent (the page's own
+ * order, spent uses at the end), and what is left of a large one. Printed
+ * empty, it is a fresh sheet to fill in at the table: an open circle per use,
+ * and a blank for the count of a large one ("____ / 7"). A tracker the player
+ * does not track is left off either way.
  */
 
 import type { TrackerDto } from "@forge-cb/api";
 
-/** The most boxes drawn for one resource; beyond this a number is easier to keep. */
+/** The most circles drawn for one resource; beyond this a number is easier to keep. */
 export const MAX_BOXES = 6;
+
+/** A use left (and every use, on an empty sheet). The PDF draws it as "o" (see `winAnsiText`). */
+export const OPEN_MARK = "○";
+/** A use spent. The PDF draws it as "•", the filled round mark every sheet face carries. */
+export const SPENT_MARK = "●";
+
+/** How the paragraph prints: as the Resources page left it, or empty to fill in at the table. */
+export interface ResourceSheetOptions {
+  empty?: boolean;
+}
 
 const SHORT_RECHARGE: Readonly<Record<TrackerDto["recharge"], string>> = {
   shortRest: "SR",
@@ -21,15 +36,20 @@ const SHORT_RECHARGE: Readonly<Record<TrackerDto["recharge"], string>> = {
   diceRoll: "",
 };
 
-function resourceText(tracker: TrackerDto): string {
+function resourceText(tracker: TrackerDto, empty: boolean): string {
   const unit = tracker.unit === "uses" ? "" : ` ${tracker.unit}`;
-  const marks = tracker.max <= MAX_BOXES ? ` ${Array.from({ length: tracker.max }, () => "○").join(" ")}${unit === "" ? "" : ` ${tracker.unit}`}` : ` ____ / ${tracker.max}${unit}`;
+  const used = empty ? 0 : Math.min(tracker.max, Math.max(0, tracker.used));
+  const circles = [...Array.from({ length: tracker.max - used }, () => OPEN_MARK), ...Array.from({ length: used }, () => SPENT_MARK)];
+  const marks = tracker.max <= MAX_BOXES
+    ? ` ${circles.join(" ")}${unit}`
+    : ` ${empty ? "____" : tracker.max - used} / ${tracker.max}${unit}`;
   const note = tracker.recharge === "diceRoll" ? (tracker.regain ?? "").trim() : SHORT_RECHARGE[tracker.recharge];
   return `${tracker.label}${marks}${note === "" ? "" : ` (${note})`}`;
 }
 
-/** The "Resources" paragraph, or null when the character has none. */
-export function resourceSheetText(trackers: readonly TrackerDto[]): string | null {
-  if (trackers.length === 0) return null;
-  return `Resources. ${trackers.map(resourceText).join("; ")}`;
+/** The "Resources" paragraph, or null when the character tracks none. */
+export function resourceSheetText(trackers: readonly TrackerDto[], options: ResourceSheetOptions = {}): string | null {
+  const printed = trackers.filter((tracker) => tracker.tracked !== false);
+  if (printed.length === 0) return null;
+  return `Resources. ${printed.map((tracker) => resourceText(tracker, options.empty === true)).join("; ")}`;
 }

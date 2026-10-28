@@ -3,7 +3,8 @@
  * against a small host interface so `CharacterService` stays the only owner of
  * character state. Every change is a byte edit to the `resources` child of the
  * builder block; a character whose trackers are all full, whose switches are
- * all off and who keeps no tracker by hand ends up with no such child.
+ * all off, who keeps no tracker by hand and tracks every tracker ends up with
+ * no such child.
  */
 
 import type { ResourcesDto, TrackerDef } from "@forge-cb/api";
@@ -25,7 +26,7 @@ export interface ResourcesHost {
   applyRegionEdits(id: string, edits: RawEdit[]): CharacterState;
 }
 
-type Stored = Pick<ResourceState, "spent" | "switchesOn" | "manual">;
+type Stored = Pick<ResourceState, "spent" | "switchesOn" | "manual" | "untracked">;
 
 const sameName = (left: string, right: string): boolean => left.trim().toLowerCase() === right.trim().toLowerCase();
 
@@ -66,6 +67,7 @@ export class CharacterResources {
       spent: { ...read.state.spent },
       switchesOn: [...read.state.switchesOn],
       manual: read.state.manual.map((def) => ({ ...def })),
+      untracked: [...read.state.untracked],
     };
     change(next, current);
     const stored = storedWithState(read.stored, next);
@@ -75,8 +77,8 @@ export class CharacterResources {
   }
 
   /**
-   * Forgets what a removed custom entry left behind: the counts it had spent
-   * and the switches only it named. `declared` is what the file declared before
+   * Forgets what a removed custom entry left behind: the counts it had spent,
+   * whether it was tracked and the switches only it named. `declared` is what the file declared before
    * the entry was removed, so a shared pool stays while another member uses it.
    */
   forgetOwner(id: string, ownerId: string, declared: DeclaredResources): void {
@@ -92,14 +94,18 @@ export class CharacterResources {
         (name) => switchesLeft.has(name.trim().toLowerCase()) || !declared.switches.some((entry) => entry.ownerId === ownerId && sameName(entry.name, name)),
       ),
       manual: read.state.manual,
+      untracked: [...read.state.untracked],
     };
+    const forget = new Set<string>();
     for (const tracker of mine) {
-      delete next.spent[tracker.def.id];
+      forget.add(tracker.def.id);
       const pool = tracker.def.pool?.trim();
       if (pool !== undefined && pool !== "" && !others.some((other) => other.def.pool !== undefined && sameName(other.def.pool, pool))) {
-        delete next.spent[poolKey(pool)];
+        forget.add(poolKey(pool));
       }
     }
+    for (const key of forget) delete next.spent[key];
+    next.untracked = next.untracked.filter((key) => !forget.has(key));
     const edits = planResourceEdits(document, storedWithState(read.stored, next));
     if (edits.length > 0) this.host.applyRegionEdits(id, edits);
   }
@@ -117,6 +123,23 @@ export class CharacterResources {
     });
   }
 
+  /**
+   * Tracks a tracker or stops tracking it. What is spent stays as it was, so
+   * tracking it again picks up where it left off.
+   */
+  setTracked(id: string, request: { trackerId: string; tracked: boolean }): ResourcesDto {
+    if (typeof request.tracked !== "boolean") {
+      throw engineError("invalid-argument", "The Tracked field must be true or false.");
+    }
+    return this.write(id, (stored, view) => {
+      const tracker = view.trackers.find((entry) => entry.id === request.trackerId);
+      if (tracker === undefined) throw engineError("not-found", `tracker '${request.trackerId}' not found`);
+      const untracked = stored.untracked.includes(tracker.id);
+      if (request.tracked && untracked) stored.untracked = stored.untracked.filter((key) => key !== tracker.id);
+      else if (!request.tracked && !untracked) stored.untracked.push(tracker.id);
+    });
+  }
+
   setSwitch(id: string, request: { name: string; on: boolean }): ResourcesDto {
     return this.write(id, (stored, view) => {
       const found = view.switches.find((entry) => sameName(entry.name, request.name));
@@ -129,7 +152,9 @@ export class CharacterResources {
       if (wasOn) return;
       // Turning a switch on spends a use of every tracker linked to it; with one
       // empty, the switch stays off rather than apply an effect nothing paid for.
-      const linked = view.trackers.filter((tracker) => tracker.spendOnSwitch !== undefined && sameName(tracker.spendOnSwitch, found.name));
+      // A tracker the player does not track is neither spent nor checked: the
+      // switch still works for someone who keeps count elsewhere.
+      const linked = view.trackers.filter((tracker) => tracker.tracked && tracker.spendOnSwitch !== undefined && sameName(tracker.spendOnSwitch, found.name));
       const empty = linked.find((tracker) => tracker.remaining < 1);
       if (empty !== undefined) throw engineError("conflict", `${found.name} needs a use of ${empty.label}, and none is left`);
       for (const tracker of linked) stored.spent[tracker.id] = Math.min(tracker.max, tracker.used + 1);
@@ -172,6 +197,7 @@ export class CharacterResources {
       if (at < 0) throw engineError("not-found", `tracker '${request.trackerId}' not found`);
       stored.manual.splice(at, 1);
       delete stored.spent[request.trackerId];
+      stored.untracked = stored.untracked.filter((key) => key !== request.trackerId);
     });
   }
 }

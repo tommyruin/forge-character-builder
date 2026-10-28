@@ -27,7 +27,8 @@ describe("engine method contract", () => {
     // 99: added getResources, setTrackerUsed, setResourceSwitch, restCharacter, saveManualTracker and deleteManualTracker (trackers and switches).
     // 101: added getElementSource (a loaded element as XML) and checkPackContent (a pack's health, before it is loaded).
     // 102: added getPackChoiceImpact (the picks a pack element's choice change would clear).
-    expect(ENGINE_METHOD_NAMES).toHaveLength(102);
+    // 103: added setTrackerTracked (a tracker the player chooses not to track).
+    expect(ENGINE_METHOD_NAMES).toHaveLength(103);
     expect(new Set(ENGINE_METHOD_NAMES).size).toBe(ENGINE_METHOD_NAMES.length);
     expect(Object.keys(METHOD_SUPPORT).sort()).toEqual([...ENGINE_METHOD_NAMES].sort());
 
@@ -245,7 +246,8 @@ describe("typed client bridge", () => {
     // 99: added getResources, setTrackerUsed, setResourceSwitch, restCharacter, saveManualTracker and deleteManualTracker (trackers and switches).
     // 101: added getElementSource (a loaded element as XML) and checkPackContent (a pack's health, before it is loaded).
     // 102: added getPackChoiceImpact (the picks a pack element's choice change would clear).
-    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 102 } });
+    // 103: added setTrackerTracked (a tracker the player chooses not to track).
+    expect(events).toContainEqual({ type: "ready", metrics: { methodCount: 103 } });
   });
 
   it("transfers snapshot buffers: nested request bodies and ArrayBuffer results", async () => {

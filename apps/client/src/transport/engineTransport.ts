@@ -1404,6 +1404,9 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     resources: (id: string) => invoke(getClient(), "getResources", id),
     setTrackerUsed: (id: string, trackerId: string, used: number) =>
       mutateDetail(id, "setTrackerUsed", [id, { trackerId, used }]),
+    // Tracking a tracker or not is stored with the character, so it is an undoable edit too.
+    setTrackerTracked: (id: string, trackerId: string, tracked: boolean) =>
+      mutateDetail(id, "setTrackerTracked", [id, { trackerId, tracked }]),
     setResourceSwitch: (id: string, name: string, on: boolean) =>
       mutateDetail(id, "setResourceSwitch", [id, { name, on }]),
     rest: (id: string, kind: "short" | "long") => mutateDetail(id, "restCharacter", [id, { kind }]),
@@ -1510,6 +1513,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         ...(opts.inventoryNotes === true ? { inventoryNotes: true } : {}),
         // Trackers print by default; only an explicit off sends the new field.
         ...(opts.resourceTrackers === false ? { resourceTrackers: false } : {}),
+        // Trackers print as the Resources page left them; only an explicit empty sheet sends the new field.
+        ...(opts.resourceTrackersEmpty === true ? { resourceTrackersEmpty: true } : {}),
         // Card prose is laid out in the body face it will be drawn in.
         ...(typeof (opts.fonts as AnyRecord | undefined)?.body === "string" ? { bodyFace: (opts.fonts as AnyRecord).body as string } : {}),
       });

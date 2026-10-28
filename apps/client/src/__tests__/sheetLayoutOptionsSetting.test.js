@@ -7,6 +7,8 @@ import {
   newItemCardOptions,
   readStoredSheetLayoutOptions,
   resolveSheetLayoutOptions,
+  resourceTrackerSheetOptions,
+  resourceTrackersCacheKey,
 } from '../sheetLayoutOptionsSetting.js';
 
 function memoryStorage(initial = {}) {
@@ -37,7 +39,23 @@ describe('sheet layout options setting', () => {
       inventoryNotes: false,
       smartCards: false,
       resourceTrackers: true,
+      resourceTrackersEmpty: false,
     });
+  });
+
+  it('prints resource trackers as the Resources tab left them, unless off or printed empty', () => {
+    expect(resourceTrackersCacheKey(DEFAULT_SHEET_LAYOUT_OPTIONS)).toBe('');
+    expect(resourceTrackerSheetOptions(DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false });
+    expect(resourceTrackersCacheKey({ resourceTrackersEmpty: true })).toBe('#empty-trackers');
+    expect(resourceTrackerSheetOptions({ resourceTrackersEmpty: true })).toEqual({ resourceTrackers: true, resourceTrackersEmpty: true });
+    // Off wins over empty: there is nothing to print empty.
+    expect(resourceTrackersCacheKey({ resourceTrackers: false, resourceTrackersEmpty: true })).toBe('#no-trackers');
+    expect(resourceTrackerSheetOptions({ resourceTrackers: false, resourceTrackersEmpty: true })).toEqual({ resourceTrackers: false, resourceTrackersEmpty: false });
+    expect(resolveSheetLayoutOptions({ resourceTrackersEmpty: 'yes' }).resourceTrackersEmpty).toBe(false);
+
+    const storage = memoryStorage();
+    createSheetLayoutOptionsSettingStore({ storage }).set({ resourceTrackersEmpty: true });
+    expect(readStoredSheetLayoutOptions(storage).resourceTrackersEmpty).toBe(true);
   });
 
   it('reads any stored shape without throwing, keeping only valid known options', () => {

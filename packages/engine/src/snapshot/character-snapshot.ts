@@ -764,10 +764,11 @@ function validateCharacterState(value: unknown): void {
     checkString(record.name, `state.spellAliases.${spellId}.name`);
     checkString(record.note, `state.spellAliases.${spellId}.note`);
   }
-  const resources = checkRecord(state.resources, "state.resources", ["spent", "switchesOn", "manual", "declared"], []);
+  const resources = checkRecord(state.resources, "state.resources", ["spent", "switchesOn", "manual", "untracked", "declared"], []);
   if (!isRecord(resources.spent)) throwBad("invalid-structure", "state.resources.spent: expected an object");
   for (const [key, spent] of Object.entries(resources.spent)) checkNumber(spent, `state.resources.spent.${key}`);
   checkStringArray(resources.switchesOn, "state.resources.switchesOn");
+  checkStringArray(resources.untracked, "state.resources.untracked");
   if (!Array.isArray(resources.manual)) throwBad("invalid-structure", "state.resources.manual: expected an array");
   resources.manual.forEach((tracker, index) => checkRecord(tracker, `state.resources.manual[${index}]`, ["id", "label", "max", "unit", "recharge"], ["regain", "pool", "spendOnSwitch"]));
   const declared = checkRecord(resources.declared, "state.resources.declared", ["trackers", "switches", "trackedOwners"], []);

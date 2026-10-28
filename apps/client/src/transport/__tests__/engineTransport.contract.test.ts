@@ -50,7 +50,7 @@ function fakeClient() {
     "setCompanionPortrait", "removeCompanionPortrait",
     "getDmGrants", "getCustomContent", "saveCustomDraft", "deleteCustomDraft", "promoteCustomDraft",
     "getChoiceIdentityImpact", "previewCustomItem", "previewCustomSpell", "getMissingGrants", "setSpellAlias", "setItemDetails",
-    "getResources", "setTrackerUsed", "setResourceSwitch", "restCharacter", "saveManualTracker", "deleteManualTracker",
+    "getResources", "setTrackerUsed", "setTrackerTracked", "setResourceSwitch", "restCharacter", "saveManualTracker", "deleteManualTracker",
     "getInventory", "getItemBaseOptions", "addItem", "removeItem", "setItemAmount", "extractItem", "equipItem",
     "setItemStorage", "attuneItem", "setItemPresentation", "setItemCards", "setCoins", "getAttacks", "getAttackOptions", "createAttack", "updateAttack",
     "setAttackVisibility", "moveAttack", "deleteAttack", "generateSheet",
@@ -572,6 +572,8 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["getResources", "Ada"]);
     await api.characters.setTrackerUsed("Ada", "moonbeam", 1);
     expect(calls).toContainEqual(["setTrackerUsed", "Ada", { trackerId: "moonbeam", used: 1 }]);
+    await api.characters.setTrackerTracked("Ada", "moonbeam", false);
+    expect(calls).toContainEqual(["setTrackerTracked", "Ada", { trackerId: "moonbeam", tracked: false }]);
     await api.characters.setResourceSwitch("Ada", "Moonlit Form", true);
     expect(calls).toContainEqual(["setResourceSwitch", "Ada", { name: "Moonlit Form", on: true }]);
     await api.characters.rest("Ada", "long");
@@ -818,6 +820,13 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, inventoryNotes: true }]);
     await renderedApi.characters.sheetBytes("Ada", { lite: false, inventoryNotes: false });
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false }]);
+    // Resource trackers: only an explicit off, or an explicit empty sheet, changes the request.
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: false });
+    expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, resourceTrackers: false }]);
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: true, resourceTrackersEmpty: true });
+    expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, resourceTrackersEmpty: true }]);
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: true, resourceTrackersEmpty: false });
+    expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false }]);
     // The character page's layout rides with the render, not the model build.
     expect(sheetRenderer).toHaveBeenLastCalledWith(expect.anything(), expect.any(String), expect.objectContaining({ layout: undefined }));
     await renderedApi.characters.sheetBytes("Ada", { lite: false, templateSet: "2014", layout: { top: false, split: true, readable: false } });
