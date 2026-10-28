@@ -13,6 +13,7 @@ import {
   SHEET_FONT_FACES,
   SHEET_LAYOUT_DEFAULTS,
   SHEET_TEMPLATE_CONTRACT,
+  SHEET_TEMPLATE_MARKERS,
   isSheetTemplateSet,
   resolveSheetLayout,
   sheetDetailsFile,
@@ -155,6 +156,7 @@ export async function fetchCharacterSheetTemplateBundle(
     spellcastingSectionTops: spellcastingSectionTops.map((asset) => asset.bytes),
     labels,
     faces: sheetFaces(fonts, (file) => fontBytes.get(file)!),
+    marker: SHEET_TEMPLATE_MARKERS[templateSet],
     // The set's own page prints its defaults, whatever was asked for, when
     // the variant could not be used.
     layout: detailsFile === baseDetailsFile ? { ...SHEET_LAYOUT_DEFAULTS[templateSet] } : resolvedLayout,

@@ -11,8 +11,20 @@ import {
   SHEET_TEMPLATE_CONTRACT,
   type SheetColours,
   type SheetLayout,
+  type SheetMarker,
   type SheetTemplateLabels,
 } from "./template-contract.js";
+import {
+  CHECK_DOT_RATIO,
+  DEFAULT_PIP_LOOK,
+  hasPips,
+  isPipParagraph,
+  pipBox,
+  pipMarker,
+  pipSegments,
+  pipWordWidth,
+  type PipLook,
+} from "./pips.js";
 import {
   PDFCheckBox,
   PDFDocument,
@@ -94,7 +106,9 @@ const { spellHeader: SPELL_HEADER, spellList: SPELL_LIST } = SHEET_TEMPLATE_CONT
 /** Escape a string for a PDF literal string while keeping this writer ASCII-only. */
 function pdfText(value: string): string {
   let ascii = "";
-  for (const character of value) {
+  // A resource tracker's marks (resources/sheet.ts): this writer draws text
+  // only, in ASCII, so a use left prints as "o" and a use spent as "x".
+  for (const character of value.replaceAll("○", "o").replaceAll("●", "x")) {
     const code = character.charCodeAt(0);
     ascii += code >= 32 && code <= 126 ? character : "?";
   }
@@ -377,6 +391,11 @@ export interface CharacterSheetTemplateBundle {
    * box is not.
    */
   layout?: SheetLayout;
+  /**
+   * The set's checkbox marker, which the Resources paragraph's pips copy.
+   * Absent, they are circles.
+   */
+  marker?: SheetMarker;
   /** The set's titles, captions and ribbons, keyed by template file. */
   labels: SheetTemplateLabels;
   /** The typefaces to draw them and the values in. */
@@ -399,6 +418,11 @@ export interface CharacterSheetWriteOptions {
    * the writer resolves the hook once and pays a single branch per phase.
    */
   trace?: SheetRenderTrace;
+  /**
+   * Internal: which track the Resources paragraph's pips copy (sheet/pips.ts).
+   * Not a sheet setting; absent, DEFAULT_PIP_LOOK.
+   */
+  pipLook?: PipLook;
 }
 
 /** Reports how long one named phase of a render took. */
@@ -539,7 +563,7 @@ function bundleIsComplete(bundle: CharacterSheetTemplateBundle | null): bundle i
     typeof bundle.labels === "object" && bundle.labels !== null &&
     typeof bundle.faces === "object" && bundle.faces !== null &&
     Object.entries(bundle).every(([key, value]) =>
-      key === "labels" || key === "faces" || key === "detailsFile" || key === "layout" ||
+      key === "labels" || key === "faces" || key === "detailsFile" || key === "layout" || key === "marker" ||
       (Array.isArray(value)
         ? value.every((bytes) => bytes.byteLength > 0)
         : (value as Uint8Array).byteLength > 0)
@@ -931,7 +955,7 @@ async function addFilledTemplatePage(
         page.drawCircle({
           x: field.rect.x + field.rect.width / 2,
           y: field.rect.y + field.rect.height / 2,
-          size: Math.min(field.rect.width, field.rect.height) * 0.28,
+          size: Math.min(field.rect.width, field.rect.height) * CHECK_DOT_RATIO,
           color: rgb(textColour[0], textColour[1], textColour[2]),
         });
       }
@@ -1221,26 +1245,36 @@ function drawPositionedRuns(page: PDFPage, runs: readonly LayoutRun[], fonts: Sh
   flush();
 }
 
-interface StyledWord {
+export interface StyledWord {
   text: string;
   style: LayoutRun["style"];
+  /** The word's tracker marks are drawn as pips (sheet/pips.ts), not as text. */
+  pips?: true;
 }
 
 function featureWords(line: string): StyledWord[][] {
   const paragraphParts = line.split(/(?:\t{2,}|[\r\n]+)/).map((part) => part.trim()).filter(Boolean);
-  return paragraphParts.map((paragraph, paragraphIndex) => {
-    if (paragraphIndex > 0) {
-      return paragraph.split(/\s+/).map((word) => ({ text: word, style: "regular" }));
-    }
-    const heading = /^(.*?(?:\)\.|\.))(?:\s+|$)(.*)$/.exec(paragraph);
-    if (heading === null) {
-      return paragraph.split(/\s+/).map((word) => ({ text: word, style: "regular" }));
-    }
-    return [
-      ...heading[1]!.split(/\s+/).map((word) => ({ text: word, style: "bold-italic" as const })),
-      ...heading[2]!.split(/\s+/).filter(Boolean).map((word) => ({ text: word, style: "regular" as const })),
-    ];
-  });
+  // Only the Resources paragraph's marks are a tracker's uses.
+  if (isPipParagraph(line)) {
+    return paragraphParts.map((paragraph, paragraphIndex) => featureParagraphWords(paragraph, paragraphIndex)
+      .map((word) => word.style === "regular" && hasPips(word.text) ? { ...word, pips: true as const } : word));
+  }
+  return paragraphParts.map((paragraph, paragraphIndex) => featureParagraphWords(paragraph, paragraphIndex));
+}
+
+/** One paragraph's words; the first paragraph of a line opens on its bold-italic heading. */
+function featureParagraphWords(paragraph: string, paragraphIndex: number): StyledWord[] {
+  if (paragraphIndex > 0) {
+    return paragraph.split(/\s+/).map((word) => ({ text: word, style: "regular" }));
+  }
+  const heading = /^(.*?(?:\)\.|\.))(?:\s+|$)(.*)$/.exec(paragraph);
+  if (heading === null) {
+    return paragraph.split(/\s+/).map((word) => ({ text: word, style: "regular" }));
+  }
+  return [
+    ...heading[1]!.split(/\s+/).map((word) => ({ text: word, style: "bold-italic" as const })),
+    ...heading[2]!.split(/\s+/).filter(Boolean).map((word) => ({ text: word, style: "regular" as const })),
+  ];
 }
 
 /** The break that follows a flowed line: none, a paragraph break inside one
@@ -1254,14 +1288,14 @@ type FeatureFlowGap = "paragraph" | "feature" | "heading" | "group" | null;
  * one box); a `part` names the box a continuation page carries on. Both are
  * ruled underneath alike, and neither is left as the last line of a box.
  */
-interface FeatureParagraph {
+export interface FeatureParagraph {
   words: readonly StyledWord[];
   indent: number;
   gapAfter: FeatureFlowGap;
   kind?: "heading" | "part";
 }
 
-interface FeatureFlowLine {
+export interface FeatureFlowLine {
   words: readonly StyledWord[];
   indent: number;
   gapAfter: FeatureFlowGap;
@@ -1313,7 +1347,8 @@ function featureGapFor(gap: FeatureFlowGap, fontSize: number): number {
   return 0;
 }
 
-function featureParagraphs(rows: readonly SheetRow[], featureGap = true): FeatureParagraph[] {
+/** A box's rows as unwrapped paragraphs. Exported for the layout tests. */
+export function featureParagraphs(rows: readonly SheetRow[], featureGap = true): FeatureParagraph[] {
   const output: FeatureParagraph[] = [];
   const lines = rows.flatMap((row) => row.kind === "tokens" ? [row.tokens.join(" ")] : [...row.lines]);
   for (const row of lines) {
@@ -1356,11 +1391,17 @@ function groupedFeatureParagraphs(groups: ReadonlyArray<readonly [string, readon
   return output;
 }
 
-function featureFlowLines(
+/**
+ * Wraps paragraphs to `width` at `fontSize`. A word with pips takes each pip's
+ * fixed advance (sheet/pips.ts) at the body face's `capHeight`, which is what
+ * drawFeatureFlow advances by. Exported for the layout tests.
+ */
+export function featureFlowLines(
   paragraphs: readonly FeatureParagraph[],
   width: number,
   fontSize: number,
   measure: TextMeasure,
+  capHeight: number,
 ): FeatureFlowLine[] {
   const output: FeatureFlowLine[] = [];
   const spaceWidth = measure(" ", fontSize);
@@ -1374,7 +1415,9 @@ function featureFlowLines(
       wrapped.push({ words: line, indent, gapAfter: null, paragraph: paragraphIndex, start, ...(kind === undefined ? {} : { kind }) });
     };
     for (const [wordIndex, word] of words.entries()) {
-      const wordWidth = measure(word.text, fontSize, word.style ?? "regular");
+      const wordWidth = word.pips === true
+        ? pipWordWidth(word.text, fontSize, capHeight, (text) => measure(text, fontSize, word.style ?? "regular"))
+        : measure(word.text, fontSize, word.style ?? "regular");
       const candidateWidth = line.length === 0 ? wordWidth : lineWidth + spaceWidth + wordWidth;
       if (line.length > 0 && candidateWidth > availableWidth) {
         push();
@@ -1416,6 +1459,54 @@ interface FeatureFlowResult {
 
 const FEATURE_RULE_COLOUR: PdfColor = [0.45, 0.45, 0.45];
 
+/**
+ * How the Resources paragraph's pips print: the set's checkbox marker, ruled
+ * in the accent colour and filled white as the template draws it, and a spent
+ * use's dot in the text colour, as a ticked death save's.
+ */
+export interface PipStyle {
+  marker: SheetMarker;
+  ring: PdfColor;
+  dot: PdfColor;
+}
+
+function pipStyle(marker: SheetMarker, colours: SheetLabelColours): PipStyle {
+  return { marker, ring: colours.accent, dot: colours.text };
+}
+
+const DEFAULT_PIP_STYLE: PipStyle = pipStyle(pipMarker(DEFAULT_PIP_LOOK, "circle"), labelColours(DEFAULT_SHEET_COLOURS));
+
+/** An SVG path of a `size` square with rounded corners, from its top-left corner downwards. */
+function roundedSquarePath(size: number, radius: number): string {
+  const far = size - radius;
+  return `M ${radius} 0 H ${far} A ${radius} ${radius} 0 0 1 ${size} ${radius} V ${far} `
+    + `A ${radius} ${radius} 0 0 1 ${far} ${size} H ${radius} A ${radius} ${radius} 0 0 1 0 ${far} `
+    + `V ${radius} A ${radius} ${radius} 0 0 1 ${radius} 0 Z`;
+}
+
+/**
+ * One pip whose advance starts at `x`: the marker sits on the baseline `y`, as
+ * tall as a capital, centred in its advance; a spent use adds the dot.
+ */
+function drawPip(page: PDFPage, x: number, y: number, fontSize: number, capHeight: number, spent: boolean, style: PipStyle): void {
+  const box = pipBox(fontSize, capHeight);
+  const left = x + (box.advance - box.size) / 2;
+  const centreX = left + box.size / 2;
+  const centreY = y + box.size / 2;
+  const ring = rgb(style.ring[0], style.ring[1], style.ring[2]);
+  const paper = rgb(WHITE[0], WHITE[1], WHITE[2]);
+  if (style.marker === "circle") {
+    page.drawCircle({ x: centreX, y: centreY, size: box.size / 2, color: paper, borderColor: ring, borderWidth: box.stroke });
+  } else {
+    page.drawSvgPath(roundedSquarePath(box.size, box.corner), {
+      x: left, y: y + box.size, color: paper, borderColor: ring, borderWidth: box.stroke,
+    });
+  }
+  if (spent) {
+    page.drawCircle({ x: centreX, y: centreY, size: box.dotRadius, color: rgb(style.dot[0], style.dot[1], style.dot[2]) });
+  }
+}
+
 function drawFeatureFlow(
   page: PDFPage,
   paragraphs: readonly FeatureParagraph[],
@@ -1428,9 +1519,11 @@ function drawFeatureFlow(
   fontSize: number,
   lineHeight: number,
   ruleColour: PdfColor = FEATURE_RULE_COLOUR,
+  pips: PipStyle = DEFAULT_PIP_STYLE,
 ): FeatureFlowResult {
   let y = top;
   let lineIndex = 0;
+  const capHeight = capHeightRatio(fonts.regular);
   // The space between words is the body face's at this size whatever face the
   // word itself is in, so it is measured once rather than per word.
   const spaceWidth = drawnWidth(fonts.regular, " ", fontSize);
@@ -1455,6 +1548,22 @@ function drawFeatureFlow(
     };
     for (const word of line.words) {
       const font = runFont(fonts, word.style);
+      if (word.pips === true) {
+        // Each text run and pip on its own, at the advances the layout gave them.
+        flush();
+        for (const segment of pipSegments(word.text)) {
+          if (segment.kind === "pip") {
+            drawPip(page, cursor, y, fontSize, capHeight, segment.spent, pips);
+            cursor += pipBox(fontSize, capHeight).advance;
+            continue;
+          }
+          const value = winAnsiText(segment.text);
+          page.drawText(value, { x: cursor, y, size: fontSize, font, color: ink });
+          cursor += drawnWidth(font, value, fontSize);
+        }
+        cursor += spaceWidth;
+        continue;
+      }
       const value = winAnsiText(word.text);
       if (pending !== undefined && font === fonts.regular) pending.text += ` ${value}`;
       else {
@@ -1495,7 +1604,7 @@ function featureBoxFits(
   lineHeightRatio = 1,
 ): boolean {
   const top = box.top - BOX_TEXT_TOP_INSET - capHeightRatio(fonts.regular) * size;
-  return featureFlowFits(featureFlowLines(paragraphs, box.width, size, fontMeasure(fonts)), top, box.bottom, size * lineHeightRatio, size);
+  return featureFlowFits(featureFlowLines(paragraphs, box.width, size, fontMeasure(fonts), capHeightRatio(fonts.regular)), top, box.bottom, size * lineHeightRatio, size);
 }
 
 function drawRichFeatureSection(
@@ -1511,17 +1620,18 @@ function drawRichFeatureSection(
   lineHeight = fontSize,
   ruleColour?: PdfColor,
   minFontSize = MIN_FEATURE_FONT_SIZE,
+  pips?: PipStyle,
 ): FeatureParagraph[] | undefined {
   const lineHeightAt = (size: number): number => lineHeight * size / fontSize;
   const capHeight = capHeightRatio(fonts.regular);
   const topAt = (size: number): number => boxTop - BOX_TEXT_TOP_INSET - capHeight * size;
   const measure = fontMeasure(fonts);
-  const normalLines = featureFlowLines(paragraphs, width, fontSize, measure);
+  const normalLines = featureFlowLines(paragraphs, width, fontSize, measure, capHeight);
   let chosenFontSize = fontSize;
   let chosenLines = normalLines;
   let chosenLineHeight = lineHeightAt(chosenFontSize);
   if (!featureFlowFits(normalLines, topAt(chosenFontSize), bottom, chosenLineHeight, chosenFontSize)) {
-    const floorLines = featureFlowLines(paragraphs, width, minFontSize, measure);
+    const floorLines = featureFlowLines(paragraphs, width, minFontSize, measure, capHeight);
     const floorLineHeight = lineHeightAt(minFontSize);
     if (featureFlowFits(floorLines, topAt(minFontSize), bottom, floorLineHeight, minFontSize)) {
       // Take the largest size that still fits, so the text shrinks only as far
@@ -1530,12 +1640,12 @@ function drawRichFeatureSection(
       let high = fontSize;
       for (let pass = 0; pass < 10; pass += 1) {
         const candidate = (low + high) / 2;
-        const candidateLines = featureFlowLines(paragraphs, width, candidate, measure);
+        const candidateLines = featureFlowLines(paragraphs, width, candidate, measure, capHeight);
         if (featureFlowFits(candidateLines, topAt(candidate), bottom, lineHeightAt(candidate), candidate)) low = candidate;
         else high = candidate;
       }
       chosenFontSize = low;
-      chosenLines = featureFlowLines(paragraphs, width, chosenFontSize, measure);
+      chosenLines = featureFlowLines(paragraphs, width, chosenFontSize, measure, capHeight);
       chosenLineHeight = lineHeightAt(chosenFontSize);
     } else {
       // Prose that cannot fit even at the smallest legible size is continued
@@ -1546,7 +1656,7 @@ function drawRichFeatureSection(
       chosenLineHeight = lineHeightAt(chosenFontSize);
     }
   }
-  return drawFeatureFlow(page, paragraphs, chosenLines, fonts, x, topAt(chosenFontSize), width, bottom, chosenFontSize, chosenLineHeight, ruleColour).rest;
+  return drawFeatureFlow(page, paragraphs, chosenLines, fonts, x, topAt(chosenFontSize), width, bottom, chosenFontSize, chosenLineHeight, ruleColour, pips).rest;
 }
 
 interface RichTextBox {
@@ -1606,9 +1716,10 @@ function addContinuationPage(
  */
 function addFeatureContinuationPages(
   output: PDFDocument, parts: readonly FeatureContinuation[], fonts: SheetFonts,
-  colours: SheetLabelColours, footerText: string, title: string,
+  colours: SheetLabelColours, footerText: string, title: string, pips: PipStyle,
 ): void {
   const measure = fontMeasure(fonts);
+  const capHeight = capHeightRatio(fonts.regular);
   const fontSize = DEFAULT_FEATURE_FONT_SIZE;
   let page: PDFPage | undefined;
   let y = 0;
@@ -1626,9 +1737,9 @@ function addFeatureContinuationPages(
         page = addContinuationPage(output, title, fonts, colours, footerText);
         y = CONTINUATION_TEXT_TOP;
       }
-      const lines = featureFlowLines(rest, CONTINUATION_TEXT_WIDTH, fontSize, measure);
+      const lines = featureFlowLines(rest, CONTINUATION_TEXT_WIDTH, fontSize, measure, capHeight);
       const drawn: FeatureFlowResult = drawFeatureFlow(page, rest, lines, fonts, CONTINUATION_TEXT_X, y, CONTINUATION_TEXT_WIDTH,
-        CONTINUATION_TEXT_BOTTOM, fontSize, fontSize, colours.lines);
+        CONTINUATION_TEXT_BOTTOM, fontSize, fontSize, colours.lines, pips);
       y = drawn.y;
       rest = drawn.rest;
       if (rest !== undefined) page = undefined;
@@ -1697,6 +1808,7 @@ interface DetailsFeatureLayout {
   /** The page's printed titles, which name the boxes a continuation carries on. */
   labels?: SheetTemplateLabels[string];
   ruleColour?: PdfColor;
+  pips?: PipStyle;
 }
 
 /** One flowed box of the character page: its field, its text and how it is set. */
@@ -1777,7 +1889,7 @@ function drawDetailsRichText(
   const continuations: FeatureContinuation[] = [];
   for (const { field, paragraphs, heading, fallback, fontSize = DEFAULT_FEATURE_FONT_SIZE, lineHeight = fontSize, minFontSize } of boxes) {
     const box = richTextBox(fieldRects, field, fallback);
-    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight, layout.ruleColour, minFontSize);
+    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight, layout.ruleColour, minFontSize, layout.pips);
     if (rest === undefined) continue;
     // Cut inside a headed group, the part continues that group, by its name.
     const group = paragraphs.slice(0, paragraphs.length - rest.length + 1).reverse().find((paragraph) => paragraph.kind === "heading");
@@ -2562,6 +2674,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
   const colours = options.colours ?? DEFAULT_SHEET_COLOURS;
   const brandImage = options.brandImage ?? "";
   const labelInk = labelColours(colours);
+  const pips = pipStyle(pipMarker(options.pipLook ?? DEFAULT_PIP_LOOK, bundle.marker ?? "circle"), labelInk);
   const files = SHEET_TEMPLATE_CONTRACT.files;
   const timed = phaseTimer(options.trace);
   const artwork: ArtworkCache = new Map();
@@ -2638,11 +2751,12 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         split,
         labels: pageLabels,
         ruleColour: labelInk.lines,
+        pips,
       }));
       // A page that carries feature text is titled for it; one carrying only
       // other boxes' values is the character page continued.
       addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, pageLabels)],
-        fonts, labelInk, footerText, overflow.length > 0 ? "FEATURES & TRAITS (CONTINUED)" : "CHARACTER (CONTINUED)");
+        fonts, labelInk, footerText, overflow.length > 0 ? "FEATURES & TRAITS (CONTINUED)" : "CHARACTER (CONTINUED)", pips);
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText);
       continue;
     }
@@ -2653,7 +2767,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       await timed("portrait", () => drawFieldImage(output, page, fieldRects, "background_portrait_image", images["background_portrait_image"] ?? ""));
       drawSheetFooter(page, fonts, footerText);
       addFeatureContinuationPages(output, fieldContinuations(overflow, fieldRects, bundle.labels[files.background]),
-        fonts, labelInk, footerText, "BACKGROUND (CONTINUED)");
+        fonts, labelInk, footerText, "BACKGROUND (CONTINUED)", pips);
       continue;
     }
     if (modelPage.templateKind === "companion") {
@@ -2668,7 +2782,7 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       const rest = timed("richText:companion", () => drawCompanionRichText(page, modelPage, fonts, fieldRects, companionLabels));
       drawSheetFooter(page, fonts, footerText);
       addFeatureContinuationPages(output, [...rest, ...fieldContinuations(overflow, fieldRects, companionLabels)],
-        fonts, labelInk, footerText, "COMPANION (CONTINUED)");
+        fonts, labelInk, footerText, "COMPANION (CONTINUED)", pips);
       continue;
     }
     if (modelPage.templateKind === "equipment") {
@@ -2692,14 +2806,14 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         if (equipmentPage === 1) {
           const notes = boxTitle(equipmentLabels, fieldRects.get("equipment_page_magic_items"), "Notes");
           const part = [headingParagraph(`${notes} (continued)`, "part")];
-          drawFeatureFlow(continuation, part, featureFlowLines(part, CONTINUATION_TEXT_WIDTH, DEFAULT_FEATURE_FONT_SIZE, fontMeasure(fonts)),
+          drawFeatureFlow(continuation, part, featureFlowLines(part, CONTINUATION_TEXT_WIDTH, DEFAULT_FEATURE_FONT_SIZE, fontMeasure(fonts), capHeightRatio(fonts.regular)),
             fonts, CONTINUATION_TEXT_X, CONTINUATION_TEXT_TOP, CONTINUATION_TEXT_WIDTH, CONTINUATION_TEXT_BOTTOM,
             DEFAULT_FEATURE_FONT_SIZE, DEFAULT_FEATURE_FONT_SIZE, labelInk.lines);
         }
         timed("richText:equipment", () => drawEquipmentRichText(continuation, modelPage, fonts, equipmentPage));
       }
       addFeatureContinuationPages(output, fieldContinuations(overflow, fieldRects, equipmentLabels),
-        fonts, labelInk, footerText, "EQUIPMENT (CONTINUED)");
+        fonts, labelInk, footerText, "EQUIPMENT (CONTINUED)", pips);
       continue;
     }
     if (modelPage.templateKind === "spell-list") {

@@ -19,11 +19,10 @@ export function winAnsiText(value: string): string {
     .replaceAll("\u0007", "•")
     .replaceAll("♊", "•")
     .replaceAll("✝", "†")
-    // The empty circle of a resource tracker: WinAnsi has no ring, and the
-    // lowercase o is the closest round mark every face carries.
+    // A resource tracker's marks. The Resources paragraph draws them as pips
+    // (pips.ts); anywhere else WinAnsi has no ring or disc, so they print as
+    // the closest round marks every face carries: lowercase o and the bullet.
     .replaceAll("○", "o")
-    // The filled circle of a spent use: WinAnsi has no disc either, and the
-    // bullet is the filled round mark every face carries.
     .replaceAll("●", "•")
     .replaceAll("\u00a0", " ")
     // A soft hyphen marks where a word may break, not a glyph: drawn, it

@@ -17,10 +17,16 @@ import type { TrackerDto } from "@forge-cb/api";
 /** The most circles drawn for one resource; beyond this a number is easier to keep. */
 export const MAX_BOXES = 6;
 
-/** A use left (and every use, on an empty sheet). The PDF draws it as "o" (see `winAnsiText`). */
+/**
+ * A use left (and every use, on an empty sheet). The PDF draws it as a pip in
+ * the style of the sheet's own empty checkboxes (see `sheet/pips.ts`).
+ */
 export const OPEN_MARK = "○";
-/** A use spent. The PDF draws it as "•", the filled round mark every sheet face carries. */
+/** A use spent. The PDF draws it as a ticked checkbox pip: the empty one with a dot inside. */
 export const SPENT_MARK = "●";
+
+/** How the paragraph opens; the PDF writer draws pips only in the paragraph that starts with it. */
+export const RESOURCES_LEAD = "Resources.";
 
 /** How the paragraph prints: as the Resources page left it, or empty to fill in at the table. */
 export interface ResourceSheetOptions {
@@ -51,5 +57,5 @@ function resourceText(tracker: TrackerDto, empty: boolean): string {
 export function resourceSheetText(trackers: readonly TrackerDto[], options: ResourceSheetOptions = {}): string | null {
   const printed = trackers.filter((tracker) => tracker.tracked !== false);
   if (printed.length === 0) return null;
-  return `Resources. ${printed.map((tracker) => resourceText(tracker, options.empty === true)).join("; ")}`;
+  return `${RESOURCES_LEAD} ${printed.map((tracker) => resourceText(tracker, options.empty === true)).join("; ")}`;
 }

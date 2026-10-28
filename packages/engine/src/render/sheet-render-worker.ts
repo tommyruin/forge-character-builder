@@ -82,6 +82,7 @@ async function recolorBundle(bundle: CharacterSheetTemplateBundle, colours: Shee
     labels: bundle.labels,
     faces: bundle.faces,
     ...(bundle.layout === undefined ? {} : { layout: bundle.layout }),
+    ...(bundle.marker === undefined ? {} : { marker: bundle.marker }),
     ...(bundle.detailsFile === undefined ? {} : { detailsFile: bundle.detailsFile }),
     details: details!,
     background: background!,

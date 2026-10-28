@@ -19,6 +19,20 @@ export function isSheetTemplateSet(value: unknown): value is SheetTemplateSet {
 }
 
 /**
+ * The empty marker a set's checkboxes print as (death saves, proficiency and
+ * the rest): a 2014 page uses rounded squares, a 2024 page circles. Both are a
+ * white mark ruled in the accent colour, and a ticked one carries a dot in the
+ * text colour. scripts/build-sheet-templates.mjs draws them (its `marker`), and
+ * the writer draws the sheet's resource pips to match.
+ */
+export type SheetMarker = "circle" | "square";
+export const SHEET_TEMPLATE_MARKERS: Readonly<Record<SheetTemplateSet, SheetMarker>> = {
+  "2014": "square",
+  "2024": "circle",
+  "2024-hybrid": "circle",
+};
+
+/**
  * Optional layout switches for the character page. Each set has its own page
  * (`details.pdf`), whose switches are the set's defaults; a layout that turns
  * any implemented switch away from its default prints a variant of that page
