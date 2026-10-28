@@ -416,7 +416,7 @@ export function buildCharacterSheetModel(
   const numbered: SheetPage[] = pages.map((page, index) => ({ ...page, page: index + 1 }));
   const formValues = {
     ...buildFormValues(state, library, values, spellcasters, attacks, inline, inventoryNotes, resources),
-    ...(companion !== null ? companionFormValues(companion) : {}),
+    ...(companion !== null ? companionFormValues(companion, values) : {}),
   };
   // The templates' portrait frames are image buttons; an absent portrait must
   // leave its key out entirely so the writer draws nothing.
@@ -2053,18 +2053,36 @@ function buildCompanionPage(companion: CompanionDto, page: number): SheetPage {
   };
 }
 
+/**
+ * The hit dice a stat block's hit point text gives: "[d8s] equal to your
+ * Ranger level" is that class's level of that die, and a dice expression such
+ * as "11 (2d8 + 2)" is its dice. Anything else is left for the player; prose
+ * would be cut off in the box.
+ */
+function companionHitDice(hitPointsText: string, statistics: Readonly<Record<string, number>>): string {
+  const perLevel = /\[?\s*(d\d+)s?\s*\]?\s+equal to your ([a-z][a-z' -]*?) level/i.exec(hitPointsText);
+  if (perLevel !== null) {
+    const level = statistics[`level:${perLevel[2]!.trim().toLowerCase()}`] ?? 0;
+    return level > 0 ? `${level}${perLevel[1]!.toLowerCase()}` : "";
+  }
+  return /\(\s*(\d+d\d+)\s*(?:[+-]\s*\d+\s*)?\)/i.exec(hitPointsText)?.[1]?.toLowerCase() ?? "";
+}
+
 /** The companion template's AcroForm values. */
-function companionFormValues(companion: CompanionDto): Record<string, string> {
+function companionFormValues(companion: CompanionDto, statistics: Readonly<Record<string, number>>): Record<string, string> {
   const fields: Record<string, string> = {
     companion_name: companion.name,
     companion_kind: companion.kind !== "" ? companion.kind : companion.creatureType,
     companion_owner: companion.owner,
     companion_build: companion.build,
     companion_challenge: companion.challenge,
-    companion_armor_class: companion.armorClassText || String(companion.armorClass),
+    // The number, computed where the content gives a rule for it; the text's
+    // own prose ("13 + your Wisdom modifier") would be cut off in the box.
+    companion_armor_class: companion.armorClass > 0 ? String(companion.armorClass) : companion.armorClassText,
     companion_hp_max: String(companion.maxHp),
-    companion_hp_current: String(companion.maxHp),
-    companion_hd: companion.hitPointsText,
+    // Left for the player to write in.
+    companion_hp_current: "",
+    companion_hd: companionHitDice(companion.hitPointsText, statistics),
     companion_initiative: signed(companion.initiative),
     companion_proficiency: String(companion.proficiency),
     companion_proficiency_bonus: String(companion.proficiency),
