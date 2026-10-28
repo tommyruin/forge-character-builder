@@ -50,6 +50,12 @@ export const EDITIONS = {
      */
     dependencyFiles: { "internal.xml": join(CORPUS_ROOT, "internal.xml") },
     skipShippedIds: false,
+    /**
+     * Inventory chapters that name creature stat blocks. An Information element
+     * referenced from a retained description (a mount's stat block) ships with
+     * it when its name is listed in one of these chapters.
+     */
+    statBlockChapters: ["animals", "equipment"],
     /** Committed files in the output directory that are written by hand, not generated. */
     authored: /^(skill-supports|skill-expertise|source)\.xml$/,
     /** Files copied whole (every element is SRD content) — a dropped element here is reported, not removed. */
@@ -735,6 +741,13 @@ async function buildOutputs(corpus, map) {
   // when a retained element owns it — by grant id, or by a select whose
   // supports expression the candidate satisfies.
   const roots = elements.filter((element) => keepIds.has(element.id) && !map.excluded[element.id] && !DEPENDENCY_FILES[element.path]);
+  // Names of the SRD's creature stat blocks (animals and the mounts table).
+  const inventory = await readJson(INVENTORY_PATH);
+  const statBlockNames = new Set(
+    (edition.statBlockChapters ?? []).flatMap((chapter) =>
+      inventory.chapters[chapter] ? inventoryNames(inventory, chapter).flatMap((name) => aliases("equipment", name)) : [],
+    ),
+  );
   const queue = [...roots];
   const candidatesByType = new Map();
   for (const element of elements) {
@@ -754,6 +767,13 @@ async function buildOutputs(corpus, map) {
     for (const requiredId of element.requirements) {
       const target = byId.get(requiredId);
       if (target && !NAMED_TYPES.has(target.type) && !retained.has(target.id) && !map.excluded[target.id]) queue.push(target);
+    }
+    // A description that embeds an Information element (a mount's stat block)
+    // needs it to render. It ships only when the SRD lists that creature, so
+    // stat blocks for non-SRD creatures stay dropped.
+    for (const [, referencedId] of element.source.matchAll(/<div\s+element="(ID_[A-Z0-9_]+)"/g)) {
+      const target = byId.get(referencedId);
+      if (target?.type === "Information" && !retained.has(target.id) && !map.excluded[target.id] && statBlockNames.has(norm(target.name))) queue.push(target);
     }
     for (const select of element.selects) {
       if (!select.supports || select.supports.includes("$(")) continue;
