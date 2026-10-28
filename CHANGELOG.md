@@ -6,6 +6,31 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The 2024 Hybrid character page gives more room to Species Traits,
+  Features and Weapons: the ability, saving throw and skill columns are
+  narrower, and the ATK / DC column is wider. Saving Throw Notes sits just
+  under Charisma with room to write, and Exhaustion's marks share its
+  label's line.
+- Spell attack rows read "+6 vs AC", like weapons, without the ability.
+
+### Fixed
+
+- The 2024 Ability Score Improvement feat choices (Sorcerer level 4 and
+  the like) offered only Origin feats.
+- The speed box on the 2024 and Hybrid pages kept its swim line and the
+  walking speed too close to the border and divider.
+- Attack notes that don't fit now continue on the features' continuation
+  page when there is room, instead of always taking a page of their own.
+- On the 2014 page, long species traits shrink to fit like Features
+  before they continue on another page.
+- The companion page prints a primal companion's AC and hit dice as
+  numbers (8d8 for a level 8 Ranger) instead of cut-off rules text, and
+  leaves current hit points blank to fill in.
+- The 2024 riding and draught animals in Mounts & Vehicles have their
+  stat blocks as descriptions; they were blank.
+
 ## [2.9.0] - 2026-11-11
 
 ### Added
