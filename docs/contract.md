@@ -199,6 +199,12 @@ the public description plus equipment `rarity` and
 
 ## Source catalogue and character-source contract
 
+- `contentElements` sorts before it pages. The optional `sort` query field is
+  `"name"` (the default when absent or unrecognised: name, then ID) or
+  `"source"` (source display name, then name, then ID). Names compare
+  case-insensitively with the `en` collator. Older callers that send no `sort`
+  get the name order instead of library load order.
+
 - `contentSources` returns source records with `id`, publication `name`,
   `source`, `author`, `publisher`, `releaseDate`, `isPlaytest`, `hasElements`,
   and `canToggle`, sorted deterministically by display name and then ID.

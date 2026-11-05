@@ -59,6 +59,8 @@ export interface ContentElementsQueryDto extends WireObject {
   rarity?: string;
   proficiency?: "proficient" | "not-proficient";
   maxPriceGp?: number;
+  /** Result order before paging: "name" (default) or "source" (book, then name). Both end on the id. */
+  sort?: "name" | "source";
 }
 
 export interface UploadedFileDto extends Base64Payload {

@@ -228,6 +228,25 @@ function contentElementDto(library: ElementLibrary, element: ParsedElement, stat
   };
 }
 
+const ENGLISH_COLLATOR = new Intl.Collator("en", { sensitivity: "base" });
+
+/**
+ * The order a paginated content query returns. The library is a Map in file load order, which
+ * changes with import order and says nothing a reader can use, so a page boundary was arbitrary.
+ * "name" (the default) is name then id; "source" groups by the book's display name, then name,
+ * then id. The id tiebreak keeps equal names (reprints across books) in one fixed order.
+ */
+function compareContentElements(sort: "name" | "source"): (left: ParsedElement, right: ParsedElement) => number {
+  return (left, right) => {
+    if (sort === "source") {
+      const bySource = ENGLISH_COLLATOR.compare(left.identity.source ?? "", right.identity.source ?? "");
+      if (bySource !== 0) return bySource;
+    }
+    const byName = ENGLISH_COLLATOR.compare(left.identity.name, right.identity.name);
+    return byName !== 0 ? byName : left.identity.id.localeCompare(right.identity.id);
+  };
+}
+
 function contentQuery(library: ElementLibrary, query: WireObject, character?: CharacterState): WireObject {
   const text = typeof query.search === "string" ? query.search.trim().toLocaleLowerCase() : "";
   const type = typeof query.type === "string" && query.type !== "" ? query.type : undefined;
@@ -240,6 +259,7 @@ function contentQuery(library: ElementLibrary, query: WireObject, character?: Ch
   const itemCategory = typeof query.itemCategory === "string" && query.itemCategory !== "" ? query.itemCategory : undefined;
   const equipSetter = typeof query.equipSetter === "string" && query.equipSetter !== "" ? query.equipSetter : undefined;
   const equipmentOnly = query.equipmentOnly === true;
+  const sort: "name" | "source" = query.sort === "source" ? "source" : "name";
   // Ruleset scoping matches isRestrictedForCharacter: a character in 2014 or
   // 2024 mode loses the OTHER edition, never the shared content that most
   // supplements classify as. An explicit "shared" query is not a character mode
@@ -283,7 +303,8 @@ function contentQuery(library: ElementLibrary, query: WireObject, character?: Ch
   for (const element of scoped) {
     typeCounts[element.identity.type] = (typeCounts[element.identity.type] ?? 0) + 1;
   }
-  const all = type === undefined ? scoped : scoped.filter((element) => element.identity.type === type);
+  const all = (type === undefined ? scoped : scoped.filter((element) => element.identity.type === type))
+    .sort(compareContentElements(sort));
   const elements = all.slice(offset, offset + requestedLimit).map((element) => contentElementDto(library, element, character));
   return { elements, items: elements, total: all.length, offset, limit: requestedLimit, typeCounts };
 }

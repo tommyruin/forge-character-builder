@@ -756,7 +756,20 @@ describe("typed FCB nested adapter", () => {
         ruleset: null,
         characterId: "Ada",
         equipmentOnly: false,
+        sort: null,
       },
+    ]);
+  });
+
+  it("forwards the result sort order to the content query", async () => {
+    const { client, calls } = fakeClient();
+    const api = createEngineApi({ client, store: fakeStore() });
+
+    await api.content.elements({ equipmentOnly: true, sort: "source" });
+
+    expect(calls).toContainEqual([
+      "contentElements",
+      expect.objectContaining({ equipmentOnly: true, sort: "source" }),
     ]);
   });
 

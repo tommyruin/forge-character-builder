@@ -11,6 +11,7 @@ import { api } from "../../api";
 import { useWorkspace } from "../WorkspaceContext";
 import DescriptionPanel from "../DescriptionPanel";
 import Icon from "../Icon";
+import FilterSelect from "../FilterSelect";
 import SectionNav from "../SectionNav";
 import WorkspaceTabLayout, { WorkspaceBand } from "../WorkspaceTabLayout";
 import useMobileDescriptionNavigation from "../../hooks/useMobileDescriptionNavigation";
@@ -596,12 +597,14 @@ function Catalog({
   const [rarity, setRarity] = useState("");
   const [proficiency, setProficiency] = useState("");
   const [priceCeiling, setPriceCeiling] = useState("");
+  const [sort, setSort] = useState("name");
   const shoppingFilters = useMemo(() => ({
+    sort,
     equipmentKind: equipmentKind || undefined,
     rarity: rarity || undefined,
     proficiency: proficiency || undefined,
     maxPriceGp: priceCeiling === "" ? undefined : Number(priceCeiling),
-  }), [equipmentKind, rarity, proficiency, priceCeiling]);
+  }), [sort, equipmentKind, rarity, proficiency, priceCeiling]);
   useEffect(() => { setSkip(0); }, [shoppingFilters]);
   // The magic item awaiting a base-weapon/armor choice, with its legal base options
   // preloaded (distinct from `inspected`, which only drives the description panel).
@@ -1121,7 +1124,7 @@ function Catalog({
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 mb-3 lg:grid-cols-5">
                 <label className="fcb-field-label">Type
                   <select className="fcb-input block w-full" value={equipmentKind} onChange={event => setEquipmentKind(event.target.value)}>
                     <option value="">All types</option>
@@ -1141,6 +1144,7 @@ function Catalog({
                     <option value="not-proficient">Not proficient</option>
                   </select>
                 </label>
+                <ItemSortSelect value={sort} onChange={setSort} />
                 <label className="fcb-field-label">Maximum price (gp)
                   <input type="number" min="0" step="0.01" className="fcb-input block w-full" placeholder="Any price" value={priceCeiling} onChange={event => setPriceCeiling(event.target.value)} />
                 </label>
@@ -1272,6 +1276,26 @@ function Catalog({
         )}
     </>,
     catalogOptions,
+  );
+}
+
+export const ITEM_SORT_OPTIONS = [
+  { value: "name", label: "Name" },
+  { value: "source", label: "Source" },
+];
+
+/** The order of the add-item list. The engine sorts before it pages, so a pick applies to every page. */
+export function ItemSortSelect({ value, onChange }) {
+  return (
+    <label className="fcb-field-label">
+      Sort by
+      <FilterSelect
+        testId="item-sort"
+        value={value}
+        options={ITEM_SORT_OPTIONS}
+        onChange={onChange}
+      />
+    </label>
   );
 }
 

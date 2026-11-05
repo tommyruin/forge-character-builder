@@ -103,6 +103,7 @@ export default function ContentImportControls({
   contentProgress,
   cancelImport,
   sources,
+  updatableSourceIds = [],
   refreshSource,
   removeSource,
   removingSourceId,
@@ -321,10 +322,18 @@ export default function ContentImportControls({
                   </span>
                 </span>
                 <span className="fcb-source-actions">
+                  {updatableSourceIds.includes(source.id) && (
+                    <span
+                      className="fcb-stat-pill"
+                      title="The repository has changed since this import."
+                    >
+                      Update available
+                    </span>
+                  )}
                   {(source.kind === 'folder' || source.location) && (
                     <button
                       type="button"
-                      className="fcb-button"
+                      className={`fcb-button${updatableSourceIds.includes(source.id) ? ' fcb-button-primary' : ''}`}
                       disabled={uploading || removingSourceId !== null}
                       onClick={() => refreshSource(source)}
                     >

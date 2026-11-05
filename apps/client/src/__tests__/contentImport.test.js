@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ContentImportError,
   describeWebLocation,
+  findGitHubUpdates,
   normalizeImportPath,
   parseIndexEntries,
   resolveFolderSource,
@@ -402,5 +403,84 @@ describe('source resolution', () => {
     await expect(
       resolveWebSource('https://example.test/rules.zip', { fetchImpl })
     ).rejects.toMatchObject({ code: 'unsafe-path' });
+  });
+  describe('GitHub update checks', () => {
+    const githubFetch = (treeSha = 'tree-1') =>
+      vi.fn(async (url) => {
+        if (url.endsWith('/repos/example/rules')) {
+          return response(JSON.stringify({ default_branch: 'main' }), url, 'application/json');
+        }
+        if (url.includes('/git/trees/main')) {
+          return response(
+            JSON.stringify({ sha: treeSha, truncated: false, tree: [{ type: 'blob', path: 'feats.xml', size: 100 }] }),
+            url,
+            'application/json'
+          );
+        }
+        return response(elementsXml('Feat'), url, 'application/xml');
+      });
+    const headFetch = (status, treeSha) =>
+      vi.fn(async () =>
+        status === 200
+          ? new Response(JSON.stringify({ commit: { commit: { tree: { sha: treeSha } } } }), { status })
+          : new Response('{}', { status })
+      );
+    const stored = (extra = {}) => ({
+      id: 's1',
+      kind: 'github',
+      label: 'example/rules',
+      location: 'https://github.com/example/rules',
+      branch: 'main',
+      revision: 'tree-1',
+      ...extra,
+    });
+
+    it('stores the branch and tree sha on a GitHub source, and none on other sources', async () => {
+      const github = await resolveWebSource('https://github.com/example/rules', { fetchImpl: githubFetch('tree-9') });
+      expect(github.source).toMatchObject({ kind: 'github', branch: 'main', revision: 'tree-9' });
+      const plain = await resolveWebSource('https://example.test/feats.xml', {
+        fetchImpl: vi.fn(async (url) => response(elementsXml('Feat'), url, 'application/xml')),
+      });
+      expect(plain.source).not.toHaveProperty('revision');
+      expect(plain.source).not.toHaveProperty('branch');
+    });
+
+    it('flags a source whose branch head differs, and not one that matches', async () => {
+      const changed = headFetch(200, 'tree-2');
+      expect(await findGitHubUpdates([stored()], { fetchImpl: changed, cache: new Map() })).toEqual(['s1']);
+      expect(changed.mock.calls[0][0]).toBe('https://api.github.com/repos/example/rules/branches/main');
+      expect(await findGitHubUpdates([stored()], { fetchImpl: headFetch(200, 'tree-1'), cache: new Map() })).toEqual([]);
+    });
+
+    it('asks once per repository and branch, and once per session', async () => {
+      const fetchImpl = headFetch(200, 'tree-2');
+      const cache = new Map();
+      const sources = [stored(), stored({ id: 's2' }), stored({ id: 's3', location: 'https://github.com/example/other' })];
+      expect(await findGitHubUpdates(sources, { fetchImpl, cache })).toEqual(['s1', 's2', 's3']);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      await findGitHubUpdates(sources, { fetchImpl, cache });
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([403, 404, 429, 500])('ignores an HTTP %i answer', async (status) => {
+      expect(await findGitHubUpdates([stored()], { fetchImpl: headFetch(status), cache: new Map() })).toEqual([]);
+    });
+
+    it('ignores being offline, odd responses, sources without a revision and non-GitHub sources', async () => {
+      const offline = vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      });
+      expect(await findGitHubUpdates([stored()], { fetchImpl: offline, cache: new Map() })).toEqual([]);
+      const odd = vi.fn(async () => new Response('not json', { status: 200 }));
+      expect(await findGitHubUpdates([stored()], { fetchImpl: odd, cache: new Map() })).toEqual([]);
+      const fetchImpl = headFetch(200, 'tree-2');
+      const sources = [
+        stored({ id: 'old', revision: undefined }),
+        { id: 'url', kind: 'url', location: 'https://example.test/a.xml' },
+        { id: 'folder', kind: 'folder', location: null },
+      ];
+      expect(await findGitHubUpdates(sources, { fetchImpl, cache: new Map() })).toEqual([]);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    });
   });
 });

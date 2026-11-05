@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { api } from '../api';
 import {
+  findGitHubUpdates,
   resolveFilesSource,
   resolveFolderSource,
   resolveWebSource,
@@ -222,6 +223,7 @@ function ContentFilesDrawer({
   contentProgress,
   cancelImport,
   importSources,
+  updatableSourceIds,
   refreshSource,
   removeSource,
   removingSourceId,
@@ -390,6 +392,7 @@ function ContentFilesDrawer({
             contentProgress={contentProgress}
             cancelImport={cancelImport}
             sources={importSources}
+            updatableSourceIds={updatableSourceIds}
             refreshSource={refreshSource}
             removeSource={removeSource}
             removingSourceId={removingSourceId}
@@ -589,6 +592,7 @@ export default function ContentManager({
   const [uploadedFiles, setUploadedFiles] = useState(null);
   const [removingPath, setRemovingPath] = useState(null);
   const [importSources, setImportSources] = useState([]);
+  const [updatableSourceIds, setUpdatableSourceIds] = useState([]);
   const [webUrl, setWebUrl] = useState('');
   const [importProgress, setImportProgress] = useState(null);
   const [removingSourceId, setRemovingSourceId] = useState(null);
@@ -768,7 +772,11 @@ export default function ContentManager({
     if (!canManageSources) return Promise.resolve();
     return api.content
       .listSources()
-      .then(setImportSources)
+      .then((list) => {
+        setImportSources(list);
+        // A hint only, and quiet on any failure. Repeat opens reuse the session's answers.
+        findGitHubUpdates(list).then(setUpdatableSourceIds, () => {});
+      })
       .catch(() => setImportSources([]));
   }, [canManageSources]);
 
@@ -942,6 +950,9 @@ export default function ContentManager({
           : {}),
       });
       if (result.status === 'unchanged') {
+        // The files match, but the source descriptor still took the new revision, so the list
+        // must re-read it or "Update available" would stay on a source that is current.
+        refreshImportSources();
         setImportProgress({
           stage: 'complete',
           message: `${resolved.source.label} is already up to date.`,
@@ -1457,6 +1468,7 @@ export default function ContentManager({
         contentProgress={contentProgress}
         cancelImport={cancelImport}
         importSources={importSources}
+        updatableSourceIds={updatableSourceIds}
         refreshSource={refreshSource}
         removeSource={removeSource}
         removingSourceId={removingSourceId}

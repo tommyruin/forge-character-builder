@@ -69,4 +69,42 @@ describe('ContentImportControls', () => {
     expect(markup).toContain('Preparing Fast Start…');
     expect(markup).toContain('Preparing Fast Start for the next launch…');
   });
+  it('flags a GitHub source with an update and offers Refresh as the main action', () => {
+    const render = (updatableSourceIds) =>
+      renderToStaticMarkup(
+        createElement(ContentImportControls, {
+          fileInput: { current: null },
+          folderInput: { current: null },
+          upload: () => {},
+          chooseFolder: () => {},
+          importFolder: () => {},
+          importWeb: () => {},
+          webUrl: '',
+          setWebUrl: () => {},
+          uploading: false,
+          importProgress: null,
+          contentProgress: null,
+          cancelImport: () => {},
+          sources: [
+            { id: 'a', kind: 'github', label: 'example/rules', location: 'https://github.com/example/rules', fileCount: 2, importedAt: 1, branch: 'main', revision: 'old' },
+            { id: 'b', kind: 'github', label: 'example/other', location: 'https://github.com/example/other', fileCount: 1, importedAt: 1 },
+          ],
+          updatableSourceIds,
+          refreshSource: () => {},
+          removeSource: () => {},
+          removingSourceId: null,
+          duplicateGroups: [],
+          resolvingDuplicateFingerprint: null,
+          onKeepDuplicateSource: () => {},
+          onKeepAllDuplicates: () => {},
+        }),
+      );
+
+    const flagged = render(['a']);
+    expect(flagged.match(/Update available/g)).toHaveLength(1);
+    expect(flagged).toContain('fcb-button fcb-button-primary">Refresh');
+    const quiet = render([]);
+    expect(quiet).not.toContain('Update available');
+    expect(quiet).not.toContain('fcb-button fcb-button-primary">Refresh');
+  });
 });

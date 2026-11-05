@@ -1071,6 +1071,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         ruleset: params.ruleset ?? null,
         characterId: params.characterId ?? null,
         equipmentOnly: Boolean(params.equipmentOnly),
+        sort: params.sort ?? null,
       });
       return result;
     },

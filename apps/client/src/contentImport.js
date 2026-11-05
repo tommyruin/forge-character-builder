@@ -192,7 +192,9 @@ function createSourceId() {
   return `source-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function sourceDescriptor({ existingSource, kind, label, location }) {
+// `revision` is optional: the root tree sha of the GitHub branch that was imported, and `branch` its
+// name. Sources imported before it existed, and every non-GitHub source, simply lack both.
+function sourceDescriptor({ existingSource, kind, label, location, branch, revision }) {
   return {
     id: existingSource?.id ?? createSourceId(),
     kind,
@@ -200,6 +202,7 @@ function sourceDescriptor({ existingSource, kind, label, location }) {
     location,
     importedAt: Date.now(),
     fileCount: 0,
+    ...(branch && revision ? { branch, revision } : {}),
   };
 }
 
@@ -563,7 +566,7 @@ async function resolveGitHubRepository(
     )
   );
   enforceCollectionLimits(candidates);
-  return candidates;
+  return { candidates, branch: repository.default_branch, revision: tree.sha };
 }
 
 async function resolveIndexReferences(
@@ -856,12 +859,15 @@ export async function resolveWebSource(
   const location = describeWebLocation(rawUrl);
   let candidates;
   let repository = null;
+  let revision = null;
   if (location.kind === 'github') {
-    candidates = await resolveGitHubRepository(location, {
+    const github = await resolveGitHubRepository(location, {
       fetchImpl,
       signal,
       onProgress,
     });
+    candidates = github.candidates;
+    revision = { branch: github.branch, revision: github.revision };
     repository = { owner: location.owner, repo: location.repo };
   } else {
     notify(onProgress, 'download', `Downloading ${location.label}…`);
@@ -904,6 +910,7 @@ export async function resolveWebSource(
     kind: location.kind,
     label: existingSource?.label ?? location.label,
     location: location.location,
+    ...revision,
   });
   source.fileCount = resolved.length;
   return {
@@ -913,4 +920,56 @@ export async function resolveWebSource(
       (candidate) => !validateCandidate(candidate)
     ).length,
   };
+}
+
+const headChecks = new Map();
+
+/**
+ * Which GitHub-linked sources have a newer branch head than the one imported. One small
+ * `branches/{branch}` request per repository and branch, shared by every source that points at it
+ * and made at most once per page load (the answer, including "unknown", is remembered in `cache`).
+ * It only ever answers a yes/no hint, so every failure (offline, rate limit, private or deleted
+ * repository, odd response) reads as "no update" and never throws. Sources without a stored
+ * revision are skipped: they gain one on their next refresh.
+ * @returns {Promise<string[]>} ids of sources with an update available
+ */
+export async function findGitHubUpdates(
+  sources,
+  { fetchImpl = globalThis.fetch, cache = headChecks } = {}
+) {
+  const tracked = [];
+  for (const source of sources ?? []) {
+    if (source?.kind !== 'github' || !source.revision || !source.branch) continue;
+    try {
+      const { owner, repo } = describeWebLocation(source.location);
+      if (owner && repo) tracked.push({ source, owner, repo });
+    } catch {
+      // A location that no longer parses cannot be checked.
+    }
+  }
+  const headOf = ({ owner, repo, source }) => {
+    const key = `${owner}/${repo}@${source.branch}`.toLowerCase();
+    if (!cache.has(key)) {
+      cache.set(key, fetchBranchHead(owner, repo, source.branch, fetchImpl));
+    }
+    return cache.get(key);
+  };
+  const heads = await Promise.all(tracked.map(headOf));
+  return tracked
+    .filter((entry, index) => heads[index] && heads[index] !== entry.source.revision)
+    .map((entry) => entry.source.id);
+}
+
+async function fetchBranchHead(owner, repo, branch, fetchImpl) {
+  try {
+    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches/${encodeURIComponent(branch)}`;
+    const response = await fetchImpl(url, {
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    if (!response.ok) return null;
+    const sha = (await response.json())?.commit?.commit?.tree?.sha;
+    return typeof sha === 'string' && sha ? sha : null;
+  } catch {
+    return null;
+  }
 }
