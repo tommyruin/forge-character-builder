@@ -6,6 +6,11 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Google Drive sync works again for libraries with homebrew collections, and
+  the collections arrive on your other devices.
+
 ## [2.8.0] - 2026-10-28
 
 ### Added

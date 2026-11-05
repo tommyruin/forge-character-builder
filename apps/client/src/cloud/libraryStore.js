@@ -213,16 +213,27 @@ async function applyContent(store, current, snapshot, result) {
     removedPaths.add(tombstone.path);
   }
 
-  for (const record of desiredFiles) {
-    if (record.sourceId || !changedFilePaths.has(record.path)) continue;
-    if (typeof store.putContentRecord === 'function') {
-      await store.putContentRecord(record);
-    } else {
-      ensureMethod(store, 'putContent');
+  // Files no content source owns (plain uploads, and homebrew files, which carry a sourceId
+  // with no source record) are written one by one, keeping their sourceId so the record
+  // matches the snapshot and the next sync sees no change.
+  const trackedSourceIds = new Set(desiredSources.map((source) => source.id));
+  const untracked = desiredFiles.filter(
+    (record) =>
+      (!record.sourceId || !trackedSourceIds.has(record.sourceId)) &&
+      changedFilePaths.has(record.path)
+  );
+  if (untracked.length === 0) return;
+  if (typeof store.putContentRecord === 'function') {
+    for (const record of untracked) await store.putContentRecord(record);
+  } else if (typeof store.putContentBatch === 'function') {
+    await store.putContentBatch(untracked);
+  } else {
+    ensureMethod(store, 'putContent');
+    for (const record of untracked) {
       await store.putContent(record.path, record.base64);
     }
-    result.content.put += 1;
   }
+  result.content.put += untracked.length;
 }
 
 async function applySimpleCollection(

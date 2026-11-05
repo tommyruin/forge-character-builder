@@ -327,19 +327,17 @@ function validateRecords(document, errors) {
     }
   }
 
-  if (Array.isArray(lists.content) && Array.isArray(lists.contentSources)) {
-    const sourceIds = new Set(
-      lists.contentSources
-        .map((source) => source?.id)
-        .filter((id) => typeof id === 'string')
-    );
+  // A file's sourceId need not name a content source: homebrew saves tag their file with
+  // `homebrew-<collection id>` (and older saves with a random id) without a source record,
+  // because the collection, not an import, owns it. Such files are applied on their own.
+  if (Array.isArray(lists.content)) {
     for (const record of lists.content) {
       if (
         record?.sourceId !== undefined &&
-        (!record.sourceId || !sourceIds.has(record.sourceId))
+        (typeof record.sourceId !== 'string' || !record.sourceId)
       ) {
         errors.push(
-          `content["${record?.path ?? ''}"] refers to missing source "${record.sourceId}"`
+          `content["${record?.path ?? ''}"].sourceId must be a non-empty string`
         );
       }
     }

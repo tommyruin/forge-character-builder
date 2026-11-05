@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createLibrarySnapshot } from '../librarySnapshot.js';
 import { createLibraryStore } from '../libraryStore.js';
+import {
+  collectionContentSourceId,
+  collectionStoragePath,
+} from '../../components/homebrew/xmlBuilder.js';
 
 function fakeLocalStore(initial = {}) {
   const state = {
@@ -295,5 +299,71 @@ describe('libraryStore', () => {
     expect(fixture.store.putCharacter).not.toHaveBeenCalled();
     expect(fixture.store.putContent).not.toHaveBeenCalled();
     expect(fixture.store.putHomebrew).not.toHaveBeenCalled();
+  });
+
+  // A saved homebrew collection stores one file tagged with the collection's source id and
+  // no content-source record (homebrewStorage.saveCollection). Older saves did the same
+  // under a random id. Both must sync and arrive with their tag intact.
+  it('syncs homebrew files whose source id has no content-source record', async () => {
+    const draft = { id: 'synthetic-pack-id', name: 'Synthetic Pack' };
+    const homebrewFile = {
+      path: collectionStoragePath(draft),
+      base64: 'PGVsZW1lbnRzIC8+',
+      relativePath: 'collection.xml',
+      sourceId: collectionContentSourceId(draft),
+      uploadedAt: 100,
+    };
+    const legacyFile = {
+      path: 'imports/legacy-random-id/synthetic-pack.xml',
+      base64: 'PGVsZW1lbnRzIC8+',
+      relativePath: 'synthetic-pack.xml',
+      sourceId: 'legacy-random-id',
+      uploadedAt: 50,
+    };
+    const desktop = fakeLocalStore({
+      content: [homebrewFile, legacyFile],
+      homebrew: [{ ...draft, updatedAt: 100 }],
+    });
+
+    const snapshot = await createLibraryStore(desktop.store).readSnapshot();
+    expect(snapshot.content.files.map(({ path }) => path)).toEqual([
+      homebrewFile.path,
+      legacyFile.path,
+    ]);
+    expect(snapshot.content.sources).toEqual([]);
+
+    const mobile = fakeLocalStore();
+    mobile.store.putContentBatch = vi.fn(async (records) => {
+      mobile.state.content = [
+        ...mobile.state.content.filter(
+          ({ path }) => !records.some((record) => record.path === path)
+        ),
+        ...structuredClone(records),
+      ];
+    });
+    const mobileLibrary = createLibraryStore(mobile.store);
+
+    const first = await mobileLibrary.applySnapshot(snapshot);
+    expect(first.content.put).toBe(2);
+    expect(mobile.store.putContent).not.toHaveBeenCalled();
+    expect(mobile.state.content).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: homebrewFile.path,
+          sourceId: homebrewFile.sourceId,
+        }),
+        expect.objectContaining({
+          path: legacyFile.path,
+          sourceId: legacyFile.sourceId,
+        }),
+      ])
+    );
+
+    const second = await mobileLibrary.applySnapshot(snapshot);
+    expect(second.content.put).toBe(0);
+    expect(mobile.store.putContentBatch).toHaveBeenCalledTimes(1);
+    expect(await mobileLibrary.readSnapshot()).toMatchObject({
+      content: { files: snapshot.content.files, sources: [] },
+    });
   });
 });

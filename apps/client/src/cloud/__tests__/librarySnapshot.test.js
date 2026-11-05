@@ -166,6 +166,26 @@ describe('library snapshots', () => {
     );
   });
 
+  it('accepts content whose source id has no source record, but not an empty one', async () => {
+    const homebrewFile = {
+      path: 'imports/homebrew-synthetic/collection.xml',
+      base64: 'PGVsZW1lbnRzIC8+',
+      sourceId: 'homebrew-synthetic',
+    };
+    const snapshot = await createLibrarySnapshot({
+      content: [homebrewFile],
+      homebrew: [{ id: 'synthetic', name: 'Synthetic', updatedAt: 10 }],
+    });
+    expect(snapshot.content.files).toEqual([homebrewFile]);
+    expect((await validateLibrarySnapshot(snapshot)).valid).toBe(true);
+
+    await expect(
+      createLibrarySnapshot({ content: [{ ...homebrewFile, sourceId: '' }] })
+    ).rejects.toThrow(
+      'content["imports/homebrew-synthetic/collection.xml"].sourceId must be a non-empty string'
+    );
+  });
+
   it('creates a body-free baseline manifest with indexes and tombstones', async () => {
     const snapshot = await createLibrarySnapshot(
       {
