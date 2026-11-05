@@ -502,6 +502,17 @@ describe('ChoiceBlock', () => {
     await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('leave it unpicked')));
     expect(emitted.at(-1).optional).toBe(true);
   });
+
+  it('clears the optional flag when the box is unchecked, so a List block compiles as required', async () => {
+    const emitted = [];
+    await mount(
+      <Controlled initial={makeChoice({ id: 'c1', type: 'List', name: 'Omen', items: ['Crow'], optional: true })} emitted={emitted}>
+        {(block, onChange) => <ChoiceBlock block={block} onChange={onChange} lookup={lookup} />}
+      </Controlled>,
+    );
+    await click([...document.querySelectorAll('input[type="checkbox"]')].find((box) => box.parentElement.textContent.includes('leave it unpicked')));
+    expect(emitted.at(-1).optional).toBeUndefined();
+  });
 });
 
 describe('RequirementsBuilder', () => {

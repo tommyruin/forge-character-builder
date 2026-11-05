@@ -441,6 +441,8 @@ function listRule(list: BackgroundList): string {
     name: list.name,
     count: list.count,
     items: list.items,
+    // Personality lists are descriptive and never block a finished build.
+    optional: true,
   });
 }
 

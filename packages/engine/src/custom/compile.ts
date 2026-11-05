@@ -210,6 +210,16 @@ export function grantRule(block: GrantBlock, extraRequirement?: string): string 
   ])} />`;
 }
 
+/**
+ * The engine treats an unmarked `List` select as optional (see `isOptionalSelection`), so a
+ * List block whose box is unchecked must say `optional="false"` to be a required pick. Every
+ * other type is required unless marked.
+ */
+function choiceOptionalAttr(block: ChoiceBlock): string | undefined {
+  if (block.optional === true) return "true";
+  return block.type === "List" ? "false" : undefined;
+}
+
 export function choiceRule(block: ChoiceBlock, extraRequirement?: string): string {
   const attrs = attributes([
     ["type", block.type],
@@ -218,7 +228,7 @@ export function choiceRule(block: ChoiceBlock, extraRequirement?: string): strin
     ["level", block.level],
     ["requirements", combineRequirements(block.requirements, extraRequirement)],
     ["supports", compileFilter(block.supports)],
-    ["optional", block.optional === true ? "true" : undefined],
+    ["optional", choiceOptionalAttr(block)],
     ["spellcasting", block.caster],
   ]);
   if (block.items === undefined) return `<select${attrs} />`;

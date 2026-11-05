@@ -294,6 +294,15 @@ describe("choice blocks (B3)", () => {
     expect(rule).toMatchObject({ type: "List", items: [{ id: "1", text: "Crow" }, { id: "2", text: "Hare & Fox" }] });
   });
 
+  it("compiles an unchecked List block to optional=\"false\" and a checked one to optional=\"true\"", () => {
+    const list = (extra: Partial<CustomBlock>) =>
+      selects({ kind: "choice", id: "c1", type: "List", name: "Omen", count: 1, items: ["Crow"], ...extra } as CustomBlock);
+    expect(list({})[0]).toMatchObject({ optional: false });
+    expect(list({ optional: false } as Partial<CustomBlock>)[0]).toMatchObject({ optional: false });
+    expect(list({ optional: true } as Partial<CustomBlock>)[0]).toMatchObject({ optional: true });
+    expect(selects({ kind: "choice", id: "c1", type: "Language", name: "Tongue", count: 1 })[0]).toMatchObject({ optional: undefined });
+  });
+
   it("gates a choice on requirements", () => {
     const [rule] = selects({ kind: "choice", id: "c1", type: "Feat", name: "Gift", count: 1, requirements: { kind: "ability", ability: "wisdom", min: 13 } });
     expect(rule).toMatchObject({ requirements: "[wis:13]" });

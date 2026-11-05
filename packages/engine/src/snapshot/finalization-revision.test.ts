@@ -27,7 +27,7 @@ describe("finalization revision tripwire", () => {
   it("pins the finalized-library digest to the snapshot parser version", async () => {
     const digest = await contentLibraryDigest(serializeContentLibrary(library));
     expect(`${PARSER_VERSION}:${digest}`).toBe(
-      "12:8d98359e60f4e7d52ae30d8c4b995535b0f30f62627ddbe000971a7613e442cd",
+      "13:de0621dc34ff348a6eee98b6e6e37bfff598028adee2e5dcaba5f2173601eeb7",
     );
   });
 });

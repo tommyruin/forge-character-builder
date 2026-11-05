@@ -349,7 +349,7 @@ describe('a background', () => {
       { name: 'Personality Trait', count: 2, items: ['I count waves.', 'I hum off-key.'] },
       { name: 'Ideal', count: 1, items: ['Vigilance.'] },
     ]);
-    expect(last(changes).rawXml).toContain('<select type="List" name="Personality Trait" number="2">');
+    expect(last(changes).rawXml).toContain('<select type="List" name="Personality Trait" number="2" optional="true">');
 
     await goTo('Feature');
     await click(buttonByText('Add a background feature'));

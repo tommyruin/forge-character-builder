@@ -69,8 +69,16 @@ const RULESET_SHARED_TYPES: ReadonlySet<string> = new Set([
   "Weapon Category",
 ]);
 
+/**
+ * Supports tags whose members are shared across rulesets even when their source is a 2014 book.
+ * The Artificer's Replicate Magic Item infusion offers options sourced from the Dungeon Master's
+ * Guide; both editions pick from that one pool.
+ */
+const RULESET_SHARED_SUPPORTS: ReadonlySet<string> = new Set(["Replicate Magic Item Option"]);
+
 interface RulesetElementView {
   identity: { id: string; type: string; source: string };
+  supports?: readonly string[];
   setters?: Array<{ name: string; value: string }>;
 }
 
@@ -120,6 +128,7 @@ export function classifyRuleset(
   if (source.toLowerCase().includes("(2024)")) return "2024";
   const information = sourceElement?.setters?.find((setter) => setter.name === "information")?.value;
   if (information?.includes("5.5e")) return "2024";
+  if (element.supports?.some((tag) => RULESET_SHARED_SUPPORTS.has(tag.trim()))) return "shared";
   if (RULESET_2014_SOURCES.has(source)) return "2014";
   return "shared";
 }
