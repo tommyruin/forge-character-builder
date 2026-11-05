@@ -1,5 +1,6 @@
 import { shell } from "@shell";
 import { useDriveSyncState } from "../hooks/useDriveSyncState.js";
+import useShellEffects from "../hooks/useShellEffects";
 import useShellTheme from "../hooks/useShellTheme";
 import useAutosaveSetting from "../hooks/useAutosaveSetting";
 import AutosaveToggle from "./AutosaveToggle";
@@ -59,6 +60,7 @@ export function themeMenuOrder(themeApi = shell.theme) {
 // boundaries.
 export function TopbarUtilities({ leading = null, onCloudOpen }) {
   const { theme, selectTheme } = useShellTheme();
+  const effects = useShellEffects();
   const { autosaveEnabled, toggleAutosave } = useAutosaveSetting();
   const drive = useDriveSyncState();
   const support = shell.links.support;
@@ -81,6 +83,7 @@ export function TopbarUtilities({ leading = null, onCloudOpen }) {
       <AutosaveToggle enabled={autosaveEnabled} onToggle={toggleAutosave} />
       <span className="fcb-topbar-divider" aria-hidden="true" />
       <ThemeMenu
+        effects={effects}
         onSelect={selectTheme}
         theme={theme}
         themes={themeMenuOrder()}

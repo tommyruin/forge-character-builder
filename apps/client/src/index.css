@@ -9598,3 +9598,47 @@ html.fcb-busy-cursor * {
   border-top: 1px solid var(--fcb-border-soft);
   background: var(--fcb-surface);
 }
+
+/* "Reduce effects" (data-effects on <html>, set by a host shell that offers it)
+   calms the same decorative loops as prefers-reduced-motion. Progress
+   indicators stay visible, just still. */
+:root[data-effects="reduced"] :is(
+    .fcb-utility-badge.is-busy svg,
+    .fcb-cloud-drawer,
+    .fcb-cloud-drawer-backdrop,
+    .fcb-cloud-status.is-busy .fcb-cloud-status-dot,
+    .fcb-cloud-utility:is(.is-connecting, .is-syncing) .fcb-cloud-utility-dot,
+    .fcb-file-drawer,
+    .fcb-boot-logo,
+    .fcb-boot-step.is-active .fcb-boot-step-dot,
+    .fcb-boot-pill-spinner,
+    .fcb-toast,
+    .fcb-fast-start-notice.is-building .fcb-fast-start-notice-dot,
+    .fcb-table tr.is-flash td
+  ) {
+  animation: none;
+}
+
+:root[data-effects="reduced"] .fcb-character-loading-track.is-indeterminate .fcb-character-loading-value {
+  width: 100%;
+  opacity: 0.62;
+  animation: none;
+  transform: none;
+}
+
+:root[data-effects="reduced"] .fcb-import-progress-track::after {
+  animation: none;
+  left: 0;
+  width: 100%;
+  opacity: 0.6;
+}
+
+/* The blur behind drawers and dialogs repaints on every frame under them. */
+:root[data-effects="reduced"] :is(.fcb-cloud-drawer-backdrop, .fcb-file-drawer-backdrop) {
+  backdrop-filter: none;
+}
+
+.fcb-menu-switch {
+  display: inline-block;
+  pointer-events: none;
+}

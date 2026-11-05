@@ -33,8 +33,12 @@ function PaletteIcon() {
  * theme in use rather than the one a click would switch to. The text label
  * shows from 1280 px; below that the button is icon-only and the same words
  * are its accessible name and tooltip.
+ *
+ * When the shell offers "Reduce effects", `effects` is `{ reduced, onChange }`
+ * and the menu ends with that switch (it stops the animated background).
+ * Without it, the menu is only the themes.
  */
-export default function ThemeMenu({ theme, themes, onSelect }) {
+export default function ThemeMenu({ theme, themes, onSelect, effects = null }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -95,6 +99,9 @@ export default function ThemeMenu({ theme, themes, onSelect }) {
     close(true);
   };
 
+  // The switch is a menu item, so the menu stays open and focus stays on it.
+  const toggleEffects = () => effects?.onChange(!effects.reduced);
+
   return (
     <div className="fcb-theme-menu" ref={rootRef}>
       <button
@@ -141,6 +148,31 @@ export default function ThemeMenu({ theme, themes, onSelect }) {
               </button>
             );
           })}
+          {effects ? (
+            <>
+              <div aria-hidden="true" className="fcb-topbar-menu-divider" />
+              <button
+                ref={(element) => {
+                  itemRefs.current[themes.length] = element;
+                }}
+                aria-checked={effects.reduced}
+                className="fcb-topbar-menu-item"
+                onClick={toggleEffects}
+                role="menuitemcheckbox"
+                tabIndex={-1}
+                title="Stops the animated background"
+                type="button"
+              >
+                <span>Reduce effects</span>
+                <span
+                  aria-hidden="true"
+                  className={`fcb-switch is-compact fcb-menu-switch${effects.reduced ? ' is-on' : ''}`}
+                >
+                  <span className="fcb-switch-knob" />
+                </span>
+              </button>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

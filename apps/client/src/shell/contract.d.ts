@@ -25,6 +25,22 @@ export interface ShellTheme {
   getNextTheme(value: unknown): ThemeName;
 }
 
+/**
+ * An optional "Reduce effects" setting for hosts with an animated background.
+ * When present, the theme menu shows a "Reduce effects" switch. The host's
+ * `Background` must stay idle while it is on.
+ */
+export interface ShellEffects {
+  /** localStorage key of the setting; a `storage` event for it re-reads it. */
+  readonly storageKey: string;
+  /** The stored setting (true = reduced). False when nothing is stored. */
+  read(storage?: Storage): boolean;
+  /** Stores the setting; returns the value stored. */
+  store(value: unknown, storage?: Storage): boolean;
+  /** Writes the setting onto the document root (for example `data-effects`). */
+  apply(value: unknown, target?: Document): boolean;
+}
+
 export interface ShellLink {
   readonly href: string;
   readonly label: string;
@@ -113,6 +129,8 @@ export interface HostShell {
   /** Small version label rendered next to the brand. */
   readonly VersionStamp: ComponentType<{ className?: string }>;
   readonly theme: ShellTheme;
+  /** Optional "Reduce effects" setting; omitted, the theme menu has no such switch. */
+  readonly effects?: ShellEffects;
   readonly links: ShellLinks;
 }
 

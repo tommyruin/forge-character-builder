@@ -19,7 +19,21 @@ short, the directory exports (from `index.jsx`) a frozen `shell` object with:
 | `ReleaseNotesProvider` | Wraps the app; receives `announce`. |
 | `VersionStamp` | Small version label next to the brand. |
 | `theme` | `AVAILABLE_THEMES`, `DEFAULT_THEME`, `normalizeTheme`, `applyTheme`, `readStoredTheme`, `storeTheme`, `getNextTheme`. The stored key is `theme`; values are `dark`, `light`, `retro`. |
+| `effects` | Optional "Reduce effects" setting: `{ storageKey, read, store, apply }`. See below. |
 | `links` | `legal` (required), optional `home`, `support` and `makeToken`, each `{ href, label, title? }`, and optional `tools` (see below). |
+
+### Optional effects
+
+A host with an animated `Background` can offer a "Reduce effects" switch by
+supplying `effects`: `storageKey` (the localStorage key), `read(storage?)`
+(true when reduced; false when nothing is stored), `store(value, storage?)`
+(returns the value stored) and `apply(value, target?)` (writes the setting onto
+the document root, for example `data-effects="reduced"`). When it is present the
+theme menu ends with a "Reduce effects" switch; the builder applies the stored
+setting at start-up, writes changes, and follows `storage` events from other
+tabs. The host's `Background` must stay idle while the setting is on (and should
+also honour `prefers-reduced-motion`). Hosts that leave `effects` out get no
+switch; the default shell leaves it out because it has no background.
 
 ### Optional links
 

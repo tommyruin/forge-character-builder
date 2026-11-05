@@ -50,4 +50,8 @@ describe('shell theme', () => {
     expect(classList.has('retro-mode')).toBe(true);
     expect(classList.has('light-mode')).toBe(false);
   });
+
+  it('leaves Reduce effects to hosts: the default shell offers none', () => {
+    expect(shell.effects).toBeUndefined();
+  });
 });

@@ -106,6 +106,37 @@ describe('top bar with the default shell', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('adds a Reduce effects switch only when the shell offers one', async () => {
+    const withoutSwitch = await mount(<ThemeMenu onSelect={() => {}} theme="dark" themes={['dark', 'light']} />);
+    await act(async () => withoutSwitch.container.querySelector('button').click());
+    expect(withoutSwitch.container.querySelector('[role="menuitemcheckbox"]')).toBeNull();
+    await cleanup();
+
+    const onChange = vi.fn();
+    const { container } = await mount(
+      <ThemeMenu
+        effects={{ reduced: false, onChange }}
+        onSelect={() => {}}
+        theme="dark"
+        themes={['dark', 'light']}
+      />,
+    );
+    const trigger = container.querySelector('button');
+    await act(async () => trigger.click());
+    const item = container.querySelector('[role="menuitemcheckbox"]');
+    expect(item.textContent).toBe('Reduce effects');
+    expect(item.getAttribute('aria-checked')).toBe('false');
+    // The switch joins the arrow-key order after the themes.
+    const radios = [...container.querySelectorAll('[role="menuitemradio"]')];
+    radios[1].focus();
+    await press(radios[1], 'ArrowDown');
+    expect(document.activeElement).toBe(item);
+    await act(async () => item.click());
+    expect(onChange).toHaveBeenCalledWith(true);
+    // Choosing it does not close the menu.
+    expect(container.querySelector('[role="menu"]')).not.toBeNull();
+  });
+
   it('closes the theme menu on Escape and on a click outside', async () => {
     const { container } = await mount(<ThemeMenu onSelect={() => {}} theme="light" themes={['dark', 'light']} />);
     const trigger = container.querySelector('button');

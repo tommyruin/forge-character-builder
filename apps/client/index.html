@@ -12,6 +12,11 @@
     <meta name="theme-color" content="%VITE_FCB_THEME_COLOR%" />
     <script>
       try {
+        if (localStorage.getItem('effects') === 'reduced') document.documentElement.dataset.effects = 'reduced';
+      } catch {
+        // Storage can be blocked; effects stay on.
+      }
+      try {
         const theme = localStorage.getItem('theme');
         document.documentElement.dataset.theme = ['dark', 'light', 'retro'].includes(theme)
           ? theme
