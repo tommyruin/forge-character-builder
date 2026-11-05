@@ -192,6 +192,18 @@ function ItemCardSettings({ workspace }) {
           <span>Print resource trackers empty, to fill in at the table</span>
         </label>
       )}
+      {/* Uses next to features: a feature's own tracker closes its text; shared pools stay in the Resources list. */}
+      {options.resourceTrackers && (
+        <label className="flex items-center gap-2 pl-6 text-sm">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={options.resourceTrackersInline}
+            onChange={(event) => setOptions({ resourceTrackersInline: event.target.checked })}
+          />
+          <span>Print uses next to their features (shared pools stay in the Resources list)</span>
+        </label>
+      )}
       {characterId && (
         <div className="flex flex-wrap gap-2" role="group" aria-label="Item cards for this character">
           <button

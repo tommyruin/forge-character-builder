@@ -25,11 +25,17 @@
 //  - resourceTrackersEmpty: that paragraph prints empty instead, to fill in at
 //    the table (an open circle per use, a blank for a large count). Only
 //    offered while resourceTrackers is on.
+//  - resourceTrackersInline: uses next to features. A tracker that one printed
+//    feature spends closes that feature's text ("[Uses: ○ ○]") instead of
+//    the paragraph, which keeps the shared pools and the trackers kept by
+//    hand. On by default; off lists every tracker in the paragraph. Only
+//    offered while resourceTrackers is on.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card
 //    only when they are magic items, tools or useful gear. Items already in
 //    the inventory never change.
 //
-// Every option defaults to off (except resourceTrackers, which is on; and top
+// Every option defaults to off (except resourceTrackers and
+// resourceTrackersInline, which are on; and top
 // and split, which take the layout's own default), so a browser that has never
 // touched this setting gets each layout's own sheet and the item cards it has
 // always had.
@@ -38,7 +44,7 @@ import { resolveSheetLayout, sheetLayoutKey } from '@forge-cb/engine/sheet-contr
 
 export const SHEET_LAYOUT_OPTIONS_STORAGE_KEY = 'fcb-sheet-layout-options';
 
-const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards', 'resourceTrackers', 'resourceTrackersEmpty'];
+const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards', 'resourceTrackers', 'resourceTrackersEmpty', 'resourceTrackersInline'];
 /** Options that may also be null, for the layout's own default. */
 const DEFAULTABLE_OPTIONS = ['top', 'split'];
 
@@ -50,6 +56,7 @@ export const DEFAULT_SHEET_LAYOUT_OPTIONS = Object.freeze({
   smartCards: false,
   resourceTrackers: true,
   resourceTrackersEmpty: false,
+  resourceTrackersInline: true,
 });
 
 
@@ -126,19 +133,23 @@ export function sheetLayoutCacheKey(layout) {
 
 /**
  * What the resource tracker options print, as a suffix for the sheet cache
- * keys: nothing for the default (trackers as the Resources tab left them),
- * so the default keeps the keys it has always had.
+ * keys: nothing for the default (trackers as the Resources tab left them,
+ * uses next to their features), so the default keeps the keys it has always had.
  */
 export function resourceTrackersCacheKey(options) {
   const resolved = resolveSheetLayoutOptions(options);
   if (!resolved.resourceTrackers) return '#no-trackers';
-  return resolved.resourceTrackersEmpty ? '#empty-trackers' : '';
+  return (resolved.resourceTrackersEmpty ? '#empty-trackers' : '') + (resolved.resourceTrackersInline ? '' : '#listed-trackers');
 }
 
 /** The sheet request fields the resource tracker options send. */
 export function resourceTrackerSheetOptions(options) {
   const resolved = resolveSheetLayoutOptions(options);
-  return { resourceTrackers: resolved.resourceTrackers, resourceTrackersEmpty: resolved.resourceTrackers && resolved.resourceTrackersEmpty };
+  return {
+    resourceTrackers: resolved.resourceTrackers,
+    resourceTrackersEmpty: resolved.resourceTrackers && resolved.resourceTrackersEmpty,
+    resourceTrackersInline: !resolved.resourceTrackers || resolved.resourceTrackersInline,
+  };
 }
 
 /**

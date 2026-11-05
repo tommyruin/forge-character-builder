@@ -8,7 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { ElementLibrary } from "../content/library.js";
 import { CharacterService } from "../character/service.js";
 import { computeInlineValues, computeStatistics } from "../statistics/calculator.js";
-import { buildCharacterSheetModel } from "../sheet/model.js";
+import { buildCharacterSheetModel, type BuildSheetOptions } from "../sheet/model.js";
 import { buildCharacter, buildFighter3, ID, sharedLibrary, type BuiltCharacter } from "../testing/character-factory.js";
 import { SAMPLE_CASTER, SAMPLE_CHARACTER } from "../testing/dnd5e-samples.js";
 import {
@@ -679,16 +679,17 @@ describe("limited uses printed in the book content", () => {
 });
 
 describe("the sheet", () => {
-  const resourceLines = (service: CharacterService, id: string, resourceTrackers?: boolean, resourceTrackersEmpty?: boolean): string[] => {
-    const model = buildCharacterSheetModel(service.getCharacter(id), library, {
-      mode: "full",
+  const sheetLines = (service: CharacterService, id: string, options: Partial<BuildSheetOptions> = {}): string[] =>
+    buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", ...options }).pages
+      .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))));
+  // These cases read the paragraph itself, so every tracker is listed there
+  // (uses next to features off; the inline cases follow).
+  const resourceLines = (service: CharacterService, id: string, resourceTrackers?: boolean, resourceTrackersEmpty?: boolean): string[] =>
+    sheetLines(service, id, {
+      resourceTrackersInline: false,
       ...(resourceTrackers === undefined ? {} : { resourceTrackers }),
       ...(resourceTrackersEmpty === undefined ? {} : { resourceTrackersEmpty }),
-    });
-    return model.pages
-      .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))))
-      .filter((line) => line.startsWith("Resources."));
-  };
+    }).filter((line) => line.startsWith("Resources."));
 
   it("leaves the Resources paragraph off when the sheet option is off", () => {
     const { service, id } = fighter();
@@ -756,6 +757,66 @@ describe("the sheet", () => {
     expect(line).not.toContain("Moonbeam");
     expect(line).toContain("Embers 12 / 12 charges (dawn)");
     expect(resourceLines(service, id, undefined, true)[0]).not.toContain("Moonbeam");
+  });
+
+  it("closes a feature's text with the uses of its own tracker, and leaves it out of the Resources paragraph", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", { trackers: [tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 3 }, recharge: "shortRest" })] }),
+    });
+    service.setTrackerUsed(id, { trackerId: "a", used: 1 });
+    const lines = sheetLines(service, id);
+    const gift = lines.filter((line) => line.startsWith("Moonwell Gift"));
+    expect(gift).toHaveLength(1);
+    // The heading already states the recharge ("3/Short Rest"), so the uses are marks only.
+    expect(gift[0]).toMatch(/^Moonwell Gift \(3\/Short Rest\)\. .* \[Uses: ○ ○ ●\]$/);
+    expect(lines.some((line) => line.startsWith("Resources.") && line.includes("Moonbeam"))).toBe(false);
+    expect(sheetLines(service, id, { resourceTrackersEmpty: true }).find((line) => line.startsWith("Moonwell Gift"))).toMatch(/\[Uses: ○ ○ ○\]$/);
+    // Off prints the sheet as before: the feature as it is, every tracker in the paragraph.
+    const off = sheetLines(service, id, { resourceTrackersInline: false });
+    expect(off.find((line) => line.startsWith("Moonwell Gift"))).not.toContain("[Uses:");
+    const [listed, ...more] = off.filter((line) => line.startsWith("Resources."));
+    expect(more).toEqual([]);
+    expect(listed).toContain("Moonbeam ○ ○ ● (SR)");
+    // Trackers off leaves them off everywhere.
+    expect(sheetLines(service, id, { resourceTrackers: false }).some((line) => line.startsWith("Resources.") || line.includes("[Uses:"))).toBe(false);
+  });
+
+  it("names each tracker inline when a feature has several, and counts a large one", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", {
+        trackers: [
+          tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" }),
+          tracker({ id: "b", label: "Embers", unit: "charges", max: { kind: "number", value: 12 }, recharge: "dawn" }),
+        ],
+      }),
+    });
+    service.setTrackerUsed(id, { trackerId: "b", used: 5 });
+    const gift = sheetLines(service, id).find((line) => line.startsWith("Moonwell Gift"))!;
+    expect(gift).toMatch(/ \[Moonbeam: ○ ○\] \[Embers: 7 \/ 12 charges\]$/);
+    expect(sheetLines(service, id, { resourceTrackersEmpty: true }).find((line) => line.startsWith("Moonwell Gift"))).toContain("[Embers: ____ / 12 charges]");
+  });
+
+  it("keeps a pool two features share in the Resources paragraph", () => {
+    const { service, id } = fighter();
+    const pool = { max: { kind: "number", value: 4 }, unit: "points", recharge: "longRest", pool: "Moon points" } as const;
+    service.saveCustomDraft(id, { draft: feature("First Light", { trackers: [tracker({ id: "a", label: "First Light", ...pool })] }) });
+    service.saveCustomDraft(id, { draft: feature("Second Light", { trackers: [tracker({ id: "b", label: "Second Light", ...pool })] }) });
+    const lines = sheetLines(service, id);
+    expect(lines.filter((line) => /^(First|Second) Light/.test(line) && line.includes("["))).toEqual([]);
+    expect(lines.filter((line) => line.startsWith("Resources."))).toEqual(["Resources. Moon points ○ ○ ○ ○ points (LR)"]);
+  });
+
+  it("leaves an untracked feature tracker off the feature too", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", { trackers: [tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" })] }),
+    });
+    service.setTrackerTracked(id, { trackerId: "a", tracked: false });
+    const lines = sheetLines(service, id);
+    expect(lines.find((line) => line.startsWith("Moonwell Gift"))).not.toContain("[");
+    expect(lines.some((line) => line.startsWith("Resources.") && line.includes("Moonbeam"))).toBe(false);
   });
 
   it("prints nothing for a character with no limited uses", () => {

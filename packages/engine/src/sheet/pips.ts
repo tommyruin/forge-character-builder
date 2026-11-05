@@ -6,7 +6,9 @@
  * either glyph, so the PDF writer draws each one as a small copy of the sheet's
  * own death-save marker instead: the empty death save for a use left, the
  * ticked one for a use spent. Only the Resources paragraph is drawn this way;
- * the same marks anywhere else print as text (see `winAnsiText`).
+ * and so are the uses closing a feature's own text ("[Uses: ○ ○]",
+ * `inlinePipWords`); the same marks anywhere else print as text (see
+ * `winAnsiText`).
  *
  * During line layout a pip is an inline box of fixed width, so wrapping,
  * continuation pages and every body face treat it like any other piece of a
@@ -14,7 +16,7 @@
  * splits into text and pips, and how wide a pip is at a given size.
  */
 
-import { OPEN_MARK, RESOURCES_LEAD, SPENT_MARK } from "../resources/sheet.js";
+import { INLINE_USES_CLOSE, INLINE_USES_OPEN, OPEN_MARK, RESOURCES_LEAD, SPENT_MARK } from "../resources/sheet.js";
 import type { SheetMarker } from "./template-contract.js";
 
 /**
@@ -60,6 +62,30 @@ export type PipSegment = { kind: "text"; text: string } | { kind: "pip"; spent: 
 /** Whether a features line is the Resources paragraph, the only one drawn with pips. */
 export function isPipParagraph(line: string): boolean {
   return line === RESOURCES_LEAD || line.startsWith(`${RESOURCES_LEAD} `);
+}
+
+const MARK_WORD = new RegExp(`^[${OPEN_MARK}${SPENT_MARK}]\\${INLINE_USES_CLOSE}?$`);
+
+/**
+ * Which words of a feature paragraph are its inline uses' marks: the lone
+ * marks ("○", "●]") inside the bracketed groups that close it, each opening
+ * on a label that ends in a colon ("[Uses:", "[Channel Divinity:"). A mark
+ * anywhere else in the text is the text's own and prints as text.
+ */
+export function inlinePipWords(words: readonly string[]): Set<number> {
+  const marks = new Set<number>();
+  let end = words.length;
+  while (end > 0 && words[end - 1]!.endsWith(INLINE_USES_CLOSE)) {
+    let start = end - 1;
+    while (start >= 0 && !words[start]!.startsWith(INLINE_USES_OPEN)) start -= 1;
+    if (start < 0) break;
+    let label = start;
+    while (label < end && !words[label]!.endsWith(":")) label += 1;
+    if (label >= end) break;
+    for (let index = label + 1; index < end; index += 1) if (MARK_WORD.test(words[index]!)) marks.add(index);
+    end = start;
+  }
+  return marks;
 }
 
 /** Whether `word` holds a tracker mark. */

@@ -41,7 +41,7 @@ export default function SheetTab() {
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { options: layoutOptions } = useSheetLayoutOptionsSetting();
   const inventoryNotes = layoutOptions.inventoryNotes;
-  const { resourceTrackers, resourceTrackersEmpty } = resourceTrackerSheetOptions(layoutOptions);
+  const { resourceTrackers, resourceTrackersEmpty, resourceTrackersInline } = resourceTrackerSheetOptions(layoutOptions);
   const layout = useMemo(() => effectiveSheetLayout(templateSet, layoutOptions), [templateSet, layoutOptions]);
   // Trackers off or printed empty changes the rendered sheet, so it changes every cache key built
   // from this. What is spent on the Resources tab is a character edit: it bumps the mutation tick.
@@ -98,7 +98,7 @@ export default function SheetTab() {
     // if its own cleanup hasn't cancelled it — so the surviving mount always renders.
     sharedSheetGeneration(runKey, () =>
       loadSheetBrandImage().then((brandImage) =>
-        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, resourceTrackers, resourceTrackersEmpty, layout, brandImage, footerText: `Generated with ${shell.appName}.` })),
+        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersInline, layout, brandImage, footerText: `Generated with ${shell.appName}.` })),
     )
       .then((bytes) => {
         putCachedSheet(cacheKey, bytes);
@@ -112,7 +112,7 @@ export default function SheetTab() {
     return () => {
       cancelled = true;
     };
-  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersEmpty, layout, layoutKey]);
+  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersInline, layout, layoutKey]);
 
   const ready = state.key === key;
   const bytes = ready ? state.bytes : null;

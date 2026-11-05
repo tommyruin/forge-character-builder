@@ -18,6 +18,7 @@ import {
   CHECK_DOT_RATIO,
   DEFAULT_PIP_LOOK,
   hasPips,
+  inlinePipWords,
   isPipParagraph,
   pipBox,
   pipMarker,
@@ -25,6 +26,7 @@ import {
   pipWordWidth,
   type PipLook,
 } from "./pips.js";
+import { INLINE_USES_CLOSE } from "../resources/sheet.js";
 import {
   PDFCheckBox,
   PDFDocument,
@@ -1254,12 +1256,20 @@ export interface StyledWord {
 
 function featureWords(line: string): StyledWord[][] {
   const paragraphParts = line.split(/(?:\t{2,}|[\r\n]+)/).map((part) => part.trim()).filter(Boolean);
-  // Only the Resources paragraph's marks are a tracker's uses.
+  // Only the Resources paragraph's marks, and the uses closing a feature's
+  // own text, are a tracker's uses.
   if (isPipParagraph(line)) {
     return paragraphParts.map((paragraph, paragraphIndex) => featureParagraphWords(paragraph, paragraphIndex)
       .map((word) => word.style === "regular" && hasPips(word.text) ? { ...word, pips: true as const } : word));
   }
-  return paragraphParts.map((paragraph, paragraphIndex) => featureParagraphWords(paragraph, paragraphIndex));
+  const paragraphs = paragraphParts.map((paragraph, paragraphIndex) => featureParagraphWords(paragraph, paragraphIndex));
+  const last = paragraphs.at(-1);
+  if (last === undefined || !line.trimEnd().endsWith(INLINE_USES_CLOSE)) return paragraphs;
+  const marks = inlinePipWords(last.map((word) => word.text));
+  if (marks.size > 0) {
+    paragraphs[paragraphs.length - 1] = last.map((word, index) => marks.has(index) && word.style === "regular" ? { ...word, pips: true as const } : word);
+  }
+  return paragraphs;
 }
 
 /** One paragraph's words; the first paragraph of a line opens on its bold-italic heading. */
@@ -2554,6 +2564,9 @@ async function addSpellListPage(
     // The spell point reference block occupies the band between the header
     // and the first level section, so sections start 38pt lower with it.
     let sectionTop = headerY - (caster.resource.mode === "spellPoints" ? 48 : 10);
+    // The slot label, the shared-slots note and the slot circles sit on the
+    // level band's white slot box (template contract spellList.slotBoxLeft).
+    const slotInk = rgb(...colours.text);
     const { topHeight, rowHeight, endHeight, columns, slotTextX, textBaseline } = SPELL_LIST;
     // A slot level prints even with no spells chosen: its circles still track
     // the slots, which a character can spend on a higher-level casting.
@@ -2580,7 +2593,7 @@ async function addSpellListPage(
           winAnsiText(`SHARED SLOTS: SEE ${spellSection.sharedSlotsWith.toUpperCase()}`),
           fonts.regular, 5.5, SPELL_LIST.labelCellRight - 4 - slotTextX,
         );
-        page.drawText(note, { x: slotTextX, y: topY + textBaseline, size: 5.5, font: fonts.regular, color: rgb(1, 1, 1) });
+        page.drawText(note, { x: slotTextX, y: topY + textBaseline, size: 5.5, font: fonts.regular, color: slotInk });
       }
       if (hasSlots(spellSection)) {
         const slotLabel = `${spellSection.slots} SPELL ${spellSection.slots === 1 ? "SLOT" : "SLOTS"}`;
@@ -2589,12 +2602,14 @@ async function addSpellListPage(
           y: topY + textBaseline,
           size: 5.5,
           font: fonts.regular,
-          color: rgb(1, 1, 1),
+          color: slotInk,
         });
         const labelWidth = fonts.regular.widthOfTextAtSize(slotLabel, 5.5);
+        // Hollow circles ruled in the text ink on the band's white slot box,
+        // so a pencil or e-ink mark in one shows on paper.
         for (let slot = 0; slot < spellSection.slots; slot++) {
           page.drawCircle({ x: slotTextX + labelWidth + 9 + slot * 9, y: topY + textBaseline + 2,
-            size: 2.7, borderColor: rgb(1, 1, 1), borderWidth: 0.7 });
+            size: 2.7, borderColor: slotInk, borderWidth: 0.7 });
         }
       }
       spellSection.spells.forEach((spell, index) => {

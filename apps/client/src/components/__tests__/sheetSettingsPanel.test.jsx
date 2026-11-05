@@ -58,9 +58,10 @@ describe('SheetSettingsPanel', () => {
     // Five page checkboxes on, plus ability emphasis, compact top row, split
     // feature boxes, readable body, smart cards and item notes off by default
     // on the 2014 layout; resource trackers are a sixth checkbox, on by default,
-    // and printing them empty a seventh, off by default.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(13);
-    expect(markup.match(/checked=""/g)).toHaveLength(6);
+    // printing them empty a seventh, off by default, and uses next to their
+    // features an eighth, on by default.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(14);
+    expect(markup.match(/checked=""/g)).toHaveLength(7);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
   });
@@ -98,7 +99,7 @@ describe('SheetSettingsPanel', () => {
 
   it('offers item notes for the inventory as a switch, off by default', () => {
     expect(markup).toContain('Print item notes in the inventory: magic items in full, tools and useful gear in brief');
-    expect(markup.match(/role="switch"/g)).toHaveLength(7);
+    expect(markup.match(/role="switch"/g)).toHaveLength(8);
   });
 
   it('offers a compact top row as a layout option, off by default', () => {

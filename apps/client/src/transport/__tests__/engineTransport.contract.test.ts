@@ -827,6 +827,11 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, resourceTrackersEmpty: true }]);
     await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: true, resourceTrackersEmpty: false });
     expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false }]);
+    // Uses next to features: only an explicit off changes the request.
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackersInline: false });
+    expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false, resourceTrackersInline: false }]);
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackersInline: true });
+    expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false }]);
     // The character page's layout rides with the render, not the model build.
     expect(sheetRenderer).toHaveBeenLastCalledWith(expect.anything(), expect.any(String), expect.objectContaining({ layout: undefined }));
     await renderedApi.characters.sheetBytes("Ada", { lite: false, templateSet: "2014", layout: { top: false, split: true, readable: false } });

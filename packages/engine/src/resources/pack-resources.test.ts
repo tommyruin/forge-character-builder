@@ -147,10 +147,18 @@ describe("trackers carried by a compiled pack element", () => {
     service.addGrantedElement(id, { elementId: gifts.id });
     const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
     const lines = model.pages.flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))));
-    const resourceLines = lines.filter((line) => line.startsWith("Resources."));
-    expect(resourceLines).toHaveLength(1);
-    expect(resourceLines[0]).toContain("Moonbeam");
-    expect(resourceLines[0]).toContain("Embers");
+    // The gift's own trackers close its text, so the Resources paragraph has none of them.
+    expect(lines.filter((line) => line.includes("Moonbeam"))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes("Embers"))).toHaveLength(1);
+    expect(lines.find((line) => line.includes("Moonbeam"))).toMatch(/\[Moonbeam: [○● ]+.*\]/);
+    expect(lines.some((line) => line.startsWith("Resources.") && line.includes("Moonbeam"))).toBe(false);
+    // Uses next to features off: the one paragraph lists them, as before.
+    const listed = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", resourceTrackersInline: false }).pages
+      .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))))
+      .filter((line) => line.startsWith("Resources."));
+    expect(listed).toHaveLength(1);
+    expect(listed[0]).toContain("Moonbeam");
+    expect(listed[0]).toContain("Embers");
   });
 });
 

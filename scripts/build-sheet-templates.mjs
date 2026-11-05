@@ -1370,6 +1370,19 @@ async function spellLevelTemplate(level, edition) {
   // with the level label in the crimson cell where column 0 would be.
   s.ornamentRule(40, 582, L.topHeight - 4, GOLD);
   rowCells(s, 0, L.rowHeight, { first: "dark" });
+  // A slot level's label cell splits: the level stays on the band and the
+  // writer's slot label and hollow circles sit on a white box ruled in the
+  // text ink (which the writer recolours to the theme's text colour, black on
+  // the Print theme), so marks made on them show when printed. Cantrips have
+  // no slots.
+  if (level > 0) {
+    const border = L.slotBoxBorder;
+    s.page.drawRectangle({
+      x: L.slotBoxLeft + border / 2, y: border / 2,
+      width: L.labelCellRight - L.slotBoxLeft - border, height: L.rowHeight - border,
+      color: WHITE, borderColor: INK, borderWidth: border,
+    });
+  }
   s.display(LEVEL_LABELS[level], 46, L.textBaseline, { size: 5.6, color: "cream" });
   return finish(doc, s);
 }

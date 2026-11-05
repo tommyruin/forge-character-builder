@@ -9,7 +9,7 @@ import type { TrackerDto } from "@forge-cb/api";
 import { PDFPage } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { type CharacterService } from "../character/service.js";
-import { OPEN_MARK, SPENT_MARK, resourceSheetText } from "../resources/sheet.js";
+import { OPEN_MARK, SPENT_MARK, inlineUsesText, resourceSheetText } from "../resources/sheet.js";
 import { buildFighter3, sharedLibrary } from "../testing/character-factory.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import { buildCharacterSheetModel, type CharacterSheetModel, type SheetPage } from "./model.js";
@@ -20,6 +20,7 @@ import {
   MARKER_STROKE,
   PIP_SIDE_BEARING,
   hasPips,
+  inlinePipWords,
   isPipParagraph,
   pipBox,
   pipMarker,
@@ -66,6 +67,38 @@ describe("pip tokens", () => {
     expect(words.find((word) => word.text === "Resources.")).toMatchObject({ style: "bold-italic" });
     expect(words.find((word) => word.text === "Resources.")?.pips).toBeUndefined();
     expect(other!.words.some((word) => word.pips === true)).toBe(false);
+  });
+});
+
+describe("a feature's inline uses", () => {
+  it("prints one tracker by its unit, several by label, and a large one as a count", () => {
+    expect(inlineUsesText([dto({})])).toBe(`[Uses: ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK}]`);
+    expect(inlineUsesText([dto({})], { empty: true })).toBe(`[Uses: ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK}]`);
+    expect(inlineUsesText([dto({ unit: "charges", max: 7, used: 3 })])).toBe("[Charges: 4 / 7]");
+    expect(inlineUsesText([dto({ max: 2, used: 0 })], { recharge: true })).toBe(`[Uses: ${OPEN_MARK} ${OPEN_MARK} (LR)]`);
+    expect(inlineUsesText([dto({ max: 1, used: 0 }), dto({ label: "Wand", unit: "charges", max: 9, used: 0 })], { empty: true }))
+      .toBe(`[Pip Test: ${OPEN_MARK}] [Wand: ____ / 9 charges]`);
+    expect(inlineUsesText([dto({ pool: "Moon points", label: "Moon points", unit: "points", max: 3, used: 1 })]))
+      .toBe(`[Moon points: ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} points]`);
+    expect(inlineUsesText([dto({ tracked: false })])).toBeNull();
+  });
+
+  it("finds only the marks of the bracketed groups closing a paragraph", () => {
+    const words = (text: string) => text.split(" ");
+    expect([...inlinePipWords(words(`Gift. Text. [Uses: ${OPEN_MARK} ${SPENT_MARK}]`))]).toEqual([3, 4]);
+    expect([...inlinePipWords(words(`Gift. [Channel Divinity: ${OPEN_MARK}] [Wand: 4 / 7 charges]`))]).toEqual([3]);
+    // A mark in the text itself, a bracket with no label, or one not at the end is text.
+    expect(inlinePipWords(words(`Gift. ${OPEN_MARK} [see below]`)).size).toBe(0);
+    expect(inlinePipWords(words(`Gift. [Uses: ${OPEN_MARK}] more text`)).size).toBe(0);
+    expect(inlinePipWords(words(`Gift. [Uses: 4 / 7]`)).size).toBe(0);
+  });
+
+  it("marks a feature line's closing uses as pips, and no other mark in it", () => {
+    const line = `Gift (Bonus Action—2/Long Rest). Prints ${OPEN_MARK} as text.\nMore. [Uses: ${OPEN_MARK} ${SPENT_MARK}]`;
+    const paragraphs = featureParagraphs([{ kind: "lines", lines: [line] }]);
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0]!.words.some((word) => word.pips === true)).toBe(false);
+    expect(paragraphs[1]!.words.filter((word) => word.pips === true).map((word) => word.text)).toEqual([OPEN_MARK, `${SPENT_MARK}]`]);
   });
 });
 
@@ -199,6 +232,32 @@ describe("the PDF's pips", () => {
     expect(drawn.text).toContain("FEATURES & TRAITS (CONTINUED)");
     expect(drawn).toMatchObject({ ringCircles: 4, dots: 2 });
   }, 60_000);
+
+  it("draws a feature's inline uses as pips, its other marks as text", async () => {
+    const line = `Gift (2/Long Rest). Prints ${OPEN_MARK} as text. ${inlineUsesText([dto({})])}`;
+    const drawn = await draw(page([line]), "2024");
+    expect(drawn).toMatchObject({ ringCircles: 4, dots: 2 });
+    expect(drawn.text).toMatch(/prints\s+o\s+as/i);
+    expect(drawn.text).toContain("[Uses:");
+    expect(drawn.text).toContain("]");
+    expect(drawn.text).not.toContain("•");
+  }, 60_000);
+
+  it("draws a real character's feature uses inline and its tracker kept by hand in the paragraph", async () => {
+    const library = await sharedLibrary();
+    const { service, id } = buildFighter3(library, "PipInline") as { service: CharacterService; id: string };
+    service.saveManualTracker(id, { tracker: { id: "pip-test", label: "Pip Test", max: { kind: "number", value: 2 }, unit: "uses", recharge: "longRest" } });
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
+    const details = model.pages.find((entry) => entry.templateKind === "details")!;
+    const lines = details.sections.flatMap((section) => section.rows.flatMap((row) => row.kind === "lines" ? row.lines : []));
+    // A tracker kept by hand names no feature, so it stays in the paragraph.
+    expect(lines.find((line) => line.startsWith("Resources."))).toBe(`Resources. Pip Test ${OPEN_MARK} ${OPEN_MARK} (LR)`);
+    const inline = lines.filter((line) => !line.startsWith("Resources.") && line.includes("[Uses:"));
+    expect(inline.length).toBeGreaterThan(0);
+    const drawn = await draw(details, "2024");
+    expect(drawn.ringCircles).toBeGreaterThanOrEqual(2 + inline.length);
+    expect(drawn.text).not.toContain("•");
+  }, 120_000);
 
   it("draws a real character's tracker kept by hand", async () => {
     const library = await sharedLibrary();

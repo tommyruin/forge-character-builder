@@ -148,7 +148,7 @@ describe("a boon made on a character", () => {
     expect(service.getCharacter(id).sum.elements.map((entry) => entry.id)).toContain("ID_LANGUAGE_ELVISH");
 
     // The sheet prints it with its action and usage.
-    expect(sheetLines(service, id)).toContain("Ember Boon (Bonus Action—1/Long Rest). A warmth that never fades.");
+    expect(sheetLines(service, id)).toContain("Ember Boon (Bonus Action—1/Long Rest). A warmth that never fades. [Uses: ○]");
   });
 
   it("names the granting custom feature as the source of the spells it grants", () => {
@@ -415,10 +415,10 @@ describe("sheet presentation", () => {
       tiers: [{ level: 2, text: "Tier two." }, { level: 5, text: "Tier five." }],
     };
     service.saveCustomDraft(id, { draft });
-    expect(sheetLines(service, id)).toContain("Ember Ward (Reaction—2/Long Rest). Tier two.");
+    expect(sheetLines(service, id)).toContain("Ember Ward (Reaction—2/Long Rest). Tier two. [Uses: ○ ○]");
     service.levelUp(id);
     service.levelUp(id);
-    expect(sheetLines(service, id)).toContain("Ember Ward (Reaction—3/Long Rest). Tier five.");
+    expect(sheetLines(service, id)).toContain("Ember Ward (Reaction—3/Long Rest). Tier five. [Uses: ○ ○ ○]");
   });
 
   it("leaves the feature off the sheet when it is hidden", () => {
@@ -501,6 +501,19 @@ describe("grant and choice variations", () => {
       isOptional: true,
       selectedElementNames: ["Hare"],
     });
+  });
+
+  it("reports a homebrew List block as required unless its box is checked", () => {
+    const { service, id } = fighter();
+    const draft = createCustomDraft("boon", "Omens");
+    draft.blocks = [
+      { kind: "choice", id: "required", type: "List", name: "Required omen", count: 1, items: ["Crow", "Hare"] },
+      { kind: "choice", id: "optional", type: "List", name: "Optional omen", count: 1, items: ["Crow", "Hare"], optional: true },
+    ];
+    service.saveCustomDraft(id, { draft });
+    const rules = buildCharacterDetail(service.getCharacter(id), library).selectionRules;
+    expect(rules.find((rule) => rule.name === "Required omen")).toMatchObject({ isList: true, isOptional: false, hasSelection: false });
+    expect(rules.find((rule) => rule.name === "Optional omen")).toMatchObject({ isList: true, isOptional: true });
   });
 
   it("offers a spell choice from a filter tree, cast with the ability the feature names", () => {

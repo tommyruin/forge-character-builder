@@ -13,6 +13,7 @@ import { mergeSheetSpellcasters } from "./spell-groups.js";
  * writer draws them as section headings.
  */
 
+import type { TrackerDto } from "@forge-cb/api";
 import type { CharacterState } from "../character/state.js";
 import type { ElementLibrary } from "../content/library.js";
 import type { ParsedElement, ParsedSheetEntry, SheetDescription } from "../content/parser.js";
@@ -55,7 +56,7 @@ import {
   type LayoutRun,
 } from "./card-layout.js";
 import { buildTrackers, type FeatureUsage } from "../resources/view.js";
-import { resourceSheetText } from "../resources/sheet.js";
+import { inlineUsesText, resourceSheetText } from "../resources/sheet.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote, type SheetAttackRow } from "./attack-notes.js";
 
@@ -165,8 +166,16 @@ export interface SheetPageInclusions {
   itemCards?: boolean;
 }
 
-/** How the "Resources" paragraph prints: left off, as the Resources page left it, or empty to fill in. */
-type ResourcePrint = "off" | "state" | "empty";
+/**
+ * How the trackers print: left off, as the Resources page left them, or empty
+ * to fill in; and whether a feature's own trackers close that feature's text
+ * instead of the "Resources" paragraph.
+ */
+interface ResourcePrint {
+  mode: "off" | "state" | "empty";
+  inline: boolean;
+}
+const DEFAULT_RESOURCE_PRINT: ResourcePrint = { mode: "state", inline: true };
 
 export interface BuildSheetOptions {
   mode: SheetMode;
@@ -195,6 +204,14 @@ export interface BuildSheetOptions {
    * each tracker as the Resources page left it (what is spent, what is left).
    */
   resourceTrackersEmpty?: boolean;
+  /**
+   * Uses next to features: a tracker spent by one printed feature closes that
+   * feature's text ("[Uses: ○ ○]") and is left out of the "Resources"
+   * paragraph, which keeps the shared pools and the trackers no printed
+   * feature spends. Absent or `true` prints them inline; `false` lists every
+   * tracker in the paragraph.
+   */
+  resourceTrackersInline?: boolean;
   /**
    * The body face the sheet will be drawn in (a SHEET_FONT_FACES key), so card
    * prose is measured in that face's widths. Absent measures in Helvetica,
@@ -367,7 +384,10 @@ export function buildCharacterSheetModel(
   const wants = (page: keyof SheetPageInclusions): boolean => options.include?.[page] !== false;
   const pages: SheetPage[] = [];
   const attacks = sheetAttackRows(state, library);
-  const resources: ResourcePrint = options.resourceTrackers === false ? "off" : options.resourceTrackersEmpty === true ? "empty" : "state";
+  const resources: ResourcePrint = {
+    mode: options.resourceTrackers === false ? "off" : options.resourceTrackersEmpty === true ? "empty" : "state",
+    inline: options.resourceTrackersInline !== false,
+  };
   pages.push({ ...buildPage1(state, library, values, inline, resources), attacks, attackNotes: state.attacksDescription });
   if (wants("background")) pages.push(buildPage2(state, library));
   const companion = buildCompanionDto(state, library, values);
@@ -499,7 +519,7 @@ function buildFormValues(
   displayedAttacks: readonly SheetAttackRow[],
   inline?: Readonly<Record<string, string>>,
   inventoryNotes = false,
-  resources: ResourcePrint = "state",
+  resources: ResourcePrint = DEFAULT_RESOURCE_PRINT,
 ): Readonly<Record<string, string>> {
   const fields: Record<string, string> = {};
   const set = (name: string, value: string | number | undefined): void => {
@@ -882,7 +902,7 @@ function buildPage1(
   library: ElementLibrary,
   values: StatisticsValues,
   inline?: Readonly<Record<string, string>>,
-  resources: ResourcePrint = "state",
+  resources: ResourcePrint = DEFAULT_RESOURCE_PRINT,
 ): SheetPage {
   const sections: SheetSection[] = [];
 
@@ -1262,6 +1282,8 @@ function unarmoredAlt(state: CharacterState, library: ElementLibrary): string | 
 }
 
 interface CollectedFeature {
+  /** The element the feature prints, which a tracker's sources name. */
+  elementId: string;
   class: "features" | "racial";
   type: string;
   title: string;
@@ -1471,7 +1493,7 @@ function collectFeatures(
   library: ElementLibrary,
   values: StatisticsValues,
   inline?: Readonly<Record<string, string>>,
-  resources: ResourcePrint = "state",
+  resources: ResourcePrint = DEFAULT_RESOURCE_PRINT,
 ): {
   features: SheetRow[];
   racial: SheetRow[];
@@ -1513,6 +1535,7 @@ function collectFeatures(
     if (sheet === undefined) {
       if (plainText) {
         out.push({
+          elementId: id,
           type: element.identity.type,
           class: cls,
           title: element.identity.name,
@@ -1524,7 +1547,7 @@ function collectFeatures(
       // Reference renders sheet-less class features name-only ("Fighting Style.")
       // but hides the internal ASI-feat stubs ("Feat (4)").
       if (element.identity.type !== "Class Feature" || element.identity.id.startsWith("ID_INTERNAL_")) continue;
-      out.push({ type: element.identity.type, class: cls, title: element.identity.name, parenthetical: null, description: "" });
+      out.push({ elementId: id, type: element.identity.type, class: cls, title: element.identity.name, parenthetical: null, description: "" });
       continue;
     }
     // Class grants tier their text by the owning class's level, so a
@@ -1541,6 +1564,7 @@ function collectFeatures(
       });
     }
     out.push({
+      elementId: id,
       class: cls,
       type: element.identity.type,
       title: sheet.alt !== undefined && sheet.alt !== "" ? sheet.alt : element.identity.name,
@@ -1567,10 +1591,25 @@ function collectFeatures(
       usage: substitute(usageLine, values, inline),
     });
   }
+  // The character's resources close the features text: every template has that
+  // box, and what it cannot hold continues on a continuation page. A tracker
+  // only one printed feature spends closes that feature's text instead.
+  const trackers = resources.mode === "off" ? [] : buildTrackers(state, library, values, usages);
+  const empty = resources.mode === "empty";
+  const inlineUses = resources.inline ? featureTrackers(trackers, out) : new Map<string, TrackerDto[]>();
+  const inlined = new Set([...inlineUses.values()].flat());
+  const listed = trackers.filter((tracker) => !inlined.has(tracker));
+  const statedUsage = new Set(usages.map((entry) => entry.elementId));
+  const withUses = (item: CollectedFeature): string => {
+    const owned = inlineUses.get(item.elementId);
+    // A feature whose line states no usage ("2/Long Rest") gets the recharge with its uses.
+    const uses = owned === undefined ? null : inlineUsesText(owned, { empty, recharge: !statedUsage.has(item.elementId) });
+    return uses === null ? item.description : `${item.description.trim()} ${uses}`.trim();
+  };
   const rows = (filter: (item: CollectedFeature) => boolean): SheetRow[] =>
     out.filter(filter).map((item) => ({
       kind: "lines",
-      lines: [featureLine(item.title, item.parenthetical, item.description)],
+      lines: [featureLine(item.title, item.parenthetical, withUses(item))],
     }));
   // Every row of the features box lands in exactly one group, so a split
   // layout prints everything the combined box does.
@@ -1579,9 +1618,7 @@ function collectFeatures(
     ["Archetype", "Archetype Feature"].includes(item.type) ? "subclass-features"
       : ["Feat", "Feat Feature"].includes(item.type) ? "feats"
         : "class-features";
-  // The character's resources close the features text: every template has that
-  // box, and what it cannot hold continues on a continuation page.
-  const resourceText = resources === "off" ? null : resourceSheetText(buildTrackers(state, library, values, usages), { empty: resources === "empty" });
+  const resourceText = resources.mode === "off" ? null : resourceSheetText(listed, { empty });
   const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
     features: [...rows((item) => item.class === "features"), ...resourceRows],
@@ -1594,6 +1631,25 @@ function collectFeatures(
     },
     usages,
   };
+}
+
+/**
+ * The trackers each printed feature spends alone, by element id: a tracker
+ * whose every source names the same feature, and that feature prints. A shared
+ * pool spent by several features, a tracker kept by hand and one an item or a
+ * hidden element spends stay in the "Resources" paragraph.
+ */
+function featureTrackers(trackers: readonly TrackerDto[], printed: readonly CollectedFeature[]): Map<string, TrackerDto[]> {
+  const printedIds = new Set(printed.map((item) => item.elementId));
+  const owned = new Map<string, TrackerDto[]>();
+  for (const tracker of trackers) {
+    if (tracker.tracked === false || tracker.sources.length === 0) continue;
+    const owners = new Set(tracker.sources.map((source) => source.elementId));
+    const [owner] = owners;
+    if (owners.size !== 1 || owner === undefined || owner === "" || !printedIds.has(owner)) continue;
+    owned.set(owner, [...(owned.get(owner) ?? []), tracker]);
+  }
+  return owned;
 }
 
 /**

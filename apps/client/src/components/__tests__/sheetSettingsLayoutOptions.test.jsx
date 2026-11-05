@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   host.remove();
-  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false });
+  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false, resourceTrackers: true, resourceTrackersInline: true });
   sheetTemplateSettingStore.set('2014');
 });
 
@@ -33,6 +33,8 @@ async function renderPanel() {
 const splitSwitch = () => host.querySelector('[aria-label="Split feature boxes"]');
 const topSwitch = () => host.querySelector('[aria-label="Compact top row"]');
 const readableSwitch = () => host.querySelector('[aria-label="Readable body"]');
+const switchLabelled = (text) =>
+  [...host.querySelectorAll('label')].find((label) => label.textContent.includes(text))?.querySelector('input');
 const resetButton = () =>
   [...host.querySelectorAll('button')].find((button) => button.textContent === 'Use layout default');
 const layoutButton = (label) =>
@@ -112,5 +114,18 @@ describe('sheet settings layout options', () => {
     await act(async () => readableSwitch().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().readable).toBe(false);
     expect(resetButton()).toBeUndefined();
+  });
+
+  it('prints uses next to their features by default, and offers it only while trackers print', async () => {
+    await renderPanel();
+    const inline = () => switchLabelled('Print uses next to their features');
+    expect(inline().getAttribute('role')).toBe('switch');
+    expect(inline().checked).toBe(true);
+    await act(async () => inline().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackersInline).toBe(false);
+    expect(inline().checked).toBe(false);
+    await act(async () => switchLabelled('Print resource trackers (').click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackers).toBe(false);
+    expect(inline()).toBeUndefined();
   });
 });

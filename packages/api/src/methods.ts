@@ -595,6 +595,12 @@ export interface EngineMethodMap {
          * Absent or `false` prints what is spent and what is left.
          */
         resourceTrackersEmpty?: boolean;
+        /**
+         * Uses next to features: a tracker one printed feature spends closes that feature's text
+         * ("[Uses: ○ ○]") instead of the "Resources" paragraph. Absent or `true` prints them inline;
+         * `false` lists every tracker in the paragraph.
+         */
+        resourceTrackersInline?: boolean;
         /** The body face the sheet will be drawn in, so card prose is measured in its widths. */
         bodyFace?: string;
       },

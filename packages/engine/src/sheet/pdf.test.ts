@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { SpellResourceDto } from "@forge-cb/api";
-import { PDFArray, PDFDocument, PDFPage, PDFName, PDFStream, decodePDFRawStream } from "pdf-lib";
+import { PDFArray, PDFDocument, PDFPage, PDFName, PDFStream, decodePDFRawStream, rgb } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { ingestContentFiles } from "../content/ingestion.js";
 import { encodeBase64 } from "../platform.js";
@@ -18,7 +18,7 @@ import {
   writeCharacterSheetPdfWithTemplateBundle,
   type CharacterSheetTemplateBundle,
 } from "./pdf.js";
-import { DEFAULT_SHEET_FONTS, SHEET_TEMPLATE_CONTRACT, type SheetFontFaceName, type SheetFonts } from "./template-contract.js";
+import { DEFAULT_SHEET_COLOURS, DEFAULT_SHEET_FONTS, SHEET_PALETTE, SHEET_TEMPLATE_CONTRACT, type SheetFontFaceName, type SheetFonts } from "./template-contract.js";
 import { buildCorpusLibrary } from "../testing/corpus.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 
@@ -131,7 +131,16 @@ describe("character sheet PDF writer", () => {
         await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(edition));
         const trackers = circles.mock.calls.filter(([options]) => options?.size === 2.7);
         expect(trackers).toHaveLength(expected);
-        for (const [options] of trackers) expect(options?.borderWidth).toBeGreaterThan(0);
+        // Hollow circles ruled in the text ink, inside the band's white slot box.
+        const { slotBoxLeft, slotBoxBorder, labelCellRight } = SHEET_TEMPLATE_CONTRACT.spellList;
+        for (const [options] of trackers) {
+          expect(options?.borderWidth).toBeGreaterThan(0);
+          expect(options?.color).toBeUndefined();
+          const [red, green, blue] = SHEET_PALETTE[DEFAULT_SHEET_COLOURS.text].rgb;
+          expect(options?.borderColor).toEqual(rgb(red, green, blue));
+          expect(options!.x! - 2.7).toBeGreaterThan(slotBoxLeft + slotBoxBorder);
+          expect(options!.x! + 2.7).toBeLessThan(labelCellRight - slotBoxBorder);
+        }
       }
     } finally { circles.mockRestore(); }
   });

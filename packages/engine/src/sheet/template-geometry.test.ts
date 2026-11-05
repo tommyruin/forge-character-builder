@@ -701,3 +701,35 @@ describe("templateFontSize", () => {
     expect(templateFontSize("/Helv 0 Tf")).toBeUndefined();
   });
 });
+
+describe("the spell level band's slot box", () => {
+  const FONTS = join(SHEETS, SHEET_TEMPLATE_CONTRACT.fontsDirectory);
+  async function embed(document: PDFDocument, name: (typeof SHEET_FONT_FACE_NAMES)[number], role: "regular"): Promise<PDFFont> {
+    const face = SHEET_FONT_FACES[name];
+    if ("standard" in face) return document.embedFont(StandardFonts[face.standard[role] as keyof typeof StandardFonts]);
+    return document.embedFont(readFileSync(join(FONTS, face.files[role])));
+  }
+
+  // The writer draws the slot label at slotTextX in the body face at 5.5pt
+  // and four 2.7pt circles 9pt apart after it; the level label prints in the
+  // titles face at 5.6pt from x 46 on the accent band.
+  it("holds the widest slot label and four circles in every body face, and every level label clears it", async () => {
+    const L = SHEET_TEMPLATE_CONTRACT.spellList;
+    const document = await PDFDocument.create();
+    document.registerFontkit(fontkit);
+    const inner = { left: L.slotBoxLeft + L.slotBoxBorder, right: L.labelCellRight - L.slotBoxBorder };
+    expect(L.slotTextX - inner.left).toBeGreaterThanOrEqual(4);
+    for (const name of SHEET_FONT_FACE_NAMES) {
+      const roles = SHEET_FONT_FACES[name].roles as readonly string[];
+      const font = await embed(document, name, "regular");
+      if (roles.includes("body")) {
+        const lastCircleRight = L.slotTextX + font.widthOfTextAtSize("4 SPELL SLOTS", 5.5) + 9 + 3 * 9 + 2.7 + 0.35;
+        expect(lastCircleRight, name).toBeLessThan(inner.right - 4);
+      }
+      if (roles.includes("titles")) {
+        const widest = Math.max(...["1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH", "8TH", "9TH"].map((label) => font.widthOfTextAtSize(label, 5.6)));
+        expect(46 + widest, name).toBeLessThan(L.slotBoxLeft - 2);
+      }
+    }
+  });
+});

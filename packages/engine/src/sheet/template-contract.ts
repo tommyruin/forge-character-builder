@@ -397,6 +397,15 @@ export const SHEET_TEMPLATE_CONTRACT = {
     labelCellRight: 228,
     cellRights: [228, 417, 582],
     slotTextX: 82,
+    /**
+     * A slot level's band splits: the level label stays on the accent band up
+     * to slotBoxLeft, and the slot label and circles sit on white from there
+     * to labelCellRight inside a text-ink border slotBoxBorder thick, so a
+     * pencil mark in a hollow circle prints on paper, not on ink. The widest
+     * label ("4 SPELL SLOTS") and four circles at a 9pt pitch end near x 160.
+     */
+    slotBoxLeft: 72,
+    slotBoxBorder: 1.5,
     textBaseline: 3.5,
     /** Each cell's prepared bubble, from its column's text x and baseline; the writer fills it for a ready spell. */
     preparedMark: { dx: -11.6, dy: 1.7, radius: 2.8 },
