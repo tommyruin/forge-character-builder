@@ -11,7 +11,6 @@ import { api } from "../../api";
 import { useWorkspace } from "../WorkspaceContext";
 import DescriptionPanel from "../DescriptionPanel";
 import Icon from "../Icon";
-import FilterSelect from "../FilterSelect";
 import SectionNav from "../SectionNav";
 import WorkspaceTabLayout, { WorkspaceBand } from "../WorkspaceTabLayout";
 import useMobileDescriptionNavigation from "../../hooks/useMobileDescriptionNavigation";
@@ -1124,7 +1123,7 @@ function Catalog({
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-3 lg:grid-cols-5">
+              <div className="fcb-equipment-filters grid grid-cols-2 items-end gap-2 mb-3 lg:grid-cols-5">
                 <label className="fcb-field-label">Type
                   <select className="fcb-input block w-full" value={equipmentKind} onChange={event => setEquipmentKind(event.target.value)}>
                     <option value="">All types</option>
@@ -1145,7 +1144,7 @@ function Catalog({
                   </select>
                 </label>
                 <ItemSortSelect value={sort} onChange={setSort} />
-                <label className="fcb-field-label">Maximum price (gp)
+                <label className="fcb-field-label">Max price (gp)
                   <input type="number" min="0" step="0.01" className="fcb-input block w-full" placeholder="Any price" value={priceCeiling} onChange={event => setPriceCeiling(event.target.value)} />
                 </label>
               </div>
@@ -1287,14 +1286,10 @@ export const ITEM_SORT_OPTIONS = [
 /** The order of the add-item list. The engine sorts before it pages, so a pick applies to every page. */
 export function ItemSortSelect({ value, onChange }) {
   return (
-    <label className="fcb-field-label">
-      Sort by
-      <FilterSelect
-        testId="item-sort"
-        value={value}
-        options={ITEM_SORT_OPTIONS}
-        onChange={onChange}
-      />
+    <label className="fcb-field-label">Sort by
+      <select data-testid="item-sort" className="fcb-input block w-full" value={value} onChange={event => onChange(event.target.value)}>
+        {ITEM_SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
     </label>
   );
 }

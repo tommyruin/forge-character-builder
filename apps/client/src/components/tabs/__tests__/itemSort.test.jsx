@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
 import { ItemSortSelect } from "../EquipmentTab.jsx";
 
-it("offers Name and Source and reports the pick", async () => {
+it("offers Name and Source as a native select beside the other filters, and reports the pick", async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
@@ -15,15 +15,17 @@ it("offers Name and Source and reports the pick", async () => {
     return <ItemSortSelect value={value} onChange={(next) => { picks.push(next); setValue(next); }} />;
   }
   await act(() => root.render(<Harness />));
-  const trigger = host.querySelector('[data-testid="item-sort"]') ?? host.querySelector("button");
+  const select = host.querySelector('select[data-testid="item-sort"]');
   expect(host.textContent).toContain("Sort by");
-  expect(trigger.textContent).toContain("Name");
-  await act(() => trigger.click());
-  const options = [...document.querySelectorAll('[role="option"]')];
-  expect(options.map((option) => option.textContent)).toEqual(["Name", "Source"]);
-  await act(() => options[1].click());
+  expect(select.className).toContain("fcb-input");
+  expect([...select.options].map((option) => option.textContent)).toEqual(["Name", "Source"]);
+  expect(select.value).toBe("name");
+  await act(() => {
+    select.value = "source";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
   expect(picks).toEqual(["source"]);
-  expect(host.querySelector("button").textContent).toContain("Source");
+  expect(select.value).toBe("source");
   await act(() => root.unmount());
   host.remove();
 });

@@ -2877,6 +2877,11 @@ button:disabled {
   resize: vertical;
 }
 
+/* The add-item filters mix selects and a number box; one height keeps the row level. */
+.fcb-equipment-filters .fcb-input {
+  height: var(--dmf-control-height);
+}
+
 .fcb-input::placeholder,
 .fcb-textarea::placeholder {
   color: var(--fcb-text-faint);
