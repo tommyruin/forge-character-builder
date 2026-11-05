@@ -1126,19 +1126,19 @@ function Catalog({
               <div className="fcb-equipment-filters grid grid-cols-2 items-end gap-2 mb-3 lg:grid-cols-5">
                 <label className="fcb-field-label">Type
                   <select className="fcb-input block w-full" value={equipmentKind} onChange={event => setEquipmentKind(event.target.value)}>
-                    <option value="">All types</option>
+                    <option value="">All</option>
                     {["Simple weapon", "Martial weapon", "Light armor", "Medium armor", "Heavy armor", "Shield", "Tools", "Musical Instruments"].map(value => <option key={value}>{value}</option>)}
                   </select>
                 </label>
                 <label className="fcb-field-label">Rarity
                   <select className="fcb-input block w-full" value={rarity} onChange={event => setRarity(event.target.value)}>
-                    <option value="">All rarities</option>
+                    <option value="">All</option>
                     {["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"].map(value => <option key={value}>{value}</option>)}
                   </select>
                 </label>
                 <label className="fcb-field-label">Proficiency
                   <select className="fcb-input block w-full" value={proficiency} onChange={event => setProficiency(event.target.value)}>
-                    <option value="">Any proficiency</option>
+                    <option value="">All</option>
                     <option value="proficient">Proficient</option>
                     <option value="not-proficient">Not proficient</option>
                   </select>
