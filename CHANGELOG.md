@@ -6,8 +6,29 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The item browser has a Sort by control: by name, or by source and then name.
+- A source linked from GitHub shows "Update available" when its repository has
+  changed, and Refresh pulls the new version.
+- The theme menu has a Reduce effects switch. It stops the animated background
+  and other motion, and the setting is shared with the rest of DM Forge.
+- Limited uses print as circles at the end of their feature on the sheet, for
+  example "[Uses: ○ ○]". Shared pools stay in the Resources list, and Sheet
+  settings can turn this off.
+
+### Changed
+
+- Spell slot circles on the sheet sit in a white box with a thick border beside
+  the spell level, so pencil and e-ink marks show when printed.
+- Content lists are in name order instead of the order files were loaded.
+
 ### Fixed
 
+- A homebrew list choice is a required pick again unless "The player may leave
+  it unpicked" is ticked.
+- The Artificer's Replicate Magic Item infusion offers its Dungeon Master's
+  Guide items in 2024 mode.
 - Google Drive sync works again for libraries with homebrew collections, and
   the collections arrive on your other devices.
 
