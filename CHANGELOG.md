@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-11-11
+
 ### Added
 
 - The item browser has a Sort by control: by name, or by source and then name.
