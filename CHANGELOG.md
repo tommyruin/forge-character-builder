@@ -30,6 +30,17 @@ project uses [Semantic Versioning](https://semver.org/).
   leaves current hit points blank to fill in.
 - The 2024 riding and draught animals in Mounts & Vehicles have their
   stat blocks as descriptions; they were blank.
+- The Type, Rarity, Proficiency and maximum price filters in the equipment
+  browser narrow the list again.
+- Spell filters no longer stay on out of sight: a new spell choice starts
+  unfiltered, and a filter you have set keeps its control so you can clear it.
+- Land vehicles, feed and other Mounts & Vehicles items without a
+  description show their type, cost and weight instead of an empty panel.
+- On the Hybrid page, a skill's ability (such as "(Cha)" after Intimidation)
+  no longer runs into the skill name in the Spectral font.
+- A companion with no challenge rating, such as a Primal Companion or Steel
+  Defender, shows your proficiency bonus (+3 at level 8) instead of a number
+  2 too low.
 
 ## [2.9.0] - 2026-11-11
 
