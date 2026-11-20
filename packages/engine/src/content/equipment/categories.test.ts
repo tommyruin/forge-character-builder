@@ -278,3 +278,117 @@ describe("equipment stat blocks", () => {
     );
   });
 });
+
+describe("mounts and vehicles stat lines", () => {
+  type Setter = { name: string; value: string; attrs?: Record<string, string> };
+  function gear(name: string, setters: Setter[], descriptionXml?: string): ParsedElement {
+    const item = element(`ID_TEST_ITEM_${name.toUpperCase().replace(/\W+/g, "_")}`, "Item", [
+      { name: "category", value: "Mounts & Vehicles" },
+      ...setters,
+    ]);
+    item.identity.name = name;
+    item.descriptionXml = descriptionXml;
+    return item;
+  }
+
+  it("shows a vehicle's type, cost and weight when it has no description", () => {
+    const wagon = gear("Test Wagon", [
+      { name: "cost", value: "42", attrs: { currency: "gp" } },
+      { name: "weight", value: "450 lb.", attrs: { lb: "450", excludeEncumbrance: "true" } },
+      { name: "type", value: "Vehicle" },
+    ], "<p></p>");
+
+    expect(publicEquipmentDescription(wagon)).toBe(
+      '<div class="stat-block">' +
+        '<p class="stat-line"><span class="feature">Type. </span>Vehicle</p>' +
+        '<p class="stat-line"><span class="feature">Cost. </span>42 gp</p>' +
+        '<p class="stat-line"><span class="feature">Weight. </span>450 lb.</p>' +
+        "</div>",
+    );
+  });
+
+  it("includes only the facts present, and treats a missing description as empty", () => {
+    const feed = gear("Test Fodder", [
+      { name: "cost", value: "3", attrs: { currency: "cp" } },
+      { name: "weight", value: "7 lb.", attrs: { lb: "7" } },
+      { name: "stackable", value: "true" },
+    ]);
+
+    const description = publicEquipmentDescription(feed);
+
+    expect(description).toContain("<span class=\"feature\">Cost. </span>3 cp");
+    expect(description).toContain("<span class=\"feature\">Weight. </span>7 lb.");
+    expect(description).not.toContain("Type.");
+    expect(description).not.toContain("stackable");
+  });
+
+  it("leaves out a zero weight, a dash weight and a zero cost", () => {
+    const lodging = gear("Test Paddock", [
+      { name: "cost", value: "2", attrs: { currency: "sp" } },
+      { name: "weight", value: "0 lb.", attrs: { lb: "0" } },
+    ]);
+    const unpriced = gear("Test Raft", [
+      { name: "cost", value: "0", attrs: { currency: "gp" } },
+      { name: "weight", value: "—", attrs: { lb: "0" } },
+      { name: "type", value: "Vehicle" },
+    ]);
+
+    expect(publicEquipmentDescription(lodging)).toBe(
+      '<div class="stat-block"><p class="stat-line"><span class="feature">Cost. </span>2 sp</p></div>',
+    );
+    expect(publicEquipmentDescription(unpriced)).toBe(
+      '<div class="stat-block"><p class="stat-line"><span class="feature">Type. </span>Vehicle</p></div>',
+    );
+  });
+
+  it("keeps a real description instead of the generated line", () => {
+    const sledge = gear("Test Sledge", [
+      { name: "cost", value: "12", attrs: { currency: "gp" } },
+      { name: "type", value: "Vehicle" },
+    ], "<p>A made-up sledge for testing.</p>");
+
+    expect(publicEquipmentDescription(sledge)).toBe("<p>A made-up sledge for testing.</p>");
+  });
+
+  it("keeps an expanded reference description, and never replaces an unexpanded one", () => {
+    const beast = gear("Test Beast", [
+      { name: "cost", value: "9", attrs: { currency: "gp" } },
+      { name: "type", value: "Mount" },
+    ], '<div class="reference"><div element="ID_TEST_INFORMATION_BEAST" /></div>');
+
+    expect(publicEquipmentDescription(beast, undefined, "<h5>TEST BEAST</h5><p>Made-up stats.</p>"))
+      .toBe("<h5>TEST BEAST</h5><p>Made-up stats.</p>");
+    expect(publicEquipmentDescription(beast)).not.toContain("stat-line");
+    // An expansion that found nothing is empty, so the facts fill the panel.
+    expect(publicEquipmentDescription(beast, undefined, '<div class="reference"></div>')).toContain("Cost. </span>9 gp");
+  });
+
+  it("escapes setter values", () => {
+    const odd = gear("Test Odd", [{ name: "type", value: "Cart <Big> & Co" }]);
+
+    expect(publicEquipmentDescription(odd)).toContain("Cart &lt;Big&gt; &amp; Co");
+  });
+
+  it("does not touch other categories or element types", () => {
+    const rope = element("rope", "Item", [
+      { name: "category", value: "Adventuring Gear" },
+      { name: "cost", value: "1", attrs: { currency: "gp" } } as Setter,
+    ]);
+    const charm = element("charm", "Magic Item", [
+      { name: "category", value: "Mounts & Vehicles" },
+      { name: "cost", value: "1", attrs: { currency: "gp" } } as Setter,
+    ]);
+
+    expect(publicEquipmentDescription(rope)).toBe("");
+    expect(publicEquipmentDescription(charm)).toBe("");
+  });
+
+  it("reaches the equipment metadata used by the inventory", () => {
+    const cart = gear("Test Handcart", [
+      { name: "cost", value: "5", attrs: { currency: "gp" } },
+      { name: "type", value: "Vehicle" },
+    ]);
+
+    expect(equipmentMetadata(cart).description).toContain("Type. </span>Vehicle");
+  });
+});

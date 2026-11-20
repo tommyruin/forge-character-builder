@@ -2,7 +2,9 @@
  * The Equipment tab's "Mounts & Vehicles" shop category, run against the
  * bundled SRD content (what the deployed client ships), not the third-party
  * corpus. Pins that the animals list and that each one has a description once
- * its stat block reference resolves. Asserts names and non-emptiness only.
+ * its stat block reference resolves, and that the land vehicles and feed,
+ * which have no prose, show their generated stat lines. Asserts names and
+ * non-emptiness only.
  */
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -35,6 +37,15 @@ function mountRows(library: ElementLibrary): Row[] {
 
 const ANIMALS_2024 = ["Elephant", "Horse, Draft", "Horse, Riding", "Mastiff", "Mule", "Pony", "Warhorse"];
 const ANIMALS_2014 = ["Camel", "Donkey", "Elephant", "Horse, Draft", "Horse, Riding", "Mastiff", "Pony", "Warhorse"];
+const UNWRITTEN_GEAR = ["Carriage", "Cart", "Chariot", "Sled", "Wagon", "Feed (per day)"];
+
+function expectStatLines(rows: Row[], names: readonly string[]): void {
+  for (const name of names) {
+    const row = rows.find((candidate) => candidate.name === name);
+    expect(row, name).toBeDefined();
+    expect(row?.description, name).toContain('<p class="stat-line">');
+  }
+}
 
 describe("bundled Mounts & Vehicles list", () => {
   describe("SRD 5.2.1", () => {
@@ -61,6 +72,10 @@ describe("bundled Mounts & Vehicles list", () => {
       }
     });
 
+    it("shows a stat line for the land vehicles and feed, which have no prose", () => {
+      expectStatLines(rows, UNWRITTEN_GEAR);
+    });
+
     it("leaves out only the inventory-hidden Camel, which the corpus marks hidden", () => {
       const names = new Set(rows.map((row) => row.name));
       expect(hiddenItemNames).toEqual(["Camel"]);
@@ -77,6 +92,7 @@ describe("bundled Mounts & Vehicles list", () => {
         expect(row, animal).toBeDefined();
         expect(row?.description, animal).toBeTruthy();
       }
+      expectStatLines(rows, [...UNWRITTEN_GEAR, "Bit and Bridle", "Saddlebags", "Stabling (per day)"]);
     });
   });
 });

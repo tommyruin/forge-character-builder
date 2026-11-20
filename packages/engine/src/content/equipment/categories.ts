@@ -271,12 +271,63 @@ export function equipmentStatBlock(
   return "";
 }
 
+const MOUNTS_AND_VEHICLES = "mounts & vehicles";
+
+/** True for the dash a table prints in an empty cell ("—", "–" or "-"). */
+function isDashCell(value: string): boolean {
+  return /^[—–-]$/.test(value);
+}
+
+/**
+ * The weight a stat line prints: the setter's display text, or its `lb`
+ * attribute when the text is a table dash. A weight of zero is how the
+ * content marks "not applicable" (stabling, animals), so it prints nothing.
+ */
+function displayWeight(element: ParsedElement): string {
+  const weight = setter(element, "weight");
+  if (weight === undefined) return "";
+  const text = weight.value.trim();
+  const lb = weight.attrs?.lb?.trim() ?? "";
+  const pounds = lb === "" ? Number.NaN : Number(lb);
+  if (pounds === 0) return "";
+  if (text !== "" && !isDashCell(text)) return /^0(?:\.0+)?\s*lb\.?$/i.test(text) ? "" : text;
+  return Number.isFinite(pounds) && pounds > 0 ? `${lb} lb.` : "";
+}
+
+/** The cost a stat line prints ("100 gp"), or nothing for a missing or zero price. */
+function displayCost(element: ParsedElement): string {
+  const cost = setter(element, "cost");
+  const value = cost?.value.trim() ?? "";
+  if (value === "" || isDashCell(value) || Number(value.replaceAll(",", "")) === 0) return "";
+  const currency = cost?.attrs?.currency?.trim().toLocaleLowerCase() ?? "";
+  return currency === "" ? value : `${value} ${currency}`;
+}
+
+/**
+ * The SRD lists land vehicles, tack and feed only in its price tables, so
+ * their records carry setters and no prose. A Mounts & Vehicles item without
+ * a description shows those facts instead of an empty panel.
+ */
+function mountsAndVehiclesStatLines(element: ParsedElement): string {
+  if (element.identity.type !== "Item") return "";
+  if (normalizeItemCategory(setterValue(element, "category")).toLocaleLowerCase() !== MOUNTS_AND_VEHICLES) return "";
+  const lines: string[] = [];
+  const type = trimmedSetter(element, "type");
+  if (type !== "" && !isDashCell(type)) lines.push(statLine("Type", type));
+  const cost = displayCost(element);
+  if (cost !== "") lines.push(statLine("Cost", cost));
+  const weight = displayWeight(element);
+  if (weight !== "") lines.push(statLine("Weight", weight));
+  return statBlock(lines);
+}
+
 /**
  * Returns the public description for an equipment element: its generated stat
  * block followed by whatever prose the content authored. The two are composed
  * rather than alternatives — SRD weapons carry stats with no prose, and SRD
  * armour carries prose with no stats, so choosing one would always drop half
- * of what the reader needs.
+ * of what the reader needs. A Mounts & Vehicles item gets its stat block only
+ * when it has no prose at all.
  */
 export function publicEquipmentDescription(
   element: ParsedElement | undefined,
@@ -285,7 +336,11 @@ export function publicEquipmentDescription(
 ): string {
   if (element === undefined) return "";
   const authored = nonEmptyDescription(authoredDescription ?? element.descriptionXml) ?? "";
-  return `${equipmentStatBlock(element, resolve)}${packExtrasNote(authored, element.extras, resolve)}`;
+  // Without an expanded description, a reference-only one (`<div element>`)
+  // strips to nothing here but is not empty, so it is never replaced.
+  const unexpandedReference = authoredDescription === undefined && (element.descriptionXml ?? "").includes("element=");
+  const fallback = authored === "" && !unexpandedReference ? mountsAndVehiclesStatLines(element) : "";
+  return `${equipmentStatBlock(element, resolve)}${fallback}${packExtrasNote(authored, element.extras, resolve)}`;
 }
 
 /** Joins names as "a, b and c". */
