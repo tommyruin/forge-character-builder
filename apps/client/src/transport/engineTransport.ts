@@ -256,6 +256,18 @@ function summaryOf(detail: AnyRecord, portraitBase64: string | null): AnyRecord 
   };
 }
 
+// The item browser's shopping filters, sent only when set: the engine treats any
+// present `maxPriceGp` (null included) as a request for priced equipment only.
+function equipmentShoppingFilters(params: AnyRecord): AnyRecord {
+  const filters: AnyRecord = {};
+  for (const key of ["equipmentKind", "rarity", "proficiency"] as const) {
+    if (typeof params[key] === "string" && params[key] !== "") filters[key] = params[key];
+  }
+  const maxPriceGp = params.maxPriceGp === "" || params.maxPriceGp === null ? Number.NaN : Number(params.maxPriceGp);
+  if (Number.isFinite(maxPriceGp) && maxPriceGp >= 0) filters.maxPriceGp = maxPriceGp;
+  return filters;
+}
+
 function unsupported(method: string): never {
   throw new Error(`FCB engine method '${method}' is unavailable in this worker.`);
 }
@@ -1072,6 +1084,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         characterId: params.characterId ?? null,
         equipmentOnly: Boolean(params.equipmentOnly),
         sort: params.sort ?? null,
+        ...equipmentShoppingFilters(params),
       });
       return result;
     },

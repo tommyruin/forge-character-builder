@@ -773,6 +773,41 @@ describe("typed FCB nested adapter", () => {
     ]);
   });
 
+  it("forwards the equipment shopping filters to the content query", async () => {
+    const { client, calls } = fakeClient();
+    const api = createEngineApi({ client, store: fakeStore() });
+
+    await api.content.elements({
+      equipmentOnly: true,
+      equipmentKind: "Martial weapon",
+      rarity: "Rare",
+      proficiency: "proficient",
+      maxPriceGp: "25",
+    });
+
+    expect(calls).toContainEqual([
+      "contentElements",
+      expect.objectContaining({ equipmentKind: "Martial weapon", rarity: "Rare", proficiency: "proficient", maxPriceGp: 25 }),
+    ]);
+  });
+
+  it("leaves unset shopping filters out of the content query", async () => {
+    const { client, calls } = fakeClient();
+    const api = createEngineApi({ client, store: fakeStore() });
+
+    await api.content.elements({ equipmentOnly: true, equipmentKind: "", rarity: undefined, proficiency: null, maxPriceGp: undefined });
+    await api.content.elements({ maxPriceGp: "" });
+    await api.content.elements({ maxPriceGp: Number.NaN });
+    await api.content.elements({ maxPriceGp: 0 });
+
+    const queries = calls.filter(([method]) => method === "contentElements").map(([, query]) => query as Record<string, unknown>);
+    expect(queries).toHaveLength(4);
+    for (const query of queries.slice(0, 3)) {
+      for (const key of ["equipmentKind", "rarity", "proficiency", "maxPriceGp"]) expect(query).not.toHaveProperty(key);
+    }
+    expect(queries[3]).toHaveProperty("maxPriceGp", 0);
+  });
+
   it("fails loudly for malformed files and unavailable methods", async () => {
     const { client } = fakeClient();
     const api = createEngineApi({ client, store: fakeStore() });
