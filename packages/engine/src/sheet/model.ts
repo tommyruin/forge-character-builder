@@ -2084,8 +2084,9 @@ function companionFormValues(companion: CompanionDto, statistics: Readonly<Recor
     companion_hp_current: "",
     companion_hd: companionHitDice(companion.hitPointsText, statistics),
     companion_initiative: signed(companion.initiative),
-    companion_proficiency: String(companion.proficiency),
-    companion_proficiency_bonus: String(companion.proficiency),
+    // A bonus, signed like the initiative beside it.
+    companion_proficiency: signed(companion.proficiency),
+    companion_proficiency_bonus: signed(companion.proficiency),
     companion_speed: companion.speedText,
     companion_speed_walking: `${companion.speed}`,
   };

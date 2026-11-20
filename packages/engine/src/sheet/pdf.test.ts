@@ -369,7 +369,7 @@ describe("character sheet PDF writer", () => {
     expect(model.formValues?.["companion_owner"]).toBe("Sheet Companion");
     expect(model.formValues?.["companion_build"]).toBe("Tiny beast, unaligned");
     // A familiar keeps its own proficiency bonus, not its owner's.
-    expect(model.formValues?.["companion_proficiency"]).toBe("2");
+    expect(model.formValues?.["companion_proficiency"]).toBe("+2");
   }, 120_000);
 
   it("draws the character and companion portraits into their template frames", async () => {

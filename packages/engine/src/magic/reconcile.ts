@@ -130,13 +130,27 @@ function featureDtos(library: ElementLibrary, ids: string[]): CompanionFeatureDt
 
 /**
  * A creature's own proficiency bonus follows its challenge rating. Content may
- * override it (an artificer's Steel Defender uses its creator's bonus), which
- * is why the statistic wins when a rule sets one.
+ * override it, which is why the statistic wins when a rule sets one.
  */
 function challengeProficiency(challenge: string): number {
   const rating = /^\s*1\s*\/\s*\d+/.test(challenge) ? 0 : Number.parseFloat(challenge);
   const value = Number.isFinite(rating) ? rating : 0;
   return 2 + Math.max(0, Math.ceil((value - 4) / 4));
+}
+
+/**
+ * The companion's proficiency bonus. A stat block with a dash for its
+ * challenge rating (a Primal Companion, a Steel Defender, a drake) has none of
+ * its own and uses its owner's. The content's `companion:proficiency` rules for
+ * those blocks add the owner's bonus and take 2 away, written against an
+ * implicit base of 2 this engine does not add, so they would print the bonus
+ * less 2; the owner's bonus is read directly instead. Any other companion
+ * keeps the statistic when a rule sets one, else its challenge rating's bonus.
+ */
+function companionProficiency(challenge: string, statistics: Readonly<Record<string, number>>): number {
+  const owner = statistics["proficiency"] ?? 0;
+  if (/^\s*[-\u2013\u2014]\s*$/.test(challenge) && owner > 0) return owner;
+  return statistics["companion:proficiency"] ?? challengeProficiency(challenge);
 }
 
 /** The name of the rule that registered the companion, e.g. "Find Familiar". */
@@ -194,9 +208,7 @@ export function buildCompanionDto(
     creatureType,
     alignment,
     challenge: setterText(definition, "challenge"),
-    proficiency:
-      statistics["companion:proficiency"] ??
-      challengeProficiency(setterText(definition, "challenge")),
+    proficiency: companionProficiency(setterText(definition, "challenge"), statistics),
     armorClass: statAc > 0 ? statAc : leadingNumber(armorClassText),
     armorClassText,
     maxHp: statistics["companion:hp:max"] ?? 0,
