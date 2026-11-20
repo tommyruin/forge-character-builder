@@ -44,6 +44,16 @@ export default function SpellBrowser({
   const [filter, setFilter] = useState('');
   const [schoolFilter, setSchoolFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  // The filters belong to one spell choice. The tab keeps this browser mounted
+  // across choices (so it never flashes "Loading"), so a new choice starts
+  // unfiltered here rather than inheriting a filter whose control may be hidden.
+  const [filtersRule, setFiltersRule] = useState(rule.identifier);
+  if (filtersRule !== rule.identifier) {
+    setFiltersRule(rule.identifier);
+    setFilter('');
+    setSchoolFilter('');
+    setSourceFilter('');
+  }
   const [popup, setPopup] = useState(null); // { spell } for a blocked-learn explanation
   const [libraryRefreshController] = useState(() =>
     createLibraryPickerRefreshController(libraryRevision),
@@ -230,6 +240,17 @@ export default function SpellBrowser({
     setPopup({ spell });
   };
 
+  // A filter that is on keeps its control, even where the control would
+  // otherwise hide (a level of 8 spells or fewer, a single school or source),
+  // so a player can always see and clear what is narrowing the list.
+  const showTextFilter = activeLevelSpells.length > 8 || filter !== '';
+  const schoolOptions =
+    schoolFilter !== '' && !schools.includes(schoolFilter) ? [...schools, schoolFilter] : schools;
+  const sourceOptions =
+    sourceFilter !== '' && !sources.includes(sourceFilter) ? [...sources, sourceFilter] : sources;
+  const showSchoolFilter = schoolOptions.length > 1 || schoolFilter !== '';
+  const showSourceFilter = sourceOptions.length > 1 || sourceFilter !== '';
+
   const visible = activeLevelSpells.filter(
     (spell) =>
       spell.name.toLowerCase().includes(filter.toLowerCase()) &&
@@ -376,9 +397,9 @@ export default function SpellBrowser({
         )}
       </div>
 
-      {(activeLevelSpells.length > 8 || schools.length > 1 || sources.length > 1) && (
+      {(showTextFilter || showSchoolFilter || showSourceFilter) && (
         <div className="fcb-toolbar mb-3 flex-wrap">
-          {activeLevelSpells.length > 8 && (
+          {showTextFilter && (
             <input
               className="fcb-input"
               placeholder="Filter spells…"
@@ -386,9 +407,9 @@ export default function SpellBrowser({
               onChange={(e) => setFilter(e.target.value)}
             />
           )}
-          {(schools.length > 1 || sources.length > 1) && (
+          {(showSchoolFilter || showSourceFilter) && (
             <div className="fcb-spell-filter-row">
-              {schools.length > 1 && (
+              {showSchoolFilter && (
                 <select
                   className="fcb-select"
                   aria-label="Filter by school"
@@ -396,14 +417,14 @@ export default function SpellBrowser({
                   onChange={(e) => setSchoolFilter(e.target.value)}
                 >
                   <option value="">All schools</option>
-                  {schools.map((school) => (
+                  {schoolOptions.map((school) => (
                     <option key={school} value={school}>
                       {school}
                     </option>
                   ))}
                 </select>
               )}
-              {sources.length > 1 && (
+              {showSourceFilter && (
                 <select
                   className="fcb-select"
                   aria-label="Filter by source"
@@ -411,7 +432,7 @@ export default function SpellBrowser({
                   onChange={(e) => setSourceFilter(e.target.value)}
                 >
                   <option value="">All sources</option>
-                  {sources.map((source) => (
+                  {sourceOptions.map((source) => (
                     <option key={source} value={source}>
                       {sourceLabel(source, 'Built in')}
                     </option>
