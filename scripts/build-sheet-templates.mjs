@@ -50,7 +50,7 @@ if (!existsSync(CONTRACT_MODULE)) {
 }
 const {
   SHEET_TEMPLATE_CONTRACT: C, SHEET_TEMPLATE_SETS, SHEET_PALETTE, DEFAULT_SHEET_COLOURS, SHEET_FIXED_COLOURS,
-  SHEET_LAYOUT_DEFAULTS, sheetLayoutVariants,
+  SHEET_LAYOUT_DEFAULTS, SHEET_FONT_FACES, sheetLayoutVariants,
 } = await import(pathToFileURL(CONTRACT_MODULE).href);
 const OUTPUT_ROOT = join(ROOT, "apps", "client", "public", C.directory);
 const FONT_DIR = join(OUTPUT_ROOT, C.fontsDirectory);
@@ -64,6 +64,17 @@ const MEASURE = await (async () => {
     caption: await doc.embedFont(readFileSync(join(FONT_DIR, "Spectral-SemiBold.ttf"))),
     captionLight: await doc.embedFont(StandardFonts.Helvetica),
   };
+})();
+
+// Every face a reader may pick for the body, which the writer draws the notes
+// in, embedded for measuring a note that must clear whatever face is chosen.
+const BODY_FACES = await (async () => {
+  const doc = await PDFDocument.create();
+  doc.registerFontkit(fontkit);
+  const bodies = Object.values(SHEET_FONT_FACES).filter((face) => face.roles.includes("body"));
+  return Promise.all(bodies.map((face) => doc.embedFont(face.standard
+    ? StandardFonts[face.standard.regular]
+    : readFileSync(join(FONT_DIR, face.files.regular)))));
 })();
 
 // Palette: the contract's default text, accent and line colours (dark ink,
@@ -251,6 +262,10 @@ class Sheet {
 
   textWidth(text, font, size) {
     return MEASURE[font].widthOfTextAtSize(text, size);
+  }
+  /** The width of a note at `size` in the widest body face. */
+  noteWidth(text, size) {
+    return Math.max(...BODY_FACES.map((face) => face.widthOfTextAtSize(text, size)));
   }
   /** Records a label for the writer; `color` is a scheme part name. */
   draw(text, x, y, { font = "caption", size = 5, color = "text", align = "left", width = 0 } = {}) {
@@ -1168,8 +1183,10 @@ function hybridAbilityColumns(s, layout) {
     s.abilityShield("details", key, caption, 23 + (shieldW + 10) / 2, columnTop - 2 - index * shieldPitch, { width: shieldW, height: shieldH, captionSize, large: "modifier" });
   });
 
-  // Column B: saving throws, with their notes, over the skills list.
-  // "Animal Handling (Wis)", the longest skill line, needs 59pt of the 112.
+  // Column B: saving throws, with their notes, over the skills list. Each
+  // skill's ability follows its name 2pt clear in the widest body face (a
+  // Spectral "Intimidation" is 3.3pt wider than a Helvetica one); "Animal
+  // Handling (Wis)", the longest line, then ends 7pt inside the box.
   const bx = 92;
   const bw = 112;
   const savesBottom = 518;
@@ -1197,7 +1214,7 @@ function hybridAbilityColumns(s, layout) {
     s.text(`details_${key}_total`, bx + 20, y - 1.5, 18, 9, { align: "center", size: 7, box: "none" });
     s.rule(bx + 20, y + 3 - skillPitch / 2, bx + 38, y + 3 - skillPitch / 2, RULE, 0.5);
     s.note(caption, bx + 41, y + 0.5, { size: 6.2 });
-    s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, bx + 41 + s.textWidth(caption, "captionLight", 6.2) + 2, y + 0.5, { size: 5, color: "lines" });
+    s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, bx + 41 + s.noteWidth(caption, 6.2) + 2, y + 0.5, { size: 5, color: "lines" });
   });
 }
 

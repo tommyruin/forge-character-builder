@@ -614,6 +614,21 @@ async function expectReadableCaption(set: SheetTemplateSet, file: string, label:
     expect(others.filter((other) => overlaps(ink, inkOf(other, font))).map((other) => other.text), at).toEqual([]);
   }
 }
+/** Every face a reader may pick for the body, which the writer draws the notes in, embedded for measuring. */
+let bodyFacesPromise: Promise<Array<{ name: string; font: PDFFont }>> | undefined;
+function bodyFaces() {
+  bodyFacesPromise ??= (async () => {
+    const document = await PDFDocument.create();
+    document.registerFontkit(fontkit);
+    const read = (file: string) => readFileSync(join(SHEETS, SHEET_TEMPLATE_CONTRACT.fontsDirectory, file));
+    const names = SHEET_FONT_FACE_NAMES.filter((name) => (SHEET_FONT_FACES[name].roles as readonly string[]).includes("body"));
+    return Promise.all(names.map(async (name) => {
+      const source = sheetFaces({ ...DEFAULT_SHEET_FONTS, body: name }, read).body.regular;
+      return { name, font: await document.embedFont("standard" in source ? source.standard : source.bytes) };
+    }));
+  })();
+  return bodyFacesPromise;
+}
 const loadLabels = (set: SheetTemplateSet) =>
   JSON.parse(readFileSync(join(SHEETS, set, SHEET_TEMPLATE_CONTRACT.labelsFile), "utf8")) as SheetTemplateLabels;
 
@@ -709,6 +724,29 @@ describe("the Hybrid body", () => {
     });
     expect(right(columns[4]!)).toBeLessThanOrEqual(right(notes));
     expect(columns[0]!.x).toBeGreaterThanOrEqual(notes.x);
+  });
+
+  // Each skill line is its name in the body face, then the ability, e.g.
+  // "Sleight of Hand (Dex)". In every body face the ability clears the name
+  // and the line ends a few points inside the Skills box's inner hairline,
+  // 2.2pt inside its frame.
+  const SKILL_NAMES = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation",
+    "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"];
+  it.each(HYBRID_PAGES)("ends every skill line inside the Skills box on %s/%s", async (set, file) => {
+    const labels = loadLabels(set)[file]!.labels;
+    const title = labels.find((label) => label.text === "SKILLS")!;
+    const innerRight = title.x + title.width! - 2.2;
+    const names = labels.filter((label) => label.font === "notes" && SKILL_NAMES.includes(label.text));
+    expect(names.map((label) => label.text).sort()).toEqual([...SKILL_NAMES].sort());
+    for (const { name: face, font } of await bodyFaces()) {
+      for (const name of names) {
+        const note = labels.find((label) => label.font === "notes" && label.y === name.y && /^\([A-Z][a-z]{2}\)$/.test(label.text))!;
+        const at = `${set}/${file} "${name.text} ${note.text}" in ${face}`;
+        expect(name.x, at).toBeGreaterThan(title.x);
+        expect(note.x - (name.x + font.widthOfTextAtSize(name.text, name.size)), at).toBeGreaterThanOrEqual(1.5);
+        expect(innerRight - (note.x + font.widthOfTextAtSize(note.text, note.size)), at).toBeGreaterThanOrEqual(4);
+      }
+    }
   });
 
   it.each(HYBRID_PAGES)("fills the saving throws box with its notes under the last save on %s/%s", async (set, file) => {
