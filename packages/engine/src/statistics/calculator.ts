@@ -10,7 +10,8 @@
  *    bucket for the key's base value: the first base replaces the engine's
  *    seed, the highest base wins, and every other contribution adds on top
  *    (the active companion's own proficiency bonus is not a seed: its base
- *    rules add to it, as the content is written);
+ *    rules add to it, as the content is written; a dash-rated block whose
+ *    content never removes the dash's +2 seeds its owner's bonus instead);
  *  - stat rules with level="N" apply only when the owning class level >= N;
  *  - rule values are either numeric literals or references to other keys
  *    already in the map (e.g. "proficiency", "level:wizard"); references
@@ -815,6 +816,23 @@ export function companionBaseProficiency(companion: ParsedElement): number {
   return setterNumber(companion, "proficiency") ?? challengeProficiency(companion.setters.find((setter) => setter.name === "challenge")?.value ?? "");
 }
 
+/**
+ * The bonus bucket the content uses to take back the +2 a dash rating gives
+ * after adding the owner's bonus (a Primal Companion's, a Steel Defender's).
+ */
+const BASE_COMPANION_PB_REMOVAL = "base companion PB removal";
+
+/**
+ * A stat block with no proficiency bonus of its own: a dash for its challenge
+ * rating and no `proficiency` setter. Such a creature uses its owner's bonus
+ * ("uses your proficiency bonus (PB)" in its text).
+ */
+function borrowsOwnerProficiency(companion: ParsedElement): boolean {
+  if (setterNumber(companion, "proficiency") !== undefined) return false;
+  const challenge = companion.setters.find((setter) => setter.name === "challenge")?.value ?? "";
+  return /^\s*[-\u2013\u2014]\s*$/.test(challenge);
+}
+
 /** The active companion's stat block: the registered Companion element, when the library has it. */
 export function activeCompanion(state: CharacterState, library: ElementLibrary): ParsedElement | undefined {
   const entry = state.sum.elements.find((candidate) => candidate.type === "Companion");
@@ -1049,18 +1067,32 @@ export function computeStatistics(
   // The engine's own values before any content rule: a key's first base
   // rule replaces its seed (the seeds stand in for the internal level
   // elements' base rules).
-  const seeds: Readonly<StatisticsValues> = { ...values };
+  const seeds: StatisticsValues = { ...values };
 
   const appliedKeys = new Set<string>();
+  const { rules: allRules, validRegistered } = ruleSources(state, library, appliedKeys);
   // The active companion's own proficiency bonus is a base the content's
   // rules add to, not a seed a base rule replaces: a Primal Companion's
   // "proficiency" base and its -2 removal land on it. It joins the values
   // after the seeds are taken, so it stays under every rule.
+  //
+  // A stat block with no bonus of its own whose content does not take the
+  // dash's +2 back off (a Homunculus Servant adds its owner's bonus as a
+  // base and stops there; some blocks add nothing) uses its owner's bonus
+  // instead: that is its seed, so a base rule replaces it as it would any
+  // other key's.
   if (companion !== undefined) {
-    values["companion:proficiency"] = companionBaseProficiency(companion);
+    const removesDashBonus = allRules.some(
+      (source) => source.rule.name === "companion:proficiency" && source.rule.bonus === BASE_COMPANION_PB_REMOVAL,
+    );
+    if (borrowsOwnerProficiency(companion) && !removesDashBonus) {
+      seeds["companion:proficiency"] = pb;
+      values["companion:proficiency"] = pb;
+    } else {
+      values["companion:proficiency"] = companionBaseProficiency(companion);
+    }
     appliedKeys.add("companion:proficiency");
   }
-  const { rules: allRules, validRegistered } = ruleSources(state, library, appliedKeys);
   const equipped = equippedInfo(state, library);
 
   // Ability-bonus rules (name = an ability) apply first so scores and

@@ -132,6 +132,9 @@ const CONTENT_XML = `<elements>
   ${seedBeast("TINY", "1/8", "17", "", `
       <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />`)}
   ${seedBeast("DASH", "-", "12", "", "")}
+  ${seedBeast("SERVANT", "-", "15", "", `
+      <stat name="companion:proficiency" value="proficiency" bonus="base" />
+      <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />`)}
 </elements>`;
 
 let library: ElementLibrary;
@@ -226,6 +229,14 @@ describe("companion statistics seeded from the active stat block", () => {
     expect(level9.statistics["companion:perception:proficiency"]).toBe(4);
   });
 
+  it("gives a dash rating its owner's bonus when the content adds that bonus but never removes the +2", () => {
+    const level8 = seededCompanion("SERVANT", 8);
+    expect(level8.statistics["companion:proficiency"]).toBe(3);
+    expect(level8.statistics["companion:perception:proficiency"]).toBe(3);
+    expect(level8.companion.proficiency).toBe(3);
+    expect(seededCompanion("SERVANT", 17).statistics["companion:proficiency"]).toBe(6);
+  });
+
   it("starts from the block's own proficiency setter when it has one", () => {
     // A bonus of 0 that the content raises by the owner's: the owner's bonus.
     expect(seededCompanion("OWNER", 5).statistics["companion:proficiency"]).toBe(3);
@@ -237,8 +248,8 @@ describe("companion statistics seeded from the active stat block", () => {
     const tiny = seededCompanion("TINY", 9);
     expect(tiny.statistics["companion:proficiency"]).toBe(2);
     expect(tiny.statistics["companion:perception:proficiency"]).toBe(2);
-    // A dash rating with no rule keeps its +2.
-    expect(seededCompanion("DASH", 9).companion.proficiency).toBe(2);
+    // A dash rating with no rule has no bonus of its own: it uses its owner's.
+    expect(seededCompanion("DASH", 9).companion.proficiency).toBe(4);
   });
 
   it("seeds the companion's ability scores, and so its initiative, from the block", () => {

@@ -4,7 +4,8 @@
  * and hit dice worked out from the stat block's text, never its prose cut off
  * at the box's edge. The proficiency bonus prints signed: the stat block's
  * own (+2 for a dash rating) with the content's rules on top, so a block
- * whose rules add its owner's bonus less 2 prints its owner's.
+ * whose rules add its owner's bonus less 2 prints its owner's; a dash-rated
+ * block whose rules never take that 2 away prints its owner's too.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -131,9 +132,9 @@ describe("companion page values", () => {
     expect(level8["companion_proficiency"]).toBe("+3");
     expect(level8["companion_proficiency_bonus"]).toBe("+3");
     expect(companionValues(RACE_BOUND, "BOUND", 9)["companion_proficiency"]).toBe("+4");
-    // Without any rule a dash, or a hyphen for one, keeps its +2.
-    expect(companionValues(RACE_PLAIN, "BOUND", 9)["companion_proficiency"]).toBe("+2");
-    expect(companionValues(RACE_PLAIN, "HYPHEN", 5)["companion_proficiency"]).toBe("+2");
+    // Without any rule a dash, or a hyphen for one, has no bonus of its own: it uses its owner's.
+    expect(companionValues(RACE_PLAIN, "BOUND", 9)["companion_proficiency"]).toBe("+4");
+    expect(companionValues(RACE_PLAIN, "HYPHEN", 5)["companion_proficiency"]).toBe("+3");
   });
 
   it("keeps a rated creature's own proficiency bonus, signed, whatever its owner's", () => {
