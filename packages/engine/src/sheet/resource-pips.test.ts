@@ -247,10 +247,10 @@ describe("the PDF's pips", () => {
     const library = await sharedLibrary();
     const { service, id } = buildFighter3(library, "PipInline") as { service: CharacterService; id: string };
     service.saveManualTracker(id, { tracker: { id: "pip-test", label: "Pip Test", max: { kind: "number", value: 2 }, unit: "uses", recharge: "longRest" } });
-    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", resourceTrackersList: true });
     const details = model.pages.find((entry) => entry.templateKind === "details")!;
     const lines = details.sections.flatMap((section) => section.rows.flatMap((row) => row.kind === "lines" ? row.lines : []));
-    // A tracker kept by hand names no feature, so it stays in the paragraph.
+    // A tracker kept by hand names no feature, so it goes in the paragraph the list option asks for.
     expect(lines.find((line) => line.startsWith("Resources."))).toBe(`Resources. Pip Test ${OPEN_MARK} ${OPEN_MARK} (LR)`);
     const inline = lines.filter((line) => !line.startsWith("Resources.") && line.includes("[Uses:"));
     expect(inline.length).toBeGreaterThan(0);
@@ -259,12 +259,12 @@ describe("the PDF's pips", () => {
     expect(drawn.text).not.toContain("•");
   }, 120_000);
 
-  it("draws a real character's tracker kept by hand", async () => {
+  it("draws a real character's tracker kept by hand in the listed paragraph", async () => {
     const library = await sharedLibrary();
     const { service, id } = buildFighter3(library, "PipFighter") as { service: CharacterService; id: string };
     service.saveManualTracker(id, { tracker: { id: "pip-test", label: "Pip Test", max: { kind: "number", value: 4 }, unit: "uses", recharge: "longRest" } });
     service.setTrackerUsed(id, { trackerId: "pip-test", used: 2 });
-    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full" });
+    const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", resourceTrackersList: true });
     const details = model.pages.find((entry) => entry.templateKind === "details")!;
     expect(JSON.stringify(details)).toContain(`Pip Test ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK} (LR)`);
     const drawn = await draw(details, "2024");

@@ -564,6 +564,7 @@ export function createEngineMethodHandlers(
         ...(request.inventoryNotes === true ? { inventoryNotes: true } : {}),
         ...(request.resourceTrackers === false ? { resourceTrackers: false } : {}),
         ...(request.resourceTrackersEmpty === true ? { resourceTrackersEmpty: true } : {}),
+        ...(request.resourceTrackersList === true ? { resourceTrackersList: true } : {}),
         ...(request.resourceTrackersInline === false ? { resourceTrackersInline: false } : {}),
         ...(typeof request.bodyFace === "string" ? { bodyFace: request.bodyFace } : {}),
       }));

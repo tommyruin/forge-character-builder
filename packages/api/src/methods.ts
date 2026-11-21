@@ -590,7 +590,10 @@ export interface EngineMethodMap {
         include?: SheetPageInclusionsDto;
         /** Item notes: the inventory notes column also describes magic items, tools and useful gear. */
         inventoryNotes?: boolean;
-        /** Resource trackers: `false` leaves the "Resources" paragraph off the features text. Absent prints it. */
+        /**
+         * Resource trackers: a tracker closes the text of the first printed feature that spends it
+         * ("[Uses: ○ ○]"). Absent prints them; `false` leaves every tracker off.
+         */
         resourceTrackers?: boolean;
         /**
          * Resource trackers printed empty, to fill in at the table (a circle per use, "____ / N").
@@ -598,9 +601,13 @@ export interface EngineMethodMap {
          */
         resourceTrackersEmpty?: boolean;
         /**
-         * Uses next to features: a tracker one printed feature spends closes that feature's text
-         * ("[Uses: ○ ○]") instead of the "Resources" paragraph. Absent or `true` prints them inline;
-         * `false` lists every tracker in the paragraph.
+         * Also close the features text with a "Resources" paragraph of the trackers no printed
+         * feature closes (an item's, those kept by hand). Absent or `false` leaves it off.
+         */
+        resourceTrackersList?: boolean;
+        /**
+         * Deprecated; still accepted. `false` prints the older layout: no uses next to features,
+         * every tracker in the "Resources" paragraph. Absent or `true` changes nothing.
          */
         resourceTrackersInline?: boolean;
         /** The body face the sheet will be drawn in, so card prose is measured in its widths. */

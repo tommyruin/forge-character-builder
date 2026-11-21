@@ -15,6 +15,8 @@ const SOURCE = "Glimmerfen Notes";
 const FEAT = "ID_GLIMMERFEN_FEAT_MARSHLIGHT_BOON";
 const TRAIT = "ID_GLIMMERFEN_TRAIT_REED_WHISPER";
 const GIFT = "ID_GLIMMERFEN_ITEM_HERON_BLESSING";
+const VOW = "ID_GLIMMERFEN_FEAT_MENDING_VOW";
+const PALM = "ID_GLIMMERFEN_TRAIT_MENDING_PALM";
 
 // An uploaded pack written by hand: a feat with a usage line, which also grants a trait with its
 // own usage line, and an item filed under an Additional features category with one more.
@@ -37,6 +39,22 @@ const PACK = `<?xml version="1.0" encoding="utf-8"?>
     <description><p>Ask the reeds what passed by.</p></description>
     <sheet usage="1/Short Rest">
       <description>Ask the reeds what passed by.</description>
+    </sheet>
+  </element>
+  <element name="Mending Vow" type="Feat" source="${SOURCE}" id="${VOW}">
+    <description><p>A pool of healing, counted by a statistic, like a Paladin's.</p></description>
+    <sheet usage="{{mending vow:hp pool}}/Long Rest">
+      <description>Draw on the pool to heal.</description>
+    </sheet>
+    <rules>
+      ${Array.from({ length: 7 }, () => '<stat name="mending vow:hp pool" value="5" />').join("\n      ")}
+      <grant type="Racial Trait" id="${PALM}" />
+    </rules>
+  </element>
+  <element name="Mending Palm" type="Racial Trait" source="${SOURCE}" id="${PALM}">
+    <description><p>A second pool, its unit named.</p></description>
+    <sheet usage="{{mending vow:hp pool}} HP/Long Rest">
+      <description>Lay a palm on a wound.</description>
     </sheet>
   </element>
   <element name="Heron Blessing" type="Magic Item" source="${SOURCE}" id="${GIFT}">
@@ -124,21 +142,45 @@ describe("usage lines on uploaded elements", () => {
     expect(trackersFor(service, id)).toEqual([expect.objectContaining({ id: `usage:${GIFT}`, max: 3 })]);
   });
 
-  it("prints the gift's uses once among the sheet's resources, and not as a feature", () => {
+  it("closes an uploaded feat's and species trait's own text with their uses", () => {
     const { service, id } = fighter();
-    expect(sheetLines(service, id).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
+    service.addGrantedElement(id, { elementId: FEAT });
+    const lines = sheetLines(service, id);
+    expect(lines.find((line) => line.startsWith("Marshlight Boon"))).toMatch(/ \[Uses: ○ ○\]$/);
+    expect(lines.find((line) => line.startsWith("Reed Whisper"))).toMatch(/ \[Uses: ○\]$/);
+    expect(lines.some((line) => line.startsWith("Resources."))).toBe(false);
+  });
+
+  // The sheet once printed no uses for a Paladin's Lay on Hands pool ("35/Long Rest").
+  it("closes a healing pool counted by a statistic with its count, with or without a unit", () => {
+    const { service, id } = fighter();
+    service.addGrantedElement(id, { elementId: VOW });
+    expect(tracker(service.getResources(id), "Mending Vow")).toMatchObject({ max: 35, unit: "uses", recharge: "longRest" });
+    expect(tracker(service.getResources(id), "Mending Palm")).toMatchObject({ max: 35, unit: "points", recharge: "longRest" });
+    const lines = sheetLines(service, id);
+    expect(lines.find((line) => line.startsWith("Mending Vow"))).toMatch(/ \[Uses: 35 \/ 35\]$/);
+    expect(lines.find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: 35 \/ 35\]$/);
+    service.setTrackerUsed(id, { trackerId: `usage:${PALM}`, used: 12 });
+    expect(sheetLines(service, id).find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: 23 \/ 35\]$/);
+  });
+
+  it("prints the gift's uses once in the Resources paragraph when the list is asked for, and not as a feature", () => {
+    const { service, id } = fighter();
+    expect(sheetLines(service, id, { resourceTrackersList: true }).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
     service.setCharacterControl(id, { key: `item:${GIFT}`, enabled: true });
-    const lines = sheetLines(service, id).filter((line) => line.includes("Heron Blessing"));
+    // No feature closes with a gift's uses, so without the list they are not printed.
+    expect(sheetLines(service, id).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
+    const lines = sheetLines(service, id, { resourceTrackersList: true }).filter((line) => line.includes("Heron Blessing"));
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatch(/^Resources\. .*Heron Blessing ○ ○ ○ \(LR\)/);
     expect(lines[0]!.match(/Heron Blessing/g)).toHaveLength(1);
     // A use spent on the Resources page prints filled; printed empty, it prints open again.
     service.setTrackerUsed(id, { trackerId: `usage:${GIFT}`, used: 1 });
-    expect(sheetLines(service, id).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ● \(LR\)/);
-    expect(sheetLines(service, id, { resourceTrackersEmpty: true }).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ○ \(LR\)/);
+    expect(sheetLines(service, id, { resourceTrackersList: true }).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ● \(LR\)/);
+    expect(sheetLines(service, id, { resourceTrackersList: true, resourceTrackersEmpty: true }).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ○ \(LR\)/);
     // Not tracked, it is not printed at all.
     service.setTrackerTracked(id, { trackerId: `usage:${GIFT}`, tracked: false });
-    expect(sheetLines(service, id).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
+    expect(sheetLines(service, id, { resourceTrackersList: true }).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
   });
 });
 
@@ -146,6 +188,6 @@ const trackersFor = (service: CharacterService, id: string): TrackerDto[] =>
   service.getResources(id).trackers.filter((entry) => entry.label === "Heron Blessing");
 
 /** Every printed line of the character's full sheet. */
-const sheetLines = (service: CharacterService, id: string, options: { resourceTrackersEmpty?: boolean } = {}): string[] =>
+const sheetLines = (service: CharacterService, id: string, options: { resourceTrackersEmpty?: boolean; resourceTrackersList?: boolean } = {}): string[] =>
   buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", ...options }).pages
     .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))));

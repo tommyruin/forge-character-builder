@@ -523,6 +523,23 @@ describe("engine worker handlers", () => {
     expect(await notesOf({ lite: false, inventoryNotes: true })).toContain("Thieves’ Tools.");
   });
 
+  it("passes the Resources list switch to the sheet model", async () => {
+    const service = new CharacterService(undefined, library);
+    service.createCharacter("resource-list");
+    service.saveManualTracker("resource-list", { tracker: { id: "list-test", label: "List Test", max: { kind: "number", value: 2 }, unit: "uses", recharge: "longRest" } });
+    const dispatcher = createEngineDispatcher(createEngineMethodHandlers(service, library));
+    const featuresOf = async (request: Record<string, unknown>): Promise<string> => {
+      const response = await dispatcher.dispatch({ id: 1, method: "generateSheet", args: ["resource-list", request] });
+      expect(response).toMatchObject({ ok: true });
+      return (response as unknown as { result: { formValues: Record<string, string> } }).result.formValues["Features and Traits"] ?? "";
+    };
+    expect(await featuresOf({ lite: false })).not.toContain("Resources.");
+    expect(await featuresOf({ lite: false, resourceTrackersList: false })).not.toContain("Resources.");
+    expect(await featuresOf({ lite: false, resourceTrackersList: true })).toContain("Resources. List Test ○ ○ (LR)");
+    // The deprecated switch still lists every tracker.
+    expect(await featuresOf({ lite: false, resourceTrackersInline: false })).toContain("Resources. List Test ○ ○ (LR)");
+  });
+
   it("leaves out the sheet pages the request excludes, renumbering the rest", async () => {
     const service = new CharacterService(undefined, library);
     importBuilt(service, "page-picks", buildFullSheetCharacter(library, "page-picks"));

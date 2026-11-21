@@ -168,14 +168,16 @@ export interface SheetPageInclusions {
 
 /**
  * How the trackers print: left off, as the Resources page left them, or empty
- * to fill in; and whether a feature's own trackers close that feature's text
- * instead of the "Resources" paragraph.
+ * to fill in; whether a feature's trackers close that feature's text; and
+ * whether the "Resources" paragraph lists the trackers no printed feature
+ * closes.
  */
 interface ResourcePrint {
   mode: "off" | "state" | "empty";
   inline: boolean;
+  list: boolean;
 }
-const DEFAULT_RESOURCE_PRINT: ResourcePrint = { mode: "state", inline: true };
+const DEFAULT_RESOURCE_PRINT: ResourcePrint = { mode: "state", inline: true, list: false };
 
 export interface BuildSheetOptions {
   mode: SheetMode;
@@ -194,22 +196,27 @@ export interface BuildSheetOptions {
    */
   inventoryNotes?: boolean;
   /**
-   * Whether the features text closes with the "Resources" paragraph of use
-   * trackers. Absent or `true` prints it; `false` leaves it out.
+   * Whether the sheet prints use trackers: a feature's uses close its text
+   * ("[Uses: ○ ○]"). Absent or `true` prints them; `false` leaves every
+   * tracker off.
    */
   resourceTrackers?: boolean;
   /**
-   * Whether that paragraph prints empty, to fill in at the table: an open
-   * circle per use and a blank for a large count. Absent or `false` prints
-   * each tracker as the Resources page left it (what is spent, what is left).
+   * Whether the trackers print empty, to fill in at the table: an open circle
+   * per use and a blank for a large count. Absent or `false` prints each
+   * tracker as the Resources page left it (what is spent, what is left).
    */
   resourceTrackersEmpty?: boolean;
   /**
-   * Uses next to features: a tracker spent by one printed feature closes that
-   * feature's text ("[Uses: ○ ○]") and is left out of the "Resources"
-   * paragraph, which keeps the shared pools and the trackers no printed
-   * feature spends. Absent or `true` prints them inline; `false` lists every
-   * tracker in the paragraph.
+   * Also close the features text with a "Resources" paragraph of the trackers
+   * no printed feature closes (those an item spends, those kept by hand).
+   * Absent or `false` leaves the paragraph off.
+   */
+  resourceTrackersList?: boolean;
+  /**
+   * Deprecated, kept for callers that still send it. `false` prints the sheet
+   * as it was before uses sat next to features: no inline uses, every tracker
+   * in the "Resources" paragraph. Absent or `true` changes nothing.
    */
   resourceTrackersInline?: boolean;
   /**
@@ -387,6 +394,8 @@ export function buildCharacterSheetModel(
   const resources: ResourcePrint = {
     mode: options.resourceTrackers === false ? "off" : options.resourceTrackersEmpty === true ? "empty" : "state",
     inline: options.resourceTrackersInline !== false,
+    // The old "every tracker in the paragraph" layout keeps its paragraph.
+    list: options.resourceTrackersList === true || options.resourceTrackersInline === false,
   };
   pages.push({ ...buildPage1(state, library, values, inline, resources), attacks, attackNotes: state.attacksDescription });
   if (wants("background")) pages.push(buildPage2(state, library));
@@ -1591,9 +1600,10 @@ function collectFeatures(
       usage: substitute(usageLine, values, inline),
     });
   }
-  // The character's resources close the features text: every template has that
-  // box, and what it cannot hold continues on a continuation page. A tracker
-  // only one printed feature spends closes that feature's text instead.
+  // A tracker closes the text of the first printed feature that spends it.
+  // Asked for, a "Resources" paragraph closes the features text with the rest
+  // (trackers an item spends, those kept by hand): every template has that
+  // box, and what it cannot hold continues on a continuation page.
   const trackers = resources.mode === "off" ? [] : buildTrackers(state, library, values, usages);
   const empty = resources.mode === "empty";
   const inlineUses = resources.inline ? featureTrackers(trackers, out) : new Map<string, TrackerDto[]>();
@@ -1614,39 +1624,55 @@ function collectFeatures(
   // Every row of the features box lands in exactly one group, so a split
   // layout prints everything the combined box does.
   const inBox = (item: CollectedFeature): boolean => item.class === "features";
-  const group = (item: CollectedFeature): "class-features" | "subclass-features" | "feats" =>
-    ["Archetype", "Archetype Feature"].includes(item.type) ? "subclass-features"
-      : ["Feat", "Feat Feature"].includes(item.type) ? "feats"
-        : "class-features";
-  const resourceText = resources.mode === "off" ? null : resourceSheetText(listed, { empty });
+  const resourceText = resources.mode === "off" || !resources.list ? null : resourceSheetText(listed, { empty });
   const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
     features: [...rows((item) => item.class === "features"), ...resourceRows],
     racial: rows((item) => item.class === "racial"),
     orderedFeatures: [...rows(inBox), ...resourceRows],
     groups: {
-      "class-features": [...rows((item) => inBox(item) && group(item) === "class-features"), ...resourceRows],
-      "subclass-features": rows((item) => inBox(item) && group(item) === "subclass-features"),
-      feats: rows((item) => inBox(item) && group(item) === "feats"),
+      "class-features": [...rows((item) => inBox(item) && featureGroup(item) === "class-features"), ...resourceRows],
+      "subclass-features": rows((item) => inBox(item) && featureGroup(item) === "subclass-features"),
+      feats: rows((item) => inBox(item) && featureGroup(item) === "feats"),
     },
     usages,
   };
 }
 
+/** Which of the split features boxes a feature-box row prints in. */
+function featureGroup(item: CollectedFeature): "class-features" | "subclass-features" | "feats" {
+  return ["Archetype", "Archetype Feature"].includes(item.type) ? "subclass-features"
+    : ["Feat", "Feat Feature"].includes(item.type) ? "feats"
+      : "class-features";
+}
+
 /**
- * The trackers each printed feature spends alone, by element id: a tracker
- * whose every source names the same feature, and that feature prints. A shared
- * pool spent by several features, a tracker kept by hand and one an item or a
- * hidden element spends stay in the "Resources" paragraph.
+ * The trackers whose uses close each printed feature's text, by element id.
+ * A tracker goes to the first printed feature that spends it, in sheet order:
+ * the species traits, then the class features, the subclass features and the
+ * feats. So a pool several features share closes the first of them. A tracker
+ * kept by hand, and one only an item or an unprinted element spends, closes
+ * none.
  */
 function featureTrackers(trackers: readonly TrackerDto[], printed: readonly CollectedFeature[]): Map<string, TrackerDto[]> {
-  const printedIds = new Set(printed.map((item) => item.elementId));
+  const boxes = ["class-features", "subclass-features", "feats"] as const;
+  const rank = new Map<string, number>();
+  printed.forEach((item, index) => {
+    const box = item.class === "racial" ? 0 : 1 + boxes.indexOf(featureGroup(item));
+    if (!rank.has(item.elementId)) rank.set(item.elementId, box * printed.length + index);
+  });
   const owned = new Map<string, TrackerDto[]>();
   for (const tracker of trackers) {
-    if (tracker.tracked === false || tracker.sources.length === 0) continue;
-    const owners = new Set(tracker.sources.map((source) => source.elementId));
-    const [owner] = owners;
-    if (owners.size !== 1 || owner === undefined || owner === "" || !printedIds.has(owner)) continue;
+    if (tracker.tracked === false) continue;
+    let owner: string | undefined;
+    let ownerRank = Infinity;
+    for (const { elementId } of tracker.sources) {
+      const at = elementId === undefined ? undefined : rank.get(elementId);
+      if (at === undefined || at >= ownerRank) continue;
+      owner = elementId;
+      ownerRank = at;
+    }
+    if (owner === undefined) continue;
     owned.set(owner, [...(owned.get(owner) ?? []), tracker]);
   }
   return owned;

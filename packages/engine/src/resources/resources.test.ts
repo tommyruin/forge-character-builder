@@ -683,7 +683,8 @@ describe("the sheet", () => {
     buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", ...options }).pages
       .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))));
   // These cases read the paragraph itself, so every tracker is listed there
-  // (uses next to features off; the inline cases follow).
+  // (the deprecated `resourceTrackersInline: false`, which callers may still
+  // send; the inline cases follow).
   const resourceLines = (service: CharacterService, id: string, resourceTrackers?: boolean, resourceTrackersEmpty?: boolean): string[] =>
     sheetLines(service, id, {
       resourceTrackersInline: false,
@@ -798,14 +799,53 @@ describe("the sheet", () => {
     expect(sheetLines(service, id, { resourceTrackersEmpty: true }).find((line) => line.startsWith("Moonwell Gift"))).toContain("[Embers: ____ / 12 charges]");
   });
 
-  it("keeps a pool two features share in the Resources paragraph", () => {
+  it("closes the first printed feature that spends a pool two features share", () => {
     const { service, id } = fighter();
     const pool = { max: { kind: "number", value: 4 }, unit: "points", recharge: "longRest", pool: "Moon points" } as const;
     service.saveCustomDraft(id, { draft: feature("First Light", { trackers: [tracker({ id: "a", label: "First Light", ...pool })] }) });
     service.saveCustomDraft(id, { draft: feature("Second Light", { trackers: [tracker({ id: "b", label: "Second Light", ...pool })] }) });
     const lines = sheetLines(service, id);
-    expect(lines.filter((line) => /^(First|Second) Light/.test(line) && line.includes("["))).toEqual([]);
-    expect(lines.filter((line) => line.startsWith("Resources."))).toEqual(["Resources. Moon points ○ ○ ○ ○ points (LR)"]);
+    const first = lines.findIndex((line) => line.startsWith("First Light"));
+    const second = lines.findIndex((line) => line.startsWith("Second Light"));
+    expect(first).toBeGreaterThanOrEqual(0);
+    expect(second).toBeGreaterThan(first);
+    expect(lines[first]).toMatch(/ \[Moon points: ○ ○ ○ ○ points\]$/);
+    expect(lines[second]).not.toContain("[");
+    expect(lines.filter((line) => line.startsWith("Resources."))).toEqual([]);
+    // Asked for, the paragraph still has nothing left to list.
+    expect(sheetLines(service, id, { resourceTrackersList: true }).filter((line) => line.startsWith("Resources."))).toEqual([]);
+  });
+
+  it("prints no Resources paragraph unless asked, and then only the trackers no feature closes", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Moonwell Gift", { trackers: [tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" })] }),
+    });
+    service.saveManualTracker(id, { tracker: { id: "tide", label: "Tide Charm", max: { kind: "number", value: 3 }, unit: "charges", recharge: "dawn" } });
+    const plain = sheetLines(service, id);
+    expect(plain.some((line) => line.startsWith("Resources."))).toBe(false);
+    // A tracker kept by hand closes no feature, so without the list it is not printed.
+    expect(plain.some((line) => line.includes("Tide Charm"))).toBe(false);
+    expect(plain.find((line) => line.startsWith("Moonwell Gift"))).toMatch(/\[Uses: ○ ○\]$/);
+    const listed = sheetLines(service, id, { resourceTrackersList: true });
+    expect(listed.filter((line) => line.startsWith("Resources."))).toEqual(["Resources. Tide Charm ○ ○ ○ charges (dawn)"]);
+    expect(listed.find((line) => line.startsWith("Moonwell Gift"))).toMatch(/\[Uses: ○ ○\]$/);
+    expect(sheetLines(service, id, { resourceTrackersList: true, resourceTrackersEmpty: true }).find((line) => line.startsWith("Resources.")))
+      .toBe("Resources. Tide Charm ○ ○ ○ charges (dawn)");
+    // Trackers off wins over the list.
+    expect(sheetLines(service, id, { resourceTrackers: false, resourceTrackersList: true }).some((line) => line.startsWith("Resources.") || line.includes("["))).toBe(false);
+  });
+
+  it("closes a large pool's feature with its count, as a Paladin's healing pool", () => {
+    const { service, id } = fighter();
+    service.saveCustomDraft(id, {
+      draft: feature("Mending Palm", { trackers: [tracker({ id: "a", label: "Mending Palm", unit: "points", max: { kind: "number", value: 35 } })] }),
+    });
+    service.setTrackerUsed(id, { trackerId: "a", used: 10 });
+    const lines = sheetLines(service, id);
+    expect(lines.find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: 25 \/ 35\]$/);
+    expect(sheetLines(service, id, { resourceTrackersEmpty: true }).find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: ____ \/ 35\]$/);
+    expect(lines.some((line) => line.startsWith("Resources."))).toBe(false);
   });
 
   it("leaves an untracked feature tracker off the feature too", () => {
