@@ -34,6 +34,7 @@ jobs:
       - run: npm test
       - run: npm run sheets:check
       - run: npm run client:lint
+      - run: npm run client:type-check
       - run: npm run client:test
       - run: npm run client:build
       - run: npx playwright install --with-deps chromium

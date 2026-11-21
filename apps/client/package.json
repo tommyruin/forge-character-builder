@@ -11,6 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc -b ../../packages/engine && tsc --noEmit -p .",
     "test": "vitest run --config vitest.config.ts --maxWorkers=1 --no-file-parallelism",
     "test:watch": "vitest --config vitest.config.ts"
   },

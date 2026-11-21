@@ -22,6 +22,7 @@
     "test:watch": "vitest",
     "test:coverage": "FCB_REQUIRE_CORPUS=1 vitest run --coverage",
     "client:lint": "npm run lint --workspace dm-forge-character-builder",
+    "client:type-check": "npm run type-check --workspace dm-forge-character-builder",
     "client:dev": "npm run dev --workspace dm-forge-character-builder",
     "client:build": "npm run build --workspace dm-forge-character-builder",
     "client:test": "npm run test --workspace dm-forge-character-builder",
