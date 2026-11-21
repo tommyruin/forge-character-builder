@@ -185,6 +185,9 @@ function devContentMiddleware({ corpusRoot, basePath, profile, systemRoot }) {
   return middleware;
 }
 
+/**
+ * @param {{ corpusRoot?: string, systemRoot?: string, basePath?: string, profile?: string }} [options]
+ */
 export function corpusContentManifestPlugin({
   corpusRoot = resolve(process.cwd(), "public", "content"),
   systemRoot,

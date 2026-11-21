@@ -8,7 +8,17 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
+    // The client is checked, never built or referenced by tsc, so it is not a
+    // composite project and lists no declaration outputs.
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", "config/**/*.mjs", "config/**/*.js", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", "config/**/*.mjs", "config/**/*.js", "vite.config.ts", "vitest.config.ts"],
+  // The engine and api are checked under their own settings. A client file
+  // that imports their source (the engine-backed tests do) reads the built
+  // declarations instead, as `@forge-cb/engine` and `@forge-cb/api` already
+  // do through the packages' exports, so `tsc -b` on them comes first.
+  "references": [{ "path": "../../packages/api" }, { "path": "../../packages/engine" }]
 }

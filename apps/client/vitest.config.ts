@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, type ViteUserConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 
@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 const defaultShell = (file: string) => fileURLToPath(new URL(`./src/shell/default/${file}`, import.meta.url));
 
 export default defineConfig({
-  plugins: [react()],
+  // Vitest 3 runs on its own Vite 7 while the client builds with Vite 8, so the
+  // React plugin's types name the other Vite copy; the plugin runs under both.
+  plugins: [react() as unknown as NonNullable<ViteUserConfig["plugins"]>[number]],
   esbuild: { jsx: "automatic", jsxImportSource: "react" },
   resolve: {
     dedupe: ["react", "react-dom"],
