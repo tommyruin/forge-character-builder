@@ -702,6 +702,41 @@ describe("the small captions on the optional pages", () => {
   }, 30_000);
 });
 
+describe("every skills column", () => {
+  // Each skill line is its name in the body face, then on the 2014 and Hybrid
+  // pages its ability, e.g. "Sleight of Hand (Dex)"; the 2024 page lists each
+  // skill under its ability's panel and prints the name alone. In every body
+  // face the ability clears the name and the line ends a few points inside its
+  // box's inner hairline, 2.2pt inside the frame: the Skills box, or the 2024
+  // ability panel, whose centred title spans it.
+  const SKILL_NAMES = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation",
+    "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"];
+  it.each(DETAILS_PAGES)("ends every skill line inside its box, its ability clear of its name, on %s/%s", async (set, file) => {
+    const labels = loadLabels(set)[file]!.labels;
+    const skillsTitle = labels.find((label) => label.text === "SKILLS");
+    const names = labels.filter((label) => label.font === "notes" && SKILL_NAMES.includes(label.text));
+    expect(names.map((label) => label.text).sort()).toEqual([...SKILL_NAMES].sort());
+    const lines = names.map((name) => {
+      const box = skillsTitle ?? labels
+        .filter((label) => label.font === "titles" && label.width !== undefined && label.x <= name.x && name.x < label.x + label.width && label.y > name.y)
+        .sort((a, b) => a.y - b.y)[0]!;
+      const note = labels.find((label) => label.font === "notes" && label.y === name.y && /^\([A-Z][a-z]{2}\)$/.test(label.text));
+      return { name, note, box };
+    });
+    expect(lines.filter((line) => line.note !== undefined)).toHaveLength(set === "2024" ? 0 : SKILL_NAMES.length);
+    for (const { name: face, font } of await bodyFaces()) {
+      for (const { name, note, box } of lines) {
+        const at = `${set}/${file} "${name.text}${note === undefined ? "" : ` ${note.text}`}" in ${face}`;
+        const nameEnd = name.x + font.widthOfTextAtSize(name.text, name.size);
+        const lineEnd = note === undefined ? nameEnd : note.x + font.widthOfTextAtSize(note.text, note.size);
+        expect(name.x, at).toBeGreaterThan(box.x + 2.2);
+        if (note !== undefined) expect(note.x - nameEnd, at).toBeGreaterThanOrEqual(1.5);
+        expect(box.x + box.width! - 2.2 - lineEnd, at).toBeGreaterThanOrEqual(4);
+      }
+    }
+  });
+});
+
 describe("the Hybrid body", () => {
   const HYBRID_PAGES = DETAILS_PAGES.filter(([set]) => set === "2024-hybrid");
 
@@ -724,29 +759,6 @@ describe("the Hybrid body", () => {
     });
     expect(right(columns[4]!)).toBeLessThanOrEqual(right(notes));
     expect(columns[0]!.x).toBeGreaterThanOrEqual(notes.x);
-  });
-
-  // Each skill line is its name in the body face, then the ability, e.g.
-  // "Sleight of Hand (Dex)". In every body face the ability clears the name
-  // and the line ends a few points inside the Skills box's inner hairline,
-  // 2.2pt inside its frame.
-  const SKILL_NAMES = ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation",
-    "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"];
-  it.each(HYBRID_PAGES)("ends every skill line inside the Skills box on %s/%s", async (set, file) => {
-    const labels = loadLabels(set)[file]!.labels;
-    const title = labels.find((label) => label.text === "SKILLS")!;
-    const innerRight = title.x + title.width! - 2.2;
-    const names = labels.filter((label) => label.font === "notes" && SKILL_NAMES.includes(label.text));
-    expect(names.map((label) => label.text).sort()).toEqual([...SKILL_NAMES].sort());
-    for (const { name: face, font } of await bodyFaces()) {
-      for (const name of names) {
-        const note = labels.find((label) => label.font === "notes" && label.y === name.y && /^\([A-Z][a-z]{2}\)$/.test(label.text))!;
-        const at = `${set}/${file} "${name.text} ${note.text}" in ${face}`;
-        expect(name.x, at).toBeGreaterThan(title.x);
-        expect(note.x - (name.x + font.widthOfTextAtSize(name.text, name.size)), at).toBeGreaterThanOrEqual(1.5);
-        expect(innerRight - (note.x + font.widthOfTextAtSize(note.text, note.size)), at).toBeGreaterThanOrEqual(4);
-      }
-    }
   });
 
   it.each(HYBRID_PAGES)("fills the saving throws box with its notes under the last save on %s/%s", async (set, file) => {

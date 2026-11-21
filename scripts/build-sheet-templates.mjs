@@ -285,6 +285,18 @@ class Sheet {
   note(text, x, y, options = {}) {
     this.draw(text, x, y, { font: "captionLight", size: 4.6, color: "text", ...options });
   }
+  /**
+   * A name and a quieter note after it on one line, such as a skill and its
+   * ability, "Sleight of Hand (Dex)". The writer draws both in the reader's
+   * body face, so the note follows the name `gap` clear of it in the widest
+   * body face. Returns where the line ends in that face.
+   */
+  noteAfter(name, note, x, y, { size, noteSize, gap = 2, noteColor = "lines" }) {
+    this.note(name, x, y, { size });
+    const noteX = x + this.noteWidth(name, size) + gap;
+    this.note(note, noteX, y, { size: noteSize, color: noteColor });
+    return noteX + this.noteWidth(note, noteSize);
+  }
 
   // --- ornament ---------------------------------------------------------------
 
@@ -464,6 +476,8 @@ const SKILLS = [
   ["sleightofhand", "Sleight of Hand", "dex"], ["stealth", "Stealth", "dex"], ["survival", "Survival", "wis"],
 ];
 const ABILITY_NAME = Object.fromEntries(ABILITIES.map(([key, name]) => [key, name[0] + name.slice(1).toLowerCase()]));
+/** A skill's ability as the note after its name: "(Dex)". */
+const abilityNote = (ability) => `(${ability[0].toUpperCase()}${ability.slice(1)})`;
 
 /**
  * The page title band: a centred display title between ornamented rules, with
@@ -687,8 +701,9 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
     s.check(`details_${key}_expertise`, 108, y, 6);
     s.text(`details_${key}_total`, 115, y - 1, 15, 9, { align: "center", size: 8, box: "none" });
     s.rule(115, y + 3.5 - skillsPitch / 2, 130, y + 3.5 - skillsPitch / 2, RULE, 0.5);
-    s.note(caption, 131, y + 0.5, { size: skillsRows.name });
-    s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, 131 + s.textWidth(caption, "captionLight", skillsRows.name) + 2, y + 0.5, { size: skillsRows.ability, color: "lines" });
+    // The ability clears the name in every body face (a Spectral
+    // "Intimidation" ran 0.8pt into its note when it followed a Helvetica one).
+    s.noteAfter(caption, abilityNote(ability), 131, y + 0.5, { size: skillsRows.name, noteSize: skillsRows.ability });
   });
   s.pill(96, passiveY, 105, 24);
   s.circle(108, passiveY + 12, 10.5, { fill: WHITE, stroke: ACCENT, lineWidth: 0.9 });
@@ -798,7 +813,8 @@ function abilityPanel2024(s, layout, key, caption, x, y, width, height, extra) {
     s.check(`details_${skill}_expertise`, x + 12.5, rowY - 1, 6);
     s.text(`details_${skill}_total`, x + 20, rowY - 2, 20, 9, { align: "center", size: 7.5, box: "none" });
     s.rule(x + 20, below(rowY), x + 40, below(rowY), RULE, 0.5);
-    s.note(name, x + 43, rowY + 0.3, { size: Math.min(6.4, (width - 47) / s.textWidth(name, "captionLight", 1)) });
+    // The name fits the panel in the widest body face, which the writer draws it in.
+    s.note(name, x + 43, rowY + 0.3, { size: Math.min(6.4, (width - 47) / s.noteWidth(name, 1)) });
     rowY -= pitch;
   }
   if (extra) extra(rowY, x, width);
@@ -1213,8 +1229,7 @@ function hybridAbilityColumns(s, layout) {
     s.check(`details_${key}_expertise`, bx + 12.5, y, 6);
     s.text(`details_${key}_total`, bx + 20, y - 1.5, 18, 9, { align: "center", size: 7, box: "none" });
     s.rule(bx + 20, y + 3 - skillPitch / 2, bx + 38, y + 3 - skillPitch / 2, RULE, 0.5);
-    s.note(caption, bx + 41, y + 0.5, { size: 6.2 });
-    s.note(`(${ability[0].toUpperCase()}${ability.slice(1)})`, bx + 41 + s.noteWidth(caption, 6.2) + 2, y + 0.5, { size: 5, color: "lines" });
+    s.noteAfter(caption, abilityNote(ability), bx + 41, y + 0.5, { size: 6.2, noteSize: 5 });
   });
 }
 
