@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { EngineClient } from "@forge-cb/api";
+import type { CustomEntryDraft, CustomPackDraft, EngineClient, TrackerDef } from "@forge-cb/api";
 import { createEngineApi, type EngineTransportOptions } from "../engineTransport.js";
 
 // A host's users may hold packages written under its earlier format token;
@@ -272,7 +272,8 @@ describe("typed FCB nested adapter", () => {
 
   it("persists a direct progression DTO that has no character id", async () => {
     const { client } = fakeClient();
-    client.setHitPointRoll = vi.fn(async () => ({ classes: [], levelHistory: [] }));
+    // Only the transport's handling of a result without an id is under test, so a bare progression will do.
+    client.setHitPointRoll = vi.fn(async () => ({ classes: [], levelHistory: [] })) as unknown as EngineClient["setHitPointRoll"];
     const store = fakeStore();
     store.getCharacter = vi.fn(async () => ({
       id: "Ada",
@@ -558,7 +559,8 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["getElementSource", "ID_BOOK_FEAT_ONE"]);
     await api.content.checkPack({ path: "imports/pack.xml", xml: "<elements />", overrides: ["ID_BOOK_FEAT_ONE"] });
     expect(calls).toContainEqual(["checkPackContent", { path: "imports/pack.xml", xml: "<elements />", overrides: ["ID_BOOK_FEAT_ONE"] }]);
-    await api.content.packChoiceImpact(null, { id: "ID_X" });
+    // The fake engine only records the request, so a bare draft will do.
+    await api.content.packChoiceImpact(null, { id: "ID_X" } as unknown as CustomPackDraft);
     expect(calls).toContainEqual(["getPackChoiceImpact", { before: null, after: { id: "ID_X" } }]);
   });
 
@@ -578,7 +580,7 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["setResourceSwitch", "Ada", { name: "Moonlit Form", on: true }]);
     await api.characters.rest("Ada", "long");
     expect(calls).toContainEqual(["restCharacter", "Ada", { kind: "long" }]);
-    const tracker = { id: "boots", label: "Winged Boots", max: { kind: "number", value: 30 }, unit: "minutes", recharge: "day" };
+    const tracker: TrackerDef = { id: "boots", label: "Winged Boots", max: { kind: "number", value: 30 }, unit: "minutes", recharge: "day" };
     await api.characters.saveManualTracker("Ada", tracker);
     expect(calls).toContainEqual(["saveManualTracker", "Ada", { tracker }]);
     await api.characters.deleteManualTracker("Ada", "boots");
@@ -591,7 +593,8 @@ describe("typed FCB nested adapter", () => {
     const store = fakeStore();
     const api = createEngineApi({ client, store });
     await api.characters.create("Ada");
-    const draft = { schemaVersion: 1, id: "ID_CUSTOM_SPELL000001", template: "spell", name: "Frost Lance" };
+    // The fake engine only records the request, so a bare draft will do.
+    const draft = { schemaVersion: 1, id: "ID_CUSTOM_SPELL000001", template: "spell", name: "Frost Lance" } as unknown as CustomEntryDraft;
     await api.characters.saveCustomDraft("Ada", draft, { caster: "Wizard" });
     await api.characters.saveCustomDraft("Ada", draft, { grant: false });
     await api.characters.previewCustomSpell("Ada", draft, "Wizard");
@@ -607,7 +610,8 @@ describe("typed FCB nested adapter", () => {
     const store = fakeStore();
     const api = createEngineApi({ client, store });
     await api.characters.create("Ada");
-    const draft = { schemaVersion: 1, id: "ID_CUSTOM_TRANSPORT01", template: "feature", name: "Gift", showsUnder: "feats", description: "", blocks: [] };
+    // The fake engine only records the request, so a bare draft will do.
+    const draft = { schemaVersion: 1, id: "ID_CUSTOM_TRANSPORT01", template: "feature", name: "Gift", showsUnder: "feats", description: "", blocks: [] } as unknown as CustomEntryDraft;
 
     await api.characters.saveCustomDraft("Ada", draft);
     await api.characters.saveCustomDraft("Ada", draft, { grant: false });
@@ -693,7 +697,7 @@ describe("typed FCB nested adapter", () => {
 
     const detail = await api.characters.get("Ada");
 
-    expect(detail.portraitBase64).toBe("AA==");
+    expect(detail?.portraitBase64).toBe("AA==");
   });
 
   it("falls back to the authoritative rebuild when incremental ingest requires a full rebuild", async () => {
@@ -756,9 +760,19 @@ describe("typed FCB nested adapter", () => {
         ruleset: null,
         characterId: "Ada",
         equipmentOnly: false,
-        sort: null,
       },
     ]);
+  });
+
+  it("leaves an unset character and sort out of the content query, as the contract has them", async () => {
+    const { client, calls } = fakeClient();
+    const api = createEngineApi({ client, store: fakeStore() });
+
+    await api.content.elements({ type: "Feat" });
+
+    const query = calls.find(([method]) => method === "contentElements")?.[1];
+    expect(query).not.toHaveProperty("characterId");
+    expect(query).not.toHaveProperty("sort");
   });
 
   it("forwards the result sort order to the content query", async () => {
@@ -814,7 +828,7 @@ describe("typed FCB nested adapter", () => {
     await expect(api.content.upload([{ name: "rules.xml" }])).rejects.toThrow(/Unsupported content upload input/);
     await expect(api.content.upload([{ bytes: new TextEncoder().encode("<elements />") }]))
       .rejects.toThrow(/missing a file name/);
-    expect(api.content.noSuchMethod).toBeUndefined();
+    expect((api.content as Record<string, unknown>).noSuchMethod).toBeUndefined();
   });
 
   it("returns the source mutation response instead of refetching character detail", async () => {
@@ -1061,8 +1075,8 @@ describe("typed FCB nested adapter", () => {
     const repeat = await api.content.replaceSource(candidates, { id: "second", kind: "folder", label: "elements copy" });
 
     expect(repeat).toMatchObject({ status: "duplicate" });
-    expect(repeat.duplicate.matches.map((source: Record<string, unknown>) => source.id)).toEqual(["first"]);
-    expect(repeat.duplicate.relativePaths).toEqual(["core/spells.xml"]);
+    expect(repeat.duplicate?.matches.map((source) => source.id)).toEqual(["first"]);
+    expect(repeat.duplicate?.relativePaths).toEqual(["core/spells.xml"]);
     // Nothing was stored or ingested while the prompt is pending.
     expect(liveFiles).toEqual(live);
     expect(await store.listContentSources()).toHaveLength(1);
@@ -1100,7 +1114,7 @@ describe("typed FCB nested adapter", () => {
     await api.content.upload([contentFile("feats.xml")], null, { sourceId: "picked-once" });
     const repeat = await api.content.upload([contentFile("feats.xml")], null, { sourceId: "picked-again" });
     expect(repeat).toMatchObject({ status: "duplicate" });
-    expect(repeat.duplicate.matches.map((source: Record<string, unknown>) => source.id)).toEqual(["picked-once"]);
+    expect(repeat.duplicate?.matches.map((source) => source.id)).toEqual(["picked-once"]);
 
     const forced = await api.content.upload([contentFile("feats.xml")], null, {
       sourceId: "picked-again",
@@ -1183,7 +1197,7 @@ describe("typed FCB nested adapter", () => {
       bundledContent: true,
     });
     // The engine received the embedded character document, not the JSON envelope.
-    const engine = client as unknown as Record<string, ReturnType<typeof vi.fn>>;
+    const engine = client as unknown as { importCharacterXml: ReturnType<typeof vi.fn> };
     const imported = engine.importCharacterXml.mock.calls.at(-1);
     expect(atob(String(imported?.[1]))).toBe(xml);
     // The bundled file was ingested as uploaded content before the import.
@@ -1208,7 +1222,7 @@ describe("typed FCB nested adapter", () => {
       id: "Legacy",
       bundledContent: true,
     });
-    const engine = client as unknown as Record<string, ReturnType<typeof vi.fn>>;
+    const engine = client as unknown as { importCharacterXml: ReturnType<typeof vi.fn> };
     const imported = engine.importCharacterXml.mock.calls.at(-1);
     expect(atob(String(imported?.[1]))).toBe(xml);
     expect([...liveFiles.keys()].some((path) => path.endsWith("custom/homebrew.xml"))).toBe(true);
@@ -1323,7 +1337,7 @@ describe("homebrew packs in a character package", () => {
     const restored = kept.get(PACK_ID) as Record<string, unknown>;
     expect(restored).toMatchObject({ name: "Moon World", hasUnloadedChanges: false, version: 10 });
     expect(restored.ingestedAt).toEqual(expect.any(Number));
-    expect((restored.elements as Array<Record<string, unknown>>)[0].customDraft).toEqual({ id: "ID_CUSTOM_TIDEGIFT0001" });
+    expect((restored.elements as Array<Record<string, unknown>>)[0]?.customDraft).toEqual({ id: "ID_CUSTOM_TIDEGIFT0001" });
     // The pack's file sits at its stable path once, and the other file arrived as before.
     const paths = [...liveFiles.keys()];
     expect(paths.filter((path) => path.endsWith("collection.xml"))).toEqual([stablePath]);

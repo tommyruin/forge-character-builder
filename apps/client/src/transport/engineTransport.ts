@@ -1,9 +1,20 @@
 import {
   createEngineClient,
+  type AbilityScoresDto,
   type ClientWorkerPort,
+  type CoinageDto,
+  type ContentElementsQueryDto,
+  type CustomEntryDraft,
+  type CustomPackDraft,
   type EngineClient,
+  type EngineMethodName,
   type EngineWorkerMessage,
+  type MethodArgs,
+  type MethodResult,
+  type PackCheckRequest,
   type SheetPageInclusionsDto,
+  type TrackerDef,
+  type WireObject,
 } from "@forge-cb/api";
 import { CHARACTER_LOAD_MANIFEST, FAST_START_MANIFEST } from "@forge-cb/api";
 import { localStore as defaultStore } from "./localStore.js";
@@ -25,8 +36,6 @@ import { readDefaultRulesetMode } from "../rulesetPreferences.js";
 import { ACCEPTED_CHARACTER_PACKAGE_TOKENS, CHARACTER_PACKAGE_TOKEN } from "../storageNames.js";
 
 type AnyRecord = Record<string, unknown>;
-type ApiFunction = (...args: unknown[]) => unknown;
-type ApiGroup = Record<string, ApiFunction>;
 type ContentFileRecord = {
   path: string;
   base64: string;
@@ -34,17 +43,70 @@ type ContentFileRecord = {
   relativePath?: string;
 };
 
-export interface EngineApi {
-  content: ApiGroup;
-  characters: ApiGroup;
-  [key: string]: unknown;
-}
+type LevelUpMode = MethodArgs<"levelUp">[1]["mode"];
+type DelevelMode = MethodArgs<"delevel">[1]["mode"];
+type AttackDirection = MethodArgs<"moveAttack">[2]["direction"];
+
+/** The fields a contract DTO declares, without the open index signature it extends. */
+type DeclaredFields<T> = { [K in keyof T as string extends K ? never : K]: T[K] };
+
+/**
+ * The fields the engine's content query reads (`contentQuery` in the engine's
+ * worker handlers) that `ContentElementsQueryDto` leaves to its index
+ * signature. Declaring them makes the query a closed type, so a misspelt or
+ * dropped filter is a type error instead of a field the engine never sees.
+ */
+type ContentElementsScopeFields = {
+  type?: string | null;
+  source?: string | null;
+  search?: string | null;
+  skip?: number;
+  take?: number;
+  equipSetter?: string | null;
+  itemCategory?: string | null;
+  /** "2014", "2024" or "shared" scope the results; anything else ("all") leaves them unscoped. */
+  ruleset?: string | null;
+  equipmentOnly?: boolean;
+};
+
+/** The wire request `content.elements` sends: the contract's declared fields and the scope fields. */
+type ContentElementsRequest = DeclaredFields<ContentElementsQueryDto> & ContentElementsScopeFields;
+
+/**
+ * What callers pass to `content.elements`. The shopping filters may arrive
+ * unset (null, or an empty field's text) and are sent only when set.
+ */
+export type ContentElementsParams = Omit<ContentElementsRequest, "equipmentKind" | "rarity" | "proficiency" | "maxPriceGp"> & {
+  equipmentKind?: string | null;
+  rarity?: string | null;
+  proficiency?: ContentElementsQueryDto["proficiency"] | null;
+  maxPriceGp?: number | string | null;
+};
+
+/** A pre-import duplicate verdict: the incoming files and the stored sources they match. */
+type DuplicateImport = Awaited<ReturnType<typeof findMatchingContentSources>>;
+
 type ProgressState = {
   active: boolean;
   percentage: number | null;
   message: string;
   error: string | null;
   phase?: string;
+};
+
+/** The engine worker's start-up, as the boot progress subscribers see it. */
+type BootState = {
+  phase: string;
+  interactive: boolean;
+  supplementsLoaded: boolean;
+  bootMode: string | null;
+  snapshotLoaded: boolean;
+  snapshotError: string | null;
+  cacheState: string;
+  cacheError: string | null;
+  metrics: Record<string, unknown>;
+  error?: string | null;
+  percentage?: number | null;
 };
 
 const FAST_START_IDENTITY = FAST_START_MANIFEST;
@@ -133,8 +195,16 @@ async function contentUploadRecords(inputs: unknown): Promise<Array<{ relativePa
   return records;
 }
 
-function withPortrait(detail: AnyRecord, portraitBase64: string | null): AnyRecord {
+/** The character detail the UI reads: the engine's projection with the portrait the transport keeps. */
+type CharacterDetail = AnyRecord & { portraitBase64: string | null };
+
+function withPortrait(detail: WireObject, portraitBase64: string | null): CharacterDetail {
   return { ...detail, portraitBase64: portraitBase64 ?? null };
+}
+
+/** A mutation result that is the character detail (it carries the character id), not a narrower projection. */
+function isCharacterDetail(result: unknown): result is WireObject & { id: unknown } {
+  return typeof result === "object" && result !== null && "id" in result;
 }
 
 function portraitFromXml(xml: string): string | null {
@@ -244,7 +314,7 @@ function contentRecordPaths(records: unknown): string[] {
     .filter((path): path is string => typeof path === "string" && path.length > 0);
 }
 
-function summaryOf(detail: AnyRecord, portraitBase64: string | null): AnyRecord {
+function summaryOf(detail: WireObject, portraitBase64: string | null): AnyRecord {
   return {
     id: detail.id,
     name: detail.name,
@@ -256,26 +326,47 @@ function summaryOf(detail: AnyRecord, portraitBase64: string | null): AnyRecord 
   };
 }
 
+/**
+ * Every field of `T`, each written out though it may be undefined, so a
+ * request built from it that forgets a field does not compile.
+ */
+type Exhaustive<T> = { [K in keyof Required<T>]: T[K] | undefined };
+
+/** The request with its undefined fields left off the wire, as absent filters. */
+function definedFields<T extends object>(fields: Exhaustive<T>): T {
+  // Dropping only undefined values keeps every field the type requires.
+  return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined)) as T;
+}
+
+type EquipmentShoppingFilters = Pick<ContentElementsRequest, "equipmentKind" | "rarity" | "proficiency" | "maxPriceGp">;
+
 // The item browser's shopping filters, sent only when set: the engine treats any
 // present `maxPriceGp` (null included) as a request for priced equipment only.
-function equipmentShoppingFilters(params: AnyRecord): AnyRecord {
-  const filters: AnyRecord = {};
-  for (const key of ["equipmentKind", "rarity", "proficiency"] as const) {
-    if (typeof params[key] === "string" && params[key] !== "") filters[key] = params[key];
-  }
+function equipmentShoppingFilters(params: ContentElementsParams): Exhaustive<EquipmentShoppingFilters> {
   const maxPriceGp = params.maxPriceGp === "" || params.maxPriceGp === null ? Number.NaN : Number(params.maxPriceGp);
-  if (Number.isFinite(maxPriceGp) && maxPriceGp >= 0) filters.maxPriceGp = maxPriceGp;
-  return filters;
+  return {
+    equipmentKind: typeof params.equipmentKind === "string" && params.equipmentKind !== "" ? params.equipmentKind : undefined,
+    rarity: typeof params.rarity === "string" && params.rarity !== "" ? params.rarity : undefined,
+    proficiency: params.proficiency === "proficient" || params.proficiency === "not-proficient" ? params.proficiency : undefined,
+    maxPriceGp: Number.isFinite(maxPriceGp) && maxPriceGp >= 0 ? maxPriceGp : undefined,
+  };
 }
 
 function unsupported(method: string): never {
   throw new Error(`FCB engine method '${method}' is unavailable in this worker.`);
 }
 
-function invoke<T = AnyRecord>(client: EngineClient, method: keyof EngineClient, ...args: unknown[]): Promise<T> {
-  const operation = client[method] as unknown;
-  if (typeof operation !== "function") unsupported(String(method));
-  return (operation as (...values: unknown[]) => Promise<T>)(...args);
+/**
+ * Calls one engine method with the arguments its contract declares and returns
+ * its contract result. A worker built before a method existed has no function
+ * for it, so the call fails as unavailable rather than as a TypeError.
+ */
+function invoke<M extends EngineMethodName>(client: EngineClient, method: M, ...args: MethodArgs<M>): Promise<MethodResult<M>> {
+  const operation: unknown = client[method];
+  if (typeof operation !== "function") unsupported(method);
+  // EngineClient maps every method name to its own signature; for a generic M
+  // the compiler cannot relate `client[method]` to `MethodArgs<M>`.
+  return (operation as (...values: MethodArgs<M>) => Promise<MethodResult<M>>)(...args);
 }
 
 function workerPort(): ClientWorkerPort {
@@ -300,9 +391,21 @@ export interface SheetRenderOptions {
   footerText?: string;
 }
 
+type GenerateSheetRequest = MethodArgs<"generateSheet">[1];
+
+/**
+ * What a sheet download takes: the model request's page and print choices,
+ * with the attack-note overflow the PDF writer adds among the pages, and how
+ * the render looks. The body face comes from `fonts.body`.
+ */
+export type SheetBytesOptions = Partial<Omit<GenerateSheetRequest, "include" | "bodyFace">> &
+  Omit<SheetRenderOptions, "includeAttackNotes"> & {
+    include?: SheetPageInclusionsDto & { attackNotes?: boolean };
+  };
+
 interface SheetRenderRequest extends SheetRenderOptions {
   id: number;
-  model: AnyRecord;
+  model: WireObject;
   templateBase: string;
 }
 
@@ -314,16 +417,16 @@ export interface EngineTransportOptions {
   client?: EngineClient;
   worker?: ClientWorkerPort;
   store?: typeof defaultStore;
-  onBootProgress?: (state: ProgressState) => void;
+  onBootProgress?: (state: BootState) => void;
   /** Injectable sheet renderer (tests); defaults to the dedicated render worker. */
-  sheetRenderer?: (model: AnyRecord, templateBase: string, render: SheetRenderOptions) => Promise<Uint8Array>;
+  sheetRenderer?: (model: WireObject, templateBase: string, render: SheetRenderOptions) => Promise<Uint8Array<ArrayBuffer>>;
 }
 
-export function createEngineApi(options: EngineTransportOptions = {}): EngineApi {
+export function createEngineApi(options: EngineTransportOptions = {}) {
   const store = options.store ?? defaultStore;
   let client: EngineClient | null = options.client ?? null;
   let loadedId: string | null = null;
-  let characterLoadPromise: Promise<AnyRecord> | null = null;
+  let characterLoadPromise: Promise<CharacterDetail> | null = null;
   let bootPromise: Promise<void> | null = null;
   let contentBootPromise: Promise<void> | null = null;
   let contentBootError: unknown = null;
@@ -344,7 +447,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     error: null,
   };
   const fastStartSubscribers = new Set<(state: AnyRecord) => void>();
-  let bootState: AnyRecord = {
+  let bootState: BootState = {
     phase: "idle",
     interactive: false,
     supplementsLoaded: false,
@@ -368,7 +471,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     message: "Preparing character…",
     error: null,
   };
-  const bootSubscribers = new Set<(state: AnyRecord) => void>();
+  const bootSubscribers = new Set<(state: BootState) => void>();
   const contentSubscribers = new Set<(state: ProgressState) => void>();
   const characterSubscribers = new Set<(state: ProgressState) => void>();
 
@@ -381,7 +484,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       }
     }
   };
-  const updateBoot = (patch: Partial<AnyRecord>) => {
+  const updateBoot = (patch: Partial<BootState>) => {
     bootState = { ...bootState, ...patch };
     options.onBootProgress?.(bootState);
     publish(bootSubscribers, bootState);
@@ -400,8 +503,10 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
   };
 
   const onEvent = (event: EngineWorkerMessage) => {
+    // Responses carry no `type`; the client settles them itself.
+    if (!("type" in event)) return;
     if (event.type === "ready") {
-      const version = (event.metrics as AnyRecord | undefined)?.engineVersion;
+      const version = event.metrics.engineVersion;
       if (typeof version === "string" && version !== "") engineVersion = version;
       updateBoot({ phase: "ready", interactive: true, metrics: event.metrics });
     } else if (event.type === "fatal") {
@@ -695,7 +800,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     publishUnsaved();
   };
 
-  const persist = async (id: string, detail?: AnyRecord): Promise<AnyRecord> => {
+  const persist = async (id: string, detail?: CharacterDetail): Promise<CharacterDetail> => {
     const generation = dirtyGeneration.get(id);
     const engine = await ensureBooted();
     const exported = await invoke(engine, "exportCharacterXml", id);
@@ -714,7 +819,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
   const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const persistInFlight = new Map<string, Promise<unknown>>();
 
-  async function runPersist(id: string, detail?: AnyRecord): Promise<void> {
+  async function runPersist(id: string, detail?: CharacterDetail): Promise<void> {
     const pending = (async () => {
       try {
         await persist(id, detail);
@@ -742,7 +847,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     }
   }
 
-  function schedulePersist(id: string, detail?: AnyRecord): void {
+  function schedulePersist(id: string, detail?: CharacterDetail): void {
     markDirty(id);
     // With autosave off the edit stays in the engine until the user saves;
     // timers already running were scheduled under autosave and still land.
@@ -796,7 +901,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     pendingSheetRenders.clear();
   };
 
-  const renderSheetBytes = (model: AnyRecord, render: SheetRenderOptions): Promise<Uint8Array> => {
+  const renderSheetBytes = (model: WireObject, render: SheetRenderOptions): Promise<Uint8Array<ArrayBuffer>> => {
     if (options.sheetRenderer) return options.sheetRenderer(model, sheetTemplateBase, render);
     if (sheetRenderWorker === null) {
       const worker = new Worker(new URL("./sheetRenderWorker.ts", import.meta.url), { type: "module" });
@@ -816,7 +921,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
       sheetRenderWorker = worker;
     }
     const id = ++sheetRenderId;
-    return new Promise((resolve, reject) => {
+    return new Promise<ArrayBuffer>((resolve, reject) => {
       pendingSheetRenders.set(id, { resolve, reject });
       const request: SheetRenderRequest = {
         id,
@@ -841,7 +946,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
    * fast path returns null instead of paying a full detail projection that
    * the caller would discard.
    */
-  const ensureLoaded = async (id: string, opts: { detail?: boolean } = {}): Promise<AnyRecord | null> => {
+  const ensureLoaded = async (id: string, opts: { detail?: boolean } = {}): Promise<CharacterDetail | null> => {
     const wantDetail = opts.detail !== false;
     const engine = await ensureContentReady();
     if (loadedId === id) {
@@ -882,7 +987,13 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     }
   };
 
-  const mutateDetail = async (id: string, method: keyof EngineClient, args: unknown[]): Promise<AnyRecord> => {
+  // A mutation resolves to the refreshed character detail when the engine
+  // returns one, else to the method's own result (a progression, the attacks).
+  const mutateDetail = async <M extends EngineMethodName>(
+    id: string,
+    method: M,
+    args: MethodArgs<M>,
+  ): Promise<MethodResult<M> | CharacterDetail> => {
     const engine = await ensureBooted();
     await ensureLoaded(id, { detail: false });
     // The pre-mutation export is posted ahead of the mutation and only awaited
@@ -892,7 +1003,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     loadedId = id;
     const snapshot = await before;
     if (snapshot !== null) pushUndo(id, base64ToUtf8(snapshot.base64));
-    if (result && typeof result === "object" && "id" in result) {
+    if (isCharacterDetail(result)) {
       const detail = withPortrait(result, portraitBase64);
       schedulePersist(id, detail);
       return detail;
@@ -904,7 +1015,11 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
   // Durability-critical mutations (delevels, attack edits, companion renames)
   // finish their IndexedDB write before resolving so the change cannot remain
   // only in worker memory when the flow immediately navigates or exports.
-  const mutateDetailAndPersist = async (id: string, method: keyof EngineClient, args: unknown[]): Promise<AnyRecord> => {
+  const mutateDetailAndPersist = async <M extends EngineMethodName>(
+    id: string,
+    method: M,
+    args: MethodArgs<M>,
+  ): Promise<MethodResult<M> | CharacterDetail> => {
     // Manual save covers these too: the user asked for nothing to be written
     // until they save, and the flows that navigate or export read the engine.
     if (!autosaveEnabled) return mutateDetail(id, method, args);
@@ -912,7 +1027,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     await ensureLoaded(id, { detail: false });
     const result = await invoke(engine, method, ...args);
     loadedId = id;
-    if (result && typeof result === "object" && "id" in result) {
+    if (isCharacterDetail(result)) {
       return persist(id, withPortrait(result, portraitBase64));
     }
     await persist(id);
@@ -942,7 +1057,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     records: ContentFileRecord[],
     sourceId: string,
     priorRecords: ContentFileRecord[],
-  ): Promise<AnyRecord | null> => {
+  ): Promise<DuplicateImport | null> => {
     if (typeof store.listContentSources !== "function") return null;
     try {
       const sources = await store.listContentSources();
@@ -956,7 +1071,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     }
   };
 
-  const removeLiveUploadedFiles = async (engine: EngineClient, paths: Iterable<string>): Promise<AnyRecord | null> => {
+  const removeLiveUploadedFiles = async (engine: EngineClient, paths: Iterable<string>): Promise<WireObject | null> => {
     const uniquePaths = [...new Set(paths)].filter(Boolean).sort();
     if (!uniquePaths.length) return null;
     const result = await invoke(engine, "removeUploaded", { paths: uniquePaths });
@@ -967,7 +1082,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
   const ingestLiveUploadedFiles = async (
     engine: EngineClient,
     files: Array<{ path: string; base64: string }>,
-  ): Promise<AnyRecord | null> => {
+  ): Promise<WireObject | null> => {
     if (!files.length) return null;
     const result = await invoke(engine, "ingestUploaded", { files });
     for (const file of files) liveUploadedFiles.set(file.path, file.base64);
@@ -978,7 +1093,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     engine: EngineClient,
     desiredRecords: ContentFileRecord[],
     knownStalePaths: Iterable<string> = [],
-  ): Promise<AnyRecord | null> => {
+  ): Promise<WireObject | null> => {
     const desired = new Map(engineContentFiles(desiredRecords).map((file) => [file.path, file.base64]));
     const changedPaths = new Set(
       [...desired]
@@ -1029,10 +1144,10 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     engine: EngineClient,
     contentUrl?: string,
     knownStalePaths: Iterable<string> = [],
-  ): Promise<AnyRecord> => {
+  ): Promise<WireObject> => {
     const bundledUrl = contentUrl ?? contentManifestUrl();
     const files = await loadContentRecords();
-    let result: AnyRecord = {};
+    let result: WireObject = {};
     try {
       // One authoritative pass: bundled content and stored uploads become the
       // installed set in a single engine rebuild, replacing whatever was
@@ -1041,7 +1156,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         source: "bundled",
         contentUrl: bundledUrl,
         files: engineContentFiles(files),
-      } as never);
+      });
       liveUploadedFiles = new Map(files.map((file) => [file.path, file.base64]));
       scheduleSnapshotRebuild(engine);
       return result;
@@ -1053,26 +1168,114 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     return result;
   };
 
-  const contentApi: AnyRecord = {
+  const contentStatus = async () => {
+    const result = await invoke(await ensureContentReady(), "contentStatus");
+    // The status contract is an open object; its type counts are a count per element type.
+    const typeCounts = (result.typeCounts ?? result.elementTypes ?? {}) as Record<string, number>;
+    return { ...result, elementTypes: typeCounts, typeCounts };
+  };
+
+  const reloadContent = async (knownStalePaths: string[] = []) => {
+    updateContent({ active: true, phase: "waiting", error: null, message: "Reloading content…" });
+    try {
+      const result = await rebuildContentFromStore(await ensureContentReady(), undefined, knownStalePaths);
+      updateContent({ active: false, phase: "ready", percentage: 100, message: "Content library ready", error: null });
+      return { status: "succeeded", elementCountAfterReload: result?.elementCountAfterReload ?? result?.elementCount ?? 0 };
+    } catch (error) {
+      updateContent({ active: false, phase: "error", error: error instanceof Error ? error.message : String(error), message: "Content reload failed" });
+      throw error;
+    }
+  };
+
+  const uploadContent = async (inputs: unknown[], category?: string | null, uploadOptions: { sourceId?: string; allowDuplicate?: boolean } = {}) => {
+    const files = await contentUploadRecords(inputs);
+    if (!files.length) throw new Error("No content files were selected.");
+    const sourceId = String(uploadOptions.sourceId ?? createContentSourceId());
+    const records = files.map((file) => ({ ...file, path: contentStoragePath(sourceId, file.relativePath), sourceId }));
+    updateContent({ active: true, phase: "waiting", error: null, message: "Updating content…" });
+    try {
+      const engine = await ensureContentReady();
+      const priorRecords = await loadContentRecords();
+      const method = category === "homebrew" ? "patchHomebrew" : "ingestUploaded";
+      const replacesTrackedSource = category !== "homebrew" && typeof store.replaceContentSource === "function";
+      // Homebrew collections are re-saved constantly and are expected to
+      // replace themselves, so only tracked imports are duplicate-checked.
+      if (replacesTrackedSource && !uploadOptions.allowDuplicate) {
+        const duplicate = await findDuplicateImport(records, sourceId, priorRecords);
+        if (duplicate) return { status: "duplicate", duplicate };
+      }
+      const desiredRecords = replacesTrackedSource
+        ? [...priorRecords.filter((record) => record.sourceId !== sourceId), ...records]
+        : mergeContentRecords(priorRecords, records);
+      let previousRecords: unknown = [];
+      // Non-fatal engine findings about the uploaded files (duplicate ids,
+      // zero-element files, unresolved append targets) surface in the UI.
+      const uploadDiagnostics: unknown[] = [];
+      try {
+        try {
+          if (method === "patchHomebrew") {
+            for (const file of records) {
+              const patched = await invoke(engine, "patchHomebrew", { path: file.path, base64: file.base64 });
+              if (Array.isArray(patched?.diagnostics)) uploadDiagnostics.push(...patched.diagnostics);
+              liveUploadedFiles.set(file.path, file.base64);
+            }
+          } else {
+            const ingested = await reconcileLiveUploadedFiles(engine, desiredRecords);
+            if (Array.isArray(ingested?.diagnostics)) uploadDiagnostics.push(...ingested.diagnostics);
+          }
+        } catch (error) {
+          if (!needsFullContentRebuild(error)) throw error;
+        }
+        if (!replacesTrackedSource) {
+          await store.putContentBatch(records);
+        } else {
+          previousRecords = await store.replaceContentSource({
+            id: sourceId,
+            kind: "files",
+            label: records.length === 1 ? records[0]!.relativePath : `${records.length} files`,
+            location: null,
+            importedAt: Date.now(),
+            fileCount: records.length,
+          }, records);
+        }
+      } catch (error) {
+        await restoreLiveUploadedFiles(engine, priorRecords, records.map((record) => record.path)).catch(() => undefined);
+        throw error;
+      }
+      const result = await rebuildContentFromStore(engine, undefined, contentRecordPaths(previousRecords));
+      updateContent({ active: false, phase: "ready", percentage: 100, message: "Content library ready", error: null });
+      return {
+        status: "succeeded",
+        files: records.map((record) => uploadFileResult(record)),
+        elementCountAfterReload: result?.elementCountAfterReload ?? result?.elementCount ?? 0,
+        diagnostics: uploadDiagnostics,
+      };
+    } catch (error) {
+      updateContent({ active: false, phase: "error", error: error instanceof Error ? error.message : String(error), message: "Content update failed" });
+      throw error;
+    } finally {
+      if (contentState.active) updateContent({ active: false, phase: "ready", percentage: 100, message: "Content library ready" });
+    }
+  };
+
+  const contentApi = {
     onLoadProgress(callback: (state: ProgressState) => void) {
       contentSubscribers.add(callback);
       callback(contentState);
       return () => contentSubscribers.delete(callback);
     },
     getLoadState: () => contentState,
-    status: async () => {
-      const result = await invoke(await ensureContentReady(), "contentStatus");
-      const typeCounts = result.typeCounts ?? result.elementTypes ?? {};
-      return { ...result, elementTypes: typeCounts, typeCounts };
-    },
-    types: async () => Object.keys((await contentApi.status()).elementTypes ?? {}),
+    status: contentStatus,
+    types: async () => Object.keys((await contentStatus()).elementTypes),
     sources: async () => invoke(await ensureContentReady(), "contentSources"),
     equipmentCategories: async (characterId?: string) =>
       characterId === undefined
         ? invoke(await ensureContentReady(), "equipmentCategories")
         : invoke(await ensureContentReady(), "equipmentCategories", characterId),
-    elements: async (params: AnyRecord = {}) => {
-      const result = await invoke(await ensureContentReady(), "contentElements", {
+    elements: async (params: ContentElementsParams = {}) => {
+      // Every field the engine reads is written out here: one the contract
+      // declares and this request leaves out is a type error.
+      const request = definedFields<ContentElementsRequest>({
         type: params.type ?? null,
         source: params.source ?? null,
         search: params.search ?? null,
@@ -1081,110 +1284,32 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         equipSetter: params.equipSetter ?? null,
         itemCategory: params.itemCategory ?? null,
         ruleset: params.ruleset ?? null,
-        characterId: params.characterId ?? null,
+        // The contract's character id and sort are strings or absent, never null.
+        characterId: typeof params.characterId === "string" ? params.characterId : undefined,
         equipmentOnly: Boolean(params.equipmentOnly),
-        sort: params.sort ?? null,
+        sort: params.sort === "name" || params.sort === "source" ? params.sort : undefined,
         ...equipmentShoppingFilters(params),
       });
-      return result;
+      return invoke(await ensureContentReady(), "contentElements", request);
     },
     element: async (id: string) => invoke(await ensureContentReady(), "contentElement", id),
     // A loaded element as `<element>` XML, to start a house rule or a reflavour from.
     elementSource: async (id: string) => invoke(await ensureContentReady(), "getElementSource", id),
     // A pack's compiled file checked against the loaded library without loading it.
-    checkPack: async (request: { path: string; xml: string; overrides?: string[] }) =>
+    checkPack: async (request: PackCheckRequest) =>
       invoke(await ensureContentReady(), "checkPackContent", request),
     // The picks changing a pack element's choices would clear, from the element's two draft versions.
-    packChoiceImpact: async (before: AnyRecord | null, after: AnyRecord) =>
+    packChoiceImpact: async (before: CustomPackDraft | null, after: CustomPackDraft) =>
       invoke(await ensureContentReady(), "getPackChoiceImpact", { before, after }),
     clearCache: () => undefined,
     importStatus: async () => ({ status: "succeeded" }),
-    reload: async (knownStalePaths: string[] = []) => {
-      updateContent({ active: true, phase: "waiting", error: null, message: "Reloading content…" });
-      try {
-        const result = await rebuildContentFromStore(await ensureContentReady(), undefined, knownStalePaths);
-        updateContent({ active: false, phase: "ready", percentage: 100, message: "Content library ready", error: null });
-        return { status: "succeeded", elementCountAfterReload: result?.elementCountAfterReload ?? result?.elementCount ?? 0 };
-      } catch (error) {
-        updateContent({ active: false, phase: "error", error: error instanceof Error ? error.message : String(error), message: "Content reload failed" });
-        throw error;
-      }
-    },
-    upload: async (inputs: unknown[], category?: string | null, uploadOptions: AnyRecord = {}) => {
-      const files = await contentUploadRecords(inputs);
-      if (!files.length) throw new Error("No content files were selected.");
-      const sourceId = String(uploadOptions.sourceId ?? createContentSourceId());
-      const records = files.map((file) => ({ ...file, path: contentStoragePath(sourceId, file.relativePath), sourceId }));
-      updateContent({ active: true, phase: "waiting", error: null, message: "Updating content…" });
-      try {
-        const engine = await ensureContentReady();
-        const priorRecords = await loadContentRecords();
-        const method = category === "homebrew" ? "patchHomebrew" : "ingestUploaded";
-        const replacesTrackedSource = category !== "homebrew" && typeof store.replaceContentSource === "function";
-        // Homebrew collections are re-saved constantly and are expected to
-        // replace themselves, so only tracked imports are duplicate-checked.
-        if (replacesTrackedSource && !uploadOptions.allowDuplicate) {
-          const duplicate = await findDuplicateImport(records, sourceId, priorRecords);
-          if (duplicate) return { status: "duplicate", duplicate };
-        }
-        const desiredRecords = replacesTrackedSource
-          ? [...priorRecords.filter((record) => record.sourceId !== sourceId), ...records]
-          : mergeContentRecords(priorRecords, records);
-        let previousRecords: unknown = [];
-        // Non-fatal engine findings about the uploaded files (duplicate ids,
-        // zero-element files, unresolved append targets) surface in the UI.
-        const uploadDiagnostics: unknown[] = [];
-        try {
-          try {
-            if (method === "patchHomebrew") {
-              for (const file of records) {
-                const patched = await invoke(engine, "patchHomebrew", { path: file.path, base64: file.base64 });
-                if (Array.isArray(patched?.diagnostics)) uploadDiagnostics.push(...patched.diagnostics);
-                liveUploadedFiles.set(file.path, file.base64);
-              }
-            } else {
-              const ingested = await reconcileLiveUploadedFiles(engine, desiredRecords);
-              if (Array.isArray(ingested?.diagnostics)) uploadDiagnostics.push(...ingested.diagnostics);
-            }
-          } catch (error) {
-            if (!needsFullContentRebuild(error)) throw error;
-          }
-          if (!replacesTrackedSource) {
-            await store.putContentBatch(records);
-          } else {
-            previousRecords = await store.replaceContentSource({
-              id: sourceId,
-              kind: "files",
-              label: records.length === 1 ? records[0]!.relativePath : `${records.length} files`,
-              location: null,
-              importedAt: Date.now(),
-              fileCount: records.length,
-            }, records);
-          }
-        } catch (error) {
-          await restoreLiveUploadedFiles(engine, priorRecords, records.map((record) => record.path)).catch(() => undefined);
-          throw error;
-        }
-        const result = await rebuildContentFromStore(engine, undefined, contentRecordPaths(previousRecords));
-        updateContent({ active: false, phase: "ready", percentage: 100, message: "Content library ready", error: null });
-        return {
-          status: "succeeded",
-          files: records.map((record) => uploadFileResult(record)),
-          elementCountAfterReload: result?.elementCountAfterReload ?? result?.elementCount ?? 0,
-          diagnostics: uploadDiagnostics,
-        };
-      } catch (error) {
-        updateContent({ active: false, phase: "error", error: error instanceof Error ? error.message : String(error), message: "Content update failed" });
-        throw error;
-      } finally {
-        if (contentState.active) updateContent({ active: false, phase: "ready", percentage: 100, message: "Content library ready" });
-      }
-    },
+    reload: reloadContent,
+    upload: uploadContent,
     remove: async (paths: string[] | string) => {
       const list = Array.isArray(paths) ? paths : [paths];
       const removed = await store.deleteContentBatch(list);
       const stalePaths = contentRecordPaths(removed);
-      const reloaded = await contentApi.reload(stalePaths.length ? stalePaths : list);
+      const reloaded = await reloadContent(stalePaths.length ? stalePaths : list);
       return { status: "succeeded", removed: removed ?? list, elementCountAfterReload: reloaded.elementCountAfterReload, diagnostics: [] };
     },
     /**
@@ -1217,7 +1342,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         await store.putContentBatch([{ path: keepPath, base64: String(newest.base64), sourceId, relativePath }]);
       }
       const removed = await store.deleteContentBatch(strays.map((record) => String(record.path)));
-      const reloaded = await contentApi.reload(contentRecordPaths(removed));
+      const reloaded = await reloadContent(contentRecordPaths(removed));
       return { status: "succeeded", removed: strays.length, elementCountAfterReload: reloaded.elementCountAfterReload };
     },
     listSources: () => store.listContentSources(),
@@ -1245,7 +1370,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
           ]);
           if (before !== null && before === after) {
             await store.replaceContentSource(descriptor, files);
-            const status = await invoke(engine, "contentStatus").catch(() => ({}) as AnyRecord);
+            const status = await invoke(engine, "contentStatus").catch((): WireObject => ({}));
             return {
               status: "unchanged",
               source: descriptor,
@@ -1282,24 +1407,58 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         await restoreLiveUploadedFiles(engine, priorRecords, files.map((file) => file.path)).catch(() => undefined);
         throw error;
       }
-      const reloaded = await contentApi.reload(contentRecordPaths(previousRecords));
+      const reloaded = await reloadContent(contentRecordPaths(previousRecords));
       return { status: "succeeded", source: descriptor, files: files.map((record) => uploadFileResult(record)), elementCountAfterReload: reloaded.elementCountAfterReload, diagnostics: replaceDiagnostics };
     },
     removeSource: async (sourceId: string) => {
       const removed = await store.removeContentSource(sourceId);
-      const reloaded = await contentApi.reload(contentRecordPaths(removed));
+      const reloaded = await reloadContent(contentRecordPaths(removed));
       return { status: "succeeded", removed, elementCountAfterReload: reloaded.elementCountAfterReload, diagnostics: [] };
     },
     acknowledgeDuplicates: (request: AnyRecord) => store.acknowledgeContentDuplicates(request.sourceIds, request.fingerprint),
     resolveDuplicates: async (request: AnyRecord) => {
       let removed = [];
       if (request.action === "remove" || request.removeSourceIds) removed = await store.removeContentSources(request.removeSourceIds ?? request.sourceIds ?? []);
-      const reloaded = removed.length ? await contentApi.reload(contentRecordPaths(removed)) : null;
+      const reloaded = removed.length ? await reloadContent(contentRecordPaths(removed)) : null;
       return { status: "succeeded", removedSourceIds: request.removeSourceIds ?? request.sourceIds ?? [], elementCountAfterReload: reloaded?.elementCountAfterReload };
     },
   };
 
-  const characterApi: AnyRecord = {
+  const sheetBytes = async (id: string, opts: SheetBytesOptions = {}) => {
+    await ensureLoaded(id);
+    // Page choices ride with the model build: a page left out is never laid
+    // out, so the saving is the engine's, not just the renderer's.
+    const include = typeof opts.include === "object" && opts.include !== null ? opts.include : null;
+    // Attack-note overflow is generated by the PDF writer, not the model.
+    const modelInclude: SheetPageInclusionsDto | null = include ? Object.fromEntries(Object.entries(include).filter(([key]) => key !== "attackNotes")) : null;
+    const model = await invoke(getClient(), "generateSheet", id, {
+      lite: Boolean(opts.lite),
+      ...(modelInclude ? { include: modelInclude } : {}),
+      // Item notes widen the inventory notes column; off sends the old request.
+      ...(opts.inventoryNotes === true ? { inventoryNotes: true } : {}),
+      // Trackers print by default; only an explicit off sends the new field.
+      ...(opts.resourceTrackers === false ? { resourceTrackers: false } : {}),
+      // Trackers print as the Resources page left them; only an explicit empty sheet sends the new field.
+      ...(opts.resourceTrackersEmpty === true ? { resourceTrackersEmpty: true } : {}),
+      // A feature's own trackers print next to it; only an explicit off sends the new field.
+      ...(opts.resourceTrackersInline === false ? { resourceTrackersInline: false } : {}),
+      // Card prose is laid out in the body face it will be drawn in.
+      ...(typeof opts.fonts?.body === "string" ? { bodyFace: opts.fonts.body } : {}),
+    });
+    return renderSheetBytes(model, {
+      templateSet: typeof opts.templateSet === "string" ? opts.templateSet : undefined,
+      // The layout picks the character page template; the model is the same.
+      layout: typeof opts.layout === "object" && opts.layout !== null ? opts.layout : undefined,
+      emphasizeAbilityModifiers: opts.emphasizeAbilityModifiers === true,
+      includeAttackNotes: include?.attackNotes !== false,
+      colours: typeof opts.colours === "object" && opts.colours !== null ? opts.colours : undefined,
+      fonts: typeof opts.fonts === "object" && opts.fonts !== null ? opts.fonts : undefined,
+      brandImage: typeof opts.brandImage === "string" ? opts.brandImage : undefined,
+      footerText: typeof opts.footerText === "string" ? opts.footerText : undefined,
+    });
+  };
+
+  const characterApi = {
     flushPendingSaves,
     saveCharacter,
     getAutosaveEnabled: () => autosaveEnabled,
@@ -1355,20 +1514,21 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     create: async (name: string) => {
       const engine = await ensureContentReady();
       const detail = await invoke(engine, "createCharacter", name);
-      loadedId = detail.id;
+      const characterId = String(detail.id);
+      loadedId = characterId;
       const restrictedSourceIds = await readDefaultRestrictedSourceIds(store);
       if (restrictedSourceIds.length || typeof engine.setCharacterSources === "function") {
-        await invoke(engine, "setCharacterSources", detail.id, { restrictedSourceIds });
+        await invoke(engine, "setCharacterSources", characterId, { restrictedSourceIds });
       }
       // A saved rules-version default. "all" is what the engine already starts
       // from, so only an explicit edition is worth a write - and the character
       // is still empty, so nothing has to be repaired.
       const rulesetMode = await readDefaultRulesetMode(store);
       if (rulesetMode === "2014" || rulesetMode === "2024") {
-        await invoke(engine, "setRulesetMode", detail.id, { mode: rulesetMode });
+        await invoke(engine, "setRulesetMode", characterId, { mode: rulesetMode });
       }
       portraitBase64 = null;
-      return persist(detail.id, withPortrait(await invoke(engine, "getCharacter", detail.id), null));
+      return persist(characterId, withPortrait(await invoke(engine, "getCharacter", characterId), null));
     },
     get: async (id: string) => ensureLoaded(id),
     sources: (id: string) => invoke(getClient(), "getCharacterSources", id),
@@ -1384,8 +1544,8 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     // write would make a successful upload look like a silent no-op.
     setPortrait: async (id: string, value: string) => { portraitBase64 = value; return mutateDetailAndPersist(id, "setPortrait", [id, value]); },
     removePortrait: async (id: string) => { portraitBase64 = null; return mutateDetailAndPersist(id, "removePortrait", [id]); },
-    updateDetails: (id: string, details: AnyRecord) => mutateDetail(id, "updateDetails", [id, details]),
-    setAbilities: (id: string, values: AnyRecord) => mutateDetail(id, "setAbilities", [id, values]),
+    updateDetails: (id: string, details: WireObject) => mutateDetail(id, "updateDetails", [id, details]),
+    setAbilities: (id: string, values: AbilityScoresDto) => mutateDetail(id, "setAbilities", [id, values]),
     selectionOptions: async (id: string, ruleId: string, number?: number) => {
       const engine = await ensureContentReady();
       await ensureLoaded(id);
@@ -1396,10 +1556,10 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     setSelection: (id: string, ruleId: string, selectionId: string, number = 1) => mutateDetail(id, "setSelection", [id, ruleId, { selectionId, number }]),
     clearSelection: (id: string, ruleId: string, number = 1) => mutateDetail(id, "clearSelection", [id, ruleId, { number }]),
     levelUp: (id: string) => mutateDetail(id, "levelUp", [id, { mode: "main" }]),
-    levelUpMode: (id: string, mode: string, classId?: string) => mutateDetail(id, "levelUp", [id, { mode, ...(classId ? { classId } : {}) }]),
+    levelUpMode: (id: string, mode: LevelUpMode, classId?: string) => mutateDetail(id, "levelUp", [id, { mode, ...(classId ? { classId } : {}) }]),
     levelUpTo: (id: string, level: number) => mutateDetail(id, "levelUpTo", [id, { level }]),
     levelDown: (id: string) => mutateDetail(id, "levelDown", [id]),
-    delevel: (id: string, mode: string, classId?: string) => mutateDetailAndPersist(id, "delevel", [id, { mode, ...(classId ? { classId } : {}) }]),
+    delevel: (id: string, mode: DelevelMode, classId?: string) => mutateDetailAndPersist(id, "delevel", [id, { mode, ...(classId ? { classId } : {}) }]),
     undoDelevel: (id: string) => mutateDetailAndPersist(id, "undoDelevel", [id]),
     setHitPointRoll: (id: string, classId: string, classLevel: number, value: number) => mutateDetail(id, "setHitPointRoll", [id, { classId, classLevel, value }]),
     progression: (id: string) => invoke(getClient(), "getProgression", id),
@@ -1424,7 +1584,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     setResourceSwitch: (id: string, name: string, on: boolean) =>
       mutateDetail(id, "setResourceSwitch", [id, { name, on }]),
     rest: (id: string, kind: "short" | "long") => mutateDetail(id, "restCharacter", [id, { kind }]),
-    saveManualTracker: (id: string, tracker: AnyRecord) => mutateDetail(id, "saveManualTracker", [id, { tracker }]),
+    saveManualTracker: (id: string, tracker: TrackerDef) => mutateDetail(id, "saveManualTracker", [id, { tracker }]),
     deleteManualTracker: (id: string, trackerId: string) => mutateDetail(id, "deleteManualTracker", [id, { trackerId }]),
     removeSpell: (id: string, spellId: string) => mutateDetail(id, "removeGrantedSpell", [id, { spellId }]),
     addFeat: (id: string, featId: string) => mutateDetail(id, "addGrantedFeat", [id, { featId }]),
@@ -1435,7 +1595,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     // The character's own pack. A save stores the draft in the character file,
     // so it goes through the same dirty-mark and persist path as any edit.
     customContent: (id: string) => invoke(getClient(), "getCustomContent", id),
-    saveCustomDraft: (id: string, draft: AnyRecord, options: { grant?: boolean; amount?: number; notes?: string; caster?: string } = {}) =>
+    saveCustomDraft: (id: string, draft: CustomEntryDraft, options: { grant?: boolean; amount?: number; notes?: string; caster?: string } = {}) =>
       mutateDetail(id, "saveCustomDraft", [
         id,
         {
@@ -1449,9 +1609,9 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     deleteCustomDraft: (id: string, draftId: string) => mutateDetail(id, "deleteCustomDraft", [id, { draftId }]),
     promoteCustomDraft: (id: string, draftId: string, source: string) =>
       invoke(getClient(), "promoteCustomDraft", id, { draftId, source }),
-    choiceIdentityImpact: (id: string, draft: AnyRecord) => invoke(getClient(), "getChoiceIdentityImpact", id, { draft }),
-    previewCustomItem: (id: string, draft: AnyRecord) => invoke(getClient(), "previewCustomItem", id, { draft }),
-    previewCustomSpell: (id: string, draft: AnyRecord, caster?: string) =>
+    choiceIdentityImpact: (id: string, draft: CustomEntryDraft) => invoke(getClient(), "getChoiceIdentityImpact", id, { draft }),
+    previewCustomItem: (id: string, draft: CustomEntryDraft) => invoke(getClient(), "previewCustomItem", id, { draft }),
+    previewCustomSpell: (id: string, draft: CustomEntryDraft, caster?: string) =>
       invoke(getClient(), "previewCustomSpell", id, { draft, ...(caster ? { caster } : {}) }),
     companion: (id: string) => invoke(getClient(), "getCompanion", id),
     setCompanionName: (id: string, name: string) => mutateDetailAndPersist(id, "setCompanionName", [id, { name }]),
@@ -1504,49 +1664,17 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
           ...(typeof details.notes === "string" ? { notes: details.notes } : {}),
         },
       ]),
-    setCoins: (id: string, coins: AnyRecord) => mutateDetail(id, "setCoins", [id, coins]),
+    setCoins: (id: string, coins: CoinageDto) => mutateDetail(id, "setCoins", [id, coins]),
     attacks: (id: string) => invoke(getClient(), "getAttacks", id),
     attackOptions: (id: string) => invoke(getClient(), "getAttackOptions", id),
-    createAttack: (id: string, request: AnyRecord) => mutateDetailAndPersist(id, "createAttack", [id, request]),
-    updateAttack: (id: string, attackId: string, request: AnyRecord) => mutateDetailAndPersist(id, "updateAttack", [id, attackId, request]),
+    createAttack: (id: string, request: WireObject) => mutateDetailAndPersist(id, "createAttack", [id, request]),
+    updateAttack: (id: string, attackId: string, request: WireObject) => mutateDetailAndPersist(id, "updateAttack", [id, attackId, request]),
     setAttackVisibility: (id: string, attackId: string, visible: boolean) => mutateDetailAndPersist(id, "setAttackVisibility", [id, attackId, { isDisplayed: visible }]),
-    moveAttack: (id: string, attackId: string, direction: string) => mutateDetailAndPersist(id, "moveAttack", [id, attackId, { direction }]),
+    moveAttack: (id: string, attackId: string, direction: AttackDirection) => mutateDetailAndPersist(id, "moveAttack", [id, attackId, { direction }]),
     deleteAttack: (id: string, attackId: string) => mutateDetailAndPersist(id, "deleteAttack", [id, attackId]),
     appearanceSuggestions: (id: string, seed?: number) => invoke(getClient(), "getAppearanceSuggestions", id, seed ?? 0),
-    sheetBytes: async (id: string, opts: AnyRecord = {}) => {
-      await ensureLoaded(id);
-      // Page choices ride with the model build: a page left out is never laid
-      // out, so the saving is the engine's, not just the renderer's.
-      const include = typeof opts.include === "object" && opts.include !== null ? (opts.include as SheetPageInclusionsDto & { attackNotes?: boolean }) : null;
-      // Attack-note overflow is generated by the PDF writer, not the model.
-      const modelInclude = include ? Object.fromEntries(Object.entries(include).filter(([key]) => key !== "attackNotes")) : null;
-      const model = await invoke(getClient(), "generateSheet", id, {
-        lite: Boolean(opts.lite),
-        ...(modelInclude ? { include: modelInclude } : {}),
-        // Item notes widen the inventory notes column; off sends the old request.
-        ...(opts.inventoryNotes === true ? { inventoryNotes: true } : {}),
-        // Trackers print by default; only an explicit off sends the new field.
-        ...(opts.resourceTrackers === false ? { resourceTrackers: false } : {}),
-        // Trackers print as the Resources page left them; only an explicit empty sheet sends the new field.
-        ...(opts.resourceTrackersEmpty === true ? { resourceTrackersEmpty: true } : {}),
-        // A feature's own trackers print next to it; only an explicit off sends the new field.
-        ...(opts.resourceTrackersInline === false ? { resourceTrackersInline: false } : {}),
-        // Card prose is laid out in the body face it will be drawn in.
-        ...(typeof (opts.fonts as AnyRecord | undefined)?.body === "string" ? { bodyFace: (opts.fonts as AnyRecord).body as string } : {}),
-      });
-      return renderSheetBytes(model, {
-        templateSet: typeof opts.templateSet === "string" ? (opts.templateSet as SheetRenderOptions["templateSet"]) : undefined,
-        // The layout picks the character page template; the model is the same.
-        layout: typeof opts.layout === "object" && opts.layout !== null ? (opts.layout as SheetRenderOptions["layout"]) : undefined,
-        emphasizeAbilityModifiers: opts.emphasizeAbilityModifiers === true,
-        includeAttackNotes: include?.attackNotes !== false,
-        colours: typeof opts.colours === "object" && opts.colours !== null ? (opts.colours as SheetRenderOptions["colours"]) : undefined,
-        fonts: typeof opts.fonts === "object" && opts.fonts !== null ? (opts.fonts as SheetRenderOptions["fonts"]) : undefined,
-        brandImage: typeof opts.brandImage === "string" ? opts.brandImage : undefined,
-        footerText: typeof opts.footerText === "string" ? opts.footerText : undefined,
-      });
-    },
-    sheet: async (id: string, opts: AnyRecord = {}) => URL.createObjectURL(new Blob([await characterApi.sheetBytes(id, opts)], { type: "application/pdf" })),
+    sheetBytes,
+    sheet: async (id: string, opts: SheetBytesOptions = {}) => URL.createObjectURL(new Blob([await sheetBytes(id, opts)], { type: "application/pdf" })),
     sheetUrl: () => undefined,
     export: async (id: string) => { await ensureLoaded(id); const xml = base64ToUtf8((await invoke(getClient(), "exportCharacterXml", id)).base64); return { filename: `${id}.dnd5e`, blob: new Blob([xml], { type: "application/xml" }) }; },
     exportPackage: async (id: string) => {
@@ -1585,14 +1713,14 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         for (const entry of restored) {
           const stored = bundled.find((candidate) => candidate.path === packStoredPath(entry.id));
           if (entry.written && entry.loaded && stored) {
-            await contentApi.upload([{ relativePath: "collection.xml", base64: stored.base64 }], "homebrew", { sourceId: `homebrew-${entry.id}` });
+            await uploadContent([{ relativePath: "collection.xml", base64: stored.base64 }], "homebrew", { sourceId: `homebrew-${entry.id}` });
           }
         }
         bundled = bundled.filter((entry) => !owned.has(entry.path));
         restoredPacks = restored.filter((entry) => entry.written).map((entry) => entry.name);
       }
       if (bundled.length > 0) {
-        await contentApi.upload(bundled.map((entry) => ({ relativePath: entry.path, base64: entry.base64 })));
+        await uploadContent(bundled.map((entry) => ({ relativePath: entry.path, base64: entry.base64 })));
       }
       const xml = pkg ? pkg.xml : text;
       const requestedName = characterNameFromXml(xml, file.name.replace(/\.dnd5e(?:-pkg)?$/i, ""));
@@ -1627,7 +1755,7 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
     },
   };
 
-  const api: AnyRecord = {
+  const api = {
     health: async () => { await ensureBooted(); return { status: "healthy", engine: "forge-character-builder" }; },
     content: contentApi,
     characters: characterApi,
@@ -1670,14 +1798,17 @@ export function createEngineApi(options: EngineTransportOptions = {}): EngineApi
         updateFastStart({ readiness: "not-built", lastBuildAt: null, snapshotSizeBytes: 0, usedSnapshot: false, error: null });
       },
     },
-    onBootProgress(callback: (state: AnyRecord) => void) { bootSubscribers.add(callback); callback(bootState); return () => bootSubscribers.delete(callback); },
+    onBootProgress(callback: (state: BootState) => void) { bootSubscribers.add(callback); callback(bootState); return () => bootSubscribers.delete(callback); },
     getBootState: () => bootState,
     startBoot: () => { void ensureBooted(); },
     retryBoot: () => { bootPromise = null; contentBootPromise = null; contentBootError = null; void ensureBooted(); },
     getLoadState: () => bootState,
-    onLoadProgress: (callback: (state: AnyRecord) => void) => { bootSubscribers.add(callback); callback(bootState); return () => bootSubscribers.delete(callback); },
+    onLoadProgress: (callback: (state: BootState) => void) => { bootSubscribers.add(callback); callback(bootState); return () => bootSubscribers.delete(callback); },
   };
-  return api as EngineApi;
+  return api;
 }
+
+/** The nested surface the UI calls, typed from the engine contract through `invoke`. */
+export type EngineApi = ReturnType<typeof createEngineApi>;
 
 export { CHARACTER_LOAD_IDENTITY, FAST_START_IDENTITY };

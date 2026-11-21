@@ -124,7 +124,7 @@ describe("shared optional rules hub", () => {
 
     // The panel owns the stored default, so the transport applies it on create.
     expect(transport).toContain("readDefaultRulesetMode");
-    expect(transport).toContain('invoke(engine, "setRulesetMode", detail.id, { mode: rulesetMode })');
+    expect(transport).toContain('invoke(engine, "setRulesetMode", characterId, { mode: rulesetMode })');
   });
 
   it("keeps grant actions but removes duplicate rule toggles", () => {

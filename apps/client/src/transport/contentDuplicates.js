@@ -123,6 +123,13 @@ export async function findDuplicateContentGroups(
   );
 }
 
+/**
+ * @param {readonly object[]} sources
+ * @param {readonly object[]} records
+ * @param {readonly object[]} incomingRecords
+ * @param {{ excludeSourceId?: string | null }} [options]
+ * @returns {Promise<{ fingerprint: string | null, fileCount: number, relativePaths: string[], matches: Array<Record<string, unknown>> }>}
+ */
 export async function findMatchingContentSources(
   sources,
   records,
