@@ -8,7 +8,9 @@
  *  - content stat rules ADD to their key; rules sharing a named bonus
  *    bucket do not stack (the largest counts), and bonus="base" is such a
  *    bucket for the key's base value: the first base replaces the engine's
- *    seed, the highest base wins, and every other contribution adds on top;
+ *    seed, the highest base wins, and every other contribution adds on top
+ *    (the active companion's own proficiency bonus is not a seed: its base
+ *    rules add to it, as the content is written);
  *  - stat rules with level="N" apply only when the owning class level >= N;
  *  - rule values are either numeric literals or references to other keys
  *    already in the map (e.g. "proficiency", "level:wizard"); references
@@ -785,8 +787,47 @@ function engineKey(key: string): boolean {
   return false;
 }
 
-/** The engine base values dictionary (fresh character at the given level). */
-function engineBase(state: CharacterState): StatisticsValues {
+/**
+ * The proficiency bonus a challenge rating gives a creature: +2 up to CR 4,
+ * one more per four ratings after. A fraction is below 1, and a dash (a stat
+ * block that has no rating of its own, such as a Primal Companion or a Steel
+ * Defender) counts as 0, so it gives +2.
+ */
+export function challengeProficiency(challenge: string): number {
+  const rating = /^\s*1\s*\/\s*\d+/.test(challenge) ? 0 : Number.parseFloat(challenge);
+  const value = Number.isFinite(rating) ? rating : 0;
+  return 2 + Math.max(0, Math.ceil((value - 4) / 4));
+}
+
+function setterNumber(element: ParsedElement, name: string): number | undefined {
+  const value = Number.parseInt(element.setters.find((setter) => setter.name === name)?.value ?? "", 10);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+/**
+ * A companion's own proficiency bonus, before any rule: its stat block's
+ * `proficiency` setter, else its challenge rating's. Content is written
+ * against this base. A Primal Companion or Steel Defender adds its owner's
+ * bonus and a -2 "base companion PB removal" for the +2 its dash rating gives;
+ * a drake whose bonus is its owner's sets `proficiency` to 0 instead.
+ */
+export function companionBaseProficiency(companion: ParsedElement): number {
+  return setterNumber(companion, "proficiency") ?? challengeProficiency(companion.setters.find((setter) => setter.name === "challenge")?.value ?? "");
+}
+
+/** The active companion's stat block: the registered Companion element, when the library has it. */
+export function activeCompanion(state: CharacterState, library: ElementLibrary): ParsedElement | undefined {
+  const entry = state.sum.elements.find((candidate) => candidate.type === "Companion");
+  return entry === undefined ? undefined : library.byId.get(entry.id);
+}
+
+/**
+ * The engine base values dictionary (fresh character at the given level).
+ * `companion` is the active companion's stat block, whose ability scores seed
+ * the companion's; the saved companion attributes stand in for a score the
+ * block leaves out.
+ */
+function engineBase(state: CharacterState, companion?: ParsedElement): StatisticsValues {
   const values: StatisticsValues = {};
   const set = (key: string, value: number): void => {
     values[key] = value;
@@ -888,8 +929,9 @@ function engineBase(state: CharacterState): StatisticsValues {
   set("attunement:current", 0);
   set("attunement:max", 3);
   for (const ability of ABILITIES) {
-    set(`companion:${ability}:score`, state.companion.attributes[ability]);
-    set(`companion:${ability}:modifier`, abilityModifier(state.companion.attributes[ability]));
+    const score = (companion === undefined ? undefined : setterNumber(companion, ability)) ?? state.companion.attributes[ability];
+    set(`companion:${ability}:score`, score);
+    set(`companion:${ability}:modifier`, abilityModifier(score));
   }
   set("companion:proficiency:half", 0);
   set("companion:proficiency:half:up", 0);
@@ -973,7 +1015,8 @@ export function computeStatistics(
   library: ElementLibrary,
   collect?: StatContributorCollector,
 ): StatisticsValues {
-  const values = engineBase(state);
+  const companion = activeCompanion(state, library);
+  const values = engineBase(state, companion);
 
   const level = state.level;
   const pb = proficiencyBonus(level);
@@ -1009,6 +1052,14 @@ export function computeStatistics(
   const seeds: Readonly<StatisticsValues> = { ...values };
 
   const appliedKeys = new Set<string>();
+  // The active companion's own proficiency bonus is a base the content's
+  // rules add to, not a seed a base rule replaces: a Primal Companion's
+  // "proficiency" base and its -2 removal land on it. It joins the values
+  // after the seeds are taken, so it stays under every rule.
+  if (companion !== undefined) {
+    values["companion:proficiency"] = companionBaseProficiency(companion);
+    appliedKeys.add("companion:proficiency");
+  }
   const { rules: allRules, validRegistered } = ruleSources(state, library, appliedKeys);
   const equipped = equippedInfo(state, library);
 

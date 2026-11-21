@@ -2,8 +2,9 @@
  * The companion page's numeric boxes print numbers: the computed armour
  * class, the hit point maximum with Current Hit Points left for the player,
  * and hit dice worked out from the stat block's text, never its prose cut off
- * at the box's edge. The proficiency bonus prints signed: a stat block with a
- * dash for its challenge rating takes its owner's bonus, any other its own.
+ * at the box's edge. The proficiency bonus prints signed: the stat block's
+ * own (+2 for a dash rating) with the content's rules on top, so a block
+ * whose rules add its owner's bonus less 2 prints its owner's.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -49,20 +50,20 @@ const CONTENT_XML = `<elements>
     <rules><select type="Companion" name="Values Companion" /></rules>
   </element>
   <element name="Values Handler (Bound)" type="Race" source="Homebrew" id="${RACE_BOUND}">
-    <description><p>Grants a companion that uses its owner's proficiency bonus, written as the owner's bonus less an implicit 2.</p></description>
+    <description><p>Grants a companion that uses its owner's proficiency bonus, written as the owner's bonus less the block's own 2.</p></description>
     <setters><set name="names">Test</set></setters>
     <rules>
       <select type="Companion" name="Values Companion" />
       <stat name="companion:proficiency" value="proficiency" bonus="base" />
-      <stat name="companion:proficiency" value="-2" bonus="base implicit removal" />
+      <stat name="companion:proficiency" value="-2" bonus="base companion PB removal" />
     </rules>
   </element>
   <element name="Values Handler (Set)" type="Race" source="Homebrew" id="${RACE_SET}">
-    <description><p>Grants a companion with a proficiency bonus set by a rule.</p></description>
+    <description><p>Grants a companion whose proficiency bonus a rule raises by 2.</p></description>
     <setters><set name="names">Test</set></setters>
     <rules>
       <select type="Companion" name="Values Companion" />
-      <stat name="companion:proficiency" value="6" bonus="base" />
+      <stat name="companion:proficiency" value="2" bonus="training" />
     </rules>
   </element>
   ${beast("BOUND", "13 + your Wisdom modifier", "5 + five times your Ranger level", "\u2014")}
@@ -124,22 +125,27 @@ describe("companion page values", () => {
     expect(fields["companion_hd"]).toBe("");
   });
 
-  it("prints its owner's proficiency bonus, signed, for a stat block with no challenge rating", () => {
-    // The rules give the owner's bonus less 2; the sheet reads the owner's bonus.
+  it("prints its owner's proficiency bonus, signed, when the rules add it to a dash rating's", () => {
+    // The dash gives +2; the rules add the owner's bonus and take the 2 away.
     const level8 = companionValues(RACE_BOUND, "BOUND", 8);
     expect(level8["companion_proficiency"]).toBe("+3");
     expect(level8["companion_proficiency_bonus"]).toBe("+3");
     expect(companionValues(RACE_BOUND, "BOUND", 9)["companion_proficiency"]).toBe("+4");
-    // Without any rule, and with a hyphen for the dash.
-    expect(companionValues(RACE_PLAIN, "BOUND", 9)["companion_proficiency"]).toBe("+4");
-    expect(companionValues(RACE_PLAIN, "HYPHEN", 5)["companion_proficiency"]).toBe("+3");
+    // Without any rule a dash, or a hyphen for one, keeps its +2.
+    expect(companionValues(RACE_PLAIN, "BOUND", 9)["companion_proficiency"]).toBe("+2");
+    expect(companionValues(RACE_PLAIN, "HYPHEN", 5)["companion_proficiency"]).toBe("+2");
   });
 
   it("keeps a rated creature's own proficiency bonus, signed, whatever its owner's", () => {
     expect(companionValues(RACE_PLAIN, "DICE", 9)["companion_proficiency"]).toBe("+2");
     expect(companionValues(RACE_PLAIN, "CR5", 1)["companion_proficiency"]).toBe("+3");
     expect(companionValues(RACE_PLAIN, "CR5", 1)["companion_proficiency_bonus"]).toBe("+3");
-    // A rule that sets the bonus still wins for a rated creature.
-    expect(companionValues(RACE_SET, "DICE", 1)["companion_proficiency"]).toBe("+6");
+    // A rule's bonus adds to the creature's own.
+    expect(companionValues(RACE_SET, "DICE", 1)["companion_proficiency"]).toBe("+4");
+  });
+
+  it("prints the initiative from the stat block's Dexterity", () => {
+    // The synthetic beasts have Dex 12; the saved attributes hold 10.
+    expect(companionValues(RACE_PLAIN, "DICE", 5)["companion_initiative"]).toBe("+1");
   });
 });
