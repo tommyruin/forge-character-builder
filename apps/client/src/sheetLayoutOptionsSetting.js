@@ -19,23 +19,23 @@
 //    attack rows.
 //  - inventoryNotes: the equipment page's notes column also describes the
 //    other magic items in full and the tools and useful gear in brief.
-//  - resourceTrackers: the features text closes with a "Resources" paragraph of
-//    use trackers, as the Resources tab left them (a filled circle per use
-//    spent, an open one per use left). On by default; off leaves it out.
-//  - resourceTrackersEmpty: that paragraph prints empty instead, to fill in at
+//  - resourceTrackers: use trackers print as the Resources tab left them (a
+//    filled circle per use spent, an open one per use left), each closing the
+//    text of the first printed feature that spends it ("[Uses: ○ ○]"). On by
+//    default; off leaves them out.
+//  - resourceTrackersEmpty: the trackers print empty instead, to fill in at
 //    the table (an open circle per use, a blank for a large count). Only
 //    offered while resourceTrackers is on.
-//  - resourceTrackersInline: uses next to features. A tracker that one printed
-//    feature spends closes that feature's text ("[Uses: ○ ○]") instead of
-//    the paragraph, which keeps the shared pools and the trackers kept by
-//    hand. On by default; off lists every tracker in the paragraph. Only
-//    offered while resourceTrackers is on.
+//  - resourceTrackersList: the features text also closes with a "Resources"
+//    paragraph of the trackers no printed feature closes (an item's, those
+//    kept by hand). Off by default. Only offered while resourceTrackers is on.
+//    It replaces resourceTrackersInline (uses next to features, now always
+//    on); a stored value of that is dropped on reading, like any unknown key.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card
 //    only when they are magic items, tools or useful gear. Items already in
 //    the inventory never change.
 //
-// Every option defaults to off (except resourceTrackers and
-// resourceTrackersInline, which are on; and top
+// Every option defaults to off (except resourceTrackers, which is on; and top
 // and split, which take the layout's own default), so a browser that has never
 // touched this setting gets each layout's own sheet and the item cards it has
 // always had.
@@ -44,7 +44,7 @@ import { resolveSheetLayout, sheetLayoutKey } from '@forge-cb/engine/sheet-contr
 
 export const SHEET_LAYOUT_OPTIONS_STORAGE_KEY = 'fcb-sheet-layout-options';
 
-const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards', 'resourceTrackers', 'resourceTrackersEmpty', 'resourceTrackersInline'];
+const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards', 'resourceTrackers', 'resourceTrackersEmpty', 'resourceTrackersList'];
 /** Options that may also be null, for the layout's own default. */
 const DEFAULTABLE_OPTIONS = ['top', 'split'];
 
@@ -56,7 +56,7 @@ export const DEFAULT_SHEET_LAYOUT_OPTIONS = Object.freeze({
   smartCards: false,
   resourceTrackers: true,
   resourceTrackersEmpty: false,
-  resourceTrackersInline: true,
+  resourceTrackersList: false,
 });
 
 
@@ -134,12 +134,13 @@ export function sheetLayoutCacheKey(layout) {
 /**
  * What the resource tracker options print, as a suffix for the sheet cache
  * keys: nothing for the default (trackers as the Resources tab left them,
- * uses next to their features), so the default keeps the keys it has always had.
+ * next to their features, no Resources list), so the default keeps the keys
+ * it has always had.
  */
 export function resourceTrackersCacheKey(options) {
   const resolved = resolveSheetLayoutOptions(options);
   if (!resolved.resourceTrackers) return '#no-trackers';
-  return (resolved.resourceTrackersEmpty ? '#empty-trackers' : '') + (resolved.resourceTrackersInline ? '' : '#listed-trackers');
+  return (resolved.resourceTrackersEmpty ? '#empty-trackers' : '') + (resolved.resourceTrackersList ? '#resource-list' : '');
 }
 
 /** The sheet request fields the resource tracker options send. */
@@ -148,7 +149,7 @@ export function resourceTrackerSheetOptions(options) {
   return {
     resourceTrackers: resolved.resourceTrackers,
     resourceTrackersEmpty: resolved.resourceTrackers && resolved.resourceTrackersEmpty,
-    resourceTrackersInline: !resolved.resourceTrackers || resolved.resourceTrackersInline,
+    resourceTrackersList: resolved.resourceTrackers && resolved.resourceTrackersList,
   };
 }
 

@@ -889,7 +889,12 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, resourceTrackersEmpty: true }]);
     await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: true, resourceTrackersEmpty: false });
     expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false }]);
-    // Uses next to features: only an explicit off changes the request.
+    // The Resources list: only an explicit on changes the request.
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackersList: true });
+    expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false, resourceTrackersList: true }]);
+    await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackersList: false });
+    expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false }]);
+    // Uses next to features (deprecated): only an explicit off still changes the request.
     await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackersInline: false });
     expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false, resourceTrackersInline: false }]);
     await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackersInline: true });

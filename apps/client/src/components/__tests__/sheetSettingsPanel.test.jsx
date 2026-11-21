@@ -58,10 +58,10 @@ describe('SheetSettingsPanel', () => {
     // Five page checkboxes on, plus ability emphasis, compact top row, split
     // feature boxes, readable body, smart cards and item notes off by default
     // on the 2014 layout; resource trackers are a sixth checkbox, on by default,
-    // printing them empty a seventh, off by default, and uses next to their
-    // features an eighth, on by default.
+    // printing them empty a seventh, off by default, and listing resources
+    // after the features an eighth, off by default.
     expect(markup.match(/type="checkbox"/g)).toHaveLength(14);
-    expect(markup.match(/checked=""/g)).toHaveLength(7);
+    expect(markup.match(/checked=""/g)).toHaveLength(6);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
   });
@@ -92,6 +92,21 @@ describe('SheetSettingsPanel', () => {
       const off = renderToStaticMarkup(createElement(SheetSettingsPanel));
       expect(off).not.toContain('Print resource trackers empty');
       expect(off.match(/type="checkbox"/g)).toHaveLength(12);
+    } finally {
+      sheetLayoutOptionsSettingStore.set({ resourceTrackers: true });
+    }
+  });
+
+  it('offers a Resources list after the features as a switch, off by default, only while trackers print', () => {
+    const list = /<label[^>]*>(?:(?!<\/label>).)*Also list resources after the features/s;
+    expect(markup).toMatch(list);
+    const label = markup.match(list)[0];
+    expect(label).toContain('role="switch"');
+    expect(label.slice(label.lastIndexOf('<input'))).not.toContain('checked=""');
+    expect(markup).not.toContain('Print uses next to their features');
+    sheetLayoutOptionsSettingStore.set({ resourceTrackers: false });
+    try {
+      expect(renderToStaticMarkup(createElement(SheetSettingsPanel))).not.toContain('Also list resources');
     } finally {
       sheetLayoutOptionsSettingStore.set({ resourceTrackers: true });
     }

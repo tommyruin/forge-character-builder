@@ -1440,7 +1440,9 @@ export function createEngineApi(options: EngineTransportOptions = {}) {
       ...(opts.resourceTrackers === false ? { resourceTrackers: false } : {}),
       // Trackers print as the Resources page left them; only an explicit empty sheet sends the new field.
       ...(opts.resourceTrackersEmpty === true ? { resourceTrackersEmpty: true } : {}),
-      // A feature's own trackers print next to it; only an explicit off sends the new field.
+      // The Resources list is off unless asked for; only an explicit on sends the new field.
+      ...(opts.resourceTrackersList === true ? { resourceTrackersList: true } : {}),
+      // Deprecated; a caller that still sends an explicit off gets the older listed layout.
       ...(opts.resourceTrackersInline === false ? { resourceTrackersInline: false } : {}),
       // Card prose is laid out in the body face it will be drawn in.
       ...(typeof opts.fonts?.body === "string" ? { bodyFace: opts.fonts.body } : {}),

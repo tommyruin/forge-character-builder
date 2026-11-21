@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   host.remove();
-  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false, resourceTrackers: true, resourceTrackersInline: true });
+  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false, resourceTrackers: true, resourceTrackersList: false });
   sheetTemplateSettingStore.set('2014');
 });
 
@@ -116,16 +116,16 @@ describe('sheet settings layout options', () => {
     expect(resetButton()).toBeUndefined();
   });
 
-  it('prints uses next to their features by default, and offers it only while trackers print', async () => {
+  it('leaves the Resources list off by default, and offers it only while trackers print', async () => {
     await renderPanel();
-    const inline = () => switchLabelled('Print uses next to their features');
-    expect(inline().getAttribute('role')).toBe('switch');
-    expect(inline().checked).toBe(true);
-    await act(async () => inline().click());
-    expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackersInline).toBe(false);
-    expect(inline().checked).toBe(false);
+    const list = () => switchLabelled('Also list resources after the features');
+    expect(list().getAttribute('role')).toBe('switch');
+    expect(list().checked).toBe(false);
+    await act(async () => list().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackersList).toBe(true);
+    expect(list().checked).toBe(true);
     await act(async () => switchLabelled('Print resource trackers (').click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackers).toBe(false);
-    expect(inline()).toBeUndefined();
+    expect(list()).toBeUndefined();
   });
 });

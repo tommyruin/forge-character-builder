@@ -40,18 +40,18 @@ describe('sheet layout options setting', () => {
       smartCards: false,
       resourceTrackers: true,
       resourceTrackersEmpty: false,
-      resourceTrackersInline: true,
+      resourceTrackersList: false,
     });
   });
 
   it('prints resource trackers as the Resources tab left them, unless off or printed empty', () => {
     expect(resourceTrackersCacheKey(DEFAULT_SHEET_LAYOUT_OPTIONS)).toBe('');
-    expect(resourceTrackerSheetOptions(DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersInline: true });
+    expect(resourceTrackerSheetOptions(DEFAULT_SHEET_LAYOUT_OPTIONS)).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersList: false });
     expect(resourceTrackersCacheKey({ resourceTrackersEmpty: true })).toBe('#empty-trackers');
-    expect(resourceTrackerSheetOptions({ resourceTrackersEmpty: true })).toEqual({ resourceTrackers: true, resourceTrackersEmpty: true, resourceTrackersInline: true });
+    expect(resourceTrackerSheetOptions({ resourceTrackersEmpty: true })).toEqual({ resourceTrackers: true, resourceTrackersEmpty: true, resourceTrackersList: false });
     // Off wins over empty: there is nothing to print empty.
     expect(resourceTrackersCacheKey({ resourceTrackers: false, resourceTrackersEmpty: true })).toBe('#no-trackers');
-    expect(resourceTrackerSheetOptions({ resourceTrackers: false, resourceTrackersEmpty: true })).toEqual({ resourceTrackers: false, resourceTrackersEmpty: false, resourceTrackersInline: true });
+    expect(resourceTrackerSheetOptions({ resourceTrackers: false, resourceTrackersEmpty: true })).toEqual({ resourceTrackers: false, resourceTrackersEmpty: false, resourceTrackersList: false });
     expect(resolveSheetLayoutOptions({ resourceTrackersEmpty: 'yes' }).resourceTrackersEmpty).toBe(false);
 
     const storage = memoryStorage();
@@ -59,18 +59,32 @@ describe('sheet layout options setting', () => {
     expect(readStoredSheetLayoutOptions(storage).resourceTrackersEmpty).toBe(true);
   });
 
-  it('prints uses next to their features unless asked to list every tracker', () => {
-    expect(resourceTrackersCacheKey({ resourceTrackersInline: false })).toBe('#listed-trackers');
-    expect(resourceTrackerSheetOptions({ resourceTrackersInline: false })).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersInline: false });
-    expect(resourceTrackersCacheKey({ resourceTrackersEmpty: true, resourceTrackersInline: false })).toBe('#empty-trackers#listed-trackers');
-    // Off wins: with no trackers there is nothing to list, and the request stays the old one.
-    expect(resourceTrackersCacheKey({ resourceTrackers: false, resourceTrackersInline: false })).toBe('#no-trackers');
-    expect(resourceTrackerSheetOptions({ resourceTrackers: false, resourceTrackersInline: false }).resourceTrackersInline).toBe(true);
-    expect(resolveSheetLayoutOptions({ resourceTrackersInline: 'no' }).resourceTrackersInline).toBe(true);
+  it('lists resources after the features only when asked, and only while trackers print', () => {
+    expect(DEFAULT_SHEET_LAYOUT_OPTIONS.resourceTrackersList).toBe(false);
+    expect(resourceTrackersCacheKey({ resourceTrackersList: true })).toBe('#resource-list');
+    expect(resourceTrackerSheetOptions({ resourceTrackersList: true })).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersList: true });
+    expect(resourceTrackersCacheKey({ resourceTrackersEmpty: true, resourceTrackersList: true })).toBe('#empty-trackers#resource-list');
+    // Off wins: with no trackers there is nothing to list.
+    expect(resourceTrackersCacheKey({ resourceTrackers: false, resourceTrackersList: true })).toBe('#no-trackers');
+    expect(resourceTrackerSheetOptions({ resourceTrackers: false, resourceTrackersList: true }).resourceTrackersList).toBe(false);
+    expect(resolveSheetLayoutOptions({ resourceTrackersList: 'yes' }).resourceTrackersList).toBe(false);
 
     const storage = memoryStorage();
-    createSheetLayoutOptionsSettingStore({ storage }).set({ resourceTrackersInline: false });
-    expect(readStoredSheetLayoutOptions(storage).resourceTrackersInline).toBe(false);
+    createSheetLayoutOptionsSettingStore({ storage }).set({ resourceTrackersList: true });
+    expect(readStoredSheetLayoutOptions(storage).resourceTrackersList).toBe(true);
+  });
+
+  it('reads a stored choice of the retired uses-next-to-features switch without breaking', () => {
+    for (const inline of [true, false]) {
+      const storage = memoryStorage({
+        [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ version: 2, readable: true, resourceTrackersInline: inline }),
+      });
+      const options = readStoredSheetLayoutOptions(storage);
+      // Uses always print next to their features now; the other choices keep.
+      expect(options).toEqual({ ...DEFAULT_SHEET_LAYOUT_OPTIONS, readable: true });
+      expect(resourceTrackersCacheKey(options)).toBe('');
+      expect(resourceTrackerSheetOptions(options)).not.toHaveProperty('resourceTrackersInline');
+    }
   });
 
   it('reads any stored shape without throwing, keeping only valid known options', () => {
