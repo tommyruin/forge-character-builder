@@ -372,6 +372,80 @@ describe("character sheet PDF writer", () => {
     expect(model.formValues?.["companion_proficiency"]).toBe("+2");
   }, 120_000);
 
+  it.each(["2014", "2024", "2024-hybrid"] as const)("prints the companion's senses, skills and defences in their own box on %s", async (set) => {
+    const library = await libraryPromise;
+    const statBlock = (senses: string, raceId: string, companionId: string) => `<elements>
+  <element name="Stats Companion Handler" type="Race" source="Homebrew" id="${raceId}">
+    <description><p>Grants a companion for the statistics box test.</p></description>
+    <setters><set name="names">Test</set></setters>
+    <rules><select type="Companion" name="Stats Companion" /></rules>
+  </element>
+  <element name="Gloam Hound" type="Companion" source="Homebrew" id="${companionId}">
+    <description><p>Synthetic companion for the statistics box test.</p></description>
+    <setters>
+      <set name="strength">12</set><set name="dexterity">14</set><set name="constitution">12</set>
+      <set name="intelligence">3</set><set name="wisdom">12</set><set name="charisma">6</set>
+      <set name="ac">12</set><set name="hp">11 (2d8 + 2)</set><set name="speed">40 ft.</set>
+      <set name="type">Beast</set><set name="size">Medium</set><set name="alignment">unaligned</set>
+      <set name="challenge">1/4</set>
+      <set name="skills">Perception +3, Stealth +4</set>
+      <set name="senses">${senses}</set>
+      <set name="languages">Understands Gloamspeak but cannot speak</set>
+      <set name="resistances">Cold</set>
+    </setters>
+  </element>
+</elements>`;
+    const sheet = async (senses: string, file: string) => {
+      // Each sheet's elements are its own, so one never stands in for another's in the shared library.
+      const tag = file.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+      const raceId = `ID_TEST_RACE_SHEET_COMPANION_${tag}`;
+      const companionId = `ID_TEST_COMPANION_SHEET_${tag}`;
+      await ingestContentFiles(library, [
+        { path: `imports/${file}.xml`, base64: encodeBase64(new TextEncoder().encode(statBlock(senses, raceId, companionId))) },
+      ]);
+      const service = new CharacterService(undefined, library);
+      const id = `Stats ${file}`;
+      service.createCharacter(id);
+      const rule = (type: string) => service.getCharacterDetail(id).selectionRules.find((candidate) => candidate.type === type)!;
+      service.setSelection(id, rule("Race").identifier, raceId);
+      service.setSelection(id, rule("Class").identifier, "ID_WOTC_PHB_CLASS_WIZARD");
+      service.setSelection(id, rule("Companion").identifier, companionId);
+      const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "lite" });
+      const pdf = await writeCharacterSheetPdfWithTemplateBundle(model, localTemplateBundle(set));
+      const doc = await getDocument({ data: new Uint8Array(pdf) }).promise;
+      const pages: Array<Array<{ str: string; x: number; y: number }>> = [];
+      for (let index = 1; index <= doc.numPages; index += 1) {
+        const items = (await (await doc.getPage(index)).getTextContent()).items;
+        pages.push(items.flatMap((item) => "str" in item && item.str.trim() !== "" ? [{ str: item.str, x: item.transform[4] as number, y: item.transform[5] as number }] : []));
+      }
+      return { pages, companionIndex: model.pages.findIndex((page) => page.templateKind === "companion") };
+    };
+
+    const { pages, companionIndex } = await sheet("Darkvision 60 ft., Passive Perception 13", `stats-box-${set}`);
+    const page = pages[companionIndex]!;
+    const text = page.map((item) => item.str).join(" ");
+    // Each line runs in on its label, as a stat block prints it.
+    for (const expected of ["Senses.", "Darkvision 60 ft., Passive Perception 13", "Languages.", "Understands Gloamspeak", "Skills.", "Perception +3, Stealth +4", "Damage Resistances.", "Cold"]) {
+      expect(text, expected).toContain(expected);
+    }
+    // Inside the box under the portrait (34, 42, 168 x 320), not over the traits.
+    const drawn = page.filter((item) => /Gloamspeak|Darkvision|Senses\./.test(item.str));
+    expect(drawn.length).toBeGreaterThan(0);
+    for (const item of drawn) {
+      expect(item.x, item.str).toBeGreaterThanOrEqual(34);
+      expect(item.x, item.str).toBeLessThan(202);
+      expect(item.y, item.str).toBeGreaterThan(42);
+      expect(item.y, item.str).toBeLessThan(362);
+    }
+    // Text the box cannot hold continues under the box's own title.
+    const long = Array.from({ length: 400 }, (_, index) => `Gloamsight ${index} ft.`).join(", ");
+    const overflow = await sheet(long, `stats-overflow-${set}`);
+    expect(overflow.pages.length).toBeGreaterThan(overflow.companionIndex + 1);
+    const continued = overflow.pages.slice(overflow.companionIndex + 1).map((items) => items.map((item) => item.str).join(" ")).join(" ");
+    expect(continued).toContain("Senses, Skills & Defences (continued)");
+    expect(continued).toContain("Gloamsight 399 ft.");
+  }, 120_000);
+
   it("draws the character and companion portraits into their template frames", async () => {
     const library = await libraryPromise;
     const raceId = "ID_TEST_RACE_PORTRAIT_COMPANION";

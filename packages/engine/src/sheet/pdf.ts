@@ -2124,9 +2124,19 @@ function shiftedTraitsLabels(
 }
 
 /**
- * The companion page's flowed text. The template sizes its own
- * `companion_features` box, so the geometry comes from that field's widget
- * rectangle rather than pinned coordinates. Returns what the box could not
+ * The companion page's flowed boxes: each model section and the form field
+ * whose widget rectangle the template sizes for it.
+ */
+const COMPANION_TEXT_BOXES = [
+  { section: "companion-features", field: "companion_features", fallback: { x: 36, top: 368, width: 250, bottom: 40 }, title: "Features" },
+  { section: "companion-statistics", field: "companion_stats", fallback: { x: 37, top: 362, width: 162, bottom: 43 }, title: "Senses, Skills & Defences" },
+] as const;
+
+/**
+ * The companion page's flowed text: the traits and actions, and the senses,
+ * skills and defences, each "Label. text" with its label run in bold. The
+ * template sizes each box, so the geometry comes from its field's widget
+ * rectangle rather than pinned coordinates. Returns what each box could not
  * hold, named by the page's title for it.
  */
 function drawCompanionRichText(
@@ -2136,16 +2146,15 @@ function drawCompanionRichText(
   fieldRects: ReadonlyMap<string, FieldRect>,
   labels: SheetTemplateLabels[string] | undefined,
 ): FeatureContinuation[] {
-  const section = modelPage.sections.find((candidate) => candidate.title === "companion-features");
-  if (section === undefined || section.rows.length === 0) return [];
-  const box = richTextBox(fieldRects, "companion_features", {
-    x: 36,
-    top: 368,
-    width: 250,
-    bottom: 40,
-  });
-  const rest = drawRichFeatureSection(page, sectionParagraphs(section), fonts, box.x, box.top, box.width, box.bottom);
-  return rest === undefined ? [] : [{ paragraphs: rest, heading: boxTitle(labels, fieldRects.get("companion_features"), "Features") }];
+  const continuations: FeatureContinuation[] = [];
+  for (const { section: title, field, fallback, title: heading } of COMPANION_TEXT_BOXES) {
+    const section = modelPage.sections.find((candidate) => candidate.title === title);
+    if (section === undefined || section.rows.length === 0) continue;
+    const box = richTextBox(fieldRects, field, fallback);
+    const rest = drawRichFeatureSection(page, sectionParagraphs(section), fonts, box.x, box.top, box.width, box.bottom);
+    if (rest !== undefined) continuations.push({ paragraphs: rest, heading: boxTitle(labels, fieldRects.get(field), heading) });
+  }
+  return continuations;
 }
 
 function equipmentSidebarRuns(modelPage: SheetPage): LayoutRun[] {
@@ -2825,7 +2834,8 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
     if (modelPage.templateKind === "companion") {
       const { page, fieldRects, overflow } = await fill("companion", bundle.companion, {
         ...values,
-        companion_features: "",
+        // The writer flows these boxes' text itself.
+        ...Object.fromEntries(COMPANION_TEXT_BOXES.map(({ field }) => [field, ""])),
       });
       const companionLabels = bundle.labels[files.companion];
       drawTemplateText(page, companionLabels, fonts, labelInk);
