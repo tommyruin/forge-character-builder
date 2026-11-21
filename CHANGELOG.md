@@ -14,6 +14,9 @@ project uses [Semantic Versioning](https://semver.org/).
   under Charisma with room to write, and Exhaustion's marks share its
   label's line.
 - Spell attack rows read "+6 vs AC", like weapons, without the ability.
+- The client is type-checked against the engine contract
+  (`npm run client:type-check`, run in CI), so a misspelt or forgotten
+  query field fails the build.
 
 ### Fixed
 
@@ -36,11 +39,19 @@ project uses [Semantic Versioning](https://semver.org/).
   unfiltered, and a filter you have set keeps its control so you can clear it.
 - Land vehicles, feed and other Mounts & Vehicles items without a
   description show their type, cost and weight instead of an empty panel.
-- On the Hybrid page, a skill's ability (such as "(Cha)" after Intimidation)
-  no longer runs into the skill name in the Spectral font.
-- A companion with no challenge rating, such as a Primal Companion or Steel
-  Defender, shows your proficiency bonus (+3 at level 8) instead of a number
-  2 too low.
+- On the 2014 and Hybrid pages, a skill's ability (such as "(Cha)" after
+  Intimidation) no longer runs into the skill name in the Spectral font.
+- Companions start from their own stat block. A Primal Companion's or Steel
+  Defender's proficiency bonus is its owner's (+3 at level 8), and the skill
+  and save proficiencies built on it follow. A companion's initiative uses
+  its own Dexterity (Beast of the Land +2, not +0).
+- The Eberron Homunculus Servant uses its creator's proficiency bonus
+  instead of that bonus plus 2, and the UA Ancient and Primeval Companions
+  use their owner's bonus instead of a flat +2.
+- The companion page fills its Senses, Skills & Defences box; it was always
+  empty. Text that doesn't fit continues on a later page.
+- Companion senses show passive Perception from the companion's statistics,
+  so a Ranger 8's Beast of the Land reads 15, not the stat block's 12.
 
 ## [2.9.0] - 2026-11-11
 
