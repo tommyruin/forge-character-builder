@@ -6,7 +6,8 @@
  * covers armorClass, initiative, speed and its modes, and the attack/damage
  * bonuses. The statistics themselves start from the active stat block: its
  * ability scores and its own proficiency bonus, which the content's rules
- * build on.
+ * build on. The senses text's passive Perception follows those statistics
+ * when they give the companion a Perception figure above the printed one.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -134,6 +135,27 @@ const CONTENT_XML = `<elements>
   ${seedBeast("DASH", "-", "12", "", "")}
   ${seedBeast("SERVANT", "-", "15", "", `
       <stat name="companion:proficiency" value="proficiency" bonus="base" />
+      <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />`)}
+  ${seedBeast("SENSES_BOND", "\u2014", "14", `<set name="senses">Darkvision 60 ft.; Passive Perception 12</set>`, `
+      <stat name="companion:proficiency" value="proficiency" bonus="base" />
+      <stat name="companion:proficiency" value="-2" bonus="base companion PB removal" />
+      <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />`)}
+  ${seedBeast("SENSES_MISC", "\u2014", "14", `<set name="senses">passive Perception 12, tremorsense 10 ft.</set>`, `
+      <stat name="companion:proficiency" value="proficiency" bonus="base" />
+      <stat name="companion:proficiency" value="-2" bonus="base companion PB removal" />
+      <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />
+      <stat name="companion:perception:misc" value="1" />`)}
+  ${seedBeast("SENSES_PLAIN", "\u2014", "14", `<set name="senses">Darkvision 60 ft.; Passive Perception 12</set>`, `
+      <stat name="companion:proficiency" value="proficiency" bonus="base" />
+      <stat name="companion:proficiency" value="-2" bonus="base companion PB removal" />`)}
+  ${seedBeast("SENSES_EXPERT", "1/8", "14", `<set name="senses">Darkvision 60 ft.; Passive Perception 16</set>`, `
+      <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />
+      <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="double" />`)}
+  ${seedBeast("SENSES_SHORT", "1/8", "14", `<set name="senses">Darkvision 60 ft.; Passive Perception 18</set>`, `
+      <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />`)}
+  ${seedBeast("SENSES_FORMULA", "\u2014", "14", `<set name="senses">darkvision 60 ft., passive Perception 12 plus PB</set>`, `
+      <stat name="companion:proficiency" value="proficiency" bonus="base" />
+      <stat name="companion:proficiency" value="-2" bonus="base companion PB removal" />
       <stat name="companion:perception:proficiency" value="companion:proficiency" bonus="base" />`)}
 </elements>`;
 
@@ -274,6 +296,33 @@ describe("companion statistics seeded from the active stat block", () => {
     // With no companion chosen there is no companion bonus, and the scores keep the saved attributes.
     expect(before["companion:proficiency"]).toBeUndefined();
     expect(before["companion:dexterity:score"]).toBe(10);
+  });
+});
+
+describe("companion passive Perception", () => {
+  it("follows the statistics when its owner's bonus raises the companion's Perception", () => {
+    // Wis 15 (+2) and the owner's +3 a Ranger 8 lends a dash-rated beast: 10 + 2 + 3.
+    expect(seededCompanion("SENSES_BOND", 8).companion.senses).toBe("Darkvision 60 ft.; Passive Perception 15");
+    expect(seededCompanion("SENSES_BOND", 9).companion.senses).toBe("Darkvision 60 ft.; Passive Perception 16");
+    // A misc bonus counts, and the other senses keep their place and wording.
+    expect(seededCompanion("SENSES_MISC", 8).companion.senses).toBe("passive Perception 16, tremorsense 10 ft.");
+  });
+
+  it("keeps the block's text when no rule gives the companion a Perception figure", () => {
+    expect(seededCompanion("SENSES_PLAIN", 8).companion.senses).toBe("Darkvision 60 ft.; Passive Perception 12");
+  });
+
+  it("leaves a block unchanged when its statistics give the printed number", () => {
+    // A CR 1/8 beast with expertise: 10 + 2 + 2 × 2, whatever its owner's bonus.
+    expect(seededCompanion("SENSES_EXPERT", 9).companion.senses).toBe("Darkvision 60 ft.; Passive Perception 16");
+  });
+
+  it("never prints less than the block when its statistics miss part of the creature's Perception", () => {
+    expect(seededCompanion("SENSES_SHORT", 9).companion.senses).toBe("Darkvision 60 ft.; Passive Perception 18");
+  });
+
+  it("leaves a passive Perception the block states as a formula as written", () => {
+    expect(seededCompanion("SENSES_FORMULA", 8).companion.senses).toBe("darkvision 60 ft., passive Perception 12 plus PB");
   });
 });
 

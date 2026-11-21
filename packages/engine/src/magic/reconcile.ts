@@ -97,6 +97,38 @@ function setterText(element: { setters: { name: string; value: string }[] }, nam
   return element.setters.find((setter) => setter.name === name)?.value ?? "";
 }
 
+/**
+ * The companion's passive Perception from its statistics: 10 + its Wisdom
+ * modifier + its Perception proficiency + its Perception misc pool + any
+ * passive bonus. Undefined when no rule gives the companion a Perception
+ * figure, so its stat block's own number stands.
+ */
+function companionPassivePerception(statistics: Readonly<Record<string, number>>): number | undefined {
+  const wisdom = statistics["companion:wisdom:modifier"];
+  const parts = ["companion:perception:proficiency", "companion:perception:misc", "companion:perception:passive"]
+    .map((key) => statistics[key]);
+  if (wisdom === undefined || parts.every((value) => value === undefined)) return undefined;
+  return parts.reduce<number>((total, value) => total + (value ?? 0), 10 + wisdom);
+}
+
+/** "Passive Perception 12" with a plain number, not a formula such as "10 plus PB×2". */
+const PASSIVE_PERCEPTION = /(passive perception\s+)(\d+)(?=\s*(?:[;,.)]|$))/i;
+
+/**
+ * The stat block's senses with its passive Perception following the
+ * companion's statistics, which carry what its owner adds (a Primal
+ * Companion's Primal Bond). The text stands as written when the statistics
+ * give no figure, when it states a formula, or when the figure is below the
+ * printed one: then the statistics miss something the block counts, such as
+ * a familiar's expertise no rule models.
+ */
+function companionSenses(text: string, statistics: Readonly<Record<string, number>>): string {
+  const passive = companionPassivePerception(statistics);
+  if (passive === undefined) return text;
+  return text.replace(PASSIVE_PERCEPTION, (whole, label: string, printed: string) =>
+    passive > Number.parseInt(printed, 10) ? `${label}${passive}` : whole);
+}
+
 /** Flattens a content description to the plain rules text a sheet can lay out. */
 function descriptionText(xml: string | undefined): string {
   if (xml === undefined) return "";
@@ -201,7 +233,7 @@ export function buildCompanionDto(
     speedText,
     attackBonus: statistics["companion:attack"] ?? 0,
     damageBonus: statistics["companion:damage"] ?? 0,
-    senses: setterText(definition, "senses"),
+    senses: companionSenses(setterText(definition, "senses"), statistics),
     languages: setterText(definition, "languages"),
     skills: setterText(definition, "skills"),
     savingThrows: setterText(definition, "saves"),
