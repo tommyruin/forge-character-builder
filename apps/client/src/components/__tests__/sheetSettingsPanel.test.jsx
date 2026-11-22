@@ -98,7 +98,7 @@ describe('SheetSettingsPanel', () => {
   });
 
   it('offers a Resources list after the features as a switch, off by default, only while trackers print', () => {
-    const list = /<label[^>]*>(?:(?!<\/label>).)*Also list resources after the features/s;
+    const list = /<label[^>]*>(?:(?!<\/label>).)*Also list every resource after the features/s;
     expect(markup).toMatch(list);
     const label = markup.match(list)[0];
     expect(label).toContain('role="switch"');
@@ -106,7 +106,7 @@ describe('SheetSettingsPanel', () => {
     expect(markup).not.toContain('Print uses next to their features');
     sheetLayoutOptionsSettingStore.set({ resourceTrackers: false });
     try {
-      expect(renderToStaticMarkup(createElement(SheetSettingsPanel))).not.toContain('Also list resources');
+      expect(renderToStaticMarkup(createElement(SheetSettingsPanel))).not.toContain('Also list every resource');
     } finally {
       sheetLayoutOptionsSettingStore.set({ resourceTrackers: true });
     }

@@ -812,11 +812,13 @@ describe("the sheet", () => {
     expect(lines[first]).toMatch(/ \[Moon points: ○ ○ ○ ○ points\]$/);
     expect(lines[second]).not.toContain("[");
     expect(lines.filter((line) => line.startsWith("Resources."))).toEqual([]);
-    // Asked for, the paragraph still has nothing left to list.
-    expect(sheetLines(service, id, { resourceTrackersList: true }).filter((line) => line.startsWith("Resources."))).toEqual([]);
+    // Asked for, the paragraph repeats the pool once, though a feature already shows it.
+    const listed = sheetLines(service, id, { resourceTrackersList: true });
+    expect(listed.filter((line) => line.startsWith("Resources."))).toEqual(["Resources. Second Wind ○ (SR); Action Surge ○ (SR); Moon points ○ ○ ○ ○ points (LR)"]);
+    expect(listed[listed.findIndex((line) => line.startsWith("First Light"))]).toMatch(/ \[Moon points: ○ ○ ○ ○ points\]$/);
   });
 
-  it("prints no Resources paragraph unless asked, and then only the trackers no feature closes", () => {
+  it("prints no Resources paragraph unless asked, and then every tracker, those the features show included", () => {
     const { service, id } = fighter();
     service.saveCustomDraft(id, {
       draft: feature("Moonwell Gift", { trackers: [tracker({ id: "a", label: "Moonbeam", max: { kind: "number", value: 2 }, recharge: "shortRest" })] }),
@@ -828,10 +830,17 @@ describe("the sheet", () => {
     expect(plain.some((line) => line.includes("Tide Charm"))).toBe(false);
     expect(plain.find((line) => line.startsWith("Moonwell Gift"))).toMatch(/\[Uses: ○ ○\]$/);
     const listed = sheetLines(service, id, { resourceTrackersList: true });
-    expect(listed.filter((line) => line.startsWith("Resources."))).toEqual(["Resources. Tide Charm ○ ○ ○ charges (dawn)"]);
+    // The list repeats the feature trackers (Second Wind, Action Surge, Moonbeam) and adds the one kept by hand;
+    // the features keep their own uses.
+    const every = "Resources. Second Wind ○ (SR); Action Surge ○ (SR); Moonbeam ○ ○ (SR); Tide Charm ○ ○ ○ charges (dawn)";
+    expect(listed.filter((line) => line.startsWith("Resources."))).toEqual([every]);
     expect(listed.find((line) => line.startsWith("Moonwell Gift"))).toMatch(/\[Uses: ○ ○\]$/);
     expect(sheetLines(service, id, { resourceTrackersList: true, resourceTrackersEmpty: true }).find((line) => line.startsWith("Resources.")))
-      .toBe("Resources. Tide Charm ○ ○ ○ charges (dawn)");
+      .toBe(every);
+    // The deprecated inline switch off lists the same trackers, with no uses next to the features.
+    const old = sheetLines(service, id, { resourceTrackersInline: false });
+    expect(old.filter((line) => line.startsWith("Resources."))).toEqual([every]);
+    expect(old.find((line) => line.startsWith("Moonwell Gift"))).not.toContain("[");
     // Trackers off wins over the list.
     expect(sheetLines(service, id, { resourceTrackers: false, resourceTrackersList: true }).some((line) => line.startsWith("Resources.") || line.includes("["))).toBe(false);
   });

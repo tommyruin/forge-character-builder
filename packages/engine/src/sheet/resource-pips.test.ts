@@ -250,12 +250,12 @@ describe("the PDF's pips", () => {
     const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", resourceTrackersList: true });
     const details = model.pages.find((entry) => entry.templateKind === "details")!;
     const lines = details.sections.flatMap((section) => section.rows.flatMap((row) => row.kind === "lines" ? row.lines : []));
-    // A tracker kept by hand names no feature, so it goes in the paragraph the list option asks for.
-    expect(lines.find((line) => line.startsWith("Resources."))).toBe(`Resources. Pip Test ${OPEN_MARK} ${OPEN_MARK} (LR)`);
+    // The paragraph the list option asks for repeats every tracker, the one kept by hand included.
+    expect(lines.find((line) => line.startsWith("Resources."))).toBe(`Resources. Second Wind ${OPEN_MARK} (SR); Action Surge ${OPEN_MARK} (SR); Pip Test ${OPEN_MARK} ${OPEN_MARK} (LR)`);
     const inline = lines.filter((line) => !line.startsWith("Resources.") && line.includes("[Uses:"));
     expect(inline.length).toBeGreaterThan(0);
     const drawn = await draw(details, "2024");
-    expect(drawn.ringCircles).toBeGreaterThanOrEqual(2 + inline.length);
+    expect(drawn.ringCircles).toBeGreaterThanOrEqual(4 + inline.length);
     expect(drawn.text).not.toContain("•");
   }, 120_000);
 

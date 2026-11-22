@@ -601,8 +601,9 @@ export interface EngineMethodMap {
          */
         resourceTrackersEmpty?: boolean;
         /**
-         * Also close the features text with a "Resources" paragraph of the trackers no printed
-         * feature closes (an item's, those kept by hand). Absent or `false` leaves it off.
+         * Also close the features text with a "Resources" paragraph of every tracker (those a
+         * printed feature already closes with its uses, an item's, those kept by hand).
+         * Absent or `false` leaves it off.
          */
         resourceTrackersList?: boolean;
         /**

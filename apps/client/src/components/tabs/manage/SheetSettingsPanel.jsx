@@ -192,7 +192,7 @@ function ItemCardSettings({ workspace }) {
           <span>Print resource trackers empty, to fill in at the table</span>
         </label>
       )}
-      {/* Each tracker closes the feature that spends it; this adds a Resources list of the rest (items, trackers kept by hand). */}
+      {/* Each tracker closes the feature that spends it; this also lists every tracker after the features (those, items', trackers kept by hand). */}
       {options.resourceTrackers && (
         <label className="flex items-center gap-2 pl-6 text-sm">
           <input
@@ -201,7 +201,7 @@ function ItemCardSettings({ workspace }) {
             checked={options.resourceTrackersList}
             onChange={(event) => setOptions({ resourceTrackersList: event.target.checked })}
           />
-          <span>Also list resources after the features</span>
+          <span>Also list every resource after the features</span>
         </label>
       )}
       {characterId && (

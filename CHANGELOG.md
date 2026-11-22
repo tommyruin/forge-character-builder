@@ -20,9 +20,9 @@ project uses [Semantic Versioning](https://semver.org/).
 - The sheet no longer ends the features text with a Resources list by
   default: each tracker's uses close the text of the feature that spends
   them, and a pool several features share closes the first of them. Sheet
-  settings' "Also list resources after the features" brings the list back
-  for the trackers no printed feature closes (an item's, those kept by
-  hand). It replaces "Print uses next to their features"; uses always print
+  settings' "Also list every resource after the features" brings the list
+  back with every tracker: those the features already show (Innate Sorcery,
+  Sorcery Points) as well as an item's and those kept by hand. It replaces "Print uses next to their features"; uses always print
   there now. `generateSheet` takes an optional `resourceTrackersList`;
   `resourceTrackersInline` is deprecated but still accepted.
 

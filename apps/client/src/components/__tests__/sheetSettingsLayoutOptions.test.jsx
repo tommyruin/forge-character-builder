@@ -118,7 +118,7 @@ describe('sheet settings layout options', () => {
 
   it('leaves the Resources list off by default, and offers it only while trackers print', async () => {
     await renderPanel();
-    const list = () => switchLabelled('Also list resources after the features');
+    const list = () => switchLabelled('Also list every resource after the features');
     expect(list().getAttribute('role')).toBe('switch');
     expect(list().checked).toBe(false);
     await act(async () => list().click());

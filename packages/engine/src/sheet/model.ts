@@ -208,9 +208,9 @@ export interface BuildSheetOptions {
    */
   resourceTrackersEmpty?: boolean;
   /**
-   * Also close the features text with a "Resources" paragraph of the trackers
-   * no printed feature closes (those an item spends, those kept by hand).
-   * Absent or `false` leaves the paragraph off.
+   * Also close the features text with a "Resources" paragraph of every
+   * tracker: those a printed feature already closes with its uses, and those
+   * an item spends or kept by hand. Absent or `false` leaves the paragraph off.
    */
   resourceTrackersList?: boolean;
   /**
@@ -1601,14 +1601,13 @@ function collectFeatures(
     });
   }
   // A tracker closes the text of the first printed feature that spends it.
-  // Asked for, a "Resources" paragraph closes the features text with the rest
-  // (trackers an item spends, those kept by hand): every template has that
-  // box, and what it cannot hold continues on a continuation page.
+  // Asked for, a "Resources" paragraph closes the features text with every
+  // tracker, those the features already show included (trackers an item
+  // spends, those kept by hand too): every template has that box, and what it
+  // cannot hold continues on a continuation page.
   const trackers = resources.mode === "off" ? [] : buildTrackers(state, library, values, usages);
   const empty = resources.mode === "empty";
   const inlineUses = resources.inline ? featureTrackers(trackers, out) : new Map<string, TrackerDto[]>();
-  const inlined = new Set([...inlineUses.values()].flat());
-  const listed = trackers.filter((tracker) => !inlined.has(tracker));
   const statedUsage = new Set(usages.map((entry) => entry.elementId));
   const withUses = (item: CollectedFeature): string => {
     const owned = inlineUses.get(item.elementId);
@@ -1634,7 +1633,7 @@ function collectFeatures(
   // registers a subclass choice ahead of its class's own features, so the
   // plain feature order would print the subclass first.
   const boxRows = [...classRows, ...subclassRows, ...featRows];
-  const resourceText = resources.mode === "off" || !resources.list ? null : resourceSheetText(listed, { empty });
+  const resourceText = resources.mode === "off" || !resources.list ? null : resourceSheetText(trackers, { empty });
   const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
     features: [...boxRows, ...resourceRows],

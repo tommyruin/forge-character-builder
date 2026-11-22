@@ -27,8 +27,8 @@
 //    the table (an open circle per use, a blank for a large count). Only
 //    offered while resourceTrackers is on.
 //  - resourceTrackersList: the features text also closes with a "Resources"
-//    paragraph of the trackers no printed feature closes (an item's, those
-//    kept by hand). Off by default. Only offered while resourceTrackers is on.
+//    paragraph of every tracker (those a feature already shows, an item's,
+//    those kept by hand). Off by default. Only offered while resourceTrackers is on.
 //    It replaces resourceTrackersInline (uses next to features, now always
 //    on); a stored value of that is dropped on reading, like any unknown key.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card

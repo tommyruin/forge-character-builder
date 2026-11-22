@@ -1,8 +1,8 @@
 /**
  * How the sheet prints a character's resources: a tracker closes the text of
  * the first printed feature that spends it ("[Uses: ○ ○]", `inlineUsesText`).
- * Asked for, one "Resources" paragraph closes the features text with the
- * trackers no printed feature closes (`resourceSheetText`); every template has
+ * Asked for, one "Resources" paragraph closes the features text with every
+ * tracker, those a feature already closes included (`resourceSheetText`); every template has
  * that box, and it continues on a continuation page when the box is full. A
  * resource with a few uses gets a circle for each; a large one gets a count
  * ("4 / 7").
