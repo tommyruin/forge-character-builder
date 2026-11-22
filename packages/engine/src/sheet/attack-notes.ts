@@ -15,9 +15,9 @@ export interface SheetAttackRow {
   /** The row's notes cell. */
   note: string;
   /**
-   * The row's spell or weapon also prints on a card in this sheet (a spell
-   * card, or the weapon's item card), so a cell cut short needs no
-   * continuation. Absent when no card carries it.
+   * The row's spell prints on a spell card in this sheet, which has its
+   * range in full, so a cell cut short needs no continuation. Absent for any
+   * other row (a weapon's item card prints no range or damage).
    */
   carded?: boolean;
 }

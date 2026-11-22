@@ -307,6 +307,22 @@ describe("sheet attack rows", () => {
     expect(fields["details_attack1_damage"]).toBe(row.damage);
   });
 
+  it("never marks a weapon row carded: its item card prints no range or damage", async () => {
+    const lib = await library();
+    const service = new CharacterService(undefined, lib);
+    const id = service.createCharacter("Carded weapon").id;
+    service.setRulesetMode(id, "2024");
+    await selectClass(service, id, "ID_WOTC_PHB24_CLASS_FIGHTER");
+    service.addItem(id, { itemId: "ID_WOTC_PHB24_WEAPON_GREATAXE", amount: 1, baseElementId: null });
+    const state = service.getCharacter(id);
+    const withCards = { ...state, items: state.items.map((item) => ({ ...item, card: true })) };
+    const model = buildCharacterSheetModel(withCards, lib, { mode: "full" });
+    expect(model.pages.some((page) => page.templateKind === "item-cards")).toBe(true);
+    const weapon = model.pages.find((page) => page.templateKind === "details")!.attacks!;
+    expect(weapon.length).toBeGreaterThan(0);
+    for (const attack of weapon) expect(attack.carded).toBeUndefined();
+  });
+
   it("prints only the current 2024 weapon mastery before and after clearing and reimport", async () => {
     const lib = await library();
     const service = new CharacterService(undefined, lib);

@@ -34,9 +34,9 @@ project uses [Semantic Versioning](https://semver.org/).
 
 - An attack row's weapon, range, attack or damage cut short on the
   character page no longer adds a "Character (continued)" page just to
-  repeat it, when the row's spell card or the weapon's item card is in the
-  export (Arms of Hadar's "Self (10-foot…"). Without a card, the value still
-  prints in full on the continuation page.
+  repeat it, when a spell's card in the export prints it (Arms of Hadar's
+  "Self (10-foot…"). A weapon row, or a spell without its card, still
+  prints the value in full on the continuation page.
 - On the standard 2014 and 2024 character pages, the features box printed a
   subclass's features before the class's own (an Aberrant Sorcerer's
   Telepathic Speech before Spellcasting), pushing the class features onto

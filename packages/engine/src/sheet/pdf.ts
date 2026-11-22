@@ -1803,7 +1803,7 @@ function fieldFallbackName(field: string): string {
 
 /**
  * Whether a value cut short on the character page is an attack row's cell
- * (weapon, range, attack or damage) whose spell or weapon prints on a card in
+ * (weapon, range, attack or damage) whose spell prints on a spell card in
  * this sheet. The card has the value in full, so the ellipsis stays and no
  * continuation repeats it. Row n is the details page's nth attack.
  */
