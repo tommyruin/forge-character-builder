@@ -1624,16 +1624,26 @@ function collectFeatures(
   // Every row of the features box lands in exactly one group, so a split
   // layout prints everything the combined box does.
   const inBox = (item: CollectedFeature): boolean => item.class === "features";
+  const groupRows = (group: ReturnType<typeof featureGroup>): SheetRow[] =>
+    rows((item) => inBox(item) && featureGroup(item) === group);
+  const classRows = groupRows("class-features");
+  const subclassRows = groupRows("subclass-features");
+  const featRows = groupRows("feats");
+  // The combined box reads in the grouped layouts' order (class features, then
+  // subclass features, then feats), each group in sheet order. The content
+  // registers a subclass choice ahead of its class's own features, so the
+  // plain feature order would print the subclass first.
+  const boxRows = [...classRows, ...subclassRows, ...featRows];
   const resourceText = resources.mode === "off" || !resources.list ? null : resourceSheetText(listed, { empty });
   const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
-    features: [...rows((item) => item.class === "features"), ...resourceRows],
+    features: [...boxRows, ...resourceRows],
     racial: rows((item) => item.class === "racial"),
-    orderedFeatures: [...rows(inBox), ...resourceRows],
+    orderedFeatures: [...boxRows, ...resourceRows],
     groups: {
-      "class-features": [...rows((item) => inBox(item) && featureGroup(item) === "class-features"), ...resourceRows],
-      "subclass-features": rows((item) => inBox(item) && featureGroup(item) === "subclass-features"),
-      feats: rows((item) => inBox(item) && featureGroup(item) === "feats"),
+      "class-features": [...classRows, ...resourceRows],
+      "subclass-features": subclassRows,
+      feats: featRows,
     },
     usages,
   };

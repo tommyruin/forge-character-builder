@@ -28,6 +28,11 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- On the standard 2014 and 2024 character pages, the features box printed a
+  subclass's features before the class's own (an Aberrant Sorcerer's
+  Telepathic Speech before Spellcasting), pushing the class features onto
+  the continuation page. It now lists class features, then subclass
+  features, then feats, as the split layouts do.
 - The 2024 Ability Score Improvement feat choices (Sorcerer level 4 and
   the like) offered only Origin feats.
 - The speed box on the 2024 and Hybrid pages kept its swim line and the
