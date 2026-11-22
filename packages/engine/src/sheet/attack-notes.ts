@@ -14,6 +14,12 @@ export interface SheetAttackRow {
   damage: string;
   /** The row's notes cell. */
   note: string;
+  /**
+   * The row's spell or weapon also prints on a card in this sheet (a spell
+   * card, or the weapon's item card), so a cell cut short needs no
+   * continuation. Absent when no card carries it.
+   */
+  carded?: boolean;
 }
 
 /** The rows every character page template has. */

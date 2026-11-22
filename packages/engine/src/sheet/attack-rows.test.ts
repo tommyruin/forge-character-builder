@@ -197,6 +197,39 @@ describe("sheet attack rows", () => {
     expect(page.inField("details_attack_description")).toBe("Aim for the knees.");
   }, 30_000);
 
+  it("prints a spell row's area range short, and leaves a cut-off cell to the spell's card", async () => {
+    const lib = await library();
+    const service = new CharacterService(undefined, lib);
+    const id = service.createCharacter("Short ranges").id;
+    const row = await makeFireBoltWizard(service, id);
+    // A synthetic area range, typed over the spell's own.
+    service.updateAttack(id, row, { range: "Self (10-foot Emanation)" });
+    expect(service.getAttacks(id).find((attack) => attack.id === row)!.range).toBe("Self (10-foot Emanation)");
+    const model = buildCharacterSheetModel(service.getCharacter(id), lib, { mode: "full" });
+    expect(model.formValues?.["details_attack1_range"]).toBe("Self (10 ft)");
+    expect(model.pages.find((page) => page.templateKind === "details")!.attacks?.[0]).toMatchObject({ range: "Self (10 ft)", carded: true });
+    const text = async (built: CharacterSheetModel): Promise<string> => {
+      const doc = await getDocument({ data: new Uint8Array(await writeCharacterSheetPdfWithTemplateBundle(built, localTemplateBundle("2024"))) }).promise;
+      const pages: string[] = [];
+      for (let index = 1; index <= doc.numPages; index++) {
+        pages.push((await (await doc.getPage(index)).getTextContent()).items.map((item) => ("str" in item ? item.str : "")).join(" "));
+      }
+      return pages.join(" ");
+    };
+    expect(await text(model)).not.toContain("(in full)");
+    // A range too long for its cell: the spell card prints it, so no continuation does.
+    const long = "Self (a long synthetic aura that rolls out around the caster)";
+    service.updateAttack(id, row, { range: long });
+    const carded = buildCharacterSheetModel(service.getCharacter(id), lib, { mode: "full" });
+    expect(await text(carded)).not.toContain("(in full)");
+    // Without the spell cards, the continuation prints it in full.
+    const bare = buildCharacterSheetModel(service.getCharacter(id), lib, { mode: "full", include: { spellCards: false } });
+    expect(bare.pages.find((page) => page.templateKind === "details")!.attacks?.[0]?.carded).toBeUndefined();
+    const printed = await text(bare);
+    expect(printed).toContain("(in full)");
+    expect(printed).toContain(long);
+  }, 120_000);
+
   it("prints a round-tripped spell row's current damage after a level-up", async () => {
     const lib = await library();
     const service = new CharacterService(undefined, lib);

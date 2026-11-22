@@ -59,6 +59,7 @@ import { buildTrackers, type FeatureUsage } from "../resources/view.js";
 import { inlineUsesText, resourceSheetText } from "../resources/sheet.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote, type SheetAttackRow } from "./attack-notes.js";
+import { sheetAttackRange } from "./attack-range.js";
 
 export type { SheetAttackRow } from "./attack-notes.js";
 
@@ -390,7 +391,13 @@ export function buildCharacterSheetModel(
   // Absent means included: a caller that says nothing gets the whole sheet.
   const wants = (page: keyof SheetPageInclusions): boolean => options.include?.[page] !== false;
   const pages: SheetPage[] = [];
-  const attacks = sheetAttackRows(state, library);
+  const spellcasters = buildSpellcastingDto(state, library, values, state.magicCasterIds);
+  const spellCards = options.mode === "full" && wants("spellCards") ? spellCardEntries(state, library, spellcasters) : [];
+  const itemCards = options.mode === "full" && wants("itemCards") ? cardItems(state, library) : [];
+  const attacks = sheetAttackRows(state, library, {
+    spellIds: new Set(spellCards.map((entry) => entry.spell.id)),
+    itemIdentifiers: new Set(itemCards.map(({ item }) => item.identifier)),
+  });
   const resources: ResourcePrint = {
     mode: options.resourceTrackers === false ? "off" : options.resourceTrackersEmpty === true ? "empty" : "state",
     inline: options.resourceTrackersInline !== false,
@@ -406,18 +413,16 @@ export function buildCharacterSheetModel(
   if (options.mode === "full" && wants("notes") && notesFitDedicatedPage(state)) {
     pages.push(buildNotesPage(state));
   }
-  const spellcasters = buildSpellcastingDto(state, library, values, state.magicCasterIds);
   if (spellcasters.length > 0) {
     // The printed list folds matching feat casters into their class's list;
     // the canonical projection keeps the reference builder's caster blocks.
     pages.push(...buildSpellListPages(state, library, options.canonical === true ? spellcasters : mergeSheetSpellcasters(spellcasters)));
   }
-  if (options.mode === "full" && wants("spellCards")) {
-    pages.push(...buildSpellDescriptionPages(state, library, spellcasters, options.canonical === true, options.bodyFace));
+  if (spellCards.length > 0) {
+    pages.push(...buildSpellDescriptionPages(state, library, spellCards, options.canonical === true, options.bodyFace));
   }
-  if (options.mode === "full" && wants("itemCards")) {
-    const itemPage = buildItemDescriptionPage(state, library, options.canonical === true, options.bodyFace);
-    if (itemPage !== null) pages.push(itemPage);
+  if (itemCards.length > 0) {
+    pages.push(buildItemDescriptionPage(itemCards, options.canonical === true, options.bodyFace));
   }
   // The page builders each carry their own idea of where they sit (the
   // companion and card pages count, the fixed ones hardcode). Renumbering here
@@ -451,10 +456,22 @@ export function buildCharacterSheetModel(
  */
 /**
  * The attacks the sheet prints, in order: each displayed attack once, with
- * the live values of its resolved row.
+ * the live values of its resolved row and its range in the short form the
+ * narrow Range cell has room for. A row whose spell or weapon also prints on
+ * a card in this sheet is marked `carded`.
  */
-function sheetAttackRows(state: CharacterState, library: ElementLibrary): SheetAttackRow[] {
+function sheetAttackRows(
+  state: CharacterState,
+  library: ElementLibrary,
+  cards: { spellIds: ReadonlySet<string>; itemIdentifiers: ReadonlySet<string> },
+): SheetAttackRow[] {
   const seen = new Set<string>();
+  const rows = new Map(state.attacks.map((row) => [row.id, row]));
+  const carded = (attack: AttackDto): boolean => {
+    if (attack.kind === "spell") return attack.source !== null && cards.spellIds.has(attack.source.spellId);
+    const row = rows.get(attack.id);
+    return attack.kind === "weapon" && row !== undefined && row.identifier !== "" && cards.itemIdentifiers.has(row.identifier);
+  };
   return buildAttacksDto(state, library)
     .filter((entry) => entry.isDisplayed)
     .filter((entry) => {
@@ -462,7 +479,14 @@ function sheetAttackRows(state: CharacterState, library: ElementLibrary): SheetA
       seen.add(entry.id);
       return true;
     })
-    .map((attack) => ({ name: attack.name, range: attack.range, bonus: attack.bonus, damage: attack.damage, note: sheetAttackNote(attack, library) }));
+    .map((attack) => ({
+      name: attack.name,
+      range: sheetAttackRange(attack.range),
+      bonus: attack.bonus,
+      damage: attack.damage,
+      note: sheetAttackNote(attack, library),
+      ...(carded(attack) ? { carded: true } : {}),
+    }));
 }
 
 /** Keep generated spell prose on its card, while preserving authored attack notes. */
@@ -2962,13 +2986,12 @@ function buildSpellListPages(state: CharacterState, library: ElementLibrary, cas
   return pages;
 }
 
-function buildSpellDescriptionPages(
+/** The spells that get a description card, in card order. */
+function spellCardEntries(
   state: CharacterState,
   library: ElementLibrary,
   casters: readonly SpellcasterDto[],
-  canonical: boolean,
-  bodyFace?: string,
-): SheetPage[] {
+): SpellDescriptionEntry[] {
   // Description cards are a projection of active spell identities, not the
   // complete DTO class lists. Cantrips are active by registration; prepared
   // (or always-prepared) non-cantrips are active for prepared casters, while
@@ -3023,12 +3046,21 @@ function buildSpellDescriptionPages(
     const spell = knownSpellFromLibrary(library, extra.id, decodeEntities(extra.name), extra.level);
     if (spell !== undefined) add(spell, null, decodeEntities(extra.source));
   }
-  const entries = [...union.values()].sort(
+  return [...union.values()].sort(
     (left, right) =>
       left.spell.level - right.spell.level ||
       left.spell.name.localeCompare(right.spell.name) ||
       left.spell.source.localeCompare(right.spell.source),
   );
+}
+
+function buildSpellDescriptionPages(
+  state: CharacterState,
+  library: ElementLibrary,
+  entries: readonly SpellDescriptionEntry[],
+  canonical: boolean,
+  bodyFace?: string,
+): SheetPage[] {
   if (entries.length === 0) return [];
   // One card page for every spell: the slots run on across PDF pages, so a
   // long card's continuation pushes the next card along instead of leaving a
@@ -3209,24 +3241,40 @@ function ordinalLevel(level: number): string {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-function buildItemDescriptionPage(
-  state: CharacterState,
-  library: ElementLibrary,
-  canonical: boolean,
-  bodyFace?: string,
-): SheetPage | null {
-  const items: Array<{ name: string; category: string; description: string; descriptionHtml: string; weight: string; source: string }> = [];
+/** An inventory item that gets an item card, with what the card reads. */
+interface CardItem {
+  item: CharacterState["items"][number];
+  name: string;
+  base: ParsedElement;
+  element: ParsedElement;
+}
+
+/** The inventory items that get an item card, in inventory order. */
+function cardItems(state: CharacterState, library: ElementLibrary): CardItem[] {
+  const out: CardItem[] = [];
   for (const item of state.items) {
     if (!item.card) continue;
     if (isHiddenInventoryItem(item, library)) continue;
     const base = library.byId.get(item.itemId);
     const element = effectiveItemElement(item, library);
     if (base === undefined || element === undefined) continue;
+    out.push({ item, name: itemDisplayName(item, library), base, element });
+  }
+  return out;
+}
+
+function buildItemDescriptionPage(
+  cardItemList: readonly CardItem[],
+  canonical: boolean,
+  bodyFace?: string,
+): SheetPage {
+  const items: Array<{ name: string; category: string; description: string; descriptionHtml: string; weight: string; source: string }> = [];
+  for (const { name, base, element } of cardItemList) {
     const rawDescription = stripXml(element.descriptionXml ?? "");
     const weightSetter = base.setters.find((s) => s.name === "weight")?.value;
     const categorySetter = base.setters.find((s) => s.name === "category")?.value;
     items.push({
-      name: itemDisplayName(item, library),
+      name,
       category: categorySetter ?? "",
       description: rawDescription,
       descriptionHtml: element.descriptionXml ?? "",
@@ -3234,7 +3282,6 @@ function buildItemDescriptionPage(
       source: element.identity.source,
     });
   }
-  if (items.length === 0) return null;
   const cards: DescriptionCard[] = items.map((item) => ({
     kind: "generic",
     title: item.name,

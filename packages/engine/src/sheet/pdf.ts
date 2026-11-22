@@ -2,7 +2,7 @@ import type { SpellResourceDto } from "@forge-cb/api";
 import type { CharacterSheetModel, SheetPage, SheetRow, SheetSection, SheetSpellListSection } from "./model.js";
 import { CONTINUATION_PAGE_TEXT, type LayoutRun } from "./card-layout.js";
 import { BOX_TEXT_TOP_INSET, LAYOUT_CAP_HEIGHT, READABLE_MIN_FONT_SIZE, measuredTextWidth, winAnsiText } from "./text.js";
-import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote } from "./attack-notes.js";
+import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote, type SheetAttackRow } from "./attack-notes.js";
 import { decodeBase64 } from "../platform.js";
 import {
   DEFAULT_SHEET_COLOURS,
@@ -1801,6 +1801,18 @@ function fieldFallbackName(field: string): string {
   return printedName(field.replace(/^(details|background|companion|equipment_page)_/, "").replace(/_/g, " "));
 }
 
+/**
+ * Whether a value cut short on the character page is an attack row's cell
+ * (weapon, range, attack or damage) whose spell or weapon prints on a card in
+ * this sheet. The card has the value in full, so the ellipsis stays and no
+ * continuation repeats it. Row n is the details page's nth attack.
+ */
+function printedOnCard(entry: BoxOverflow, attacks: readonly SheetAttackRow[] | undefined): boolean {
+  if (entry.shown === undefined) return false;
+  const row = /^details_attack(\d+)_(?:weapon|range|attack|damage)$/.exec(entry.field)?.[1];
+  return row !== undefined && attacks?.[Number(row) - 1]?.carded === true;
+}
+
 /** Text a form box could not hold, as plain paragraphs for a continuation. */
 function fieldContinuations(
   overflow: readonly BoxOverflow[], fieldRects: ReadonlyMap<string, FieldRect>, labels: SheetTemplateLabels[string] | undefined,
@@ -2816,7 +2828,8 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       }));
       // A page that carries feature text is titled for it; one carrying only
       // other boxes' values is the character page continued.
-      const continued = addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxOverflow, fieldRects, pageLabels)],
+      const boxContinued = boxOverflow.filter((entry) => !printedOnCard(entry, modelPage.attacks));
+      const continued = addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxContinued, fieldRects, pageLabels)],
         fonts, labelInk, footerText, overflow.length > 0 ? "FEATURES & TRAITS (CONTINUED)" : "CHARACTER (CONTINUED)", pips);
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText, continued);
       continue;

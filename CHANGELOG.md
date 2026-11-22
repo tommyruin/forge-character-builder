@@ -25,9 +25,18 @@ project uses [Semantic Versioning](https://semver.org/).
   Sorcery Points) as well as an item's and those kept by hand. It replaces "Print uses next to their features"; uses always print
   there now. `generateSheet` takes an optional `resourceTrackersList`;
   `resourceTrackersInline` is deprecated but still accepted.
+- The character page's attack table prints ranges in a short form so they
+  fit the Range cell: "60 feet" is "60 ft", "20/60 feet" is "20/60 ft" and
+  "Self (10-foot Emanation)" is "Self (10 ft)". The attacks list and the
+  spell cards keep the range as written.
 
 ### Fixed
 
+- An attack row's weapon, range, attack or damage cut short on the
+  character page no longer adds a "Character (continued)" page just to
+  repeat it, when the row's spell card or the weapon's item card is in the
+  export (Arms of Hadar's "Self (10-foot…"). Without a card, the value still
+  prints in full on the continuation page.
 - On the standard 2014 and 2024 character pages, the features box printed a
   subclass's features before the class's own (an Aberrant Sorcerer's
   Telepathic Speech before Spellcasting), pushing the class features onto

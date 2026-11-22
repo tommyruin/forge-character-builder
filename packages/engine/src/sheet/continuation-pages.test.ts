@@ -224,6 +224,28 @@ describe("text placed in template boxes", () => {
     expect(written.text[1]).toContain(`${shown[0]!.str} (in full)`);
     expect(written.text[1]).toContain(build);
   }, 60_000);
+
+  // A synthetic range too long for the Range cell, of no shape the short form knows.
+  const longRange = "Self (a long synthetic aura that rolls out around the caster)";
+  const attackRow = { name: "Shadow Ring", range: longRange, bonus: "DC 13 STR", damage: "2d6 necrotic", note: "" };
+
+  it("prints a cut-off attack cell in full when no card carries the row", async () => {
+    const written = await render({ page: 1, templateKind: "details", sections: [], attacks: [attackRow] }, { details_attack1_range: longRange });
+    expect(written.text[0]).toMatch(/Self \(a long.*…/);
+    expect(written.text[1]).toContain("(in full)");
+    expect(written.text[1]).toContain(longRange);
+  }, 60_000);
+
+  it("keeps the ellipsis and adds no continuation when the row's spell or weapon prints on a card", async () => {
+    const written = await render(
+      { page: 1, templateKind: "details", sections: [], attacks: [{ ...attackRow, carded: true }] },
+      { details_attack1_range: longRange, details_build: "Level 20 Mountain Dwarf Druid, Circle of the Stars (5) / Warlock, The Genie (4) / Cleric, Unity Domain (4) / Fighter, Psi Warrior (4) / Rogue, Arcane Trickster (3)" },
+    );
+    expect(written.text[0]).toMatch(/Self \(a long.*…/);
+    // Another one-line cell cut short still continues; the attack's range does not.
+    expect(written.text[1]).toContain("(in full)");
+    expect(written.text.slice(1).join(" ")).not.toContain(longRange);
+  }, 60_000);
 });
 
 describe("no value hidden in a template box", () => {
