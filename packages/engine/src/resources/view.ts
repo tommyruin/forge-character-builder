@@ -10,7 +10,9 @@
  *  - a tracker the player added by hand;
  *  - a book feature (or an active control item, such as a Supernatural Gift)
  *    whose sheet usage line states a count and a rest ("2/Short Rest",
- *    "{{proficiency}}/Long Rest" once its token is filled in).
+ *    "{{proficiency}}/Long Rest" once its token is filled in, or a pool of dice
+ *    such as "4d8/Short Rest"), or a book point pool with no usage line at all
+ *    (Sorcery Points, Focus Points: see `POOL_TRACKERS`), sized by its statistic.
  *    Lines in any other shape ("Channel Divinity", "1/Turn") are not tracked.
  *
  * Trackers naming one pool are a single resource. What is spent is stored under
@@ -27,6 +29,7 @@ import { isCustomElementId } from "../custom/schema.js";
 import { grantSwitchOpen } from "../custom/switch-gate.js";
 import { elementTrackers } from "../custom/tracker-setters.js";
 import { spellInfo } from "../magic/spelllist.js";
+import { POOL_TRACKERS } from "./pools.js";
 import { parseUsageText } from "./usage.js";
 import type { DeclaredSwitch, DeclaredTracker } from "./types.js";
 
@@ -195,6 +198,39 @@ function usageCandidates(state: CharacterState, library: ElementLibrary, usages:
   return out;
 }
 
+/**
+ * The book point pools the character has whose size is above nought, keyed as a usage line
+ * of the granting feature would be, so the sheet prints the pool beside that feature. A
+ * feature whose usage line already made a tracker, or that declares its own, keeps that one.
+ */
+function poolCandidates(state: CharacterState, library: ElementLibrary, values: Statistics, taken: ReadonlySet<string>): Candidate[] {
+  const owned = new Set([...state.resources.declared.trackedOwners, ...elementTrackerCarriers(state, library)]);
+  const out: Candidate[] = [];
+  const seen = new Set<string>();
+  for (const { id } of state.sum.elements) {
+    const pool = POOL_TRACKERS.get(id);
+    const key = `usage:${id}`;
+    if (pool === undefined || seen.has(id) || owned.has(id) || taken.has(key)) continue;
+    seen.add(id);
+    const max = Math.max(0, Math.trunc(values[pool.stat] ?? 0));
+    if (max < 1) continue;
+    const element = library.byId.get(id);
+    const alt = element?.sheets[0]?.alt ?? "";
+    const name = alt !== "" ? alt : (element?.identity.name ?? pool.label);
+    out.push({
+      key,
+      label: pool.label,
+      source: { name, kind: "book", elementId: id },
+      isCustom: false,
+      manual: false,
+      max,
+      unit: pool.unit,
+      recharge: pool.recharge,
+    });
+  }
+  return out;
+}
+
 function toDto(candidates: readonly Candidate[], state: CharacterState): TrackerDto {
   const first = candidates[0]!;
   const pooled = first.pool !== undefined;
@@ -233,7 +269,9 @@ export function buildTrackers(
   values: Statistics,
   usages: readonly FeatureUsage[],
 ): TrackerDto[] {
-  const candidates = [...usageCandidates(state, library, usages), ...declaredCandidates(state, library, values), ...manualCandidates(state)];
+  const fromUsage = usageCandidates(state, library, usages);
+  const pools = poolCandidates(state, library, values, new Set(fromUsage.map((candidate) => candidate.key)));
+  const candidates = [...fromUsage, ...pools, ...declaredCandidates(state, library, values), ...manualCandidates(state)];
   const groups = new Map<string, Candidate[]>();
   for (const candidate of candidates) {
     const key = candidate.pool === undefined ? candidate.key : poolKey(candidate.pool);

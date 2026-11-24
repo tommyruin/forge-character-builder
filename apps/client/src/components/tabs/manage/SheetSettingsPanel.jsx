@@ -190,18 +190,6 @@ function ItemCardSettings({ workspace }) {
         />
         <span>Print a Resources box</span>
       </label>
-      {/* By default the trackers print as the Resources tab left them; this prints a fresh sheet instead. */}
-      {(options.resourceTrackers || options.resourceTrackersList) && (
-        <label className="flex items-center gap-2 pl-6 text-sm">
-          <input
-            type="checkbox"
-            role="switch"
-            checked={options.resourceTrackersEmpty}
-            onChange={(event) => setOptions({ resourceTrackersEmpty: event.target.checked })}
-          />
-          <span>Print a fresh sheet, ignoring uses already spent</span>
-        </label>
-      )}
       {characterId && (
         <div className="flex flex-wrap gap-2" role="group" aria-label="Item cards for this character">
           <button

@@ -1,7 +1,8 @@
 /**
  * A few features' sheet text breaks its line mid-thought, and those print as
  * one paragraph. Every other feature keeps its line breaks, which separate
- * distinct benefits. The element here is synthetic and only borrows the id.
+ * distinct benefits. The joined ids are JOIN_SHEET_TEXT_IDS in text-joins.ts;
+ * the element here is synthetic and only borrows one of them.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";

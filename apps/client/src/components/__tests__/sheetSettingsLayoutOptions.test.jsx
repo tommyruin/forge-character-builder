@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   host.remove();
-  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false, resourceTrackers: true, resourceTrackersList: false, resourceTrackersEmpty: false });
+  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false, resourceTrackers: true, resourceTrackersList: false });
   sheetTemplateSettingStore.set('2014');
 });
 
@@ -120,31 +120,26 @@ describe('sheet settings layout options', () => {
     await renderPanel();
     const uses = () => switchLabelled('Show uses next to each feature');
     const box = () => switchLabelled('Print a Resources box');
-    const fresh = () => switchLabelled('Print a fresh sheet');
     expect(uses().getAttribute('role')).toBe('switch');
     expect(uses().checked).toBe(true);
     expect(box().getAttribute('role')).toBe('switch');
     expect(box().checked).toBe(false);
-    expect(fresh().checked).toBe(false);
 
     await act(async () => box().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackersList).toBe(true);
     expect(uses().checked).toBe(true);
 
-    // Resources only in the box: the fresh sheet switch stays on offer.
+    // Resources only in the box.
     await act(async () => uses().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackers).toBe(false);
     expect(box().checked).toBe(true);
-    expect(fresh()).toBeDefined();
 
-    // With neither, there is nothing to print fresh.
+    // With neither, both switches stay on offer.
     await act(async () => box().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackersList).toBe(false);
     expect(uses()).toBeDefined();
     expect(box()).toBeDefined();
-    expect(fresh()).toBeUndefined();
-
-    await act(async () => uses().click());
-    expect(fresh()).toBeDefined();
+    // Printed sheets always start fresh: there is no switch for it.
+    expect(switchLabelled('Print a fresh sheet')).toBeUndefined();
   });
 });

@@ -596,8 +596,8 @@ export interface EngineMethodMap {
          */
         resourceTrackers?: boolean;
         /**
-         * Resource trackers printed empty, to fill in at the table (a circle per use, "____ / N").
-         * Absent or `false` prints what is spent and what is left.
+         * @deprecated Printed sheets always start fresh; ignored. Every tracker prints with all
+         * its uses open (a circle per use, "____ / N" for a large one), whatever is spent.
          */
         resourceTrackersEmpty?: boolean;
         /**

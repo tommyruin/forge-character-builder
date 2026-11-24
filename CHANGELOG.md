@@ -23,13 +23,25 @@ project uses [Semantic Versioning](https://semver.org/).
 - Sheet settings choose where resources print with two separate switches:
   "Show uses next to each feature" and "Print a Resources box". The box is
   its own section under Features on every layout and lists every tracker,
-  including an item's and those kept by hand. "Print a fresh sheet, ignoring
-  uses already spent" replaces "Print resource trackers empty". `generateSheet`
-  takes an optional `resourceTrackersList`; `resourceTrackersInline: false`
-  prints the box without the uses next to features.
+  including an item's and those kept by hand. `generateSheet` takes an
+  optional `resourceTrackersList`; `resourceTrackersInline: false` prints the
+  box without the uses next to features.
+- Printed sheets always start fresh: every use prints open, whatever the
+  character has spent, and a pool of more than six prints as a blank count
+  with its most ("Sorcery Points ____ / 8"), to fill in at the table. The
+  Resources tab keeps what has been spent. The "Print resource trackers
+  empty" switch is gone, and `generateSheet`'s `resourceTrackersEmpty` is
+  deprecated and ignored.
 - The 2024 and Hybrid character pages run to the foot of the page, which
   gives Features more room, and Hybrid's Senses have a second line. On
   Hybrid, Features lines up with Skills.
+- Features too long for the character page even at its smallest size
+  break between whole features, at 7pt or larger, and the rest continues;
+  only a very long feature is still cut. When the Resources box alone would
+  push Features onto a continuation page, its trackers print as the last
+  line of Features instead.
+- On Hybrid, Features lines up with Skills whenever that costs Features no
+  room, not only when the two were nearly level.
 - Exhaustion prints as numbered squares, 1 to 5 and a skull, on every layout,
   so it reads differently from the circles of usable resources.
 - The character page's attack table prints ranges in a short form so they
@@ -49,7 +61,16 @@ project uses [Semantic Versioning](https://semver.org/).
   its printed features and traits ("Adv: Charmed, Frightened, Concentration").
   The box was always blank.
 - Innate Sorcery's last sentence runs on from the one before it instead of
-  printing as a separate indented paragraph.
+  printing as a separate indented paragraph, as do Rage of the Gods' and
+  Telekinetic Bulwark's.
+- Sorcery Points, Focus Points and Ki are tracked: in the Resources tab, the
+  Resources box and beside Font of Magic, Monk's Focus and Ki. Dice pools
+  such as Combat Superiority's and Psionic Power's are tracked too.
+- A feature whose uses change at a higher level (Bardic Inspiration at 5,
+  Warding Flare at 6, Action Surge at 17, Wild Shape at 20) prints the uses
+  for the character's level.
+- A tracker whose label names its unit no longer repeats it: "Sorcery
+  Points ____ / 8", not "Sorcery Points ____ / 8 points".
 - On the standard 2014 and 2024 character pages, the features box printed a
   subclass's features before the class's own (an Aberrant Sorcerer's
   Telepathic Speech before Spellcasting), pushing the class features onto

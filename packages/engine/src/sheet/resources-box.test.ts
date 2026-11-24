@@ -9,10 +9,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PDFDocument, PDFPage } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
-import { OPEN_MARK, SPENT_MARK } from "../resources/sheet.js";
+import { OPEN_MARK } from "../resources/sheet.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import type { CharacterSheetModel, SheetRow } from "./model.js";
-import { writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
+import { resourcesLastPage, writeCharacterSheetPdfWithTemplateBundle } from "./pdf.js";
 import {
   SHEET_LAYOUT_DEFAULTS,
   SHEET_TEMPLATE_CONTRACT,
@@ -29,7 +29,7 @@ interface Item { str: string; x: number; y: number; size: number }
 const line = (text: string): SheetRow => ({ kind: "lines", lines: [text] });
 const prose = (word: string, count: number): string => Array.from({ length: count }, (_, index) => `${word}${index}`).join(" ");
 const resourcesText = (trackers: number): string =>
-  `Resources. ${Array.from({ length: trackers }, (_, index) => `Tracker${index} ${OPEN_MARK} ${SPENT_MARK} (LR)`).join("; ")}`;
+  `Resources. ${Array.from({ length: trackers }, (_, index) => `Tracker${index} ${OPEN_MARK} ${OPEN_MARK} (LR)`).join("; ")}`;
 
 function sheet(features: readonly string[], resources?: string, species?: string): CharacterSheetModel {
   const rows = [...features.map(line), ...(resources === undefined ? [] : [line(resources)])];
@@ -102,6 +102,47 @@ describe("the Resources box", () => {
     for (let index = 0; index < trackers; index += 1) expect(all).toContain(`Tracker${index}`);
   }, 60_000);
 
+  const featureWords = (pages: readonly Item[][]): string[] => pages.flat().flatMap((item) => item.str.match(/\bft\d+\b/g) ?? []);
+
+  it("keeps the paragraph inline when only that keeps the features on the page", async () => {
+    // Too long for the frame the box shortens even at the floor; short enough
+    // for the whole frame.
+    const draw = vi.spyOn(PDFPage.prototype, "drawPage");
+    const pages = await render(sheet(["Longfeature. " + prose("ft", 890)], resourcesText(2)), "2014");
+    // No box: the artwork prints as drawn.
+    expect(draw).toHaveBeenCalledTimes(1);
+    expect(pages).toHaveLength(1);
+    expect(pages[0]!.filter((item) => item.str.startsWith("Resources."))).toHaveLength(1);
+    expect(new Set(featureWords(pages)).size).toBe(890);
+  }, 60_000);
+
+  it("moves the folded paragraph to the end of the last group of features", () => {
+    const res = line(resourcesText(1));
+    const page = {
+      page: 1, templateKind: "details" as const, sections: [],
+      featureGroups: { "class-features": [line("Class. One."), res], "subclass-features": [line("Sub. Two.")], feats: [] },
+    };
+    const moved = resourcesLastPage(page).featureGroups!;
+    expect(moved["class-features"]).toEqual([line("Class. One.")]);
+    expect(moved["subclass-features"]).toEqual([line("Sub. Two."), res]);
+    expect(moved.feats).toEqual([]);
+    const plain = { ...page, featureGroups: { "class-features": [line("Class. One.")] } };
+    expect(resourcesLastPage(plain)).toBe(plain);
+  });
+
+  it("keeps the box when the features would continue either way", async () => {
+    const draw = vi.spyOn(PDFPage.prototype, "drawPage");
+    const pages = await render(sheet(["Longfeature. " + prose("ft", 950)], resourcesText(2)), "2014");
+    expect(draw.mock.calls.length).toBeGreaterThan(1);
+    expect(pages.length).toBeGreaterThan(1);
+    const lead = pages[0]!.filter((item) => item.str.startsWith("Resources."));
+    expect(lead).toHaveLength(1);
+    expect(lead[0]!.y).toBeLessThan(frameFoot("2014") + 40);
+    const words = featureWords(pages);
+    expect(words).toHaveLength(950);
+    expect(new Set(words).size).toBe(950);
+  }, 60_000);
+
   it.each(SHEET_TEMPLATE_SETS)("leaves the artwork as drawn when there is no paragraph on %s", async (set) => {
     const draw = vi.spyOn(PDFPage.prototype, "drawPage");
     await render(sheet(["Opening. A short feature."]), set);
@@ -133,6 +174,38 @@ describe("the Hybrid column's alignment", () => {
       if (bottom !== align.y) expect(Math.abs(bottom - align.y), `foot at ${bottom}`).toBeGreaterThan(align.within);
     }
   }, 120_000);
+
+  /** The Species Traits foot, and the sizes the species and feature words print at. */
+  async function foot(species: string, features: number) {
+    const pages = await render(sheet([`Opening. ${prose("ft", features)}`], undefined, species), "2024-hybrid");
+    const title = pages[0]!.find((item) => item.str === "FEATURES")!;
+    const sizes = (pattern: RegExp) => pages[0]!.filter((item) => pattern.test(item.str)).map((item) => item.size);
+    return {
+      pages: pages.length,
+      bottom: Math.round((title.y + 11 + column.gap["2024-hybrid"]) * 100) / 100,
+      species: sizes(/\bsp\d/),
+      features: sizes(/\bft\d/),
+    };
+  }
+
+  it("takes the line from far off while the features have room, for a short species and a long one", async () => {
+    // A one-line species would end far above the line, and this one far below
+    // it at the normal size; each still prints at 7.5pt or more on it.
+    for (const species of ["Brief. One line sp0.", `Trait. ${prose("sp", 220)}`]) {
+      const placed = await foot(species, 300);
+      expect(placed.bottom, species.slice(0, 12)).toBe(align.y);
+      expect(placed.pages).toBe(1);
+      for (const size of placed.features) expect(size).toBeCloseTo(8, 1);
+      for (const size of placed.species) expect(size).toBeGreaterThanOrEqual(7.5 - 0.01);
+    }
+  }, 60_000);
+
+  it("keeps a far-off foot rather than shrink features that fill their box", async () => {
+    const placed = await foot("Brief. One line sp0.", 700);
+    expect(Math.abs(placed.bottom - align.y)).toBeGreaterThan(align.within);
+    expect(placed.pages).toBe(1);
+    for (const size of placed.features) expect(size).toBeCloseTo(8, 1);
+  }, 60_000);
 });
 
 describe("the exhaustion track", () => {

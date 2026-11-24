@@ -61,6 +61,7 @@ import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote, type SheetAttackRow } from "./attack-notes.js";
 import { sheetAttackRange } from "./attack-range.js";
 import { savingThrowNote } from "./save-notes.js";
+import { JOIN_SHEET_TEXT_IDS } from "./text-joins.js";
 
 export type { SheetAttackRow } from "./attack-notes.js";
 
@@ -169,17 +170,16 @@ export interface SheetPageInclusions {
 }
 
 /**
- * How the trackers print: left off, as the Resources page left them, or empty
- * to fill in; whether a feature's trackers close that feature's text; and
- * whether the "Resources" paragraph lists the trackers no printed feature
- * closes.
+ * Whether the trackers print at all (always fresh, see `resources/sheet.ts`);
+ * whether a feature's trackers close that feature's text; and whether the
+ * "Resources" paragraph lists the trackers no printed feature closes.
  */
 interface ResourcePrint {
-  mode: "off" | "state" | "empty";
+  printed: boolean;
   inline: boolean;
   list: boolean;
 }
-const DEFAULT_RESOURCE_PRINT: ResourcePrint = { mode: "state", inline: true, list: false };
+const DEFAULT_RESOURCE_PRINT: ResourcePrint = { printed: true, inline: true, list: false };
 
 export interface BuildSheetOptions {
   mode: SheetMode;
@@ -203,12 +203,6 @@ export interface BuildSheetOptions {
    * tracker off.
    */
   resourceTrackers?: boolean;
-  /**
-   * Whether the trackers print empty, to fill in at the table: an open circle
-   * per use and a blank for a large count. Absent or `false` prints each
-   * tracker as the Resources page left it (what is spent, what is left).
-   */
-  resourceTrackersEmpty?: boolean;
   /**
    * Also close the features text with a "Resources" paragraph of every
    * tracker: those a printed feature already closes with its uses, and those
@@ -334,11 +328,16 @@ export function sheetDescriptionAtLevel(
   return best;
 }
 
-/** The feature parenthetical: non-empty parts of action/alt/usage joined with em dashes. */
+/**
+ * The feature parenthetical: non-empty parts of action/alt/usage joined with
+ * em dashes. A tier's own usage wins over the sheet's, so a feature whose
+ * recovery changes at a level (a Long Rest use that becomes a Short Rest one)
+ * prints the tier the character has reached.
+ */
 function featureParenthetical(sheet: ParsedSheetEntry, description: SheetDescription | undefined): string {
   const parts: string[] = [];
   if (sheet.action !== undefined && sheet.action !== "") parts.push(sheet.action);
-  const usage = sheet.usage ?? description?.usage;
+  const usage = description?.usage ?? sheet.usage;
   if (usage !== undefined && usage !== "") parts.push(usage);
   return parts.join("—");
 }
@@ -396,7 +395,7 @@ export function buildCharacterSheetModel(
   const spellCards = options.mode === "full" && wants("spellCards") ? spellCardEntries(state, library, spellcasters) : [];
   const attacks = sheetAttackRows(state, library, new Set(spellCards.map((entry) => entry.spell.id)));
   const resources: ResourcePrint = {
-    mode: options.resourceTrackers === false ? "off" : options.resourceTrackersEmpty === true ? "empty" : "state",
+    printed: options.resourceTrackers !== false,
     inline: options.resourceTrackersInline !== false,
     // The old "every tracker in the paragraph" layout keeps its paragraph.
     list: options.resourceTrackersList === true || options.resourceTrackersInline === false,
@@ -1586,7 +1585,7 @@ function collectFeatures(
     const description = sheetDescriptionAtLevel(sheet, classLevels.get(id) ?? state.level);
     if (description === undefined) continue;
     const parenthetical = featureParenthetical(sheet, description);
-    const usageLine = sheet.usage ?? description.usage;
+    const usageLine = description.usage ?? sheet.usage;
     if (usageLine !== undefined && usageLine !== "") {
       usages.push({
         elementId: id,
@@ -1601,7 +1600,7 @@ function collectFeatures(
       title: sheet.alt !== undefined && sheet.alt !== "" ? sheet.alt : element.identity.name,
       parenthetical: parenthetical === "" ? null : substitute(parenthetical, values, inline),
       description: substitute(
-        ONE_PARAGRAPH_SHEET_TEXT_IDS.has(id) ? description.text.replace(/\s*[\r\n]+\s*/g, " ") : description.text,
+        JOIN_SHEET_TEXT_IDS.has(id) ? description.text.replace(/\s*[\r\n]+\s*/g, " ") : description.text,
         values,
         inline,
       ),
@@ -1617,7 +1616,7 @@ function collectFeatures(
     if (element === undefined || sheet === undefined || usageIds.has(id)) continue;
     if (element.sheets.some((entry) => entry.display === false)) continue;
     const description = sheetDescriptionAtLevel(sheet, state.level);
-    const usageLine = sheet.usage ?? description?.usage;
+    const usageLine = description?.usage ?? sheet.usage;
     if (usageLine === undefined || usageLine === "") continue;
     usageIds.add(id);
     usages.push({
@@ -1631,14 +1630,13 @@ function collectFeatures(
   // tracker, those the features already show included (trackers an item
   // spends, those kept by hand too): every template has that box, and what it
   // cannot hold continues on a continuation page.
-  const trackers = resources.mode === "off" ? [] : buildTrackers(state, library, values, usages);
-  const empty = resources.mode === "empty";
+  const trackers = resources.printed ? buildTrackers(state, library, values, usages) : [];
   const inlineUses = resources.inline ? featureTrackers(trackers, out) : new Map<string, TrackerDto[]>();
   const statedUsage = new Set(usages.map((entry) => entry.elementId));
   const withUses = (item: CollectedFeature): string => {
     const owned = inlineUses.get(item.elementId);
     // A feature whose line states no usage ("2/Long Rest") gets the recharge with its uses.
-    const uses = owned === undefined ? null : inlineUsesText(owned, { empty, recharge: !statedUsage.has(item.elementId) });
+    const uses = owned === undefined ? null : inlineUsesText(owned, { recharge: !statedUsage.has(item.elementId) });
     return uses === null ? item.description : `${item.description.trim()} ${uses}`.trim();
   };
   const rows = (filter: (item: CollectedFeature) => boolean): SheetRow[] =>
@@ -1659,7 +1657,7 @@ function collectFeatures(
   // registers a subclass choice ahead of its class's own features, so the
   // plain feature order would print the subclass first.
   const boxRows = [...classRows, ...subclassRows, ...featRows];
-  const resourceText = resources.mode === "off" || !resources.list ? null : resourceSheetText(trackers, { empty });
+  const resourceText = resources.printed && resources.list ? resourceSheetText(trackers) : null;
   const resourceRows: SheetRow[] = resourceText === null ? [] : [{ kind: "lines", lines: [resourceText] }];
   return {
     features: [...boxRows, ...resourceRows],
@@ -1728,15 +1726,6 @@ export function featureUsageEntries(
 ): FeatureUsage[] {
   return collectFeatures(state, library, values, inline).usages;
 }
-
-/**
- * Features whose sheet text prints as one paragraph although the content
- * breaks its line mid-thought. Line breaks elsewhere separate distinct
- * benefits, so this stays a list of named elements rather than a general rule.
- */
-const ONE_PARAGRAPH_SHEET_TEXT_IDS: ReadonlySet<string> = new Set([
-  "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_INNATE_SORCERY",
-]);
 
 /** Feature types whose own `<requirements>` decide whether they print. */
 const REQUIREMENT_GATED_FEATURE_TYPES: ReadonlySet<string> = new Set([

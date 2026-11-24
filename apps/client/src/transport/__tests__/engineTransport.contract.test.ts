@@ -882,11 +882,12 @@ describe("typed FCB nested adapter", () => {
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, inventoryNotes: true }]);
     await renderedApi.characters.sheetBytes("Ada", { lite: false, inventoryNotes: false });
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false }]);
-    // Resource trackers: only an explicit off, or an explicit empty sheet, changes the request.
+    // Resource trackers: only an explicit off changes the request.
     await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: false });
     expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, resourceTrackers: false }]);
+    // The deprecated empty-trackers field is never sent: printed sheets always start fresh.
     await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: true, resourceTrackersEmpty: true });
-    expect(calls).toContainEqual(["generateSheet", "Ada", { lite: false, resourceTrackersEmpty: true }]);
+    expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false }]);
     await renderedApi.characters.sheetBytes("Ada", { lite: false, resourceTrackers: true, resourceTrackersEmpty: false });
     expect(calls.filter((call) => call[0] === "generateSheet").at(-1)).toEqual(["generateSheet", "Ada", { lite: false }]);
     // The Resources list: only an explicit on changes the request.

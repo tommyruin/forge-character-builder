@@ -150,7 +150,7 @@ describe("trackers carried by a compiled pack element", () => {
     // The gift's own trackers close its text, so the Resources paragraph has none of them.
     expect(lines.filter((line) => line.includes("Moonbeam"))).toHaveLength(1);
     expect(lines.filter((line) => line.includes("Embers"))).toHaveLength(1);
-    expect(lines.find((line) => line.includes("Moonbeam"))).toMatch(/\[Moonbeam: [○● ]+.*\]/);
+    expect(lines.find((line) => line.includes("Moonbeam"))).toMatch(/\[Moonbeam: [○ ]+.*\]/);
     expect(lines.some((line) => line.startsWith("Resources.") && line.includes("Moonbeam"))).toBe(false);
     // Uses next to features off: the one paragraph lists them, as before.
     const listed = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", resourceTrackersInline: false }).pages

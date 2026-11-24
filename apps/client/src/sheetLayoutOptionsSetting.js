@@ -19,19 +19,19 @@
 //    attack rows.
 //  - inventoryNotes: the equipment page's notes column also describes the
 //    other magic items in full and the tools and useful gear in brief.
-//  - resourceTrackers: uses print next to each feature, as the Resources tab
-//    left them (a filled circle per use spent, an open one per use left), each
-//    closing the text of the first printed feature that spends it
-//    ("[Uses: ○ ○]"). On by default; off leaves them out of the features.
+//  - resourceTrackers: uses print next to each feature, each closing the text
+//    of the first printed feature that spends it ("[Uses: ○ ○]"). A printed
+//    sheet always starts fresh: every use open, whatever the Resources tab has
+//    spent. On by default; off leaves them out of the features.
 //  - resourceTrackersList: the sheet also prints a Resources box of every
 //    tracker (those a feature shows, an item's, those kept by hand). Off by
 //    default and independent of resourceTrackers, so the box can print alone.
 //    The render request spells that case resourceTrackersInline: false; that
 //    field is derived and never stored, so a stored value of it is dropped on
 //    reading, like any unknown key.
-//  - resourceTrackersEmpty: whatever trackers print, print as a fresh sheet,
-//    ignoring uses already spent (an open circle per use, a blank for a large
-//    count). Only offered while resourceTrackers or resourceTrackersList is on.
+//  - resourceTrackersEmpty (retired): printed sheets now always start fresh,
+//    so this switch is gone. A stored value is dropped on reading, like any
+//    unknown key, and the render request never sends it.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card
 //    only when they are magic items, tools or useful gear. Items already in
 //    the inventory never change.
@@ -45,7 +45,7 @@ import { resolveSheetLayout, sheetLayoutKey } from '@forge-cb/engine/sheet-contr
 
 export const SHEET_LAYOUT_OPTIONS_STORAGE_KEY = 'fcb-sheet-layout-options';
 
-const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards', 'resourceTrackers', 'resourceTrackersEmpty', 'resourceTrackersList'];
+const BOOLEAN_OPTIONS = ['readable', 'inventoryNotes', 'smartCards', 'resourceTrackers', 'resourceTrackersList'];
 /** Options that may also be null, for the layout's own default. */
 const DEFAULTABLE_OPTIONS = ['top', 'split'];
 
@@ -56,7 +56,6 @@ export const DEFAULT_SHEET_LAYOUT_OPTIONS = Object.freeze({
   inventoryNotes: false,
   smartCards: false,
   resourceTrackers: true,
-  resourceTrackersEmpty: false,
   resourceTrackersList: false,
 });
 
@@ -139,16 +138,14 @@ export function sheetLayoutCacheKey(layout) {
 
 /**
  * What the resource tracker options print, as a suffix for the sheet cache
- * keys: nothing for the default (trackers as the Resources tab left them,
- * next to their features, no Resources box), so the default keeps the keys
- * it has always had. Each of the four next-to-features and box combinations
- * has its own key.
+ * keys: nothing for the default (trackers next to their features, no
+ * Resources box), so the default keeps the keys it has always had. Each of
+ * the four next-to-features and box combinations has its own key.
  */
 export function resourceTrackersCacheKey(options) {
-  const { resourceTrackers: inline, resourceTrackersList: list, resourceTrackersEmpty: empty } = resolveSheetLayoutOptions(options);
+  const { resourceTrackers: inline, resourceTrackersList: list } = resolveSheetLayoutOptions(options);
   if (!inline && !list) return '#no-trackers';
-  const placement = !inline ? '#resource-list-only' : list ? '#resource-list' : '';
-  return (empty ? '#empty-trackers' : '') + placement;
+  return !inline ? '#resource-list-only' : list ? '#resource-list' : '';
 }
 
 /**
@@ -157,11 +154,9 @@ export function resourceTrackersCacheKey(options) {
  * beside features keeps it true and sends resourceTrackersInline: false.
  */
 export function resourceTrackerSheetOptions(options) {
-  const { resourceTrackers: inline, resourceTrackersList: list, resourceTrackersEmpty: empty } = resolveSheetLayoutOptions(options);
-  const anyPrinted = inline || list;
+  const { resourceTrackers: inline, resourceTrackersList: list } = resolveSheetLayoutOptions(options);
   return {
-    resourceTrackers: anyPrinted,
-    resourceTrackersEmpty: anyPrinted && empty,
+    resourceTrackers: inline || list,
     resourceTrackersList: list,
     ...(list && !inline ? { resourceTrackersInline: false } : {}),
   };

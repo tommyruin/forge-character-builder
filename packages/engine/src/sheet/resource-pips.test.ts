@@ -9,13 +9,12 @@ import type { TrackerDto } from "@forge-cb/api";
 import { PDFPage } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { type CharacterService } from "../character/service.js";
-import { OPEN_MARK, SPENT_MARK, inlineUsesText, resourceSheetText } from "../resources/sheet.js";
+import { OPEN_MARK, inlineUsesText, resourceSheetText } from "../resources/sheet.js";
 import { buildFighter3, sharedLibrary } from "../testing/character-factory.js";
 import { localTemplateBundle } from "../testing/sheet-bundle.js";
 import { buildCharacterSheetModel, type CharacterSheetModel, type SheetPage } from "./model.js";
 import { featureFlowLines, featureParagraphs, writeCharacterSheetPdfWithTemplateBundle, type TextMeasure } from "./pdf.js";
 import {
-  CHECK_DOT_RATIO,
   DEFAULT_PIP_LOOK,
   MARKER_STROKE,
   PIP_SIDE_BEARING,
@@ -39,20 +38,22 @@ const unitMeasure: TextMeasure = (text, fontSize) => [...text].length * fontSize
 
 describe("pip tokens", () => {
   it("finds the Resources paragraph and nothing else", () => {
-    expect(isPipParagraph("Resources. Pip Test ○ ● (LR)")).toBe(true);
+    expect(isPipParagraph("Resources. Pip Test ○ ○ (LR)")).toBe(true);
     expect(isPipParagraph("Resources.")).toBe(true);
     expect(isPipParagraph("Resourceful. A feature ○")).toBe(false);
     expect(isPipParagraph("Gift. Resources. ○")).toBe(false);
     expect(hasPips(OPEN_MARK)).toBe(true);
-    expect(hasPips(`${SPENT_MARK};`)).toBe(true);
+    expect(hasPips(`${OPEN_MARK};`)).toBe(true);
     expect(hasPips("(LR);")).toBe(false);
+    // A filled circle is no tracker mark: the sheet prints every use open.
+    expect(hasPips("●")).toBe(false);
   });
 
   it("splits a word into text runs and pips, in order", () => {
-    expect(pipSegments(OPEN_MARK)).toEqual([{ kind: "pip", spent: false }]);
-    expect(pipSegments(`${SPENT_MARK};`)).toEqual([{ kind: "pip", spent: true }, { kind: "text", text: ";" }]);
-    expect(pipSegments(`(${OPEN_MARK}${SPENT_MARK})`)).toEqual([
-      { kind: "text", text: "(" }, { kind: "pip", spent: false }, { kind: "pip", spent: true }, { kind: "text", text: ")" },
+    expect(pipSegments(OPEN_MARK)).toEqual([{ kind: "pip" }]);
+    expect(pipSegments(`${OPEN_MARK};`)).toEqual([{ kind: "pip" }, { kind: "text", text: ";" }]);
+    expect(pipSegments(`(${OPEN_MARK}${OPEN_MARK})`)).toEqual([
+      { kind: "text", text: "(" }, { kind: "pip" }, { kind: "pip" }, { kind: "text", text: ")" },
     ]);
     expect(pipSegments("plain")).toEqual([{ kind: "text", text: "plain" }]);
   });
@@ -60,10 +61,10 @@ describe("pip tokens", () => {
   it("marks only the Resources paragraph's regular words that hold a mark", () => {
     const [resources, other] = featureParagraphs([
       { kind: "lines", lines: [resourceSheetText([dto({}), dto({ label: "Gift", max: 1, used: 0, recharge: "never" })])!] },
-      { kind: "lines", lines: [`Bullets. A feature that prints ${OPEN_MARK} and ${SPENT_MARK} as text.`] },
+      { kind: "lines", lines: [`Bullets. A feature that prints ${OPEN_MARK} as text.`] },
     ]);
     const words = resources!.words;
-    expect(words.filter((word) => word.pips === true).map((word) => word.text)).toEqual([OPEN_MARK, OPEN_MARK, SPENT_MARK, SPENT_MARK, OPEN_MARK]);
+    expect(words.filter((word) => word.pips === true).map((word) => word.text)).toEqual([OPEN_MARK, OPEN_MARK, OPEN_MARK, OPEN_MARK, OPEN_MARK]);
     expect(words.find((word) => word.text === "Resources.")).toMatchObject({ style: "bold-italic" });
     expect(words.find((word) => word.text === "Resources.")?.pips).toBeUndefined();
     expect(other!.words.some((word) => word.pips === true)).toBe(false);
@@ -71,44 +72,49 @@ describe("pip tokens", () => {
 });
 
 describe("a feature's inline uses", () => {
-  it("prints one tracker by its unit, several by label, and a large one as a count", () => {
-    expect(inlineUsesText([dto({})])).toBe(`[Uses: ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK}]`);
-    expect(inlineUsesText([dto({})], { empty: true })).toBe(`[Uses: ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK}]`);
-    expect(inlineUsesText([dto({ unit: "charges", max: 7, used: 3 })])).toBe("[Charges: 4 / 7]");
+  it("prints one tracker by its unit, several by label, and a large one as a blank count, every use open", () => {
+    // Two of the four uses are spent; the sheet starts fresh all the same.
+    expect(inlineUsesText([dto({})])).toBe(`[Uses: ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK}]`);
+    expect(inlineUsesText([dto({ unit: "charges", max: 7, used: 3 })])).toBe("[Charges: ____ / 7]");
     expect(inlineUsesText([dto({ max: 2, used: 0 })], { recharge: true })).toBe(`[Uses: ${OPEN_MARK} ${OPEN_MARK} (LR)]`);
-    expect(inlineUsesText([dto({ max: 1, used: 0 }), dto({ label: "Wand", unit: "charges", max: 9, used: 0 })], { empty: true }))
+    expect(inlineUsesText([dto({ max: 1, used: 0 }), dto({ label: "Wand", unit: "charges", max: 9, used: 4 })]))
       .toBe(`[Pip Test: ${OPEN_MARK}] [Wand: ____ / 9 charges]`);
     expect(inlineUsesText([dto({ pool: "Moon points", label: "Moon points", unit: "points", max: 3, used: 1 })]))
-      .toBe(`[Moon points: ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} points]`);
+      .toBe(`[Moon points: ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK}]`);
+    // A label that names its unit doesn't repeat it; a large pool is a blank to fill in, never "8 / 8".
+    expect(resourceSheetText([dto({ label: "Sorcery Points", unit: "points", max: 8, used: 0 })]))
+      .toBe("Resources. Sorcery Points ____ / 8 (LR)");
+    expect(resourceSheetText([dto({ label: "Sorcery Points", unit: "points", max: 8, used: 3 })]))
+      .toBe("Resources. Sorcery Points ____ / 8 (LR)");
+    expect(inlineUsesText([dto({ label: "Sorcery Points", unit: "points", max: 8, used: 3 })])).toBe("[Points: ____ / 8]");
     expect(inlineUsesText([dto({ tracked: false })])).toBeNull();
   });
 
   it("finds only the marks of the bracketed groups closing a paragraph", () => {
     const words = (text: string) => text.split(" ");
-    expect([...inlinePipWords(words(`Gift. Text. [Uses: ${OPEN_MARK} ${SPENT_MARK}]`))]).toEqual([3, 4]);
-    expect([...inlinePipWords(words(`Gift. [Channel Divinity: ${OPEN_MARK}] [Wand: 4 / 7 charges]`))]).toEqual([3]);
+    expect([...inlinePipWords(words(`Gift. Text. [Uses: ${OPEN_MARK} ${OPEN_MARK}]`))]).toEqual([3, 4]);
+    expect([...inlinePipWords(words(`Gift. [Channel Divinity: ${OPEN_MARK}] [Wand: ____ / 7 charges]`))]).toEqual([3]);
     // A mark in the text itself, a bracket with no label, or one not at the end is text.
     expect(inlinePipWords(words(`Gift. ${OPEN_MARK} [see below]`)).size).toBe(0);
     expect(inlinePipWords(words(`Gift. [Uses: ${OPEN_MARK}] more text`)).size).toBe(0);
-    expect(inlinePipWords(words(`Gift. [Uses: 4 / 7]`)).size).toBe(0);
+    expect(inlinePipWords(words(`Gift. [Uses: ____ / 7]`)).size).toBe(0);
   });
 
   it("marks a feature line's closing uses as pips, and no other mark in it", () => {
-    const line = `Gift (Bonus Action—2/Long Rest). Prints ${OPEN_MARK} as text.\nMore. [Uses: ${OPEN_MARK} ${SPENT_MARK}]`;
+    const line = `Gift (Bonus Action—2/Long Rest). Prints ${OPEN_MARK} as text.\nMore. [Uses: ${OPEN_MARK} ${OPEN_MARK}]`;
     const paragraphs = featureParagraphs([{ kind: "lines", lines: [line] }]);
     expect(paragraphs).toHaveLength(2);
     expect(paragraphs[0]!.words.some((word) => word.pips === true)).toBe(false);
-    expect(paragraphs[1]!.words.filter((word) => word.pips === true).map((word) => word.text)).toEqual([OPEN_MARK, `${SPENT_MARK}]`]);
+    expect(paragraphs[1]!.words.filter((word) => word.pips === true).map((word) => word.text)).toEqual([OPEN_MARK, `${OPEN_MARK}]`]);
   });
 });
 
 describe("pip size", () => {
-  it("is as tall as a capital, its stroke, corners and dot scaled with it", () => {
+  it("is as tall as a capital, its stroke and corners scaled with it", () => {
     const box = pipBox(8, 0.75);
     expect(box.size).toBeCloseTo(6);
     expect(box.stroke).toBeCloseTo(MARKER_STROKE);
     expect(box.corner).toBeCloseTo(1.2);
-    expect(box.dotRadius).toBeCloseTo(6 * CHECK_DOT_RATIO);
     expect(box.advance).toBeCloseTo(6 * (1 + 2 * PIP_SIDE_BEARING));
     expect(pipBox(4, 0.75).advance).toBeCloseTo(box.advance / 2);
   });
@@ -117,7 +123,7 @@ describe("pip size", () => {
     const advance = pipBox(10, 0.7).advance;
     const measure = (text: string) => unitMeasure(text, 10);
     expect(pipWordWidth(OPEN_MARK, 10, 0.7, measure)).toBeCloseTo(advance);
-    expect(pipWordWidth(`${SPENT_MARK};`, 10, 0.7, measure)).toBeCloseTo(advance + 10);
+    expect(pipWordWidth(`${OPEN_MARK};`, 10, 0.7, measure)).toBeCloseTo(advance + 10);
     expect(pipWordWidth(`(${OPEN_MARK}${OPEN_MARK})`, 10, 0.7, measure)).toBeCloseTo(2 * advance + 20);
   });
 
@@ -168,7 +174,7 @@ describe("a Resources line with pips", () => {
     );
     const rewrapped = featureFlowLines([{ ...paragraphs[0]!, words: rest }], 1000, fontSize, unitMeasure, capHeight);
     expect(rewrapped).toHaveLength(1);
-    expect(rewrapped[0]!.words.map((word) => word.text).join(" ")).toBe(`${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK} ${SPENT_MARK} ${SPENT_MARK} (LR)`);
+    expect(rewrapped[0]!.words.map((word) => word.text).join(" ")).toBe(`${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} (LR)`);
   });
 });
 
@@ -201,10 +207,10 @@ describe("the PDF's pips", () => {
   }
   const fourUsesTwoSpent = resourceSheetText([dto({})])!;
 
-  it("draws a 4-use tracker with 2 spent as four death-save circles on a 2024 page, two of them dotted", async () => {
-    expect(fourUsesTwoSpent).toBe(`Resources. Pip Test ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK} (LR)`);
+  it("draws a 4-use tracker with 2 spent as four empty death-save circles on a 2024 page", async () => {
+    expect(fourUsesTwoSpent).toBe(`Resources. Pip Test ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} (LR)`);
     const drawn = await draw(page([fourUsesTwoSpent]), "2024");
-    expect(drawn).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 2 });
+    expect(drawn).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 0 });
     expect(drawn.text).toContain("Pip Test");
     expect(drawn.text).toContain("(LR)");
     expect(drawn.text).not.toMatch(/Pip Test\s+o\b/);
@@ -212,14 +218,14 @@ describe("the PDF's pips", () => {
   }, 60_000);
 
   it("copies the 2014 death saves' circles too, and draws squares on any set when asked", async () => {
-    expect(await draw(page([fourUsesTwoSpent]), "2024", "death-save")).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 2 });
-    expect(await draw(page([fourUsesTwoSpent]), "2014")).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 2 });
-    expect(await draw(page([fourUsesTwoSpent]), "2024", "square")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 2 });
-    expect(await draw(page([fourUsesTwoSpent]), "2014", "square")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 2 });
+    expect(await draw(page([fourUsesTwoSpent]), "2024", "death-save")).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 0 });
+    expect(await draw(page([fourUsesTwoSpent]), "2014")).toMatchObject({ ringCircles: 4, ringSquares: 0, dots: 0 });
+    expect(await draw(page([fourUsesTwoSpent]), "2024", "square")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 0 });
+    expect(await draw(page([fourUsesTwoSpent]), "2014", "square")).toMatchObject({ ringCircles: 0, ringSquares: 4, dots: 0 });
   }, 60_000);
 
-  it("prints an empty tracker as rings alone, a large one as text, and leaves other marks as text", async () => {
-    const empty = resourceSheetText([dto({}), dto({ label: "Wand", max: 7, used: 3 })], { empty: true })!;
+  it("prints a tracker as rings alone, a large one as text, and leaves other marks as text", async () => {
+    const empty = resourceSheetText([dto({}), dto({ label: "Wand", max: 7, used: 3 })])!;
     const drawn = await draw(page([`Bullets. A feature that prints ${OPEN_MARK} as text.`, empty]), "2024");
     expect(drawn).toMatchObject({ ringCircles: 4, dots: 0 });
     expect(drawn.text).toContain("____ / 7");
@@ -230,13 +236,13 @@ describe("the PDF's pips", () => {
     const filler = Array.from({ length: 1400 }, (_, index) => `word${index}`).join(" ");
     const drawn = await draw(page([`Long. ${filler}`, fourUsesTwoSpent]), "2024");
     expect(drawn.text).toContain("FEATURES & TRAITS (CONTINUED)");
-    expect(drawn).toMatchObject({ ringCircles: 4, dots: 2 });
+    expect(drawn).toMatchObject({ ringCircles: 4, dots: 0 });
   }, 60_000);
 
   it("draws a feature's inline uses as pips, its other marks as text", async () => {
     const line = `Gift (2/Long Rest). Prints ${OPEN_MARK} as text. ${inlineUsesText([dto({})])}`;
     const drawn = await draw(page([line]), "2024");
-    expect(drawn).toMatchObject({ ringCircles: 4, dots: 2 });
+    expect(drawn).toMatchObject({ ringCircles: 4, dots: 0 });
     expect(drawn.text).toMatch(/prints\s+o\s+as/i);
     expect(drawn.text).toContain("[Uses:");
     expect(drawn.text).toContain("]");
@@ -259,18 +265,18 @@ describe("the PDF's pips", () => {
     expect(drawn.text).not.toContain("•");
   }, 120_000);
 
-  it("draws a real character's tracker kept by hand in the listed paragraph", async () => {
+  it("draws a real character's tracker kept by hand in the listed paragraph, fresh whatever is spent", async () => {
     const library = await sharedLibrary();
     const { service, id } = buildFighter3(library, "PipFighter") as { service: CharacterService; id: string };
     service.saveManualTracker(id, { tracker: { id: "pip-test", label: "Pip Test", max: { kind: "number", value: 4 }, unit: "uses", recharge: "longRest" } });
     service.setTrackerUsed(id, { trackerId: "pip-test", used: 2 });
     const model = buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", resourceTrackersList: true });
     const details = model.pages.find((entry) => entry.templateKind === "details")!;
-    expect(JSON.stringify(details)).toContain(`Pip Test ${OPEN_MARK} ${OPEN_MARK} ${SPENT_MARK} ${SPENT_MARK} (LR)`);
+    expect(JSON.stringify(details)).toContain(`Pip Test ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} ${OPEN_MARK} (LR)`);
     const drawn = await draw(details, "2024");
-    // Every tracker on the line is drawn as pips; none prints as "o" or a bullet.
+    // Every tracker on the line is drawn as empty pips; none prints as "o" or a bullet.
     expect(drawn.ringCircles).toBeGreaterThanOrEqual(4);
-    expect(drawn.dots).toBeGreaterThanOrEqual(2);
+    expect(drawn.dots).toBe(0);
     expect(drawn.text).toContain("Pip Test");
     expect(drawn.text).not.toMatch(/Pip Test\s+o\b/);
     expect(drawn.text).not.toContain("•");

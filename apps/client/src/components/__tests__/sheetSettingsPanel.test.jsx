@@ -58,9 +58,8 @@ describe('SheetSettingsPanel', () => {
     // Five page checkboxes on, plus ability emphasis, compact top row, split
     // feature boxes, readable body, smart cards and item notes off by default
     // on the 2014 layout; uses next to each feature are a sixth checkbox, on by
-    // default, a Resources box a seventh, off by default, and a fresh sheet an
-    // eighth, off by default.
-    expect(markup.match(/type="checkbox"/g)).toHaveLength(14);
+    // default, and a Resources box a seventh, off by default.
+    expect(markup.match(/type="checkbox"/g)).toHaveLength(13);
     expect(markup.match(/checked=""/g)).toHaveLength(6);
     expect(markup).toContain('Sheet pages');
     expect(markup).toContain('Emphasize ability modifiers');
@@ -102,19 +101,14 @@ describe('SheetSettingsPanel', () => {
     }
   });
 
-  it('offers a fresh sheet as an indented switch, off by default, while either kind of tracker prints', () => {
-    const fresh = 'Print a fresh sheet, ignoring uses already spent';
-    const label = switchLabel(markup, fresh);
-    expect(label).toContain('role="switch"');
-    expect(label).toContain('pl-6');
-    expect(label).not.toContain('checked=""');
+  it('offers no fresh-sheet switch: printed sheets always start fresh', () => {
     try {
-      sheetLayoutOptionsSettingStore.set({ resourceTrackers: false, resourceTrackersList: true });
-      expect(renderToStaticMarkup(createElement(SheetSettingsPanel))).toContain(fresh);
-      sheetLayoutOptionsSettingStore.set({ resourceTrackers: false, resourceTrackersList: false });
-      const off = renderToStaticMarkup(createElement(SheetSettingsPanel));
-      expect(off).not.toContain(fresh);
-      expect(off.match(/type="checkbox"/g)).toHaveLength(13);
+      for (const [resourceTrackers, resourceTrackersList] of [[true, false], [true, true], [false, true], [false, false]]) {
+        sheetLayoutOptionsSettingStore.set({ resourceTrackers, resourceTrackersList });
+        const html = renderToStaticMarkup(createElement(SheetSettingsPanel));
+        expect(html).not.toContain('Print a fresh sheet');
+        expect(html.match(/type="checkbox"/g)).toHaveLength(13);
+      }
     } finally {
       sheetLayoutOptionsSettingStore.set({ resourceTrackers: true, resourceTrackersList: false });
     }
@@ -128,7 +122,7 @@ describe('SheetSettingsPanel', () => {
 
   it('offers item notes for the inventory as a switch, off by default', () => {
     expect(markup).toContain('Print item notes in the inventory: magic items in full, tools and useful gear in brief');
-    expect(markup.match(/role="switch"/g)).toHaveLength(8);
+    expect(markup.match(/role="switch"/g)).toHaveLength(7);
   });
 
   it('offers a compact top row as a layout option, off by default', () => {

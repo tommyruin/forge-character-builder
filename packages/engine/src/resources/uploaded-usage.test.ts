@@ -158,10 +158,11 @@ describe("usage lines on uploaded elements", () => {
     expect(tracker(service.getResources(id), "Mending Vow")).toMatchObject({ max: 35, unit: "uses", recharge: "longRest" });
     expect(tracker(service.getResources(id), "Mending Palm")).toMatchObject({ max: 35, unit: "points", recharge: "longRest" });
     const lines = sheetLines(service, id);
-    expect(lines.find((line) => line.startsWith("Mending Vow"))).toMatch(/ \[Uses: 35 \/ 35\]$/);
-    expect(lines.find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: 35 \/ 35\]$/);
+    expect(lines.find((line) => line.startsWith("Mending Vow"))).toMatch(/ \[Uses: ____ \/ 35\]$/);
+    expect(lines.find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: ____ \/ 35\]$/);
+    // Spent on the Resources page, the pool still prints as a blank to fill in.
     service.setTrackerUsed(id, { trackerId: `usage:${PALM}`, used: 12 });
-    expect(sheetLines(service, id).find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: 23 \/ 35\]$/);
+    expect(sheetLines(service, id).find((line) => line.startsWith("Mending Palm"))).toMatch(/ \[Points: ____ \/ 35\]$/);
   });
 
   it("prints the gift's uses once in the Resources paragraph when the list is asked for, and not as a feature", () => {
@@ -174,10 +175,9 @@ describe("usage lines on uploaded elements", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatch(/^Resources\. .*Heron Blessing ○ ○ ○ \(LR\)/);
     expect(lines[0]!.match(/Heron Blessing/g)).toHaveLength(1);
-    // A use spent on the Resources page prints filled; printed empty, it prints open again.
+    // A use spent on the Resources page still prints open: the sheet starts fresh.
     service.setTrackerUsed(id, { trackerId: `usage:${GIFT}`, used: 1 });
-    expect(sheetLines(service, id, { resourceTrackersList: true }).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ● \(LR\)/);
-    expect(sheetLines(service, id, { resourceTrackersList: true, resourceTrackersEmpty: true }).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ○ \(LR\)/);
+    expect(sheetLines(service, id, { resourceTrackersList: true }).find((line) => line.includes("Heron Blessing"))).toMatch(/Heron Blessing ○ ○ ○ \(LR\)/);
     // Not tracked, it is not printed at all.
     service.setTrackerTracked(id, { trackerId: `usage:${GIFT}`, tracked: false });
     expect(sheetLines(service, id, { resourceTrackersList: true }).filter((line) => line.includes("Heron Blessing"))).toEqual([]);
@@ -188,6 +188,6 @@ const trackersFor = (service: CharacterService, id: string): TrackerDto[] =>
   service.getResources(id).trackers.filter((entry) => entry.label === "Heron Blessing");
 
 /** Every printed line of the character's full sheet. */
-const sheetLines = (service: CharacterService, id: string, options: { resourceTrackersEmpty?: boolean; resourceTrackersList?: boolean } = {}): string[] =>
+const sheetLines = (service: CharacterService, id: string, options: { resourceTrackersList?: boolean } = {}): string[] =>
   buildCharacterSheetModel(service.getCharacter(id), library, { mode: "full", ...options }).pages
     .flatMap((page) => page.sections.flatMap((section) => section.rows.flatMap((row) => (row.kind === "lines" ? row.lines : []))));

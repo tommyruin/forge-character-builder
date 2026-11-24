@@ -28,10 +28,10 @@ export default function SheetPreviewPanel() {
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { options: layoutOptions } = useSheetLayoutOptionsSetting();
   const inventoryNotes = layoutOptions.inventoryNotes;
-  const { resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline } = resourceTrackerSheetOptions(layoutOptions);
+  const { resourceTrackers, resourceTrackersList, resourceTrackersInline } = resourceTrackerSheetOptions(layoutOptions);
   const layout = useMemo(() => effectiveSheetLayout(templateSet, layoutOptions), [templateSet, layoutOptions]);
-  // Trackers off, printed empty or listed changes the rendered sheet, so it changes every cache key built
-  // from this. What is spent on the Resources tab is a character edit: it bumps the mutation tick.
+  // Trackers off or listed changes the rendered sheet, so it changes every cache key built from this.
+  // What is spent on the Resources tab is a character edit: it bumps the mutation tick.
   const layoutKey = sheetLayoutCacheKey(layout) + resourceTrackersCacheKey(layoutOptions);
   const footerText = `Generated with ${shell.appName}.`;
   // What we want rendered: the latest debounced mutation tick (+ manual refreshes). Seeded from
@@ -87,7 +87,6 @@ export default function SheetPreviewPanel() {
       emphasizeAbilityModifiers,
       inventoryNotes,
       resourceTrackers,
-      resourceTrackersEmpty,
       resourceTrackersList,
       resourceTrackersInline,
       layout,
@@ -128,7 +127,6 @@ export default function SheetPreviewPanel() {
               include: run.pages,
               inventoryNotes: run.inventoryNotes,
               resourceTrackers: run.resourceTrackers,
-              resourceTrackersEmpty: run.resourceTrackersEmpty,
               resourceTrackersList: run.resourceTrackersList,
               resourceTrackersInline: run.resourceTrackersInline,
               layout: run.layout,
@@ -169,7 +167,7 @@ export default function SheetPreviewPanel() {
       }
     })();
     return undefined;
-  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline, layout, layoutKey, footerText]);
+  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersList, resourceTrackersInline, layout, layoutKey, footerText]);
 
   useEffect(
     () => () => {

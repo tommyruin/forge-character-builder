@@ -1438,8 +1438,7 @@ export function createEngineApi(options: EngineTransportOptions = {}) {
       ...(opts.inventoryNotes === true ? { inventoryNotes: true } : {}),
       // Trackers print by default; only an explicit off sends the new field.
       ...(opts.resourceTrackers === false ? { resourceTrackers: false } : {}),
-      // Trackers print as the Resources page left them; only an explicit empty sheet sends the new field.
-      ...(opts.resourceTrackersEmpty === true ? { resourceTrackersEmpty: true } : {}),
+      // `resourceTrackersEmpty` is deprecated and never sent: printed sheets always start fresh.
       // The Resources list is off unless asked for; only an explicit on sends the new field.
       ...(opts.resourceTrackersList === true ? { resourceTrackersList: true } : {}),
       // Deprecated; a caller that still sends an explicit off gets the older listed layout.

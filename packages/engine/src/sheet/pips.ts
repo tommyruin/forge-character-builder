@@ -1,11 +1,11 @@
 /**
  * The resource pips of the printed sheet.
  *
- * The sheet model writes a resource tracker's uses as "○" (left) and "●"
- * (spent), which previews and text exports read as they are. No sheet face has
- * either glyph, so the PDF writer draws each one as a small copy of the sheet's
- * own death-save marker instead: the empty death save for a use left, the
- * ticked one for a use spent. Only the Resources paragraph is drawn this way;
+ * The sheet model writes each of a resource tracker's uses as "○" (a printed
+ * sheet always starts fresh), which previews and text exports read as it is.
+ * No sheet face has the glyph, so the PDF writer draws each one as a small
+ * copy of the sheet's own empty death-save marker instead. Only the Resources
+ * paragraph is drawn this way;
  * and so are the uses closing a feature's own text ("[Uses: ○ ○]",
  * `inlinePipWords`); the same marks anywhere else print as text (see
  * `winAnsiText`).
@@ -16,14 +16,14 @@
  * splits into text and pips, and how wide a pip is at a given size.
  */
 
-import { INLINE_USES_CLOSE, INLINE_USES_OPEN, OPEN_MARK, RESOURCES_LEAD, SPENT_MARK } from "../resources/sheet.js";
+import { INLINE_USES_CLOSE, INLINE_USES_OPEN, OPEN_MARK, RESOURCES_LEAD } from "../resources/sheet.js";
 import type { SheetMarker } from "./template-contract.js";
 
 /**
  * What the pips copy: the death saves, drawn in the set's track marker
  * (circles on every set), or rounded squares on every set.
- * Either is a white marker ruled in the accent colour, ticked with the same
- * dot. An internal switch, not a sheet setting.
+ * Either is a white marker ruled in the accent colour. An internal switch, not
+ * a sheet setting.
  */
 export type PipLook = "death-save" | "square";
 /**
@@ -57,18 +57,18 @@ export const CHECK_DOT_RATIO = 0.28;
 export const PIP_SIDE_BEARING = 0.08;
 
 /** A word's pieces: runs of text, and a pip for each mark. */
-export type PipSegment = { kind: "text"; text: string } | { kind: "pip"; spent: boolean };
+export type PipSegment = { kind: "text"; text: string } | { kind: "pip" };
 
 /** Whether a features line is the Resources paragraph, the only one drawn with pips. */
 export function isPipParagraph(line: string): boolean {
   return line === RESOURCES_LEAD || line.startsWith(`${RESOURCES_LEAD} `);
 }
 
-const MARK_WORD = new RegExp(`^[${OPEN_MARK}${SPENT_MARK}]\\${INLINE_USES_CLOSE}?$`);
+const MARK_WORD = new RegExp(`^${OPEN_MARK}\\${INLINE_USES_CLOSE}?$`);
 
 /**
  * Which words of a feature paragraph are its inline uses' marks: the lone
- * marks ("○", "●]") inside the bracketed groups that close it, each opening
+ * marks ("○", "○]") inside the bracketed groups that close it, each opening
  * on a label that ends in a colon ("[Uses:", "[Channel Divinity:"). A mark
  * anywhere else in the text is the text's own and prints as text.
  */
@@ -90,7 +90,7 @@ export function inlinePipWords(words: readonly string[]): Set<number> {
 
 /** Whether `word` holds a tracker mark. */
 export function hasPips(word: string): boolean {
-  return word.includes(OPEN_MARK) || word.includes(SPENT_MARK);
+  return word.includes(OPEN_MARK);
 }
 
 /** Splits a word into text runs and pips, in order ("○;" is a pip, then ";"). */
@@ -98,13 +98,13 @@ export function pipSegments(word: string): PipSegment[] {
   const segments: PipSegment[] = [];
   let text = "";
   for (const character of word) {
-    if (character !== OPEN_MARK && character !== SPENT_MARK) {
+    if (character !== OPEN_MARK) {
       text += character;
       continue;
     }
     if (text !== "") segments.push({ kind: "text", text });
     text = "";
-    segments.push({ kind: "pip", spent: character === SPENT_MARK });
+    segments.push({ kind: "pip" });
   }
   if (text !== "") segments.push({ kind: "text", text });
   return segments;
@@ -119,8 +119,6 @@ export interface PipBox {
   stroke: number;
   /** A rounded square's corner radius. */
   corner: number;
-  /** The radius of a spent use's dot. */
-  dotRadius: number;
 }
 
 /**
@@ -136,7 +134,6 @@ export function pipBox(fontSize: number, capHeight: number): PipBox {
     advance: size * (1 + 2 * PIP_SIDE_BEARING),
     stroke: MARKER_STROKE * scale,
     corner: MARKER_CORNER * scale,
-    dotRadius: size * CHECK_DOT_RATIO,
   };
 }
 

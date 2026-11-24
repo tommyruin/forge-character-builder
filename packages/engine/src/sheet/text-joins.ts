@@ -1,0 +1,68 @@
+/**
+ * Which features' sheet text breaks its line mid-paragraph.
+ *
+ * The sheet writer starts a new, indented paragraph at every line break in a
+ * feature's `<sheet><description>`. The content marks an accidental break the
+ * same way as a deliberate one (a feat's separate benefits), so the choice is
+ * a reviewed list of element ids rather than a general rule.
+ * testing/sheet-breaks.ts flags the likely accidents, and text-joins.test.ts
+ * fails while a flagged element sits in neither list; to review one, run
+ * `node scripts/audit-sheet-breaks.mjs`.
+ */
+
+/** Features whose sheet text prints as one paragraph: the break falls mid-thought. */
+export const JOIN_SHEET_TEXT_IDS: ReadonlySet<string> = new Set([
+  "ID_WOTC_PHB24_ARCHETYPE_FEATURE_BARBARIAN_ZEALOT_RAGE_OF_THE_GODS",
+  "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_INNATE_SORCERY",
+  "ID_WOTC_UA20191125_ARCHETYPE_FEATURE_PSYCHIC_WARRIOR_TELEKINETIC_BULWARK",
+]);
+
+/** Flagged features reviewed and kept as printed: each break starts a separate rule. */
+export const KEEP_SHEET_TEXT_IDS: ReadonlySet<string> = new Set([
+  "ID_WOTC_AAG_RACIAL_TRAIT_AUTOGNOME_HEALING_MACHINE",
+  "ID_WOTC_AAG_RACIAL_TRAIT_THRIKREEN_CHAMELEON_CARAPACE",
+  // Borderline: the closing sentence is an alternative trigger for the same reaction.
+  "ID_WOTC_EGTW_ARCHETYPE_FEATURE_GRAVITURGY_VIOLENT_ATTRACTION",
+  "ID_WOTC_GGTR_ARCHETYPE_FEATURE_CIRCLE_SPORES_SYMBIOTIC_ENTITY",
+  "ID_WOTC_GGTR_BACKGROUND_FEATURE_SELESNYA_INITIATE_CONCLAVES_SHELTER",
+  "ID_WOTC_MOOT_RACIAL_TRAIT_ORACLE_SIBYL",
+  "ID_WOTC_PHB24_ARCHETYPE_FEATURE_MONK_SHADOW_SHADOW_ARTS",
+  "ID_WOTC_PHB24_ARCHETYPE_FEATURE_RANGER_BEAST_MASTER_EXCEPTIONAL_TRAINING",
+  "ID_WOTC_PHB24_ARCHETYPE_FEATURE_RANGER_FEY_WANDERER_BEGUILING_TWIST",
+  "ID_WOTC_PHB24_ARCHETYPE_FEATURE_WARLOCK_ARCHFEY_PATRON_BEGUILING_DEFENSES",
+  "ID_WOTC_PHB24_ARCHETYPE_FEATURE_WARLOCK_ARCHFEY_PATRON_STEPS_OF_THE_FEY",
+  // Borderline: the spell-slot refuel reads like Innate Sorcery's, but the
+  // level 18 tier has three paragraphs that joining would run together.
+  "ID_WOTC_PHB24_CLASS_FEATURE_BARD_BARDIC_INSPIRATION",
+  "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_WILD_RESURGENCE",
+  "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_GIFT_OF_THE_DEPTHS",
+  "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_CHAIN",
+  // Borderline: the Focus Point option may read better as one paragraph.
+  "ID_WOTC_PHB24_CLASS_FEATURE_MONK_FOCUS_PATIENT_DEFENSE",
+  "ID_WOTC_PHB24_CLASS_FEATURE_MONK_FOCUS_STEP_OF_THE_WIND",
+  "ID_WOTC_PHB24_CLASS_FEATURE_RANGER_TIRELESS",
+  "ID_WOTC_PHB24_FEAT_BOON_OFTHE_NIGHT_SPIRIT",
+  "ID_WOTC_PHB24_FEAT_CHARGER",
+  "ID_WOTC_PHB24_FEAT_DURABLE",
+  // Borderline: the closing sentence is a second way to spend the same resource.
+  "ID_WOTC_PHB24_FEAT_LUCKY",
+  "ID_WOTC_PHB24_FEAT_MAGE_SLAYER",
+  "ID_WOTC_PHB24_FEAT_SENTINEL",
+  "ID_WOTC_PHB24_FEAT_SHIELD_MASTER",
+  "ID_WOTC_PHB24_FEAT_SPELLSNIPER",
+  // Borderline: the closing sentence covers the whole feature, and joining
+  // would run its three paragraphs together.
+  "ID_WOTC_PHB_CLASS_FEATURE_PALADIN_LAY_ON_HANDS",
+  "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_CHAIN",
+  "ID_WOTC_SATO_FEAT_PLANAR_WANDERER_PORTAL_SENSE",
+  "ID_WOTC_TCOE_ARCHETYPE_FEATURE_CIRCLE_OF_SPORES_SYMBIOTIC_ENTITY",
+  "ID_WOTC_TCOE_ARCHETYPE_FEATURE_ORDER_OF_SCRIBES_WIZARDLY_QUILL",
+  "ID_WOTC_TCOE_CLASS_FEATURE_FIGHTING_STYLE_THROWN_WEAPON_FIGHTING",
+  "ID_WOTC_UA20190918_ARCHETYPE_FEATURE_HEROISM_MIGHTY_DEED",
+  "ID_WOTC_UA20191003_ARCHETYPE_FEATURE_RUNE_KNIGHT_RUNE_MAGIC_HAUG",
+  "ID_WOTC_UA20200512_ARCHETYPE_FEATURE_ORDER_OF_SCRIBES_WIZARDLY_QUILL",
+  "ID_WOTC_UA20211008_RACIAL_TRAIT_AUTOGNOME_TRUE_LIFE",
+  "ID_WOTC_UA20211008_RACIAL_TRAIT_THRIKREEN_CHAMELEON_CARAPACE",
+  "ID_WOTC_UA20220523_ARCHETYPE_FEATURE_CIRCLE_OF_THE_PRIMEVAL_TITANIC_BOND",
+  "ID_WOTC_UA20220718_FEAT_COHORT_OF_CHAOS",
+]);

@@ -540,6 +540,26 @@ describe("engine worker handlers", () => {
     expect(await featuresOf({ lite: false, resourceTrackersInline: false })).toContain("Resources. List Test ○ ○ (LR)");
   });
 
+  it("prints a fresh sheet whatever is spent, and ignores the deprecated empty-trackers switch", async () => {
+    const service = new CharacterService(undefined, library);
+    service.createCharacter("fresh-sheet");
+    service.saveManualTracker("fresh-sheet", { tracker: { id: "few", label: "Few Test", max: { kind: "number", value: 3 }, unit: "uses", recharge: "longRest" } });
+    service.saveManualTracker("fresh-sheet", { tracker: { id: "many", label: "Many Points", max: { kind: "number", value: 8 }, unit: "points", recharge: "longRest" } });
+    const dispatcher = createEngineDispatcher(createEngineMethodHandlers(service, library));
+    const featuresOf = async (request: Record<string, unknown>): Promise<string> => {
+      const response = await dispatcher.dispatch({ id: 1, method: "generateSheet", args: ["fresh-sheet", request] });
+      expect(response).toMatchObject({ ok: true });
+      return (response as unknown as { result: { formValues: Record<string, string> } }).result.formValues["Features and Traits"] ?? "";
+    };
+    const fresh = await featuresOf({ lite: false, resourceTrackersList: true });
+    expect(fresh).toContain("Resources. Few Test ○ ○ ○ (LR); Many Points ____ / 8 (LR)");
+    service.setTrackerUsed("fresh-sheet", { trackerId: "few", used: 2 });
+    service.setTrackerUsed("fresh-sheet", { trackerId: "many", used: 3 });
+    expect(await featuresOf({ lite: false, resourceTrackersList: true })).toBe(fresh);
+    expect(await featuresOf({ lite: false, resourceTrackersList: true, resourceTrackersEmpty: true })).toBe(fresh);
+    expect(await featuresOf({ lite: false, resourceTrackersList: true, resourceTrackersEmpty: false })).toBe(fresh);
+  });
+
   it("leaves out the sheet pages the request excludes, renumbering the rest", async () => {
     const service = new CharacterService(undefined, library);
     importBuilt(service, "page-picks", buildFullSheetCharacter(library, "page-picks"));

@@ -112,8 +112,8 @@ const { spellHeader: SPELL_HEADER, spellList: SPELL_LIST } = SHEET_TEMPLATE_CONT
 function pdfText(value: string): string {
   let ascii = "";
   // A resource tracker's marks (resources/sheet.ts): this writer draws text
-  // only, in ASCII, so a use left prints as "o" and a use spent as "x".
-  for (const character of value.replaceAll("○", "o").replaceAll("●", "x")) {
+  // only, in ASCII, so a use prints as "o".
+  for (const character of value.replaceAll("○", "o")) {
     const code = character.charCodeAt(0);
     ascii += code >= 32 && code <= 126 ? character : "?";
   }
@@ -1337,6 +1337,17 @@ const MIN_FEATURE_FONT_SIZE = 6;
 // before it borrows room from the features beside it, then continues. A page
 // with a box of its own (2014) shrinks to the features' floor instead.
 const SPECIES_MIN_FONT_SIZE = 6.5;
+// A features box that cannot hold its text even at the floor prints its first
+// part at no less than this, breaking between whole features, and the rest
+// continues. The sizes tried step down from the normal size by the step.
+const OVERFLOW_FEATURE_FONT_SIZE = 7;
+const OVERFLOW_FEATURE_SIZE_STEP = 0.25;
+// A break between whole features fills the box when no more than this many
+// lines of its size stay empty under it.
+const OVERFLOW_FEATURE_SLACK_LINES = 3;
+// A feature taller than this share of the box is cut where the box runs out
+// rather than moved whole.
+const OVERFLOW_FEATURE_SPLIT_SHARE = 1 / 3;
 const FEATURE_PARAGRAPH_GAP = 1.2;
 // One feature is set off from the next by rather more than the breath between
 // its own paragraphs, so the eye finds the boundaries. It is a fraction of the
@@ -1474,17 +1485,15 @@ const FEATURE_RULE_COLOUR: PdfColor = [0.45, 0.45, 0.45];
 
 /**
  * How the Resources paragraph's pips print: the death saves' marker, ruled
- * in the accent colour and filled white as the template draws it, and a spent
- * use's dot in the text colour, as a ticked death save's.
+ * in the accent colour and filled white as the template draws it.
  */
 export interface PipStyle {
   marker: SheetMarker;
   ring: PdfColor;
-  dot: PdfColor;
 }
 
 function pipStyle(marker: SheetMarker, colours: SheetLabelColours): PipStyle {
-  return { marker, ring: colours.accent, dot: colours.text };
+  return { marker, ring: colours.accent };
 }
 
 const DEFAULT_PIP_STYLE: PipStyle = pipStyle(pipMarker(DEFAULT_PIP_LOOK, "circle"), labelColours(DEFAULT_SHEET_COLOURS));
@@ -1499,9 +1508,9 @@ function roundedSquarePath(size: number, radius: number): string {
 
 /**
  * One pip whose advance starts at `x`: the marker sits on the baseline `y`, as
- * tall as a capital, centred in its advance; a spent use adds the dot.
+ * tall as a capital, centred in its advance.
  */
-function drawPip(page: PDFPage, x: number, y: number, fontSize: number, capHeight: number, spent: boolean, style: PipStyle): void {
+function drawPip(page: PDFPage, x: number, y: number, fontSize: number, capHeight: number, style: PipStyle): void {
   const box = pipBox(fontSize, capHeight);
   const left = x + (box.advance - box.size) / 2;
   const centreX = left + box.size / 2;
@@ -1514,9 +1523,6 @@ function drawPip(page: PDFPage, x: number, y: number, fontSize: number, capHeigh
     page.drawSvgPath(roundedSquarePath(box.size, box.corner), {
       x: left, y: y + box.size, color: paper, borderColor: ring, borderWidth: box.stroke,
     });
-  }
-  if (spent) {
-    page.drawCircle({ x: centreX, y: centreY, size: box.dotRadius, color: rgb(style.dot[0], style.dot[1], style.dot[2]) });
   }
 }
 
@@ -1566,7 +1572,7 @@ function drawFeatureFlow(
         flush();
         for (const segment of pipSegments(word.text)) {
           if (segment.kind === "pip") {
-            drawPip(page, cursor, y, fontSize, capHeight, segment.spent, pips);
+            drawPip(page, cursor, y, fontSize, capHeight, pips);
             cursor += pipBox(fontSize, capHeight).advance;
             continue;
           }
@@ -1620,6 +1626,118 @@ function featureBoxFits(
   return featureFlowFits(featureFlowLines(paragraphs, box.width, size, fontMeasure(fonts), capHeightRatio(fonts.regular)), top, box.bottom, size * lineHeightRatio, size);
 }
 
+/**
+ * The largest size from `floor` to `size` at which `paragraphs` fit the box,
+ * so text shrinks only as far as the page demands; none if not even the floor.
+ */
+function fittedFeatureSize(
+  paragraphs: readonly FeatureParagraph[],
+  fonts: SheetFonts,
+  box: RichTextBox,
+  floor: number,
+  size = DEFAULT_FEATURE_FONT_SIZE,
+  lineHeightRatio = 1,
+): number | undefined {
+  if (featureBoxFits(paragraphs, fonts, box, size, lineHeightRatio)) return size;
+  if (!featureBoxFits(paragraphs, fonts, box, floor, lineHeightRatio)) return undefined;
+  let low = floor;
+  let high = size;
+  for (let pass = 0; pass < 10; pass += 1) {
+    const candidate = (low + high) / 2;
+    if (featureBoxFits(paragraphs, fonts, box, candidate, lineHeightRatio)) low = candidate;
+    else high = candidate;
+  }
+  return low;
+}
+
+/** Where wrapped lines break between whole features in a box, at one size. */
+interface FeatureBreak {
+  /** The paragraphs before the break; none when no whole feature fits. */
+  count: number;
+  /** The lines of this size left empty under the last one drawn. */
+  slack: number;
+  /** Whether the feature after the break is too tall to move whole. */
+  long: boolean;
+}
+
+/**
+ * The longest run of whole features (or headed groups) the box holds: the
+ * last drawn line whose paragraph ends a feature or a group. A heading always
+ * opens a group, so a run never ends on one.
+ */
+function featureBreak(
+  lines: readonly FeatureFlowLine[],
+  top: number,
+  bottom: number,
+  boxHeight: number,
+  lineHeight: number,
+  fontSize: number,
+): FeatureBreak {
+  let y = top;
+  let count = 0;
+  let after = 0;
+  let lastY = top;
+  for (const [index, line] of lines.entries()) {
+    if (y < bottom) break;
+    if (line.gapAfter === "feature" || line.gapAfter === "group" || index + 1 === lines.length) {
+      count = line.paragraph + 1;
+      after = index + 1;
+      lastY = y;
+    }
+    y -= lineHeight + featureGapFor(line.gapAfter, fontSize);
+  }
+  let height = 0;
+  for (const line of lines.slice(after)) {
+    height += lineHeight + featureGapFor(line.gapAfter, fontSize);
+    if (line.gapAfter === "feature" || line.gapAfter === "group") break;
+  }
+  return {
+    count,
+    slack: count === 0 ? Infinity : (lastY - bottom) / lineHeight,
+    long: height > boxHeight * OVERFLOW_FEATURE_SPLIT_SHARE,
+  };
+}
+
+/** How a features box too full for its floor prints its first part. */
+interface FeatureOverflow {
+  fontSize: number;
+  lines: FeatureFlowLine[];
+  /** The whole paragraphs it prints, the rest continuing; none when it is cut where the box runs out. */
+  count?: number;
+}
+
+/**
+ * The size and break for a features box that cannot hold its text at the
+ * floor. The largest size from the normal one down to
+ * OVERFLOW_FEATURE_FONT_SIZE whose whole features fill the box; else the
+ * largest at which the next feature is too tall to move (or none fits whole),
+ * cut where the box runs out; else the smallest size's whole features.
+ */
+function planFeatureOverflow(
+  paragraphs: readonly FeatureParagraph[],
+  fonts: SheetFonts,
+  box: RichTextBox,
+  fontSize: number,
+  lineHeightRatio: number,
+): FeatureOverflow {
+  const measure = fontMeasure(fonts);
+  const capHeight = capHeightRatio(fonts.regular);
+  const sizes: number[] = [];
+  for (let size = fontSize; size >= OVERFLOW_FEATURE_FONT_SIZE - 0.001; size -= OVERFLOW_FEATURE_SIZE_STEP) sizes.push(size);
+  if (sizes.length === 0) sizes.push(fontSize);
+  const plans = sizes.map((size) => {
+    const lines = featureFlowLines(paragraphs, box.width, size, measure, capHeight);
+    const top = box.top - BOX_TEXT_TOP_INSET - capHeight * size;
+    return { fontSize: size, lines, cut: featureBreak(lines, top, box.bottom, box.top - box.bottom, size * lineHeightRatio, size) };
+  });
+  const filled = plans.find((plan) => plan.cut.count > 0 && plan.cut.slack <= OVERFLOW_FEATURE_SLACK_LINES);
+  if (filled !== undefined) return { fontSize: filled.fontSize, lines: filled.lines, count: filled.cut.count };
+  const split = plans.find((plan) => plan.cut.count === 0 || plan.cut.long);
+  if (split !== undefined) return { fontSize: split.fontSize, lines: split.lines };
+  const last = plans[plans.length - 1]!;
+  return { fontSize: last.fontSize, lines: last.lines, count: last.cut.count };
+}
+
 function drawRichFeatureSection(
   page: PDFPage,
   paragraphs: readonly FeatureParagraph[],
@@ -1634,42 +1752,29 @@ function drawRichFeatureSection(
   ruleColour?: PdfColor,
   minFontSize = MIN_FEATURE_FONT_SIZE,
   pips?: PipStyle,
+  /** Whether text that cannot fit breaks between whole features (a features box) or wherever the box runs out. */
+  wholeFeatures = false,
 ): FeatureParagraph[] | undefined {
-  const lineHeightAt = (size: number): number => lineHeight * size / fontSize;
+  const ratio = lineHeight / fontSize;
   const capHeight = capHeightRatio(fonts.regular);
   const topAt = (size: number): number => boxTop - BOX_TEXT_TOP_INSET - capHeight * size;
-  const measure = fontMeasure(fonts);
-  const normalLines = featureFlowLines(paragraphs, width, fontSize, measure, capHeight);
-  let chosenFontSize = fontSize;
-  let chosenLines = normalLines;
-  let chosenLineHeight = lineHeightAt(chosenFontSize);
-  if (!featureFlowFits(normalLines, topAt(chosenFontSize), bottom, chosenLineHeight, chosenFontSize)) {
-    const floorLines = featureFlowLines(paragraphs, width, minFontSize, measure, capHeight);
-    const floorLineHeight = lineHeightAt(minFontSize);
-    if (featureFlowFits(floorLines, topAt(minFontSize), bottom, floorLineHeight, minFontSize)) {
-      // Take the largest size that still fits, so the text shrinks only as far
-      // as the page demands.
-      let low = minFontSize;
-      let high = fontSize;
-      for (let pass = 0; pass < 10; pass += 1) {
-        const candidate = (low + high) / 2;
-        const candidateLines = featureFlowLines(paragraphs, width, candidate, measure, capHeight);
-        if (featureFlowFits(candidateLines, topAt(candidate), bottom, lineHeightAt(candidate), candidate)) low = candidate;
-        else high = candidate;
-      }
-      chosenFontSize = low;
-      chosenLines = featureFlowLines(paragraphs, width, chosenFontSize, measure, capHeight);
-      chosenLineHeight = lineHeightAt(chosenFontSize);
-    } else {
-      // Prose that cannot fit even at the smallest legible size is continued
-      // at the normal size. Shrinking the visible prefix further would make a
-      // short feature look arbitrarily smaller merely because a later feature
-      // is long; the continuation page provides the bounded layout instead.
-      chosenLines = normalLines;
-      chosenLineHeight = lineHeightAt(chosenFontSize);
-    }
+  const box: RichTextBox = { x, top: boxTop, width, bottom };
+  const draw = (lines: readonly FeatureFlowLine[], size: number, shown = paragraphs): FeatureFlowResult =>
+    drawFeatureFlow(page, shown, lines, fonts, x, topAt(size), width, bottom, size, size * ratio, ruleColour, pips);
+  const wrap = (size: number): FeatureFlowLine[] => featureFlowLines(paragraphs, width, size, fontMeasure(fonts), capHeight);
+  const fitted = fittedFeatureSize(paragraphs, fonts, box, minFontSize, fontSize, ratio);
+  if (fitted !== undefined) return draw(wrap(fitted), fitted).rest;
+  if (!wholeFeatures) {
+    // Prose that cannot fit even at the smallest legible size is continued
+    // at the normal size. Shrinking the visible prefix further would make a
+    // short feature look arbitrarily smaller merely because a later feature
+    // is long; the continuation page provides the bounded layout instead.
+    return draw(wrap(fontSize), fontSize).rest;
   }
-  return drawFeatureFlow(page, paragraphs, chosenLines, fonts, x, topAt(chosenFontSize), width, bottom, chosenFontSize, chosenLineHeight, ruleColour, pips).rest;
+  const { fontSize: size, lines, count } = planFeatureOverflow(paragraphs, fonts, box, fontSize, ratio);
+  if (count === undefined) return draw(lines, size).rest;
+  draw(lines.filter((line) => line.paragraph < count), size, paragraphs.slice(0, count));
+  return count < paragraphs.length ? paragraphs.slice(count) : undefined;
 }
 
 interface RichTextBox {
@@ -1864,6 +1969,8 @@ interface DetailsTextBox {
   fontSize?: number;
   lineHeight?: number;
   minFontSize?: number;
+  /** A features box: text that cannot fit breaks between whole features. */
+  wholeFeatures?: boolean;
 }
 
 const SPECIES_FIELD = "details_additional_notes";
@@ -1900,14 +2007,16 @@ function detailsTextBoxes(
     ["details_feats", "Feats", groups.feats ?? []],
   ];
   if (fieldRects.has("details_subclass_features") && groups !== undefined) {
-    for (const [field, heading, rows] of grouped) boxes.push({ field, paragraphs: featureParagraphs(rows), heading, fallback: featureBox });
+    for (const [field, heading, rows] of grouped) {
+      boxes.push({ field, paragraphs: featureParagraphs(rows), heading, fallback: featureBox, wholeFeatures: true });
+    }
   } else if (layout.split && groups !== undefined) {
     boxes.push({
-      field: FEATURES_FIELD, heading: "Features", fallback: featureBox,
+      field: FEATURES_FIELD, heading: "Features", fallback: featureBox, wholeFeatures: true,
       paragraphs: groupedFeatureParagraphs(grouped.map(([, heading, rows]) => [heading, rows] as const)),
     });
   } else if (features !== undefined) {
-    boxes.push({ field: FEATURES_FIELD, paragraphs: sectionParagraphs(features), heading: "Features", fallback: featureBox });
+    boxes.push({ field: FEATURES_FIELD, paragraphs: sectionParagraphs(features), heading: "Features", fallback: featureBox, wholeFeatures: true });
   }
 
   const proficiencyRows = [
@@ -1931,9 +2040,10 @@ function drawDetailsRichText(
   layout: DetailsFeatureLayout,
 ): FeatureContinuation[] {
   const continuations: FeatureContinuation[] = [];
-  for (const { field, paragraphs, heading, fallback, fontSize = DEFAULT_FEATURE_FONT_SIZE, lineHeight = fontSize, minFontSize } of boxes) {
+  for (const { field, paragraphs, heading, fallback, fontSize = DEFAULT_FEATURE_FONT_SIZE, lineHeight = fontSize, minFontSize, wholeFeatures } of boxes) {
     const box = richTextBox(fieldRects, field, fallback);
-    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight, layout.ruleColour, minFontSize, layout.pips);
+    const rest = drawRichFeatureSection(page, paragraphs, fonts, box.x, box.top, box.width, box.bottom, fontSize, lineHeight,
+      layout.ruleColour, minFontSize, layout.pips, wholeFeatures);
     if (rest === undefined) continue;
     // Cut inside a headed group, the part continues that group, by its name.
     const group = paragraphs.slice(0, paragraphs.length - rest.length + 1).reverse().find((paragraph) => paragraph.kind === "heading");
@@ -2061,11 +2171,12 @@ function planTraitsColumn(
 }
 
 /**
- * Snaps the planned boundary to the set's alignment line when the Species
- * Traits foot lands within a few points of it and both boxes still fit: each
- * at no more than TRAITS_ALIGN_SIZE_GIVE below the normal size if it fitted
- * that before, and never under its floor. The planned foot is tight to the
- * text, so a snap upwards costs the species a fraction of a point of type.
+ * Snaps the planned boundary to the set's alignment line when both boxes
+ * still fit: Species Traits at no more than TRAITS_ALIGN_SIZE_GIVE below the
+ * normal size if it fitted that before, and never under its floor. A foot
+ * within a few points of the line lets the features give as much; further off,
+ * the line is taken only when it is free, the features keeping the size they
+ * would print at (or, shrunk already, giving no more than that).
  */
 function alignedTraitsShift(
   column: TraitsColumn,
@@ -2077,18 +2188,26 @@ function alignedTraitsShift(
   const { align } = column;
   if (align === undefined || species === undefined || species.paragraphs.length === 0) return shift;
   const snapped = column.speciesBottom - align.y;
-  if (snapped === shift || Math.abs(snapped - shift) > align.within) return shift;
+  if (snapped === shift) return shift;
   const most = column.featuresTop - column.featuresBottom - TRAITS_FEATURES_MIN_HEIGHT;
   const least = TRAITS_SPECIES_MIN_HEIGHT - (column.speciesTop - column.speciesBottom);
   if (snapped > most || snapped < least) return shift;
   const rects = new Map([[SPECIES_FIELD, column.species], [FEATURES_FIELD, column.features]]);
+  const boxAt = (box: DetailsTextBox, field: string, at: number): RichTextBox =>
+    richTextBox(shiftedTraitsRects(rects, column, at), field, box.fallback);
   const fits = (box: DetailsTextBox, field: string, at: number, size: number): boolean =>
-    featureBoxFits(box.paragraphs, fonts, richTextBox(shiftedTraitsRects(rects, column, at), field, box.fallback), size);
+    featureBoxFits(box.paragraphs, fonts, boxAt(box, field, at), size);
   const holds = (box: DetailsTextBox, field: string, floor: number): boolean => fits(box, field, snapped, floor)
     && (!fits(box, field, shift, DEFAULT_FEATURE_FONT_SIZE)
       || fits(box, field, snapped, Math.max(floor, DEFAULT_FEATURE_FONT_SIZE - TRAITS_ALIGN_SIZE_GIVE)));
-  return holds(species, SPECIES_FIELD, SPECIES_MIN_FONT_SIZE)
-    && (features === undefined || holds(features, FEATURES_FIELD, MIN_FEATURE_FONT_SIZE)) ? snapped : shift;
+  if (!holds(species, SPECIES_FIELD, SPECIES_MIN_FONT_SIZE)) return shift;
+  if (features === undefined) return snapped;
+  const floor = features.minFontSize ?? MIN_FEATURE_FONT_SIZE;
+  if (Math.abs(snapped - shift) <= align.within) return holds(features, FEATURES_FIELD, floor) ? snapped : shift;
+  const size = fittedFeatureSize(features.paragraphs, fonts, boxAt(features, FEATURES_FIELD, shift), floor);
+  if (size === undefined) return shift;
+  const kept = size === DEFAULT_FEATURE_FONT_SIZE ? size : Math.max(floor, size - TRAITS_ALIGN_SIZE_GIVE);
+  return fits(features, FEATURES_FIELD, snapped, kept) ? snapped : shift;
 }
 
 /** The boundary's move before any alignment, as planTraitsColumn describes it. */
@@ -2240,6 +2359,35 @@ function isResourcesRow(row: SheetRow | undefined): row is SheetRow & { kind: "l
   return row?.kind === "lines" && row.lines.length === 1 && isPipParagraph(row.lines[0]!);
 }
 
+/** The character page's flowed boxes and the traits column's plan for them, as the page draws them. */
+interface DetailsTextPlan {
+  boxes: DetailsTextBox[];
+  column?: TraitsColumn;
+  shift: number;
+}
+
+function planDetailsText(
+  modelPage: SheetPage, rects: ReadonlyMap<string, FieldRect>, layout: DetailsFeatureLayout, fonts: SheetFonts,
+): DetailsTextPlan {
+  const boxes = detailsTextBoxes(modelPage, rects, layout);
+  // On the 2024 pages Species Traits and the features share one column;
+  // the boundary between them moves to suit the text.
+  const column = findTraitsColumn(rects);
+  if (column === undefined) return { boxes, shift: 0 };
+  const shift = planTraitsColumn(column, boxes.find((box) => box.field === SPECIES_FIELD), boxes.find((box) => box.field === FEATURES_FIELD), fonts);
+  return { boxes, column, shift };
+}
+
+/** Whether the plan's features box holds all its text at its floor. */
+function featuresFitAtFloor(plan: DetailsTextPlan, rects: ReadonlyMap<string, FieldRect>, fonts: SheetFonts): boolean {
+  const features = plan.boxes.find((box) => box.field === FEATURES_FIELD);
+  if (features === undefined) return true;
+  const fieldRects = plan.column === undefined ? rects : shiftedTraitsRects(rects, plan.column, plan.shift);
+  const size = features.fontSize ?? DEFAULT_FEATURE_FONT_SIZE;
+  return featureBoxFits(features.paragraphs, fonts, richTextBox(fieldRects, FEATURES_FIELD, features.fallback),
+    features.minFontSize ?? MIN_FEATURE_FONT_SIZE, (features.lineHeight ?? size) / size);
+}
+
 /**
  * `modelPage` without the Resources row the model closes its feature lists
  * with, and that row as a paragraph. A page without one comes back as it is.
@@ -2263,6 +2411,21 @@ function liftResourcesRow(modelPage: SheetPage): { page: SheetPage; paragraphs?:
     },
     paragraphs: featureParagraphs([row], false),
   };
+}
+
+/**
+ * `modelPage` with its Resources row closing the last group of features that
+ * has any, not the class features, so the paragraph folded back from a box
+ * ends the features box. A page without one comes back as it is.
+ */
+export function resourcesLastPage(modelPage: SheetPage): SheetPage {
+  const groups = modelPage.featureGroups;
+  const classRows = groups?.["class-features"];
+  const row = classRows?.at(-1);
+  if (groups === undefined || classRows === undefined || !isResourcesRow(row)) return modelPage;
+  const moved: Record<string, readonly SheetRow[]> = { ...groups, "class-features": classRows.slice(0, -1) };
+  const last = (["feats", "subclass-features"] as const).find((key) => (moved[key]?.length ?? 0) > 0) ?? "class-features";
+  return { ...modelPage, featureGroups: { ...moved, [last]: [...(moved[last] ?? []), row] } };
 }
 
 /** The Resources box as planned: its frame, its text and what it does to the features frame. */
@@ -3039,16 +3202,21 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
       // The Resources paragraph leaves the features for a box of its own, whose
       // height comes off the features frame before the column is planned.
       const lifted = liftResourcesRow(modelPage);
-      const resources = lifted.paragraphs === undefined
+      let resources = lifted.paragraphs === undefined
         ? undefined
         : planResourcesBox(lifted.paragraphs, detailsArt.rects, findTraitsColumn(detailsArt.rects), fonts);
-      const detailsRects = resources?.rects ?? detailsArt.rects;
-      const boxes = detailsTextBoxes(resources === undefined ? modelPage : lifted.page, detailsRects, { split });
-      // On the 2024 pages Species Traits and the features share one column;
-      // the boundary between them moves to suit the text.
-      const column = findTraitsColumn(detailsRects);
-      const shift = column === undefined ? 0 : timed("traitsColumn", () => planTraitsColumn(
-        column, boxes.find((box) => box.field === SPECIES_FIELD), boxes.find((box) => box.field === FEATURES_FIELD), fonts));
+      let plan = timed("traitsColumn", () => planDetailsText(resources === undefined ? modelPage : lifted.page,
+        resources?.rects ?? detailsArt.rects, { split }, fonts));
+      if (resources !== undefined && !featuresFitAtFloor(plan, resources.rects, fonts)) {
+        // Features the box would push onto another page keep the paragraph
+        // inline instead, when that alone lets them fit.
+        const inline = timed("traitsColumn", () => planDetailsText(resourcesLastPage(modelPage), detailsArt.rects, { split }, fonts));
+        if (featuresFitAtFloor(inline, detailsArt.rects, fonts)) {
+          resources = undefined;
+          plan = inline;
+        }
+      }
+      const { boxes, column, shift } = plan;
       const { page, fieldRects: templateRects, overflow: boxOverflow } = await fill("details", bundle.details, {
         ...values,
         details_features: "",

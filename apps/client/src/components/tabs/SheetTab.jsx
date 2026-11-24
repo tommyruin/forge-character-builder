@@ -41,10 +41,10 @@ export default function SheetTab() {
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { options: layoutOptions } = useSheetLayoutOptionsSetting();
   const inventoryNotes = layoutOptions.inventoryNotes;
-  const { resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline } = resourceTrackerSheetOptions(layoutOptions);
+  const { resourceTrackers, resourceTrackersList, resourceTrackersInline } = resourceTrackerSheetOptions(layoutOptions);
   const layout = useMemo(() => effectiveSheetLayout(templateSet, layoutOptions), [templateSet, layoutOptions]);
-  // Trackers off, printed empty or listed changes the rendered sheet, so it changes every cache key built
-  // from this. What is spent on the Resources tab is a character edit: it bumps the mutation tick.
+  // Trackers off or listed changes the rendered sheet, so it changes every cache key built from this.
+  // What is spent on the Resources tab is a character edit: it bumps the mutation tick.
   const layoutKey = sheetLayoutCacheKey(layout) + resourceTrackersCacheKey(layoutOptions);
   // Debounced view of mutationTick: a burst of cascading mutations (multi-step
   // selections, level-ups) folds into one full-sheet regeneration instead of
@@ -98,7 +98,7 @@ export default function SheetTab() {
     // if its own cleanup hasn't cancelled it — so the surviving mount always renders.
     sharedSheetGeneration(runKey, () =>
       loadSheetBrandImage().then((brandImage) =>
-        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline, layout, brandImage, footerText: `Generated with ${shell.appName}.` })),
+        api.characters.sheetBytes(id, { lite: false, templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes, resourceTrackers, resourceTrackersList, resourceTrackersInline, layout, brandImage, footerText: `Generated with ${shell.appName}.` })),
     )
       .then((bytes) => {
         putCachedSheet(cacheKey, bytes);
@@ -112,7 +112,7 @@ export default function SheetTab() {
     return () => {
       cancelled = true;
     };
-  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline, layout, layoutKey]);
+  }, [active, id, key, libraryRevision, debouncedTick, nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersList, resourceTrackersInline, layout, layoutKey]);
 
   const ready = state.key === key;
   const bytes = ready ? state.bytes : null;

@@ -100,10 +100,14 @@ describe.each(SHARED_COLUMN_SETS)("the %s page's shared species and features col
   it("gives a short species' spare height to the features", async () => {
     const pages = await renderPages(syntheticModel(["Brief. One line of trait."], ["Opening. " + prose("ft", 20)]), set);
     // The features box's title moves with the boundary: a one-line species
-    // lifts it above where the printed Species Traits frame ends.
+    // lifts it above where the printed Species Traits frame ends. The Hybrid
+    // page's column instead takes its alignment line while the features have
+    // room for it (resources-box.test.ts).
     const title = pages[0]!.find((item) => /^(CLASS )?FEATURES$/.test(item.str));
     const column = SHEET_TEMPLATE_CONTRACT.traitsColumn;
-    const speciesBottom = column.top - column.speciesHeight[set as keyof typeof column.speciesHeight];
+    const speciesBottom = set === "2024-hybrid"
+      ? column.speciesAlign["2024-hybrid"].y - column.gap["2024-hybrid"] - 12
+      : column.top - column.speciesHeight[set as keyof typeof column.speciesHeight];
     expect(title?.y).toBeGreaterThan(speciesBottom);
     const opening = pages[0]!.find((item) => item.str.startsWith("Opening"));
     expect(opening?.y).toBeLessThan(title!.y);
