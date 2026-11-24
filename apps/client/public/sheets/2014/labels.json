@@ -716,10 +716,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 460,
+    "y": 462.2,
     "size": 3.4,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",
@@ -2558,10 +2608,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 460,
+    "y": 462.2,
     "size": 3.4,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",
@@ -3375,10 +3475,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 460,
+    "y": 462.2,
     "size": 3.4,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",
@@ -4192,10 +4342,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 460,
+    "y": 462.2,
     "size": 3.4,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 456.9,
+    "size": 3.2,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",
@@ -4989,10 +5189,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 437,
+    "y": 439.8,
     "size": 4.8,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",
@@ -5786,10 +6036,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 437,
+    "y": 439.8,
     "size": 4.8,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",
@@ -6603,10 +6903,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 437,
+    "y": 439.8,
     "size": 4.8,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",
@@ -7420,10 +7770,60 @@
    {
     "text": "EXHAUSTION",
     "x": 335,
-    "y": 437,
+    "y": 439.8,
     "size": 4.8,
     "font": "captions",
     "color": "text"
+   },
+   {
+    "text": "1",
+    "x": 335,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "2",
+    "x": 344,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "3",
+    "x": 353,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "4",
+    "x": 362,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
+   },
+   {
+    "text": "5",
+    "x": 371,
+    "y": 433.9,
+    "size": 3.4,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 6
    },
    {
     "text": "RACIAL TRAITS",

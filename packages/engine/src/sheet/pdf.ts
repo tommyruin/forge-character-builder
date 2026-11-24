@@ -8,7 +8,9 @@ import {
   DEFAULT_SHEET_COLOURS,
   SHEET_FIXED_COLOURS,
   SHEET_PALETTE,
+  SHEET_PRINT_COLOURS,
   SHEET_TEMPLATE_CONTRACT,
+  isPrintTheme,
   type SheetColours,
   type SheetLayout,
   type SheetMarker,
@@ -26,6 +28,7 @@ import {
   pipWordWidth,
   type PipLook,
 } from "./pips.js";
+import { SHEET_FRAME, sheetFramePaths } from "./frame-path.js";
 import { INLINE_USES_CLOSE } from "../resources/sheet.js";
 import {
   PDFCheckBox,
@@ -394,8 +397,7 @@ export interface CharacterSheetTemplateBundle {
    */
   layout?: SheetLayout;
   /**
-   * The set's death-save and exhaustion marker (SHEET_TEMPLATE_MARKERS),
-   * which the Resources paragraph's pips copy. Absent, they are circles.
+   * The set's death-save marker (SHEET_TEMPLATE_MARKERS), which the Resources paragraph's pips copy. Absent, they are circles.
    */
   marker?: SheetMarker;
   /** The set's titles, captions and ribbons, keyed by template file. */
@@ -1802,15 +1804,25 @@ function fieldFallbackName(field: string): string {
 }
 
 /**
- * Whether a value cut short on the character page is an attack row's cell
- * (weapon, range, attack or damage) whose spell prints on a spell card in
- * this sheet. The card has the value in full, so the ellipsis stays and no
- * continuation repeats it. Row n is the details page's nth attack.
+ * Whether a value cut short on the character page is an attack row's weapon
+ * or damage cell whose spell prints on a spell card in this sheet. The card
+ * has the value in full, so the ellipsis stays and no continuation repeats it.
+ * Row n is the details page's nth attack.
  */
 function printedOnCard(entry: BoxOverflow, attacks: readonly SheetAttackRow[] | undefined): boolean {
   if (entry.shown === undefined) return false;
-  const row = /^details_attack(\d+)_(?:weapon|range|attack|damage)$/.exec(entry.field)?.[1];
+  const row = /^details_attack(\d+)_(?:weapon|damage)$/.exec(entry.field)?.[1];
   return row !== undefined && attacks?.[Number(row) - 1]?.carded === true;
+}
+
+/**
+ * Whether a character page box never adds a continuation entry: an attack
+ * row's range or attack cell cut short keeps its ellipsis, carded or not, and
+ * the saving throw notes stay in their box.
+ */
+function staysInBox(entry: BoxOverflow): boolean {
+  return entry.field === "details_saving_throws"
+    || (entry.shown !== undefined && /^details_attack\d+_(?:range|attack)$/.test(entry.field));
 }
 
 /** Text a form box could not hold, as plain paragraphs for a continuation. */
@@ -1964,6 +1976,8 @@ interface TraitsColumn {
    */
   upperCut: number;
   lowerCut: number;
+  /** Where this set's Species Traits foot snaps to (the contract's `speciesAlign`). */
+  align?: { readonly y: number; readonly within: number };
 }
 
 // A frame's 0.9pt stroke reaches this far past its path.
@@ -1978,6 +1992,8 @@ const TRAITS_SPECIES_CAP_SHARE = 0.4;
 // Neighbouring pieces of the rearranged artwork overlap by this much, so no
 // viewer shows a seam where they meet.
 const TRAITS_SEAM_OVERLAP = 0.5;
+// How far a box's type may step down for the column to land on its alignment line.
+const TRAITS_ALIGN_SIZE_GIVE = 0.5;
 
 function findTraitsColumn(rects: ReadonlyMap<string, FieldRect>): TraitsColumn | undefined {
   const species = rects.get(SPECIES_FIELD);
@@ -1988,18 +2004,24 @@ function findTraitsColumn(rects: ReadonlyMap<string, FieldRect>): TraitsColumn |
   const speciesBottom = species.y - pad.bottom;
   const featuresTop = features.y + features.height + pad.top;
   const gap = speciesBottom - featuresTop;
-  if (gap < 0 || gap > SHEET_TEMPLATE_CONTRACT.traitsColumn.gap + 0.5) return undefined;
+  const contract = SHEET_TEMPLATE_CONTRACT.traitsColumn;
+  if (gap < 0 || gap > Math.max(...Object.values(contract.gap)) + 0.5) return undefined;
+  // The set's foot alignment, recognised by the height it printed Species Traits.
+  const speciesTop = species.y + species.height + pad.top;
+  const align = Object.entries(contract.speciesAlign).find(([set]) =>
+    Math.abs(speciesTop - speciesBottom - contract.speciesHeight[set as keyof typeof contract.speciesHeight]) < 0.5)?.[1];
   return {
     species,
     features,
     left: species.x - pad.side - FRAME_STROKE_REACH,
     right: species.x + species.width + pad.side + FRAME_STROKE_REACH,
-    speciesTop: species.y + species.height + pad.top,
+    speciesTop,
     speciesBottom,
     featuresTop,
     featuresBottom: features.y - pad.bottom,
     upperCut: species.y + species.height - pad.bottom,
     lowerCut: features.y + pad.bottom,
+    ...(align === undefined ? {} : { align }),
   };
 }
 
@@ -2030,6 +2052,47 @@ function shiftedTraitsRects(
  * column, more if the features still fit.
  */
 function planTraitsColumn(
+  column: TraitsColumn,
+  species: DetailsTextBox | undefined,
+  features: DetailsTextBox | undefined,
+  fonts: SheetFonts,
+): number {
+  return alignedTraitsShift(column, species, features, fonts, freeTraitsShift(column, species, features, fonts));
+}
+
+/**
+ * Snaps the planned boundary to the set's alignment line when the Species
+ * Traits foot lands within a few points of it and both boxes still fit: each
+ * at no more than TRAITS_ALIGN_SIZE_GIVE below the normal size if it fitted
+ * that before, and never under its floor. The planned foot is tight to the
+ * text, so a snap upwards costs the species a fraction of a point of type.
+ */
+function alignedTraitsShift(
+  column: TraitsColumn,
+  species: DetailsTextBox | undefined,
+  features: DetailsTextBox | undefined,
+  fonts: SheetFonts,
+  shift: number,
+): number {
+  const { align } = column;
+  if (align === undefined || species === undefined || species.paragraphs.length === 0) return shift;
+  const snapped = column.speciesBottom - align.y;
+  if (snapped === shift || Math.abs(snapped - shift) > align.within) return shift;
+  const most = column.featuresTop - column.featuresBottom - TRAITS_FEATURES_MIN_HEIGHT;
+  const least = TRAITS_SPECIES_MIN_HEIGHT - (column.speciesTop - column.speciesBottom);
+  if (snapped > most || snapped < least) return shift;
+  const rects = new Map([[SPECIES_FIELD, column.species], [FEATURES_FIELD, column.features]]);
+  const fits = (box: DetailsTextBox, field: string, at: number, size: number): boolean =>
+    featureBoxFits(box.paragraphs, fonts, richTextBox(shiftedTraitsRects(rects, column, at), field, box.fallback), size);
+  const holds = (box: DetailsTextBox, field: string, floor: number): boolean => fits(box, field, snapped, floor)
+    && (!fits(box, field, shift, DEFAULT_FEATURE_FONT_SIZE)
+      || fits(box, field, snapped, Math.max(floor, DEFAULT_FEATURE_FONT_SIZE - TRAITS_ALIGN_SIZE_GIVE)));
+  return holds(species, SPECIES_FIELD, SPECIES_MIN_FONT_SIZE)
+    && (features === undefined || holds(features, FEATURES_FIELD, MIN_FEATURE_FONT_SIZE)) ? snapped : shift;
+}
+
+/** The boundary's move before any alignment, as planTraitsColumn describes it. */
+function freeTraitsShift(
   column: TraitsColumn,
   species: DetailsTextBox | undefined,
   features: DetailsTextBox | undefined,
@@ -2091,36 +2154,208 @@ function withClip(page: PDFPage, rects: ReadonlyArray<readonly [number, number, 
 }
 
 /**
- * The character page's artwork with the traits column's boundary moved down
- * by `shift`. Everything outside the band between the column's cuts prints
- * as drawn. Inside it, the species frame's foot and the features frame's head
- * move together; the gap they open (or the overlap they leave) is filled by
- * stretching a one-point slice of the frame's straight sides, which repeats
- * exactly, so the frames read as drawn at their new heights.
+ * The features frame's foot, lifted by `raise` to make room for the Resources
+ * box: from the frame's lower edge up to `cut`, a line across its straight
+ * sides.
  */
-function drawTraitsColumnArtwork(
-  page: PDFPage, embedded: PDFEmbeddedPage, width: number, height: number, column: TraitsColumn, shift: number,
+interface RaisedFoot {
+  left: number;
+  right: number;
+  bottom: number;
+  cut: number;
+  raise: number;
+}
+
+/**
+ * The character page's artwork with the traits column's boundary moved down
+ * by `shift` and the features frame's foot raised. Everything outside the
+ * pieces prints as drawn. Inside the column's band, the species frame's foot
+ * and the features frame's head move together; the gap they open (or the
+ * overlap they leave) is filled by stretching a one-point slice of the frame's
+ * straight sides, which repeats exactly, so the frames read as drawn at their
+ * new heights. A raised foot is cut from the frame and redrawn higher, leaving
+ * the space under it empty for the Resources box.
+ */
+function drawDetailsArtwork(
+  page: PDFPage, embedded: PDFEmbeddedPage, width: number, height: number,
+  column: TraitsColumn | undefined, shift: number, foot: RaisedFoot | undefined,
 ): void {
   const full = { x: 0, y: 0, width, height };
-  if (shift === 0) {
+  const moved = column !== undefined && shift !== 0 ? column : undefined;
+  if (moved === undefined && foot === undefined) {
     page.drawPage(embedded, full);
     return;
   }
-  const { left, right, upperCut, lowerCut } = column;
-  const span = right - left;
-  withClip(page, [[0, 0, width, height], [left, lowerCut, span, upperCut - lowerCut]], true, () => page.drawPage(embedded, full));
-  // The moved part: the species foot, the gap and the features head.
-  const movedBottom = lowerCut + Math.max(0, -shift);
-  const movedTop = upperCut - Math.max(0, shift);
-  withClip(page, [[left, movedBottom, span, movedTop - movedBottom]], false, () => page.drawPage(embedded, { ...full, y: -shift }));
-  // A taller species box repeats the slice under its cut; a shorter one, the
-  // features box's slice over its own.
-  const [slice, from, to] = shift > 0
-    ? [upperCut - 1, movedTop - TRAITS_SEAM_OVERLAP, upperCut + TRAITS_SEAM_OVERLAP]
-    : [lowerCut, lowerCut - TRAITS_SEAM_OVERLAP, movedBottom + TRAITS_SEAM_OVERLAP];
-  const scale = to - from;
-  withClip(page, [[left, from, span, to - from]], false, () =>
-    page.drawPage(embedded, { x: 0, y: from - slice * scale, width, height: height * scale }));
+  const holes: Array<readonly [number, number, number, number]> = [];
+  if (moved !== undefined) holes.push([moved.left, moved.lowerCut, moved.right - moved.left, moved.upperCut - moved.lowerCut]);
+  if (foot !== undefined) holes.push([foot.left, foot.bottom, foot.right - foot.left, foot.cut + foot.raise - foot.bottom]);
+  withClip(page, [[0, 0, width, height], ...holes], true, () => page.drawPage(embedded, full));
+  if (moved !== undefined) {
+    const { left, right, upperCut, lowerCut } = moved;
+    const span = right - left;
+    // The moved part: the species foot, the gap and the features head.
+    const movedBottom = lowerCut + Math.max(0, -shift);
+    const movedTop = upperCut - Math.max(0, shift);
+    withClip(page, [[left, movedBottom, span, movedTop - movedBottom]], false, () => page.drawPage(embedded, { ...full, y: -shift }));
+    // A taller species box repeats the slice under its cut; a shorter one, the
+    // features box's slice over its own.
+    const [slice, from, to] = shift > 0
+      ? [upperCut - 1, movedTop - TRAITS_SEAM_OVERLAP, upperCut + TRAITS_SEAM_OVERLAP]
+      : [lowerCut, lowerCut - TRAITS_SEAM_OVERLAP, movedBottom + TRAITS_SEAM_OVERLAP];
+    const scale = to - from;
+    withClip(page, [[left, from, span, to - from]], false, () =>
+      page.drawPage(embedded, { x: 0, y: from - slice * scale, width, height: height * scale }));
+  }
+  if (foot !== undefined) {
+    // The foot reaches a little past its cut, over the straight sides above, so no seam shows.
+    withClip(page, [[foot.left, foot.bottom + foot.raise, foot.right - foot.left, foot.cut - foot.bottom + TRAITS_SEAM_OVERLAP]], false, () =>
+      page.drawPage(embedded, { ...full, y: foot.raise }));
+  }
+}
+
+/** The page's labels with those on a raised foot (the 2014 caption) moved up with it. */
+function raisedFootLabels(
+  labels: SheetTemplateLabels[string] | undefined, foot: RaisedFoot | undefined,
+): SheetTemplateLabels[string] | undefined {
+  if (labels === undefined || foot === undefined) return labels;
+  const onFoot = (x: number, y: number): boolean => x >= foot.left && x <= foot.right && y >= foot.bottom && y <= foot.cut;
+  return {
+    labels: labels.labels.map((label) => onFoot(label.x + (label.width ?? 0) / 2, label.y) ? { ...label, y: label.y + foot.raise } : label),
+    ribbons: labels.ribbons.map((ribbon) => onFoot(ribbon.cx, ribbon.cy) ? { ...ribbon, cy: ribbon.cy + foot.raise } : ribbon),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The Resources box: a slim frame under the features, drawn by the writer so
+// the templates need no variants for it. The sheet model carries the paragraph
+// as the features' last row; the writer lifts it out before laying them out.
+// ---------------------------------------------------------------------------
+
+const RESOURCES_FONT_SIZES = [DEFAULT_FEATURE_FONT_SIZE, 7.5, 7, 6.5];
+// From the frame's edges to the first line's cap height and the last baseline.
+const RESOURCES_PAD_TOP = 3.8;
+const RESOURCES_PAD_BOTTOM = 5;
+
+function isResourcesRow(row: SheetRow | undefined): row is SheetRow & { kind: "lines" } {
+  return row?.kind === "lines" && row.lines.length === 1 && isPipParagraph(row.lines[0]!);
+}
+
+/**
+ * `modelPage` without the Resources row the model closes its feature lists
+ * with, and that row as a paragraph. A page without one comes back as it is.
+ */
+function liftResourcesRow(modelPage: SheetPage): { page: SheetPage; paragraphs?: FeatureParagraph[] } {
+  const section = modelPage.sections.find((candidate) => candidate.title === "features");
+  const groups = modelPage.featureGroups;
+  const classRows = groups?.["class-features"];
+  const row = [section?.renderRows?.at(-1), section?.rows.at(-1), classRows?.at(-1)].find(isResourcesRow);
+  if (row === undefined) return { page: modelPage };
+  const without = (rows: readonly SheetRow[]): SheetRow[] => isResourcesRow(rows.at(-1)) ? rows.slice(0, -1) : [...rows];
+  return {
+    page: {
+      ...modelPage,
+      sections: modelPage.sections.map((candidate) => candidate.title !== "features" ? candidate : {
+        ...candidate,
+        rows: without(candidate.rows),
+        ...(candidate.renderRows === undefined ? {} : { renderRows: without(candidate.renderRows) }),
+      }),
+      ...(groups === undefined || classRows === undefined ? {} : { featureGroups: { ...groups, "class-features": without(classRows) } }),
+    },
+    paragraphs: featureParagraphs([row], false),
+  };
+}
+
+/** The Resources box as planned: its frame, its text and what it does to the features frame. */
+interface ResourcesBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  textX: number;
+  textWidth: number;
+  /** The first line's baseline and the lowest baseline the box holds. */
+  baseline: number;
+  lastBaseline: number;
+  fontSize: number;
+  paragraphs: readonly FeatureParagraph[];
+  lines: readonly FeatureFlowLine[];
+  foot: RaisedFoot;
+  /** The page's field rectangles with the features box shortened to match. */
+  rects: ReadonlyMap<string, FieldRect>;
+}
+
+/**
+ * Sizes the box to its text: the largest size that holds it in the set's line
+ * limit, else the normal size with the rest continuing. The box takes the
+ * features frame's old foot; the frame's foot rises by its height plus the gap.
+ */
+function planResourcesBox(
+  paragraphs: readonly FeatureParagraph[],
+  rects: ReadonlyMap<string, FieldRect>,
+  column: TraitsColumn | undefined,
+  fonts: SheetFonts,
+): ResourcesBox | undefined {
+  const features = rects.get(FEATURES_FIELD);
+  if (features === undefined) return undefined;
+  const contract = SHEET_TEMPLATE_CONTRACT;
+  const pad = column === undefined ? contract.captionPad : contract.platePad;
+  const maxLines = column === undefined ? contract.resourcesBox.narrowMaxLines : contract.resourcesBox.maxLines;
+  const textWidth = features.width - 6;
+  const capHeight = capHeightRatio(fonts.regular);
+  const measure = fontMeasure(fonts);
+  const wrap = (size: number): FeatureFlowLine[] => featureFlowLines(paragraphs, textWidth, size, measure, capHeight);
+  const fitted = RESOURCES_FONT_SIZES.find((size) => wrap(size).length <= maxLines);
+  const fontSize = fitted ?? DEFAULT_FEATURE_FONT_SIZE;
+  const lines = wrap(fontSize);
+  const shown = Math.min(lines.length, maxLines);
+  const height = RESOURCES_PAD_TOP + capHeight * fontSize + (shown - 1) * fontSize + RESOURCES_PAD_BOTTOM;
+  const x = features.x - pad.side;
+  const width = features.width + pad.side * 2;
+  const y = features.y - pad.bottom;
+  const raise = height + contract.resourcesBox.gap;
+  const baseline = y + height - RESOURCES_PAD_TOP - capHeight * fontSize;
+  const next = new Map(rects);
+  next.set(FEATURES_FIELD, { ...features, y: features.y + raise, height: features.height - raise });
+  return {
+    x, y, width, height,
+    textX: features.x + 3,
+    textWidth,
+    baseline,
+    lastBaseline: baseline - (shown - 1) * fontSize,
+    fontSize,
+    paragraphs,
+    lines,
+    foot: {
+      left: x - FRAME_STROKE_REACH,
+      right: x + width + FRAME_STROKE_REACH,
+      bottom: y - FRAME_STROKE_REACH,
+      cut: features.y + pad.bottom,
+      raise,
+    },
+    rects: next,
+  };
+}
+
+/** Draws the box's frame and text; returns what it could not hold, to continue. */
+function drawResourcesBox(
+  page: PDFPage, box: ResourcesBox, fonts: SheetFonts, ink: SheetLabelColours, colours: SheetColours, pips: PipStyle,
+): FeatureContinuation | undefined {
+  const { outer, inner } = sheetFramePaths(box.width, box.height);
+  const paper = isPrintTheme(colours) ? SHEET_PRINT_COLOURS.fill : SHEET_FIXED_COLOURS.fill;
+  page.drawSvgPath(outer, {
+    x: box.x, y: box.y + box.height,
+    color: rgb(paper[0], paper[1], paper[2]),
+    borderColor: rgb(...ink.accent),
+    borderWidth: SHEET_FRAME.outerStroke,
+  });
+  page.drawSvgPath(inner, {
+    x: box.x + SHEET_FRAME.innerInset, y: box.y + box.height - SHEET_FRAME.innerInset,
+    borderColor: rgb(...ink.lines),
+    borderWidth: SHEET_FRAME.innerStroke,
+  });
+  const { rest } = drawFeatureFlow(page, box.paragraphs, box.lines, fonts, box.textX, box.baseline, box.textWidth,
+    box.lastBaseline - 0.01, box.fontSize, box.fontSize, ink.lines, pips);
+  return rest === undefined ? undefined : { paragraphs: rest, heading: "Resources" };
 }
 
 /** The page's labels with those inside the traits column's band moved with its boundary. */
@@ -2801,10 +3036,17 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
     await yieldToEventLoop();
     if (modelPage.templateKind === "details") {
       const split = bundle.layout?.split ?? detailsArt.rects.has("details_subclass_features");
-      const boxes = detailsTextBoxes(modelPage, detailsArt.rects, { split });
+      // The Resources paragraph leaves the features for a box of its own, whose
+      // height comes off the features frame before the column is planned.
+      const lifted = liftResourcesRow(modelPage);
+      const resources = lifted.paragraphs === undefined
+        ? undefined
+        : planResourcesBox(lifted.paragraphs, detailsArt.rects, findTraitsColumn(detailsArt.rects), fonts);
+      const detailsRects = resources?.rects ?? detailsArt.rects;
+      const boxes = detailsTextBoxes(resources === undefined ? modelPage : lifted.page, detailsRects, { split });
       // On the 2024 pages Species Traits and the features share one column;
       // the boundary between them moves to suit the text.
-      const column = findTraitsColumn(detailsArt.rects);
+      const column = findTraitsColumn(detailsRects);
       const shift = column === undefined ? 0 : timed("traitsColumn", () => planTraitsColumn(
         column, boxes.find((box) => box.field === SPECIES_FIELD), boxes.find((box) => box.field === FEATURES_FIELD), fonts));
       const { page, fieldRects: templateRects, overflow: boxOverflow } = await fill("details", bundle.details, {
@@ -2813,10 +3055,12 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         details_subclass_features: "",
         details_feats: "",
         details_proficiencies_languages: "",
-      }, column === undefined || shift === 0 ? undefined : (target, embedded, width, height) =>
-        drawTraitsColumnArtwork(target, embedded, width, height, column, shift));
-      const fieldRects = column === undefined ? templateRects : shiftedTraitsRects(templateRects, column, shift);
-      const pageLabels = column === undefined ? detailsLabels : shiftedTraitsLabels(detailsLabels, column, shift);
+      }, shift === 0 && resources === undefined ? undefined : (target, embedded, width, height) =>
+        drawDetailsArtwork(target, embedded, width, height, column, shift, resources?.foot));
+      const baseRects = resources?.rects ?? templateRects;
+      const fieldRects = column === undefined ? baseRects : shiftedTraitsRects(baseRects, column, shift);
+      const columnLabels = column === undefined ? detailsLabels : shiftedTraitsLabels(detailsLabels, column, shift);
+      const pageLabels = raisedFootLabels(columnLabels, resources?.foot);
       drawTemplateText(page, pageLabels, fonts, labelInk);
       await timed("brandImage", () => drawBrandImage(output, page, fieldRects, brandImage, colours));
       drawSheetFooter(page, fonts, footerText);
@@ -2826,9 +3070,11 @@ export async function writeCharacterSheetPdfWithTemplateBundle(
         ruleColour: labelInk.lines,
         pips,
       }));
+      const resourcesRest = resources === undefined ? undefined : drawResourcesBox(page, resources, fonts, labelInk, colours, pips);
+      if (resourcesRest !== undefined) overflow.push(resourcesRest);
       // A page that carries feature text is titled for it; one carrying only
       // other boxes' values is the character page continued.
-      const boxContinued = boxOverflow.filter((entry) => !printedOnCard(entry, modelPage.attacks));
+      const boxContinued = boxOverflow.filter((entry) => !staysInBox(entry) && !printedOnCard(entry, modelPage.attacks));
       const continued = addFeatureContinuationPages(output, [...overflow, ...fieldContinuations(boxContinued, fieldRects, pageLabels)],
         fonts, labelInk, footerText, overflow.length > 0 ? "FEATURES & TRAITS (CONTINUED)" : "CHARACTER (CONTINUED)", pips);
       addAttackNotePages(output, attackNotes, fonts, labelInk, footerText, continued);

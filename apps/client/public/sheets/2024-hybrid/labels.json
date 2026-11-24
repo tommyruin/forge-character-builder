@@ -774,7 +774,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -782,7 +782,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -792,10 +792,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.89,
+    "y": 34.89,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 70.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 84.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 98.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 112.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 126.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -810,7 +860,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -820,7 +870,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -828,7 +878,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -836,7 +886,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -844,7 +894,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -852,7 +902,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -860,7 +910,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -2690,7 +2740,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -2698,7 +2748,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -2708,10 +2758,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.89,
+    "y": 34.89,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 70.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 84.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 98.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 112.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 126.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -2726,7 +2826,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -2736,7 +2836,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2744,7 +2844,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2752,7 +2852,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2760,7 +2860,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2768,7 +2868,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -2776,7 +2876,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -3493,7 +3593,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -3501,7 +3601,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -3511,10 +3611,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.89,
+    "y": 34.89,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 70.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 84.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 98.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 112.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 126.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -3529,7 +3679,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -3539,7 +3689,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3547,7 +3697,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3555,7 +3705,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3563,7 +3713,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3571,7 +3721,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -3579,7 +3729,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -4296,7 +4446,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
@@ -4304,7 +4454,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -4314,10 +4464,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.89,
+    "y": 34.89,
     "size": 4.6,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 70.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 84.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 98.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 112.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 126.66919999999999,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -4332,7 +4532,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -4342,7 +4542,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4350,7 +4550,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4358,7 +4558,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4366,7 +4566,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4374,7 +4574,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5,
     "font": "captions",
     "color": "lines"
@@ -4382,7 +4582,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -5167,7 +5367,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5175,7 +5375,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -5185,10 +5385,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.575,
+    "y": 34.575,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 77.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 91.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 105.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 119.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 133.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -5203,7 +5453,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -5213,7 +5463,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5221,7 +5471,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5229,7 +5479,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5237,7 +5487,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5245,7 +5495,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -5253,7 +5503,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -6038,7 +6288,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6046,7 +6296,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -6056,10 +6306,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.575,
+    "y": 34.575,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 77.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 91.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 105.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 119.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 133.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -6074,7 +6374,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -6084,7 +6384,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6092,7 +6392,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6100,7 +6400,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6108,7 +6408,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6116,7 +6416,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6124,7 +6424,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -6841,7 +7141,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6849,7 +7149,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -6859,10 +7159,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.575,
+    "y": 34.575,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 77.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 91.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 105.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 119.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 133.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -6877,7 +7227,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -6887,7 +7237,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6895,7 +7245,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6903,7 +7253,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6911,7 +7261,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6919,7 +7269,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -6927,7 +7277,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -7644,7 +7994,7 @@
    {
     "text": "SENSES",
     "x": 33,
-    "y": 154,
+    "y": 128,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7652,7 +8002,7 @@
    {
     "text": "CONDITIONS & EXHAUSTION",
     "x": 26,
-    "y": 125,
+    "y": 92,
     "size": 5.6,
     "font": "titles",
     "color": "accent",
@@ -7662,10 +8012,60 @@
    {
     "text": "EXHAUSTION",
     "x": 32,
-    "y": 67.575,
+    "y": 34.575,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
+   },
+   {
+    "text": "1",
+    "x": 77.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "2",
+    "x": 91.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "3",
+    "x": 105.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "4",
+    "x": 119.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
+   },
+   {
+    "text": "5",
+    "x": 133.061,
+    "y": 40.9,
+    "size": 3.8,
+    "font": "captions",
+    "color": "text",
+    "align": "center",
+    "width": 7
    },
    {
     "text": "SPECIES TRAITS",
@@ -7680,7 +8080,7 @@
    {
     "text": "WEAPONS & DAMAGE CANTRIPS",
     "x": 212,
-    "y": 207,
+    "y": 174,
     "size": 6.2,
     "font": "titles",
     "color": "accent",
@@ -7690,7 +8090,7 @@
    {
     "text": "NAME",
     "x": 216,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7698,7 +8098,7 @@
    {
     "text": "RANGE",
     "x": 302,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7706,7 +8106,7 @@
    {
     "text": "ATK / DC",
     "x": 344,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7714,7 +8114,7 @@
    {
     "text": "DAMAGE & TYPE",
     "x": 388,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7722,7 +8122,7 @@
    {
     "text": "NOTES",
     "x": 462,
-    "y": 193.5,
+    "y": 160.5,
     "size": 5.5,
     "font": "captions",
     "color": "lines"
@@ -7730,7 +8130,7 @@
    {
     "text": "FEATURES",
     "x": 212,
-    "y": 551,
+    "y": 553,
     "size": 6.2,
     "font": "titles",
     "color": "accent",

@@ -302,7 +302,7 @@ describe("sheet template geometry", () => {
     const rectOf = (name: string) => form.getTextField(name).acroField.getWidgets()[0]!.getRectangle();
     const freeText = rectOf("details_attack_description");
     expect(form.getTextField("details_attack_description").isMultiline()).toBe(true);
-    // Five rows, under column captions on a 193.5 baseline.
+    // Five rows, under column captions on a 160.5 baseline.
     expect(form.getFields().filter((field) => /^details_attack\d+_weapon$/.test(field.getName()))).toHaveLength(5);
     for (let row = 1; row <= 5; row += 1) {
       const name = `details_attack${row}_description`;
@@ -314,13 +314,13 @@ describe("sheet template geometry", () => {
       expect(notes.y + notes.height, name).toBeCloseTo(weapon.y + weapon.height + 1.05, 5);
       if (row > 1) expect(notes.y + notes.height, name).toBeLessThanOrEqual(rectOf(`details_attack${row - 1}_description`).y);
       expect(freeText.y + freeText.height, name).toBeLessThanOrEqual(notes.y);
-      expect(notes.y + notes.height, name).toBeLessThan(193.5);
+      expect(notes.y + notes.height, name).toBeLessThan(160.5);
       expect(notes.x + notes.width, name).toBeLessThanOrEqual(582);
     }
     // The free-text note is the user's own prose and the attacks without a
     // row: two lines' worth of box, inside the panel, under the last row.
     expect(freeText.height).toBeGreaterThanOrEqual(20);
-    expect(freeText.y).toBeGreaterThanOrEqual(62);
+    expect(freeText.y).toBeGreaterThanOrEqual(29);
     expect(freeText.x + freeText.width).toBeLessThanOrEqual(582);
   });
 

@@ -229,11 +229,27 @@ describe("text placed in template boxes", () => {
   const longRange = "Self (a long synthetic aura that rolls out around the caster)";
   const attackRow = { name: "Shadow Ring", range: longRange, bonus: "DC 13 STR", damage: "2d6 necrotic", note: "" };
 
-  it("prints a cut-off attack cell in full when no card carries the row", async () => {
-    const written = await render({ page: 1, templateKind: "details", sections: [], attacks: [attackRow] }, { details_attack1_range: longRange });
-    expect(written.text[0]).toMatch(/Self \(a long.*…/);
+  it("prints a cut-off weapon or damage cell in full when no card carries the row", async () => {
+    const longName = "Shadow Ring of the Long Synthetic Name That Runs Well Past Its Cell And Keeps On Going";
+    const written = await render({ page: 1, templateKind: "details", sections: [], attacks: [{ ...attackRow, name: longName }] }, { details_attack1_weapon: longName });
     expect(written.text[1]).toContain("(in full)");
-    expect(written.text[1]).toContain(longRange);
+    expect(written.text[1]).toContain(longName);
+  }, 60_000);
+
+  it("keeps a cut-off range or attack cell to its ellipsis, with or without a card", async () => {
+    const longBonus = "DC 13 Strength or a long synthetic alternative";
+    const written = await render(
+      { page: 1, templateKind: "details", sections: [], attacks: [{ ...attackRow, bonus: longBonus }] },
+      { details_attack1_range: longRange, details_attack1_attack: longBonus },
+    );
+    expect(written.text[0]).toMatch(/Self \(a long.*…/);
+    expect(written.text).toHaveLength(1);
+  }, 60_000);
+
+  it("keeps the saving throw notes in their box", async () => {
+    const written = await render({ page: 1, templateKind: "details", sections: [] }, { details_saving_throws: tokens("savenote", 200) }, localTemplateBundle("2024-hybrid"));
+    expect(written.text).toHaveLength(1);
+    expect(written.text[0]).toContain("…");
   }, 60_000);
 
   it("keeps the ellipsis and adds no continuation when the row's spell or weapon prints on a card", async () => {
@@ -253,6 +269,8 @@ describe("no value hidden in a template box", () => {
   const HAND_DRAWN = /^details_(features|subclass_features|feats|proficiencies_languages|additional_notes)$/;
   // Long attack notes move whole to the attack-note pages, leaving a pointer.
   const ATTACK_NOTE = /^details_attack\d*_description$/;
+  // These keep their ellipsis and never add a continuation.
+  const STAYS_IN_BOX = /^details_(saving_throws|attack\d+_(range|attack))$/;
 
   it.each([["2014", {}], ["2014", { top: true }], ["2024", {}], ["2024", { top: false }], ["2024-hybrid", {}], ["2024-hybrid", { top: false }]] as const)(
     "shows every %s %j field's value whole, or marks the cut and prints all of it",
@@ -278,6 +296,7 @@ describe("no value hidden in a template box", () => {
         if (words.every((word) => new RegExp(`\\b${word}\\b`).test(inBox))) continue;
         // Cut: the box says so, and every word is printed elsewhere.
         expect(inBox, `${name} marks its cut`).toMatch(ATTACK_NOTE.test(name) ? /See attack notes|…/ : /…/);
+        if (STAYS_IN_BOX.test(name)) continue;
         for (const word of words) {
           expect(new RegExp(`\\b${word}\\b`).test(inBox) || new RegExp(`\\b${word}\\b`).test(elsewhere), `${name}: ${word}`).toBe(true);
         }

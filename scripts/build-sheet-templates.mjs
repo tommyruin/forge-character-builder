@@ -44,14 +44,18 @@ const fontkit = require("@pdf-lib/fontkit");
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CONTRACT_MODULE = join(ROOT, "packages", "engine", "dist", "sheet", "template-contract.js");
-if (!existsSync(CONTRACT_MODULE)) {
-  console.error("build the engine first (npm run build): missing " + CONTRACT_MODULE);
-  process.exit(1);
+const FRAME_MODULE = join(ROOT, "packages", "engine", "dist", "sheet", "frame-path.js");
+for (const module of [CONTRACT_MODULE, FRAME_MODULE]) {
+  if (!existsSync(module)) {
+    console.error("build the engine first (npm run build): missing " + module);
+    process.exit(1);
+  }
 }
 const {
   SHEET_TEMPLATE_CONTRACT: C, SHEET_TEMPLATE_SETS, SHEET_PALETTE, DEFAULT_SHEET_COLOURS, SHEET_FIXED_COLOURS,
   SHEET_LAYOUT_DEFAULTS, SHEET_FONT_FACES, sheetLayoutVariants,
 } = await import(pathToFileURL(CONTRACT_MODULE).href);
+const { SHEET_FRAME, sheetFramePaths } = await import(pathToFileURL(FRAME_MODULE).href);
 const OUTPUT_ROOT = join(ROOT, "apps", "client", "public", C.directory);
 const FONT_DIR = join(OUTPUT_ROOT, C.fontsDirectory);
 
@@ -95,9 +99,9 @@ const PANEL_GREY = rgb(...SHEET_FIXED_COLOURS.panelGrey);
 const LABEL_FONT = { display: "titles", caption: "captions", captionLight: "notes" };
 
 // Each set's `marker` is its checkboxes' (proficiency, expertise and the
-// advantage marks); `track` is the death saves' and the exhaustion track's,
-// circles on every set, which the writer's resource pips copy
-// (SHEET_TEMPLATE_MARKERS in the contract).
+// advantage marks); `track` is the death saves', circles on every set, which
+// the writer's resource pips copy (SHEET_TEMPLATE_MARKERS in the contract).
+// The exhaustion track is squares on every set (`exhaustionTrack`).
 const EDITION = {
   "2014": {
     rules: "2014 RULES",
@@ -165,9 +169,6 @@ const roughRectPath = (w, h, r, rough, seed) => {
     return `${index === 0 ? "M" : "L"} ${(x + (dx / length) * offset).toFixed(2)} ${(y + (dy / length) * offset).toFixed(2)}`;
   }).join(" ") + " Z";
 };
-/** A rectangle with its corners cut at 45 degrees, as the printed sheets' panels are. */
-const chamferRectPath = (w, h, c) =>
-  `M ${c} 0 H ${w - c} L ${w} ${c} V ${h - c} L ${w - c} ${h} H ${c} L 0 ${h - c} V ${c} Z`;
 /** A pointy-top hexagon inscribed in w x h. */
 const hexPath = (w, h) =>
   `M ${w / 2} 0 L ${w} ${h * 0.25} L ${w} ${h * 0.75} L ${w / 2} ${h} L 0 ${h * 0.75} L 0 ${h * 0.25} Z`;
@@ -177,6 +178,17 @@ const ribbonPath = (w, h) => `M 4 0 H ${w - 4} L ${w} ${h / 2} L ${w - 4} ${h} H
 const diamondPath = (r) => `M 0 ${-r} L ${r} 0 L 0 ${r} L ${-r} 0 Z`;
 const shieldPath = (w, h) =>
   `M 0 0 H ${w} V ${h * 0.55} C ${w} ${h * 0.82}, ${w * 0.62} ${h * 0.94}, ${w / 2} ${h} C ${w * 0.38} ${h * 0.94}, 0 ${h * 0.82}, 0 ${h * 0.55} Z`;
+// The exhaustion track's skull, on a 10-unit grid: the cranium and jaw, then
+// what is knocked out of them in the frame's parchment: eyes, nose and the
+// gaps between the teeth.
+const SKULL_HEAD = "M 5 0 C 7.9 0 9.7 1.9 9.7 4.5 C 9.7 6 9 7.1 7.9 7.7 V 9.2 C 7.9 9.7 7.5 10 7.1 10 H 2.9 C 2.5 10 2.1 9.7 2.1 9.2 V 7.7 C 1 7.1 0.3 6 0.3 4.5 C 0.3 1.9 2.1 0 5 0 Z";
+const SKULL_HOLES = [
+  "M 1.7 4.7 A 1.55 1.55 0 1 1 4.8 4.7 A 1.55 1.55 0 1 1 1.7 4.7 Z",
+  "M 5.2 4.7 A 1.55 1.55 0 1 1 8.3 4.7 A 1.55 1.55 0 1 1 5.2 4.7 Z",
+  "M 5 6 L 5.8 7.4 H 4.2 Z",
+  "M 3.75 8.5 H 4.35 V 10 H 3.75 Z",
+  "M 5.65 8.5 H 6.25 V 10 H 5.65 Z",
+];
 
 class Sheet {
   constructor(doc, page, fonts, style) {
@@ -192,8 +204,8 @@ class Sheet {
 
   // --- primitives -----------------------------------------------------------
 
-  path(svg, x, top, { stroke, lineWidth = 0.6, fill, opacity } = {}) {
-    this.page.drawSvgPath(svg, { x, y: top, borderColor: stroke, borderWidth: stroke ? lineWidth : 0, color: fill, ...(opacity === undefined ? {} : { opacity }) });
+  path(svg, x, top, { stroke, lineWidth = 0.6, fill, opacity, scale } = {}) {
+    this.page.drawSvgPath(svg, { x, y: top, borderColor: stroke, borderWidth: stroke ? lineWidth : 0, color: fill, ...(opacity === undefined ? {} : { opacity }), ...(scale === undefined ? {} : { scale }) });
   }
   /**
    * A brushed grey wash behind a shape: offset, translucent rounded blocks
@@ -301,10 +313,23 @@ class Sheet {
   // --- ornament ---------------------------------------------------------------
 
   /** A chamfered panel with an inner hairline, the printed sheets' box idiom. */
-  frame(x, y, width, height, { radius = 4, fill = FILL, lineWidth = 0.9 } = {}) {
-    const cut = Math.min(radius + 2, width / 3, height / 3);
-    this.path(chamferRectPath(width, height, cut), x, y + height, { fill, stroke: ACCENT, lineWidth });
-    this.path(chamferRectPath(width - 4.4, height - 4.4, Math.max(1, cut - 2)), x + 2.2, y + height - 2.2, { stroke: GOLD, lineWidth: 0.35 });
+  frame(x, y, width, height, { radius = SHEET_FRAME.radius, fill = FILL, lineWidth = SHEET_FRAME.outerStroke } = {}) {
+    const { outer, inner } = sheetFramePaths(width, height, radius);
+    const inset = SHEET_FRAME.innerInset;
+    this.path(outer, x, y + height, { fill, stroke: ACCENT, lineWidth });
+    this.path(inner, x + inset, y + height - inset, { stroke: GOLD, lineWidth: SHEET_FRAME.innerStroke });
+  }
+  /**
+   * A small skull, centred on `cx` with its foot on `bottom`: vector art in
+   * the accent colour, its features knocked out in the frame's parchment, so
+   * the writer's recolouring themes it and no font is involved.
+   */
+  skull(cx, bottom, height) {
+    const scale = height / 10;
+    const x = cx - 5 * scale;
+    const top = bottom + height;
+    this.path(SKULL_HEAD, x, top, { fill: ACCENT, scale });
+    for (const hole of SKULL_HOLES) this.path(hole, x, top, { fill: FILL, scale });
   }
   /** The brand badge: a die mark the writer may paint a host logo over. */
   dieBadge(name, cx, cy, size) {
@@ -350,7 +375,8 @@ class Sheet {
     if (style === "caption") {
       // The printed sheets label a panel inside its lower edge, centred.
       this.label(title, x, y + 5, { size: Math.min(size - 1.2, (width - 12) / (title.length * 0.62)), align: "center", width, color: "text" });
-      return { x: x + 4, y: y + 13, width: width - 8, height: height - 17 - padTop };
+      const pad = C.captionPad;
+      return { x: x + pad.side, y: y + pad.bottom, width: width - pad.side * 2, height: height - pad.top - pad.bottom - padTop };
     }
     this.display(title, x, y + height - 11, { size, align: "center", width });
     this.ornamentRule(x + 8, x + width - 8, y + height - 15);
@@ -545,6 +571,21 @@ function deathSaves(s, prefix, x, y) {
 }
 
 /**
+ * The six exhaustion marks from (`x`, `y`), `pitch` apart: squares, with a
+ * small centred numeral over each of the first five and a skull over the
+ * sixth. The numerals and the skull stand `lift` above the marks.
+ */
+function exhaustionTrack(s, x, y, size, pitch, { numeralSize, skullHeight, lift = 0.9 }) {
+  const over = y + size + lift;
+  for (let i = 1; i <= 6; i += 1) {
+    const markX = x + (i - 1) * pitch;
+    s.check(`details_exhaustion_${i}`, markX, y, size, { marker: "square" });
+    if (i < 6) s.draw(String(i), markX, over, { font: "caption", size: numeralSize, color: "text", align: "center", width: size });
+  }
+  s.skull(x + 5 * pitch + size / 2, over - 0.2, skullHeight);
+}
+
+/**
  * The classic hit point box: maximum, hit dice and temporary above the
  * current total, with the death saves in a tab on the lower edge.
  * `splitDice` gives the hit dice a maximum and a write-in for the dice spent.
@@ -616,8 +657,9 @@ function readableColumnC2014(s, style, layout, bottom) {
   s.captioned("details_vision", "VISION", 224, frameTop - 48, 66, 10, { size: 7, captionSize: 4.8 });
   const inspirationSize = Math.min(4.8, 35 / s.textWidth(style.inspiration, "caption", 1));
   s.captioned("details_inspiration", style.inspiration, 296, frameTop - 48, 35, 10, { align: "center", captionAlign: "center", size: 7, captionSize: inspirationSize });
-  s.label("EXHAUSTION", 335, frameTop - 36, { size: 4.8 });
-  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, frameTop - 46, 6, { marker: s.style.track });
+  // The label clears the numerals and stays under the speed lines' rule.
+  s.label("EXHAUSTION", 335, frameTop - 33.2, { size: 4.8 });
+  exhaustionTrack(s, 335, frameTop - 46, 6, 9, { numeralSize: 3.4, skullHeight: 4.6 });
   s.text("details_resistances", 224, frameTop - 81, 164, 26, { multiline: true, size: 6, box: "none" });
   s.block(style.traits, "details_additional_notes", 213, bottom, 182, frameTop - 96 - bottom, { padTop: 4 });
 }
@@ -731,8 +773,9 @@ async function details2014(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
     });
     s.captioned("details_vision", "VISION", 224, 448, 66, 10, { size: 7 });
     s.captioned("details_inspiration", style.inspiration, 296, 448, 35, 10, { align: "center", captionAlign: "center", size: 7 });
-    s.label("EXHAUSTION", 335, 460, { size: 3.4 });
-    for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, 335 + (i - 1) * 9, 450, 6, { marker: s.style.track });
+    // The label clears the numerals and stays under the speed lines' rule.
+    s.label("EXHAUSTION", 335, 462.2, { size: 3.4 });
+    exhaustionTrack(s, 335, 450, 6, 9, { numeralSize: 3.2, skullHeight: 4.6 });
     s.text("details_resistances", 224, 404, 164, 38, { multiline: true, size: 6, box: "none" });
     s.block(style.traits, "details_additional_notes", 213, columnBottom, 182, 384 - columnBottom);
   }
@@ -1063,12 +1106,14 @@ function topBand2024(s, edition, layout) {
  * subclass and feat groups inside it. The two boxes are the contract's
  * traits column, whose boundary the writer moves to suit the text.
  */
-function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, featuresTitle, speciesHeight) {
+function rightColumn2024(s, edition, style, layout, areaX, areaW, columns, captionSize, featuresTitle) {
   const column = C.traitsColumn;
+  const speciesHeight = column.speciesHeight[edition];
   const speciesBottom = column.top - speciesHeight;
   s.block(style.traits, "details_additional_notes", areaX, speciesBottom, areaW, speciesHeight);
   const weaponsTop = column.bottom - 8;
-  s.section("WEAPONS & DAMAGE CANTRIPS", areaX, 60, areaW, weaponsTop - 60);
+  const weaponsBottom = 27;
+  s.section("WEAPONS & DAMAGE CANTRIPS", areaX, weaponsBottom, areaW, weaponsTop - weaponsBottom);
   columns.forEach(([caption, x]) => s.label(caption, x, weaponsTop - 24.5, { size: captionSize, color: "lines" }));
   for (let row = 1; row <= 5; row += 1) {
     const y = weaponsTop - 36 - (row - 1) * 21;
@@ -1084,9 +1129,9 @@ function rightColumn2024(s, style, layout, areaX, areaW, columns, captionSize, f
     s.text(`details_attack${row}_description`, ox, y - 9.95, ow, 21, { multiline: true, size: 6, box: "none" });
   }
   // The attacks without a row and the user's own notes, under the last row's notes cell.
-  s.text("details_attack_description", areaX + 4, 64, areaW - 8, 22, { multiline: true, size: layout.readable ? 7 : 6, box: "none" });
+  s.text("details_attack_description", areaX + 4, weaponsBottom + 4, areaW - 8, 22, { multiline: true, size: layout.readable ? 7 : 6, box: "none" });
   // Split, the box's title must not repeat the writer's first heading, "Class Features".
-  s.block(layout.split ? "FEATURES" : featuresTitle, "details_features", areaX, column.bottom, areaW, speciesBottom - column.gap - column.bottom);
+  s.block(layout.split ? "FEATURES" : featuresTitle, "details_features", areaX, column.bottom, areaW, speciesBottom - column.gap[edition] - column.bottom);
 }
 
 /** A compact framed stat: a large value over a one- or two-line caption. */
@@ -1106,9 +1151,9 @@ function plateSection(s, title, x, y, width, height) {
 }
 
 /**
- * The conditions box: conditions over the exhaustion marks, in the death
- * saves' marker. With `inline` the label and the six marks share one line and
- * the conditions take the height that frees.
+ * The conditions box: conditions over the exhaustion track. With `inline` the
+ * label and the six marks share one line and the conditions take the height
+ * that frees, starting above the numerals and the skull.
  */
 function conditions2024(s, layout, x, y, width, height, { inline = false } = {}) {
   const title = "CONDITIONS & EXHAUSTION";
@@ -1119,13 +1164,14 @@ function conditions2024(s, layout, x, y, width, height, { inline = false } = {})
     const marksX = inner.x + 2 + s.textWidth("EXHAUSTION", "caption", captionSize) + 6;
     const pitch = Math.min(14, (inner.x + inner.width - 2 - marksX - 7) / 5);
     s.label("EXHAUSTION", inner.x + 2, inner.y + 5.5 - captionSize * 0.35, { size: captionSize, color: "lines" });
-    for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, marksX + (i - 1) * pitch, inner.y + 2, 7, { marker: s.style.track });
-    s.text("details_conditions", inner.x, inner.y + 12, inner.width, inner.height - 12, { multiline: true, size: 6, box: "none" });
+    exhaustionTrack(s, marksX, inner.y + 2, 7, pitch, { numeralSize: 3.8, skullHeight: 5 });
+    s.text("details_conditions", inner.x, inner.y + 15.5, inner.width, inner.height - 15.5, { multiline: true, size: 6, box: "none" });
     return;
   }
   const pitch = Math.min(16, (inner.width - 6) / 6);
-  s.label("EXHAUSTION", inner.x + 2, inner.y + 12, { size: captionSize, color: "lines" });
-  for (let i = 1; i <= 6; i++) s.check(`details_exhaustion_${i}`, inner.x + 2 + (i - 1) * pitch, inner.y + 2, 7, { marker: s.style.track });
+  // The label sits over the numerals; the skull, at the far end, stands clear of it.
+  s.label("EXHAUSTION", inner.x + 2, inner.y + 14, { size: captionSize, color: "lines" });
+  exhaustionTrack(s, inner.x + 2, inner.y + 2, 7, pitch, { numeralSize: 3.8, skullHeight: 5 });
   s.text("details_conditions", inner.x, inner.y + 19, inner.width, inner.height - 19, { multiline: true, size: 6, box: "none" });
 }
 
@@ -1138,7 +1184,9 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   // Two columns of ability panels on a grey backing panel, conditions and
   // exhaustion under the shorter one.
   const panelW = 114;
-  const heights = { str: 79, dex: 101, con: 89, int: 123, wis: 123, cha: 112 };
+  // Constitution is taller for its two lines of saving throw notes; the room
+  // comes from the conditions box under the shorter column.
+  const heights = { str: 79, dex: 101, con: 97, int: 123, wis: 123, cha: 112 };
   const columnTop = 642;
   const columnDepth = Math.max(heights.str + heights.dex + heights.con, heights.int + heights.wis + heights.cha) + 16;
   s.panel(22, columnTop - columnDepth - 4, 244, columnDepth + 8);
@@ -1146,7 +1194,7 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   for (const key of ["str", "dex", "con"]) {
     abilityPanel2024(s, layout, key, ABILITY_NAME[key].toUpperCase(), 26, top - heights[key], panelW, heights[key], key === "con" ? (rowY, x, width) => {
       s.label("SAVING THROW NOTES", x + 5, rowY + 1, { size: readable ? 5 : 4.2, color: "lines" });
-      s.text("details_saving_throws", x + 5, rowY - 7, width - 10, 9, { size: 6, box: "none" });
+      s.text("details_saving_throws", x + 5, rowY - 18, width - 10, 18, { multiline: true, size: 6, box: "none" });
     } : undefined);
     top -= heights[key] + 8;
   }
@@ -1160,15 +1208,14 @@ async function details2024(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   conditions2024(s, layout, 26, rightBottom, panelW, leftBottom - 8 - rightBottom);
 
   // Under both columns: training and languages, then senses.
-  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 144, 236, rightBottom - 8 - 144, { padTop: 4 });
-  const inner = s.section("SENSES", 26, 60, 236, 76, { size: 5.6 });
+  s.block("PROFICIENCIES, TRAINING & LANGUAGES", "details_proficiencies_languages", 26, 111, 236, rightBottom - 8 - 111, { padTop: 4 });
+  const inner = s.section("SENSES", 26, 27, 236, 76, { size: 5.6 });
   s.label("VISION", inner.x + 3, inner.y + inner.height - 8, { size: readable ? 5.5 : 4.6, color: "lines" });
   s.text("details_vision", inner.x + 30, inner.y + inner.height - 10, inner.width - 33, 10, { size: 7 });
 
-  rightColumn2024(s, style, layout, 270, 316,
-    // RANGE holds a ranged weapon's ammunition too ("30/120; Bullet").
-    [["NAME", 274, 74], ["RANGE", 350, 40], ["ATK / DC", 392, 34], ["DAMAGE & TYPE", 428, 64], ["NOTES", 494, 88]], readable ? 5 : 3.8, "CLASS FEATURES",
-    C.traitsColumn.speciesHeight["2024"]);
+  rightColumn2024(s, edition, style, layout, 270, 316,
+    // RANGE holds the distance only ("30/120"); ammunition prints in the notes.
+    [["NAME", 274, 74], ["RANGE", 350, 40], ["ATK / DC", 392, 34], ["DAMAGE & TYPE", 428, 64], ["NOTES", 494, 88]], readable ? 5 : 3.8, "CLASS FEATURES");
   return finish(doc, s);
 }
 
@@ -1243,16 +1290,16 @@ async function detailsHybrid(edition, layout = SHEET_LAYOUT_DEFAULTS[edition]) {
   // Beneath both columns: training, languages and senses, then conditions.
   const lw = 178;
   const title = "PROFICIENCIES, TRAINING, LANGUAGES & SENSES";
-  const inner = s.section(title, 26, 144, lw, 116, { size: Math.min(6.2, (lw - 14) / s.textWidth(title, "display", 1)) });
-  s.text("details_proficiencies_languages", inner.x, inner.y + 17, inner.width, inner.height - 21, { multiline: true, size: 6, box: "none" });
-  s.label("SENSES", inner.x + 3, inner.y + 6, { size: readable ? 5.5 : 4.6, color: "lines" });
-  s.text("details_vision", inner.x + 30, inner.y + 4, inner.width - 33, 10, { size: 7 });
-  conditions2024(s, layout, 26, 60, lw, 76, { inline: true });
+  const inner = s.section(title, 26, 111, lw, 149, { size: Math.min(6.2, (lw - 14) / s.textWidth(title, "display", 1)) });
+  // The senses take two lines at the foot, the proficiencies everything above them.
+  s.text("details_proficiencies_languages", inner.x, inner.y + 21, inner.width, inner.height - 25, { multiline: true, size: 6, box: "none" });
+  s.label("SENSES", inner.x + 3, inner.y + 13, { size: readable ? 5.5 : 4.6, color: "lines" });
+  s.text("details_vision", inner.x + 30, inner.y + 2, inner.width - 33, 17, { multiline: true, size: 7, box: "none" });
+  conditions2024(s, layout, 26, 27, lw, 76, { inline: true });
 
   // The column starts 8pt right of the left side (x 204) and ends where it did, at 586.
-  rightColumn2024(s, style, layout, 212, 374,
-    [["NAME", 216, 84], ["RANGE", 302, 40], ["ATK / DC", 344, 42], ["DAMAGE & TYPE", 388, 72], ["NOTES", 462, 120]], readable ? 5.5 : 5, "FEATURES",
-    C.traitsColumn.speciesHeight["2024-hybrid"]);
+  rightColumn2024(s, edition, style, layout, 212, 374,
+    [["NAME", 216, 84], ["RANGE", 302, 40], ["ATK / DC", 344, 42], ["DAMAGE & TYPE", 388, 72], ["NOTES", 462, 120]], readable ? 5.5 : 5, "FEATURES");
   return finish(doc, s);
 }
 

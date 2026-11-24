@@ -19,13 +19,13 @@ export function isSheetTemplateSet(value: unknown): value is SheetTemplateSet {
 }
 
 /**
- * The empty marker a set's death saves and exhaustion track print as: a
- * circle on every set, white and ruled in the accent colour, a ticked one
- * carrying a dot in the text colour. A 2014 page's other checkboxes
- * (proficiency, expertise and the advantage marks) stay rounded squares, a
- * 2024 page's are circles too. scripts/build-sheet-templates.mjs draws them
- * (its `track` and `marker`), and the writer draws the sheet's resource pips
- * to match these.
+ * The empty marker a set's death saves print as: a circle on every set, white
+ * and ruled in the accent colour, a ticked one carrying a dot in the text
+ * colour. A 2014 page's other checkboxes (proficiency, expertise and the
+ * advantage marks) stay rounded squares, a 2024 page's are circles too; the
+ * exhaustion track is squares on every set. scripts/build-sheet-templates.mjs
+ * draws them (its `track` and `marker`), and the writer draws the sheet's
+ * resource pips to match the death saves.
  */
 export type SheetMarker = "circle" | "square";
 export const SHEET_TEMPLATE_MARKERS: Readonly<Record<SheetTemplateSet, SheetMarker>> = {
@@ -458,17 +458,37 @@ export const SHEET_TEMPLATE_CONTRACT = {
    */
   platePad: { top: 16, side: 4, bottom: 4 },
   /**
+   * A section captioned inside its lower edge (the 2014 boxes): its field sits
+   * this far inside the frame, the foot clearing the caption.
+   */
+  captionPad: { top: 4, side: 4, bottom: 13 },
+  /**
    * The 2024 and Hybrid pages' right column: the Species Traits frame from
    * `top` over the features frame down to `bottom`, `gap` apart. The template
    * prints Species Traits `speciesHeight` tall, 75% of the tester's mock-ups;
    * the writer treats the two boxes as one region and moves the boundary to
    * suit the text, so a short species gives its room to the features and a
    * long one borrows theirs.
+   *
+   * `gap` is per set so the Hybrid features line up with the skills beside
+   * them: its Saving Throws box ends at y 518 and Skills starts 6pt below.
+   * `speciesAlign` is that line: a Species Traits foot landing within `within`
+   * points of `y` snaps to it, when both boxes still fit, so the Species and
+   * Saving Throws feet and the Features and Skills heads each share a line.
    */
   traitsColumn: {
     top: 642,
-    bottom: 226,
-    gap: 8,
+    bottom: 193,
+    gap: { "2024": 8, "2024-hybrid": 6 },
     speciesHeight: { "2024": 85, "2024-hybrid": 72 },
+    speciesAlign: { "2024-hybrid": { y: 518, within: 4 } },
   },
+  /**
+   * The Resources box the writer draws under the features frame when the sheet
+   * prints a Resources paragraph: `gap` from the features frame's raised foot,
+   * as tall as its wrapped text up to `maxLines` (`narrowMaxLines` on the 2014
+   * page's narrower column, which has the height to spare). Text past that
+   * continues on a continuation page.
+   */
+  resourcesBox: { gap: 8, maxLines: 3, narrowMaxLines: 6 },
 } as const;

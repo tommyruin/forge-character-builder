@@ -20,8 +20,8 @@ import { INLINE_USES_CLOSE, INLINE_USES_OPEN, OPEN_MARK, RESOURCES_LEAD, SPENT_M
 import type { SheetMarker } from "./template-contract.js";
 
 /**
- * What the pips copy: the death saves and the exhaustion track, drawn in the
- * set's track marker (circles on every set), or rounded squares on every set.
+ * What the pips copy: the death saves, drawn in the set's track marker
+ * (circles on every set), or rounded squares on every set.
  * Either is a white marker ruled in the accent colour, ticked with the same
  * dot. An internal switch, not a sheet setting.
  */
@@ -40,8 +40,8 @@ export function pipMarker(look: PipLook, setMarker: SheetMarker): SheetMarker {
 /**
  * The template checkbox a pip copies, in points: a 6pt marker ruled with a
  * 0.6pt stroke, a rounded square's corners at 1.2pt (see
- * scripts/build-sheet-templates.mjs `check`; the 2024 exhaustion circles and
- * some death saves are 7pt with the same stroke).
+ * scripts/build-sheet-templates.mjs `check`; some death saves are 7pt with the
+ * same stroke).
  */
 export const MARKER_BOX = 6;
 export const MARKER_STROKE = 0.6;

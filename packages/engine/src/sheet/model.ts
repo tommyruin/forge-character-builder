@@ -60,6 +60,7 @@ import { inlineUsesText, resourceSheetText } from "../resources/sheet.js";
 import { SHEET_TEMPLATE_CONTRACT } from "./template-contract.js";
 import { SHEET_BASE_ATTACK_ROWS, attackDescriptionNote, type SheetAttackRow } from "./attack-notes.js";
 import { sheetAttackRange } from "./attack-range.js";
+import { savingThrowNote } from "./save-notes.js";
 
 export type { SheetAttackRow } from "./attack-notes.js";
 
@@ -741,6 +742,7 @@ function buildFormValues(
   if (stealthDisadvantage) set("details_armor_stealth_disadvantage", "true");
   set("details_equipment_weight", inventory.equipmentWeight > 0 ? `${Math.round(inventory.equipmentWeight * 10) / 10}` : "");
   const collected = collectFeatures(state, library, values, inline, resources);
+  set("details_saving_throws", collected.saveNote);
   set("Features and Traits", [
     ...collected.racial.flatMap((row) => row.kind === "tokens" ? row.tokens.join(" ") : row.lines.join("\n")),
     ...collected.features.flatMap((row) => row.kind === "tokens" ? row.tokens.join(" ") : row.lines.join("\n")),
@@ -1528,6 +1530,8 @@ function collectFeatures(
   groups: Record<string, SheetRow[]>;
   /** The usage line of every printed feature that states one, tokens filled in. */
   usages: FeatureUsage[];
+  /** The "Saving Throw Notes" text, read from the printed features and traits. */
+  saveNote: string;
 } {
   const out: CollectedFeature[] = [];
   const usages: FeatureUsage[] = [];
@@ -1596,7 +1600,11 @@ function collectFeatures(
       type: element.identity.type,
       title: sheet.alt !== undefined && sheet.alt !== "" ? sheet.alt : element.identity.name,
       parenthetical: parenthetical === "" ? null : substitute(parenthetical, values, inline),
-      description: substitute(description.text, values, inline),
+      description: substitute(
+        ONE_PARAGRAPH_SHEET_TEXT_IDS.has(id) ? description.text.replace(/\s*[\r\n]+\s*/g, " ") : description.text,
+        values,
+        inline,
+      ),
     });
   }
   // A control item is a switch, not a feature, so it never prints in a
@@ -1663,6 +1671,7 @@ function collectFeatures(
       feats: featRows,
     },
     usages,
+    saveNote: savingThrowNote(out.map((item) => ({ title: item.title, text: item.description }))),
   };
 }
 
@@ -1719,6 +1728,15 @@ export function featureUsageEntries(
 ): FeatureUsage[] {
   return collectFeatures(state, library, values, inline).usages;
 }
+
+/**
+ * Features whose sheet text prints as one paragraph although the content
+ * breaks its line mid-thought. Line breaks elsewhere separate distinct
+ * benefits, so this stays a list of named elements rather than a general rule.
+ */
+const ONE_PARAGRAPH_SHEET_TEXT_IDS: ReadonlySet<string> = new Set([
+  "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_INNATE_SORCERY",
+]);
 
 /** Feature types whose own `<requirements>` decide whether they print. */
 const REQUIREMENT_GATED_FEATURE_TYPES: ReadonlySet<string> = new Set([

@@ -197,7 +197,7 @@ describe("sheet attack rows", () => {
     expect(page.inField("details_attack_description")).toBe("Aim for the knees.");
   }, 30_000);
 
-  it("prints a spell row's area range short, and leaves a cut-off cell to the spell's card", async () => {
+  it("prints a spell row's area range short, and a cut-off cell never adds a continuation, carded or not", async () => {
     const lib = await library();
     const service = new CharacterService(undefined, lib);
     const id = service.createCharacter("Short ranges").id;
@@ -217,17 +217,17 @@ describe("sheet attack rows", () => {
       return pages.join(" ");
     };
     expect(await text(model)).not.toContain("(in full)");
-    // A range too long for its cell: the spell card prints it, so no continuation does.
+    // A range too long for its cell keeps its ellipsis, and the spell card prints it.
     const long = "Self (a long synthetic aura that rolls out around the caster)";
     service.updateAttack(id, row, { range: long });
     const carded = buildCharacterSheetModel(service.getCharacter(id), lib, { mode: "full" });
     expect(await text(carded)).not.toContain("(in full)");
-    // Without the spell cards, the continuation prints it in full.
+    // Without the spell cards the cell still keeps its ellipsis: a cut-off Range never adds a continuation.
     const bare = buildCharacterSheetModel(service.getCharacter(id), lib, { mode: "full", include: { spellCards: false } });
     expect(bare.pages.find((page) => page.templateKind === "details")!.attacks?.[0]?.carded).toBeUndefined();
     const printed = await text(bare);
-    expect(printed).toContain("(in full)");
-    expect(printed).toContain(long);
+    expect(printed).not.toContain("(in full)");
+    expect(printed).not.toContain(long);
   }, 120_000);
 
   it("prints a round-tripped spell row's current damage after a level-up", async () => {
