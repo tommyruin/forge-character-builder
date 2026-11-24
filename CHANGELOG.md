@@ -19,24 +19,37 @@ project uses [Semantic Versioning](https://semver.org/).
   query field fails the build.
 - The sheet no longer ends the features text with a Resources list by
   default: each tracker's uses close the text of the feature that spends
-  them, and a pool several features share closes the first of them. Sheet
-  settings' "Also list every resource after the features" brings the list
-  back with every tracker: those the features already show (Innate Sorcery,
-  Sorcery Points) as well as an item's and those kept by hand. It replaces "Print uses next to their features"; uses always print
-  there now. `generateSheet` takes an optional `resourceTrackersList`;
-  `resourceTrackersInline` is deprecated but still accepted.
+  them, and a pool several features share closes the first of them.
+- Sheet settings choose where resources print with two separate switches:
+  "Show uses next to each feature" and "Print a Resources box". The box is
+  its own section under Features on every layout and lists every tracker,
+  including an item's and those kept by hand. "Print a fresh sheet, ignoring
+  uses already spent" replaces "Print resource trackers empty". `generateSheet`
+  takes an optional `resourceTrackersList`; `resourceTrackersInline: false`
+  prints the box without the uses next to features.
+- The 2024 and Hybrid character pages run to the foot of the page, which
+  gives Features more room, and Hybrid's Senses have a second line. On
+  Hybrid, Features lines up with Skills.
+- Exhaustion prints as numbered squares, 1 to 5 and a skull, on every layout,
+  so it reads differently from the circles of usable resources.
 - The character page's attack table prints ranges in a short form so they
-  fit the Range cell: "60 feet" is "60 ft", "20/60 feet" is "20/60 ft" and
-  "Self (10-foot Emanation)" is "Self (10 ft)". The attacks list and the
-  spell cards keep the range as written.
+  fit the Range cell: "60 feet" is "60 ft", "20/60 feet" is "20/60 ft",
+  "150/600; Arrow" is "150/600" and "Self (10-foot Emanation)" is
+  "Self (10 ft)". The attacks list and the spell cards keep the range as
+  written.
 
 ### Fixed
 
-- An attack row's weapon, range, attack or damage cut short on the
-  character page no longer adds a "Character (continued)" page just to
-  repeat it, when a spell's card in the export prints it (Arms of Hadar's
-  "Self (10-foot…"). A weapon row, or a spell without its card, still
-  prints the value in full on the continuation page.
+- A Range or ATK / DC cell cut short on the character page keeps its
+  ellipsis and never adds a "Character (continued)" page. An attack row's
+  weapon or damage cut short no longer adds one either when a spell's card
+  in the export prints it; a weapon row, or a spell without its card, still
+  prints those two in full on the continuation page.
+- Saving Throw Notes lists what the character has Advantage on, read from
+  its printed features and traits ("Adv: Charmed, Frightened, Concentration").
+  The box was always blank.
+- Innate Sorcery's last sentence runs on from the one before it instead of
+  printing as a separate indented paragraph.
 - On the standard 2014 and 2024 character pages, the features box printed a
   subclass's features before the class's own (an Aberrant Sorcerer's
   Telepathic Speech before Spellcasting), pushing the class features onto

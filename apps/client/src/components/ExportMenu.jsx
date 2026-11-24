@@ -79,8 +79,8 @@ export default function ExportMenu({
   const downloadSheet = () =>
     runAction("sheet", async () => {
       const brandImage = await loadSheetBrandImage();
-      const { resourceTrackers, resourceTrackersEmpty, resourceTrackersList } = resourceTrackerSheetOptions(layoutOptions);
-      const url = await api.characters.sheet(id, { templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes: layoutOptions.inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersList, layout: effectiveSheetLayout(templateSet, layoutOptions), brandImage, footerText: `Generated with ${shell.appName}.` });
+      const { resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline } = resourceTrackerSheetOptions(layoutOptions);
+      const url = await api.characters.sheet(id, { templateSet, colours, fonts, emphasizeAbilityModifiers, include: pages, inventoryNotes: layoutOptions.inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline, layout: effectiveSheetLayout(templateSet, layoutOptions), brandImage, footerText: `Generated with ${shell.appName}.` });
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = `${id}.pdf`;

@@ -19,18 +19,19 @@
 //    attack rows.
 //  - inventoryNotes: the equipment page's notes column also describes the
 //    other magic items in full and the tools and useful gear in brief.
-//  - resourceTrackers: use trackers print as the Resources tab left them (a
-//    filled circle per use spent, an open one per use left), each closing the
-//    text of the first printed feature that spends it ("[Uses: ○ ○]"). On by
-//    default; off leaves them out.
-//  - resourceTrackersEmpty: the trackers print empty instead, to fill in at
-//    the table (an open circle per use, a blank for a large count). Only
-//    offered while resourceTrackers is on.
-//  - resourceTrackersList: the features text also closes with a "Resources"
-//    paragraph of every tracker (those a feature already shows, an item's,
-//    those kept by hand). Off by default. Only offered while resourceTrackers is on.
-//    It replaces resourceTrackersInline (uses next to features, now always
-//    on); a stored value of that is dropped on reading, like any unknown key.
+//  - resourceTrackers: uses print next to each feature, as the Resources tab
+//    left them (a filled circle per use spent, an open one per use left), each
+//    closing the text of the first printed feature that spends it
+//    ("[Uses: ○ ○]"). On by default; off leaves them out of the features.
+//  - resourceTrackersList: the sheet also prints a Resources box of every
+//    tracker (those a feature shows, an item's, those kept by hand). Off by
+//    default and independent of resourceTrackers, so the box can print alone.
+//    The render request spells that case resourceTrackersInline: false; that
+//    field is derived and never stored, so a stored value of it is dropped on
+//    reading, like any unknown key.
+//  - resourceTrackersEmpty: whatever trackers print, print as a fresh sheet,
+//    ignoring uses already spent (an open circle per use, a blank for a large
+//    count). Only offered while resourceTrackers or resourceTrackersList is on.
 //  - smartCards: new items (added, or unpacked from a pack) get an item card
 //    only when they are magic items, tools or useful gear. Items already in
 //    the inventory never change.
@@ -85,16 +86,21 @@ function optionsKey(options) {
   return JSON.stringify(resolveSheetLayoutOptions(options));
 }
 
-// Stored options carry this version. Before it, top was a plain boolean that
-// was saved as false with any other choice, so an older false only ever meant
-// "the default" and now reads as null.
-const STORED_VERSION = 2;
+// Stored options carry this version.
+//  - Before 2, top was a plain boolean that was saved as false with any other
+//    choice, so an older false only ever meant "the default" and reads as null.
+//  - Before 3, the Resources list was hidden and ignored while resourceTrackers
+//    was off, so that pair meant "no trackers at all" and must not start
+//    printing a box now that the two switches are independent.
+const STORED_VERSION = 3;
 
 export function readStoredSheetLayoutOptions(storage = globalThis.localStorage) {
   try {
     const raw = storage?.getItem(SHEET_LAYOUT_OPTIONS_STORAGE_KEY);
     const stored = raw ? JSON.parse(raw) : null;
-    if (stored?.version !== STORED_VERSION && stored?.top === false) delete stored.top;
+    const version = typeof stored?.version === 'number' ? stored.version : 0;
+    if (version < 2 && stored?.top === false) delete stored.top;
+    if (version < 3 && stored?.resourceTrackers === false) stored.resourceTrackersList = false;
     return resolveSheetLayoutOptions(stored);
   } catch {
     return { ...DEFAULT_SHEET_LAYOUT_OPTIONS };
@@ -134,22 +140,30 @@ export function sheetLayoutCacheKey(layout) {
 /**
  * What the resource tracker options print, as a suffix for the sheet cache
  * keys: nothing for the default (trackers as the Resources tab left them,
- * next to their features, no Resources list), so the default keeps the keys
- * it has always had.
+ * next to their features, no Resources box), so the default keeps the keys
+ * it has always had. Each of the four next-to-features and box combinations
+ * has its own key.
  */
 export function resourceTrackersCacheKey(options) {
-  const resolved = resolveSheetLayoutOptions(options);
-  if (!resolved.resourceTrackers) return '#no-trackers';
-  return (resolved.resourceTrackersEmpty ? '#empty-trackers' : '') + (resolved.resourceTrackersList ? '#resource-list' : '');
+  const { resourceTrackers: inline, resourceTrackersList: list, resourceTrackersEmpty: empty } = resolveSheetLayoutOptions(options);
+  if (!inline && !list) return '#no-trackers';
+  const placement = !inline ? '#resource-list-only' : list ? '#resource-list' : '';
+  return (empty ? '#empty-trackers' : '') + placement;
 }
 
-/** The sheet request fields the resource tracker options send. */
+/**
+ * The sheet request fields the resource tracker options send. To the engine,
+ * resourceTrackers: false prints no trackers at all, so a box without the uses
+ * beside features keeps it true and sends resourceTrackersInline: false.
+ */
 export function resourceTrackerSheetOptions(options) {
-  const resolved = resolveSheetLayoutOptions(options);
+  const { resourceTrackers: inline, resourceTrackersList: list, resourceTrackersEmpty: empty } = resolveSheetLayoutOptions(options);
+  const anyPrinted = inline || list;
   return {
-    resourceTrackers: resolved.resourceTrackers,
-    resourceTrackersEmpty: resolved.resourceTrackers && resolved.resourceTrackersEmpty,
-    resourceTrackersList: resolved.resourceTrackers && resolved.resourceTrackersList,
+    resourceTrackers: anyPrinted,
+    resourceTrackersEmpty: anyPrinted && empty,
+    resourceTrackersList: list,
+    ...(list && !inline ? { resourceTrackersInline: false } : {}),
   };
 }
 

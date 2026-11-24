@@ -57,9 +57,9 @@ describe('SheetSettingsPanel', () => {
     }
     // Five page checkboxes on, plus ability emphasis, compact top row, split
     // feature boxes, readable body, smart cards and item notes off by default
-    // on the 2014 layout; resource trackers are a sixth checkbox, on by default,
-    // printing them empty a seventh, off by default, and listing resources
-    // after the features an eighth, off by default.
+    // on the 2014 layout; uses next to each feature are a sixth checkbox, on by
+    // default, a Resources box a seventh, off by default, and a fresh sheet an
+    // eighth, off by default.
     expect(markup.match(/type="checkbox"/g)).toHaveLength(14);
     expect(markup.match(/checked=""/g)).toHaveLength(6);
     expect(markup).toContain('Sheet pages');
@@ -77,38 +77,52 @@ describe('SheetSettingsPanel', () => {
     expect(markup).not.toMatch(/role="switch"[^>]*smartCards[^>]*checked=""/);
   });
 
-  it('offers resource trackers as a switch, on by default', () => {
-    expect(markup).toContain('Print resource trackers (Wild Shape, Rage and other limited uses) with the features');
+  const switchLabel = (html, text) => {
+    const labels = html.match(/<label\b[^>]*>(?:(?!<\/label>).)*<\/label>/gs) ?? [];
+    return labels.find((label) => label.includes(text));
+  };
+
+  it('offers uses next to each feature as a top-level switch, on by default', () => {
+    const label = switchLabel(markup, 'Show uses next to each feature');
+    expect(label).toContain('role="switch"');
+    expect(label).toContain('checked=""');
+    expect(label).not.toContain('pl-6');
   });
 
-  it('offers printing resource trackers empty as a switch, off by default, only while they print', () => {
-    const empty = /<label[^>]*>(?:(?!<\/label>).)*Print resource trackers empty, to fill in at the table/s;
-    expect(markup).toMatch(empty);
-    const label = markup.match(empty)[0];
+  it('offers a Resources box as a top-level switch, off by default, whether or not uses show', () => {
+    const label = switchLabel(markup, 'Print a Resources box');
     expect(label).toContain('role="switch"');
-    expect(label.slice(label.lastIndexOf('<input'))).not.toContain('checked=""');
+    expect(label).not.toContain('checked=""');
+    expect(label).not.toContain('pl-6');
     sheetLayoutOptionsSettingStore.set({ resourceTrackers: false });
     try {
-      const off = renderToStaticMarkup(createElement(SheetSettingsPanel));
-      expect(off).not.toContain('Print resource trackers empty');
-      expect(off.match(/type="checkbox"/g)).toHaveLength(12);
+      expect(renderToStaticMarkup(createElement(SheetSettingsPanel))).toContain('Print a Resources box');
     } finally {
       sheetLayoutOptionsSettingStore.set({ resourceTrackers: true });
     }
   });
 
-  it('offers a Resources list after the features as a switch, off by default, only while trackers print', () => {
-    const list = /<label[^>]*>(?:(?!<\/label>).)*Also list every resource after the features/s;
-    expect(markup).toMatch(list);
-    const label = markup.match(list)[0];
+  it('offers a fresh sheet as an indented switch, off by default, while either kind of tracker prints', () => {
+    const fresh = 'Print a fresh sheet, ignoring uses already spent';
+    const label = switchLabel(markup, fresh);
     expect(label).toContain('role="switch"');
-    expect(label.slice(label.lastIndexOf('<input'))).not.toContain('checked=""');
-    expect(markup).not.toContain('Print uses next to their features');
-    sheetLayoutOptionsSettingStore.set({ resourceTrackers: false });
+    expect(label).toContain('pl-6');
+    expect(label).not.toContain('checked=""');
     try {
-      expect(renderToStaticMarkup(createElement(SheetSettingsPanel))).not.toContain('Also list every resource');
+      sheetLayoutOptionsSettingStore.set({ resourceTrackers: false, resourceTrackersList: true });
+      expect(renderToStaticMarkup(createElement(SheetSettingsPanel))).toContain(fresh);
+      sheetLayoutOptionsSettingStore.set({ resourceTrackers: false, resourceTrackersList: false });
+      const off = renderToStaticMarkup(createElement(SheetSettingsPanel));
+      expect(off).not.toContain(fresh);
+      expect(off.match(/type="checkbox"/g)).toHaveLength(13);
     } finally {
-      sheetLayoutOptionsSettingStore.set({ resourceTrackers: true });
+      sheetLayoutOptionsSettingStore.set({ resourceTrackers: true, resourceTrackersList: false });
+    }
+  });
+
+  it('retires the old resource tracker labels', () => {
+    for (const old of ['Print resource trackers', 'Also list every resource']) {
+      expect(markup).not.toContain(old);
     }
   });
 

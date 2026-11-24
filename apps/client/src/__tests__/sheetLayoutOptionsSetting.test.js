@@ -59,19 +59,84 @@ describe('sheet layout options setting', () => {
     expect(readStoredSheetLayoutOptions(storage).resourceTrackersEmpty).toBe(true);
   });
 
-  it('lists resources after the features only when asked, and only while trackers print', () => {
+  it('prints a Resources box only when asked, with or without the uses next to features', () => {
     expect(DEFAULT_SHEET_LAYOUT_OPTIONS.resourceTrackersList).toBe(false);
     expect(resourceTrackersCacheKey({ resourceTrackersList: true })).toBe('#resource-list');
     expect(resourceTrackerSheetOptions({ resourceTrackersList: true })).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersList: true });
     expect(resourceTrackersCacheKey({ resourceTrackersEmpty: true, resourceTrackersList: true })).toBe('#empty-trackers#resource-list');
-    // Off wins: with no trackers there is nothing to list.
-    expect(resourceTrackersCacheKey({ resourceTrackers: false, resourceTrackersList: true })).toBe('#no-trackers');
-    expect(resourceTrackerSheetOptions({ resourceTrackers: false, resourceTrackersList: true }).resourceTrackersList).toBe(false);
     expect(resolveSheetLayoutOptions({ resourceTrackersList: 'yes' }).resourceTrackersList).toBe(false);
 
     const storage = memoryStorage();
     createSheetLayoutOptionsSettingStore({ storage }).set({ resourceTrackersList: true });
     expect(readStoredSheetLayoutOptions(storage).resourceTrackersList).toBe(true);
+  });
+
+  it('maps the two switches to the render request the engine expects', () => {
+    const request = (resourceTrackers, resourceTrackersList, resourceTrackersEmpty = false) =>
+      resourceTrackerSheetOptions({ resourceTrackers, resourceTrackersList, resourceTrackersEmpty });
+    expect(request(true, false)).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersList: false });
+    expect(request(true, true)).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersList: true });
+    expect(request(false, true)).toEqual({ resourceTrackers: true, resourceTrackersEmpty: false, resourceTrackersList: true, resourceTrackersInline: false });
+    expect(request(false, false)).toEqual({ resourceTrackers: false, resourceTrackersEmpty: false, resourceTrackersList: false });
+    // Inline stays at the engine default unless the uses beside features are off with a box.
+    expect(request(true, false)).not.toHaveProperty('resourceTrackersInline');
+    expect(request(true, true)).not.toHaveProperty('resourceTrackersInline');
+    expect(request(false, false)).not.toHaveProperty('resourceTrackersInline');
+    // A fresh sheet needs something to print.
+    expect(request(true, false, true).resourceTrackersEmpty).toBe(true);
+    expect(request(true, true, true).resourceTrackersEmpty).toBe(true);
+    expect(request(false, true, true).resourceTrackersEmpty).toBe(true);
+    expect(request(false, false, true).resourceTrackersEmpty).toBe(false);
+  });
+
+  it('gives every printed combination its own cache key', () => {
+    const key = (resourceTrackers, resourceTrackersList, resourceTrackersEmpty) =>
+      resourceTrackersCacheKey({ resourceTrackers, resourceTrackersList, resourceTrackersEmpty });
+    const keys = [
+      key(true, false, false),
+      key(true, true, false),
+      key(false, true, false),
+      key(false, false, false),
+      key(true, false, true),
+      key(true, true, true),
+      key(false, true, true),
+    ];
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(key(true, false, false)).toBe('');
+    // With nothing printed, a stored fresh-sheet choice changes nothing.
+    expect(key(false, false, true)).toBe(key(false, false, false));
+  });
+
+  it('keeps an older "no trackers" choice from printing a Resources box', () => {
+    for (const version of [undefined, 1, 2]) {
+      const storage = memoryStorage({
+        [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ version, resourceTrackers: false, resourceTrackersList: true }),
+      });
+      const options = readStoredSheetLayoutOptions(storage);
+      expect(options.resourceTrackersList, String(version)).toBe(false);
+      expect(resourceTrackerSheetOptions(options).resourceTrackers, String(version)).toBe(false);
+      expect(resourceTrackersCacheKey(options), String(version)).toBe('#no-trackers');
+    }
+    // An older box with the trackers on was printing, so it stays.
+    const printing = memoryStorage({
+      [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ version: 2, resourceTrackers: true, resourceTrackersList: true }),
+    });
+    expect(readStoredSheetLayoutOptions(printing).resourceTrackersList).toBe(true);
+    // From version 3 the same pair is a deliberate box without the uses beside features.
+    const boxOnly = memoryStorage({
+      [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ version: 3, resourceTrackers: false, resourceTrackersList: true }),
+    });
+    expect(readStoredSheetLayoutOptions(boxOnly).resourceTrackersList).toBe(true);
+    expect(resourceTrackerSheetOptions(readStoredSheetLayoutOptions(boxOnly)).resourceTrackersInline).toBe(false);
+  });
+
+  it('keeps a box-only choice across a save and a reload', () => {
+    const storage = memoryStorage();
+    createSheetLayoutOptionsSettingStore({ storage }).set({ resourceTrackers: false, resourceTrackersList: true });
+    expect(JSON.parse(storage.map.get(SHEET_LAYOUT_OPTIONS_STORAGE_KEY)).version).toBe(3);
+    const reloaded = createSheetLayoutOptionsSettingStore({ storage }).getSnapshot();
+    expect(reloaded.resourceTrackers).toBe(false);
+    expect(reloaded.resourceTrackersList).toBe(true);
   });
 
   it('reads a stored choice of the retired uses-next-to-features switch without breaking', () => {
@@ -80,7 +145,7 @@ describe('sheet layout options setting', () => {
         [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ version: 2, readable: true, resourceTrackersInline: inline }),
       });
       const options = readStoredSheetLayoutOptions(storage);
-      // Uses always print next to their features now; the other choices keep.
+      // The stored field is dropped: only the two switches decide it now. The other choices keep.
       expect(options).toEqual({ ...DEFAULT_SHEET_LAYOUT_OPTIONS, readable: true });
       expect(resourceTrackersCacheKey(options)).toBe('');
       expect(resourceTrackerSheetOptions(options)).not.toHaveProperty('resourceTrackersInline');
@@ -126,6 +191,17 @@ describe('sheet layout options setting', () => {
     const storage = memoryStorage();
     createSheetLayoutOptionsSettingStore({ storage }).set({ top: false });
     expect(readStoredSheetLayoutOptions(storage).top).toBe(false);
+  });
+
+  it('applies the top migration only to values older than version 2', () => {
+    const read = (version) => readStoredSheetLayoutOptions(memoryStorage({
+      [SHEET_LAYOUT_OPTIONS_STORAGE_KEY]: JSON.stringify({ version, top: false }),
+    })).top;
+    expect(read(undefined)).toBeNull();
+    expect(read(1)).toBeNull();
+    // A version 2 or later false is a deliberate choice.
+    expect(read(2)).toBe(false);
+    expect(read(3)).toBe(false);
   });
 
   it('stores a split override and returns to the layout default', () => {
@@ -197,7 +273,7 @@ describe('sheet layout options setting', () => {
     expect(JSON.parse(storage.map.get(SHEET_LAYOUT_OPTIONS_STORAGE_KEY))).toEqual({
       ...DEFAULT_SHEET_LAYOUT_OPTIONS,
       smartCards: true,
-      version: 2,
+      version: 3,
     });
 
     store.set({ smartCards: false });

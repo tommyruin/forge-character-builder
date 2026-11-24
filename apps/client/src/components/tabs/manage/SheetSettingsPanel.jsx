@@ -178,10 +178,20 @@ function ItemCardSettings({ workspace }) {
           checked={options.resourceTrackers}
           onChange={(event) => setOptions({ resourceTrackers: event.target.checked })}
         />
-        <span>Print resource trackers (Wild Shape, Rage and other limited uses) with the features</span>
+        <span>Show uses next to each feature</span>
+      </label>
+      {/* Independent of the uses beside features: every tracker (those, items', trackers kept by hand) in one box. */}
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={options.resourceTrackersList}
+          onChange={(event) => setOptions({ resourceTrackersList: event.target.checked })}
+        />
+        <span>Print a Resources box</span>
       </label>
       {/* By default the trackers print as the Resources tab left them; this prints a fresh sheet instead. */}
-      {options.resourceTrackers && (
+      {(options.resourceTrackers || options.resourceTrackersList) && (
         <label className="flex items-center gap-2 pl-6 text-sm">
           <input
             type="checkbox"
@@ -189,19 +199,7 @@ function ItemCardSettings({ workspace }) {
             checked={options.resourceTrackersEmpty}
             onChange={(event) => setOptions({ resourceTrackersEmpty: event.target.checked })}
           />
-          <span>Print resource trackers empty, to fill in at the table</span>
-        </label>
-      )}
-      {/* Each tracker closes the feature that spends it; this also lists every tracker after the features (those, items', trackers kept by hand). */}
-      {options.resourceTrackers && (
-        <label className="flex items-center gap-2 pl-6 text-sm">
-          <input
-            type="checkbox"
-            role="switch"
-            checked={options.resourceTrackersList}
-            onChange={(event) => setOptions({ resourceTrackersList: event.target.checked })}
-          />
-          <span>Also list every resource after the features</span>
+          <span>Print a fresh sheet, ignoring uses already spent</span>
         </label>
       )}
       {characterId && (

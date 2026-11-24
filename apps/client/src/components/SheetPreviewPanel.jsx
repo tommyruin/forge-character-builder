@@ -28,7 +28,7 @@ export default function SheetPreviewPanel() {
   const { emphasizeAbilityModifiers } = useSheetAbilitySetting();
   const { options: layoutOptions } = useSheetLayoutOptionsSetting();
   const inventoryNotes = layoutOptions.inventoryNotes;
-  const { resourceTrackers, resourceTrackersEmpty, resourceTrackersList } = resourceTrackerSheetOptions(layoutOptions);
+  const { resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline } = resourceTrackerSheetOptions(layoutOptions);
   const layout = useMemo(() => effectiveSheetLayout(templateSet, layoutOptions), [templateSet, layoutOptions]);
   // Trackers off, printed empty or listed changes the rendered sheet, so it changes every cache key built
   // from this. What is spent on the Resources tab is a character edit: it bumps the mutation tick.
@@ -89,6 +89,7 @@ export default function SheetPreviewPanel() {
       resourceTrackers,
       resourceTrackersEmpty,
       resourceTrackersList,
+      resourceTrackersInline,
       layout,
       layoutKey,
     };
@@ -129,6 +130,7 @@ export default function SheetPreviewPanel() {
               resourceTrackers: run.resourceTrackers,
               resourceTrackersEmpty: run.resourceTrackersEmpty,
               resourceTrackersList: run.resourceTrackersList,
+              resourceTrackersInline: run.resourceTrackersInline,
               layout: run.layout,
               brandImage: await loadSheetBrandImage(),
               footerText,
@@ -167,7 +169,7 @@ export default function SheetPreviewPanel() {
       }
     })();
     return undefined;
-  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersList, layout, layoutKey, footerText]);
+  }, [active, id, key, libraryRevision, target.tick, target.nonce, templateSet, colours, coloursKey, fonts, fontsKey, pages, pagesKey, emphasizeAbilityModifiers, inventoryNotes, resourceTrackers, resourceTrackersEmpty, resourceTrackersList, resourceTrackersInline, layout, layoutKey, footerText]);
 
   useEffect(
     () => () => {

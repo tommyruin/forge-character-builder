@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   host.remove();
-  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false, resourceTrackers: true, resourceTrackersList: false });
+  sheetLayoutOptionsSettingStore.set({ split: null, top: null, readable: false, resourceTrackers: true, resourceTrackersList: false, resourceTrackersEmpty: false });
   sheetTemplateSettingStore.set('2014');
 });
 
@@ -116,16 +116,35 @@ describe('sheet settings layout options', () => {
     expect(resetButton()).toBeUndefined();
   });
 
-  it('leaves the Resources list off by default, and offers it only while trackers print', async () => {
+  it('lets the Resources box and the uses next to features switch independently', async () => {
     await renderPanel();
-    const list = () => switchLabelled('Also list every resource after the features');
-    expect(list().getAttribute('role')).toBe('switch');
-    expect(list().checked).toBe(false);
-    await act(async () => list().click());
+    const uses = () => switchLabelled('Show uses next to each feature');
+    const box = () => switchLabelled('Print a Resources box');
+    const fresh = () => switchLabelled('Print a fresh sheet');
+    expect(uses().getAttribute('role')).toBe('switch');
+    expect(uses().checked).toBe(true);
+    expect(box().getAttribute('role')).toBe('switch');
+    expect(box().checked).toBe(false);
+    expect(fresh().checked).toBe(false);
+
+    await act(async () => box().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackersList).toBe(true);
-    expect(list().checked).toBe(true);
-    await act(async () => switchLabelled('Print resource trackers (').click());
+    expect(uses().checked).toBe(true);
+
+    // Resources only in the box: the fresh sheet switch stays on offer.
+    await act(async () => uses().click());
     expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackers).toBe(false);
-    expect(list()).toBeUndefined();
+    expect(box().checked).toBe(true);
+    expect(fresh()).toBeDefined();
+
+    // With neither, there is nothing to print fresh.
+    await act(async () => box().click());
+    expect(sheetLayoutOptionsSettingStore.getSnapshot().resourceTrackersList).toBe(false);
+    expect(uses()).toBeDefined();
+    expect(box()).toBeDefined();
+    expect(fresh()).toBeUndefined();
+
+    await act(async () => uses().click());
+    expect(fresh()).toBeDefined();
   });
 });

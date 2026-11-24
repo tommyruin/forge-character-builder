@@ -601,14 +601,14 @@ export interface EngineMethodMap {
          */
         resourceTrackersEmpty?: boolean;
         /**
-         * Also close the features text with a "Resources" paragraph of every tracker (those a
-         * printed feature already closes with its uses, an item's, those kept by hand).
+         * Also print a Resources box under the features with every tracker (those a printed
+         * feature already closes with its uses, an item's, those kept by hand).
          * Absent or `false` leaves it off.
          */
         resourceTrackersList?: boolean;
         /**
-         * Deprecated; still accepted. `false` prints the older layout: no uses next to features,
-         * every tracker in the "Resources" paragraph. Absent or `true` changes nothing.
+         * `false` leaves the uses out of the features, so every tracker prints in the Resources
+         * box alone. Absent or `true` changes nothing.
          */
         resourceTrackersInline?: boolean;
         /** The body face the sheet will be drawn in, so card prose is measured in its widths. */

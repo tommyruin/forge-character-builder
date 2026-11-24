@@ -71,7 +71,7 @@ There are currently no public roadmap-unsupported methods. Groups:
   `setItemPresentation`, `setItemCards`, `setItemDetails`, `setCoins`
 - **Attacks**: `getAttacks`, `getAttackOptions`, `createAttack`, `updateAttack`,
   `setAttackVisibility`, `moveAttack`, `deleteAttack`
-- **Sheet**: `generateSheet` (lite flag, optional `include`, optional `inventoryNotes`, optional `resourceTrackers`, optional `resourceTrackersEmpty`, optional `resourceTrackersList`, optional `resourceTrackersInline`), `getSheetBuffer`. A tracker closes the text of the first printed feature that spends it (`[Uses: ○ ○]`). `resourceTrackers: false` leaves every tracker off; `resourceTrackersEmpty: true` prints them empty, to fill in at the table; `resourceTrackersList: true` also closes the features text with a "Resources" paragraph of every tracker (those a printed feature already closes, an item's, those kept by hand), which is off when absent. `resourceTrackersInline` is deprecated and still accepted: `false` prints the older layout, with no uses next to features and every tracker in the paragraph.
+- **Sheet**: `generateSheet` (lite flag, optional `include`, optional `inventoryNotes`, optional `resourceTrackers`, optional `resourceTrackersEmpty`, optional `resourceTrackersList`, optional `resourceTrackersInline`), `getSheetBuffer`. A tracker closes the text of the first printed feature that spends it (`[Uses: ○ ○]`). `resourceTrackers: false` leaves every tracker off; `resourceTrackersEmpty: true` prints them empty, to fill in at the table; `resourceTrackersList: true` also prints a Resources box under the features with every tracker (those a printed feature already closes, an item's, those kept by hand), which is off when absent. `resourceTrackersInline: false` leaves the uses out of the features, so every tracker prints in the box alone.
   `inventoryNotes: true` widens the equipment page's notes column: after the
   attuned and `sidebar` items (printed exactly as without it), the other magic
   items in full, then tools and useful gear as a one-sentence summary capped
@@ -891,7 +891,8 @@ boxes, including the 2024 captions; model values and character exports are
 unchanged. The browser preference uses `fcb-sheet-ability-emphasis`, applies to
 full and split previews and PDF downloads, and participates in PDF cache identity.
 
-Both template sets contain six blank exhaustion checkboxes. Spell-list sections
+Every template set contains six blank square exhaustion checkboxes, numbered 1
+to 5 with a skull over the sixth. Spell-list sections
 with slots draw one empty circle per slot; spell points and slotless sections do
 not. Recognized free-cast allowances explicitly say “free cast” or “free casts”.
 Generated spell attack descriptions stay on spell cards; attack cells retain
